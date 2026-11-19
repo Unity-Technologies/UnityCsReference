@@ -914,6 +914,9 @@ namespace UnityEditor
         [FreeFunction("GetTargetPlatformUGKCapableGraphicsAPIs")]
         internal static extern UnityEngine.Rendering.GraphicsDeviceType[] GetUGKCapableGraphicsAPIs(BuildTarget platform);
 
+        [FreeFunction("IsUGKSelectedForBuildTarget")]
+        internal static extern bool IsUGKSelectedForBuild(BuildTarget platform);
+
         [NativeMethod("GetPlatformGraphicsAPIs")]
         public static extern UnityEngine.Rendering.GraphicsDeviceType[] GetGraphicsAPIs(BuildTarget platform);
 

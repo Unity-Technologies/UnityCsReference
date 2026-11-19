@@ -61,8 +61,7 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization
         {
             var conditionID = conditionReference.ConditionID;
 
-            // A condition only has a row on screen if its transition is selected. Check the model exists, not the view.
-            if (m_Session.GraphView != null && !TryResolveModel(conditionID, out _))
+            if (!m_Session.IsElementValid<ConditionModel>(conditionID))
             {
                 ConditionVisualStore.Clear(conditionID);
                 return;
@@ -91,13 +90,6 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization
 
         Texture2D GetStoredOverride(Hash128 conditionID)
             => Enabled && ConditionVisualStore.TryGet(conditionID, out var icon) ? icon : null;
-
-        bool TryResolveModel(Hash128 conditionID, out ConditionModel condition)
-        {
-            condition = null;
-            var graphModel = m_Session.GraphView?.GraphModel;
-            return graphModel != null && graphModel.TryGetModelFromGuid(conditionID, out condition);
-        }
 
         void NotifyChanged(Hash128 conditionID)
         {

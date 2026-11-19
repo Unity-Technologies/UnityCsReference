@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
@@ -40,6 +41,8 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     [SerializeReference, HideInInspector] List<IResourceEntry> m_Entries = new();
 
     Dictionary<long, IResourceEntry> m_EntryCache;
+    CultureInfo m_CultureInfo;
+    string m_CultureInfoCode;
 
     /// <summary>
     /// The locale this table provides values for.
@@ -51,6 +54,19 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     {
         get => new(m_LocaleCode);
         set => m_LocaleCode = value.Code;
+    }
+
+    internal CultureInfo CultureInfo
+    {
+        [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
+        get
+        {
+            if (m_CultureInfo != null && m_CultureInfoCode == m_LocaleCode)
+                return m_CultureInfo;
+            m_CultureInfoCode = m_LocaleCode;
+            m_CultureInfo = Locale.ResolveCulture(m_LocaleCode);
+            return m_CultureInfo;
+        }
     }
 
     /// <summary>

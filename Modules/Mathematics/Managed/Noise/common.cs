@@ -23,6 +23,10 @@ namespace Unity.Mathematics
         static float3 mod7(float3 x) { return x - floor(x * (1.0f / 7.0f)) * 7.0f; }
         static float4 mod7(float4 x) { return x - floor(x * (1.0f / 7.0f)) * 7.0f; }
 
+        // Floored modulo (GLSL mod), unlike fmod the result is never negative for a positive period
+        static float3 modPeriod(float3 x, float3 y) { return x - floor(x / y) * y; }
+        static float4 modPeriod(float4 x, float4 y) { return x - floor(x / y) * y; }
+
         // Permutation polynomial: (34x^2 + x) math.mod 289
         static float  permute(float x)  { return mod289((34.0f * x + 1.0f) * x); }
         static float3 permute(float3 x) { return mod289((34.0f * x + 1.0f) * x); }

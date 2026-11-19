@@ -687,10 +687,19 @@ namespace Unity.U2D.Physics
 
         #region Contact / Pre-Contact / Pre-Continuous Callbacks
 
+        // Whether a callback target is a Unity object that has been destroyed, so it must not be called even though its C# object still exists.
+        // A target that is not a Unity object is never treated as destroyed.
+        // This is safe on any thread, which the contact filter, pre-contact and pre-continuous callbacks need.
+        internal static bool IsDestroyedCallbackTarget(Object callbackTarget) => callbackTarget is UnityEngine.Object unityObject && unityObject == null;
+
         /// <undoc/>
         [RequiredByNativeCode]
         static bool SendContactFilterCallback(Object callbackTarget, ContactFilterEvent contactFilterEvent)
         {
+            // A destroyed target filters nothing, the same as no target.
+            if (IsDestroyedCallbackTarget(callbackTarget))
+                return true;
+
             if (callbackTarget is PhysicsCallbacks.IContactFilterCallback target)
                 return target.OnContactFilter2D(contactFilterEvent);
 
@@ -701,6 +710,10 @@ namespace Unity.U2D.Physics
         [RequiredByNativeCode]
         static unsafe void SendPreContactCallback(Object callbackTarget, PreContactEvent preContactEvent, IntPtr manifoldPtr)
         {
+            // A destroyed target leaves the manifold as it is, the same as no target.
+            if (IsDestroyedCallbackTarget(callbackTarget))
+                return;
+
             // The new interface takes priority; a target implementing it never sees the deprecated callback.
             if (callbackTarget is PhysicsCallbacks.IPreContactCallback target)
             {
@@ -730,6 +743,10 @@ namespace Unity.U2D.Physics
         [RequiredByNativeCode]
         static bool SendPreContinuousCallback(Object callbackTarget, PreContinuousEvent preContinuousEvent)
         {
+            // A destroyed target cancels nothing, the same as no target.
+            if (IsDestroyedCallbackTarget(callbackTarget))
+                return true;
+
             // The new interface takes priority; a target implementing it never sees the deprecated callback.
             if (callbackTarget is PhysicsCallbacks.IPreContinuousCallback target)
                 return target.OnPreContinuous2D(preContinuousEvent);
@@ -791,14 +808,14 @@ namespace Unity.U2D.Physics
 
         #region Target Callbacks
 
-        // The callbacks the engine sends from PhysicsWorld.SendContactCallbacks and the others, once for each target of each event, having already found the target and checked its object is valid.
-        // Each calls the target only if it implements the matching callback interface.
+        // The callbacks the engine sends from PhysicsWorld.SendContactCallbacks and the others, once for each target of each event, having already found the target.
+        // Each calls the target only if it implements the matching callback interface and is not a destroyed Unity object.
 
         /// <undoc/>
         [RequiredByNativeCode]
         static void SendBodyUpdateCallback(Object callbackTarget, in BodyUpdateEvent bodyUpdateEvent)
         {
-            if (callbackTarget is PhysicsCallbacks.IBodyUpdateCallback target)
+            if (callbackTarget is PhysicsCallbacks.IBodyUpdateCallback target && !IsDestroyedCallbackTarget(callbackTarget))
                 target.OnBodyUpdate2D(bodyUpdateEvent);
         }
 
@@ -806,7 +823,7 @@ namespace Unity.U2D.Physics
         [RequiredByNativeCode]
         static void SendContactBeginCallback(Object callbackTarget, in ContactBeginEvent beginEvent)
         {
-            if (callbackTarget is PhysicsCallbacks.IContactCallback target)
+            if (callbackTarget is PhysicsCallbacks.IContactCallback target && !IsDestroyedCallbackTarget(callbackTarget))
                 target.OnContactBegin2D(beginEvent);
         }
 
@@ -814,7 +831,7 @@ namespace Unity.U2D.Physics
         [RequiredByNativeCode]
         static void SendContactEndCallback(Object callbackTarget, in ContactEndEvent endEvent)
         {
-            if (callbackTarget is PhysicsCallbacks.IContactCallback target)
+            if (callbackTarget is PhysicsCallbacks.IContactCallback target && !IsDestroyedCallbackTarget(callbackTarget))
                 target.OnContactEnd2D(endEvent);
         }
 
@@ -822,7 +839,7 @@ namespace Unity.U2D.Physics
         [RequiredByNativeCode]
         static void SendTriggerBeginCallback(Object callbackTarget, in TriggerBeginEvent beginEvent)
         {
-            if (callbackTarget is PhysicsCallbacks.ITriggerCallback target)
+            if (callbackTarget is PhysicsCallbacks.ITriggerCallback target && !IsDestroyedCallbackTarget(callbackTarget))
                 target.OnTriggerBegin2D(beginEvent);
         }
 
@@ -830,7 +847,7 @@ namespace Unity.U2D.Physics
         [RequiredByNativeCode]
         static void SendTriggerEndCallback(Object callbackTarget, in TriggerEndEvent endEvent)
         {
-            if (callbackTarget is PhysicsCallbacks.ITriggerCallback target)
+            if (callbackTarget is PhysicsCallbacks.ITriggerCallback target && !IsDestroyedCallbackTarget(callbackTarget))
                 target.OnTriggerEnd2D(endEvent);
         }
 
@@ -838,7 +855,7 @@ namespace Unity.U2D.Physics
         [RequiredByNativeCode]
         static void SendJointThresholdCallback(Object callbackTarget, in JointThresholdEvent jointThresholdEvent)
         {
-            if (callbackTarget is PhysicsCallbacks.IJointThresholdCallback target)
+            if (callbackTarget is PhysicsCallbacks.IJointThresholdCallback target && !IsDestroyedCallbackTarget(callbackTarget))
                 target.OnJointThreshold2D(jointThresholdEvent);
         }
 
@@ -966,5 +983,26 @@ namespace Unity.U2D.Physics
 
         #endregion
 
+        // Removes every handler from the static events, since a handler can belong to code that is about to be unloaded.
+        // Calling a handler from unloaded code would run stale code, and holding it would keep that code from unloading.
+        // Each subscriber subscribes again once its code has loaded.
+        // Called by PhysicsEventsLifetime before code unloads.
+        internal static void ClearEvents()
+        {
+            s_PreSimulate = null;
+            s_PostSimulate = null;
+            s_WorldDrawResults = null;
+            s_WorldDefinitionChange = null;
+            s_WorldTransformPlaneChange = null;
+        }
+    }
+
+    // Clears the static events of PhysicsEvents before code unloads.
+    // A lifecycle method makes the code generator add a partial declaration of its type and every containing type, and it declares them as plain structs or classes.
+    // PhysicsEvents is a record struct, which cannot share partial declarations with a plain struct, so the method lives on this separate type rather than on or inside PhysicsEvents.
+    internal static partial class PhysicsEventsLifetime
+    {
+        [OnCodeUnloading]
+        private static void OnCodeUnloading() => PhysicsEvents.ClearEvents();
     }
 }

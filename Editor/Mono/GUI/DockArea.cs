@@ -748,9 +748,10 @@ namespace UnityEditor
             editorWindowBackend?.OnDisplayWindowMenu(menu);
         }
 
-        void AddTabToHere(object userData)
+        internal void AddTabToHere(object userData)
         {
             EditorWindow win = (EditorWindow)CreateInstance((System.Type)userData);
+            EditorWindow.AssignTitle(win, null);
             AddTab(win);
         }
 

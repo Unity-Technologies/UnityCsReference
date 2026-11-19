@@ -104,6 +104,11 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
+        /// <summary>
+        /// Whether the node is displayed with an accent bar that shows its <see cref="FillAmount"/> and accent animations.
+        /// </summary>
+        public virtual bool HasAccentBar => false;
+
         /// <inheritdoc />
         public abstract bool UseColorAlpha { get; }
 

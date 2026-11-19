@@ -76,8 +76,8 @@ public class ResourceDatabase
     /// </example>
     public async Awaitable<ResourceTable> GetTableAsync(TableReference tableRef, Locale locale = null, CancellationToken cancellationToken = default)
     {
-        if (!LocalizationSettings.InitializationSettled)
-            await LocalizationSettings.EnsureInitializedForUse();
+        if (!LocalizationSettings.InitializationSettledFor(locale))
+            await LocalizationSettings.EnsureInitializedForUse(cancellationToken);
         locale = Resolve(locale);
         var address = TableAddress(tableRef);
         if (string.IsNullOrEmpty(address) || locale == null)
@@ -133,8 +133,8 @@ public class ResourceDatabase
     /// </example>
     public async Awaitable<IResourceEntry> GetEntryAsync(TableReference tableRef, TableEntryReference entryRef, Locale locale = null, CancellationToken cancellationToken = default, bool enableFallback = true)
     {
-        if (!LocalizationSettings.InitializationSettled)
-            await LocalizationSettings.EnsureInitializedForUse();
+        if (!LocalizationSettings.InitializationSettledFor(locale))
+            await LocalizationSettings.EnsureInitializedForUse(cancellationToken);
         return await ResolveEntryAsync(tableRef, entryRef, locale, cancellationToken, enableFallback);
     }
 
@@ -184,8 +184,8 @@ public class ResourceDatabase
     /// </example>
     public async Awaitable<string> GetLocalizedStringAsync(TableReference tableRef, TableEntryReference entryRef, Locale locale = null, object[] args = null, CancellationToken cancellationToken = default, bool enableFallback = true, IVariableGroup localVariables = null)
     {
-        if (!LocalizationSettings.InitializationSettled)
-            await LocalizationSettings.EnsureInitializedForUse();
+        if (!LocalizationSettings.InitializationSettledFor(locale))
+            await LocalizationSettings.EnsureInitializedForUse(cancellationToken);
         locale = Resolve(locale);
         var entry = await ResolveEntryAsync(tableRef, entryRef, locale, cancellationToken, enableFallback);
         return FormatEntry(entry as IStringEntry, locale, args, localVariables);
@@ -231,7 +231,7 @@ public class ResourceDatabase
             try
             {
                 var formatter = LocalizationSettings.Instance != null ? LocalizationSettings.Instance.GetSmartFormatter() : Smart.Default;
-                value = Format(formatter, value, args ?? Array.Empty<object>(), localVariables);
+                value = Format(formatter, table.CultureInfo, value, args ?? Array.Empty<object>(), localVariables);
             }
             catch (Exception e)
             {
@@ -242,16 +242,16 @@ public class ResourceDatabase
     }
 
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
-    internal static string Format(SmartFormatter formatter, string value, object[] args, IVariableGroup localVariables)
+    internal static string Format(SmartFormatter formatter, IFormatProvider provider, string value, object[] args, IVariableGroup localVariables)
     {
         if (localVariables == null)
-            return formatter.Format(value, args);
+            return formatter.Format(provider, value, args);
 
         var parsed = formatter.Parser.ParseFormat(value);
         try
         {
             parsed.AdditionalData = new AdditionalFormatData { LocalVariables = localVariables };
-            return formatter.Format(parsed, args);
+            return formatter.Format(provider, parsed, args);
         }
         finally
         {
@@ -281,8 +281,8 @@ public class ResourceDatabase
     /// </example>
     public async Awaitable<TObject> GetLocalizedAssetAsync<TObject>(TableReference tableRef, TableEntryReference entryRef, Locale locale = null, CancellationToken cancellationToken = default) where TObject : Object
     {
-        if (!LocalizationSettings.InitializationSettled)
-            await LocalizationSettings.EnsureInitializedForUse();
+        if (!LocalizationSettings.InitializationSettledFor(locale))
+            await LocalizationSettings.EnsureInitializedForUse(cancellationToken);
         locale = Resolve(locale);
         var entry = await ResolveEntryAsync(tableRef, entryRef, locale, cancellationToken);
         return await LoadLocalizedAssetAsync<TObject>(entry as IAssetEntry, locale, cancellationToken);

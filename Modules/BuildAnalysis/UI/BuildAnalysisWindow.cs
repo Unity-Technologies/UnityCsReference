@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -63,11 +64,16 @@ namespace UnityEditor.Build.Analysis
 
         private SelectionGate m_Gate;
 
+        // Like the service's token: cancelled only on teardown and domain reload.
+        private CancellationTokenSource m_ExternalLoadCts;
+
         private GUID m_PendingSelection;
 
         private bool m_WasProSkin;
 
         internal BuildEntry SelectedBuild => m_BuildListPanel?.SelectedBuild;
+
+        internal ExternalViewRouter ExternalViews => m_ExternalViews;
 
         [MenuItem("Window/Analysis/Build Analysis")]
         internal static void ShowWindow()
@@ -131,6 +137,7 @@ namespace UnityEditor.Build.Analysis
             m_Service = new BuildAnalysisService(enumerator, analyzer, fileSystem, buildHistory, logReader);
             m_GraphService = new DependencyGraphService(graphStore, fileSystem);
             m_BuildHistory = buildHistory;
+            m_ExternalLoadCts = new CancellationTokenSource();
 
             m_Watcher = new BuildHistoryWatcher(buildHistory);
             m_Watcher.BuildHistoryChanged += RefreshBuildList;
@@ -146,6 +153,8 @@ namespace UnityEditor.Build.Analysis
             m_ExternalViews?.Release();
 
             m_Service?.Dispose();
+            m_ExternalLoadCts?.Cancel();
+            m_ExternalLoadCts?.Dispose();
             m_Watcher.Disable();
             m_Watcher.BuildHistoryChanged -= RefreshBuildList;
             SavePersistedState();
@@ -156,6 +165,7 @@ namespace UnityEditor.Build.Analysis
         private void OnBeforeAssemblyReload()
         {
             m_Service?.CancelPending();
+            m_ExternalLoadCts?.Cancel();
         }
 
         // UUM-142206: no event fires when the Editor Theme preference changes, so poll for it.
@@ -347,21 +357,22 @@ namespace UnityEditor.Build.Analysis
             if (m_Gate.IsCurrentTarget(selection.BuildSessionGUID))
                 return;
 
-            if (TryShowExternalView(selection))
+            if (await TryShowExternalViewAsync(selection))
                 return;
 
             m_ExternalViews.Release();
             await LoadAndApplyAsync(selection, () => m_Service.GetBuildAnalysisAsync(selection.BuildSessionGUID));
         }
 
-        private bool TryShowExternalView(BuildEntry selection)
+        private async Task<bool> TryShowExternalViewAsync(BuildEntry selection)
         {
             if (!m_Service.TryGetBuildSummary(selection.BuildSessionGUID, out var summary))
                 return false;
 
-            if (m_ExternalViews.TryClaim(summary))
+            if (m_ExternalViews.TryClaim(summary, out var claimed))
             {
-                TakeOverContentArea(selection);
+                var seq = TakeOverContentArea(selection);
+                await LoadAndApplyExternalAsync(selection, summary, claimed, seq);
                 return true;
             }
 
@@ -372,12 +383,48 @@ namespace UnityEditor.Build.Analysis
             TakeOverContentArea(selection);
             return true;
         }
-        
-        private void TakeOverContentArea(BuildEntry selection)
+
+        private int TakeOverContentArea(BuildEntry selection)
         {
-            m_Gate.Begin(selection.BuildSessionGUID);
+            var seq = m_Gate.Begin(selection.BuildSessionGUID);
             m_TabHost.Apply(null);
             m_LoadingOverlay.Hide();
+            return seq;
+        }
+
+        // As LoadAndApplyAsync, but the drawer shows its own loading state.
+        private async Task LoadAndApplyExternalAsync(
+            BuildEntry build,
+            BuildReportSummary summary,
+            ExternalDrawerView view,
+            int seq)
+        {
+            var token = m_ExternalLoadCts.Token;
+
+            try
+            {
+                var loaded = await view.LoadAsync(summary, token);
+                if (m_Gate.IsStale(seq))
+                    return;
+
+                // A build that showed no report isn't shown — drop the target so re-selecting retries.
+                if (!view.Apply(summary, loaded))
+                    m_Gate.Clear();
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                // Window closed or scripts reloading.
+            }
+            catch (Exception e)
+            {
+                if (m_Gate.IsStale(seq))
+                    return;
+
+                m_ExternalViews.Release();
+                m_TabHost.Apply(null); // clear to no-selection
+                m_Gate.Clear(); // a failed load isn't shown — drop the target so re-selecting retries
+                Debug.LogError($"{BuildAnalysisConstants.k_ConsoleLogPrefix} Failed to load the report for build '{build.BuildSessionGUID}': {e.Message}");
+            }
         }
 
         // Apply for both selection and regenerate: show the overlay, await the result, and

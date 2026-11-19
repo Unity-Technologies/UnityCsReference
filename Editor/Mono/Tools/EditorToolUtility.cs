@@ -113,6 +113,28 @@ namespace UnityEditor.EditorTools
             return s_ToolOwnerDefinitions.TryGetValue(toolOwner, out toolOwnerDefinition);
         }
 
+        internal static Type GetDefaultContextType(Type toolOwnerType)
+        {
+            if (toolOwnerType == typeof(SceneView) && ToolManager.TryGetCurrentStageToolContextOverride(out var stageOverride))
+                return stageOverride.defaultContext;
+
+            if (toolOwnerType != null && GetToolOwnerDefinition(toolOwnerType, out var ownerDef))
+                return ownerDef.defaultContext;
+
+            return typeof(GameObjectToolContext);
+        }
+
+        internal static bool IsContextSupported(Type contextType, Type toolOwnerType)
+        {
+            if (toolOwnerType != typeof(SceneView) || !ToolManager.TryGetCurrentStageToolContextOverride(out var stageOverride))
+                return true;
+
+            if (stageOverride.supportedContexts == null || contextType == stageOverride.defaultContext)
+                return true;
+
+            return Array.IndexOf(stageOverride.supportedContexts, contextType) >= 0;
+        }
+
         internal static bool IsRegisteredToolOwner(Type type)
         {
             return GetToolOwnerDefinition(type, out _);
@@ -467,6 +489,12 @@ namespace UnityEditor.EditorTools
 
                 globalContexts.Sort(sortComp);
 
+                for (int i = globalContexts.Count - 1; i >= 0; --i)
+                {
+                    if (!IsContextSupported(globalContexts[i].editor, m_EditorToolState.stateToolOwnerType))
+                        globalContexts.RemoveAt(i);
+                }
+
                 // Move GO context to front of globals
                 for (int i = globalContexts.Count - 1; i >= 0; --i)
                 {
@@ -482,10 +510,19 @@ namespace UnityEditor.EditorTools
 
                 // Collect all registered component contexts
                 var allRegisteredCompContexts = new List<EditorTypeAssociation>();
+                var defaultContextType = m_EditorToolState.defaultToolContextType;
                 foreach (var assoc in GetRegisteredToolContexts(m_EditorToolState.stateToolOwnerType))
                 {
                     if (assoc.targetBehaviour != typeof(NullTargetKey))
-                        allRegisteredCompContexts.Add(assoc);
+                    {
+                        if (assoc.editor == defaultContextType)
+                        {
+                            if (globalContexts.Count == 0 || globalContexts[0].editor != defaultContextType)
+                                globalContexts.Insert(0, assoc);
+                        }
+                        else if (IsContextSupported(assoc.editor, m_EditorToolState.stateToolOwnerType))
+                            allRegisteredCompContexts.Add(assoc);
+                    }
                 }
 
                 // Split into available and unavailable component contexts
@@ -535,11 +572,11 @@ namespace UnityEditor.EditorTools
             return GetNameFromToolPath(path);
         }
 
-        internal static string GetContextName(Type context, bool forTooltip)
+        internal static string GetContextName(Type context, Type toolOwnerType, bool forTooltip)
         {
             var contextName = GetToolName(context);
             if (forTooltip)
-                contextName += (context == typeof(GameObjectToolContext) ? " (Default)" : "");
+                contextName += (context == GetDefaultContextType(toolOwnerType) ? " (Default)" : "");
 
             return contextName;
         }

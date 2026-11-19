@@ -525,7 +525,6 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.Vector3Int:
                 case SerializedPropertyType.RectInt:
                 case SerializedPropertyType.BoundsInt:
-                case SerializedPropertyType.ManagedReference:
                 case SerializedPropertyType.Hash128:
                 case SerializedPropertyType.RenderingLayerMask:
                     return false;

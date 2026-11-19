@@ -2255,6 +2255,7 @@ namespace UnityEngine.UIElements
                         player.startTime = currentTime;
                         player.clipLength = clip.animationClip.length;
                         player.isPaused = false;
+                        player.isPreviewing = m_OwnerPanel != null && m_OwnerPanel.IsClipOwnerPreviewing(owner);
 
                         // Update() may already have sampled for this tick, which would leave the
                         // element on its un-animated value until the next one.

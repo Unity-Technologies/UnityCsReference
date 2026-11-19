@@ -130,7 +130,7 @@ namespace UnityEditor.Build.Profile
             var delayedShaderTimeLimit = root.MandatoryQ<IntegerField>("DelayedShaderTimeLimit");
             shaderPreloadToggle.RegisterValueChangedCallback(evt => {
                 delayedShaderTimeLimitGroup.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
-                var newVal = evt.newValue ? delayedShaderTimeLimit.value : -1;
+                var newVal = evt.newValue ? Mathf.Max(0, delayedShaderTimeLimit.value) : -1;
                 if (delayedShaderTimeLimitProperty.intValue != newVal)
                 {
                     delayedShaderTimeLimitProperty.intValue = newVal;

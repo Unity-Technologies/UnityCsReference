@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using Object = UnityEngine.Object;
 
 namespace Unity.Localization.Providers;
@@ -80,36 +81,42 @@ public sealed class ReferencedAssetProvider : IAssetProvider, ISynchronousAssetP
         return true;
     }
 
-    // Drops owned addresses for the asset, so a stale one (after a rename or locale change) cannot keep resolving to it.
+    // Drops owned addresses for the asset other than the two given, so a stale one (after a rename or locale change) cannot keep resolving to it.
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
-    internal void RemoveAsset(Object asset)
+    internal bool SetOwnedAddresses(Object asset, string address, string guidAddress)
     {
         if (asset == null)
-            return;
-        List<string> stale = null;
-        for (var i = 0; i < m_OwnedAddresses.Count; i++)
+            return false;
+        var changed = false;
+        for (var i = m_OwnedAddresses.Count - 1; i >= 0; i--)
         {
-            var address = m_OwnedAddresses[i];
-            if (m_ByAddress.TryGetValue(address, out var value) && value == asset)
-                (stale ??= new List<string>()).Add(address);
+            var owned = m_OwnedAddresses[i];
+            if (owned == address || owned == guidAddress)
+                continue;
+            if (m_ByAddress.TryGetValue(owned, out var value) && value == asset)
+            {
+                m_ByAddress.Remove(owned);
+                m_OwnedAddresses.RemoveAt(i);
+                changed = true;
+            }
         }
-        if (stale == null)
-            return;
-        foreach (var address in stale)
-        {
-            m_ByAddress.Remove(address);
-            m_OwnedAddresses.Remove(address);
-        }
+        changed |= AddOwned(address, asset);
+        changed |= AddOwned(guidAddress, asset);
+        if (changed)
+            SortByAddress();
+        return changed;
     }
 
-    [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
-    internal void AddOwned(string address, Object asset)
+    bool AddOwned(string address, Object asset)
     {
         if (string.IsNullOrEmpty(address) || asset == null)
-            return;
+            return false;
+        if (m_ByAddress.TryGetValue(address, out var existing) && existing == asset && m_OwnedAddresses.Contains(address))
+            return false;
         // Add drops any owned record for the address, so this append cannot duplicate.
         Add(address, asset);
         m_OwnedAddresses.Add(address);
+        return true;
     }
 
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
@@ -118,6 +125,23 @@ public sealed class ReferencedAssetProvider : IAssetProvider, ISynchronousAssetP
         for (var i = 0; i < m_OwnedAddresses.Count; i++)
             m_ByAddress.Remove(m_OwnedAddresses[i]);
         m_OwnedAddresses.Clear();
+    }
+
+    // The serialized asset must not depend on registration history.
+    void SortByAddress()
+    {
+        m_OwnedAddresses.Sort(StringComparer.Ordinal);
+        using var pooledAddresses = ListPool<string>.Get(out var addresses);
+        using var pooledEntries = DictionaryPool<string, Object>.Get(out var entries);
+        foreach (var entry in m_ByAddress)
+        {
+            addresses.Add(entry.Key);
+            entries.Add(entry.Key, entry.Value);
+        }
+        addresses.Sort(StringComparer.Ordinal);
+        m_ByAddress.Clear();
+        for (var i = 0; i < addresses.Count; i++)
+            m_ByAddress.Add(addresses[i], entries[addresses[i]]);
     }
 
     /// <summary>

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.PlayMode.Editor;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -52,7 +53,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var isValid = m_Scenario.IsValid(out _);
             if (!isValid)
             {
-                var prompt = "This Scenario is not setup properly. Use the Edit Configuration button to fix the issues.";
+                var prompt = $"This Scenario is not setup properly. Use the {ActiveScenarioWindow.k_EditButtonText} button to fix the issues.";
                 AttachHelpBox(container, prompt, HelpBoxMessageType.Warning);
                 Add(container);
                 return;

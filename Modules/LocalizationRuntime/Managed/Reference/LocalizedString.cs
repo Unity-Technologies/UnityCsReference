@@ -111,7 +111,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
     {
         if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return AwaitableUtility.FromResult(string.Empty);
-        if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
+        if (LocalizationSettings.PreferSyncResolve)
         {
             var value = GetLocalizedString(args);
             if (!string.IsNullOrEmpty(value))
@@ -123,7 +123,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
     async Awaitable<string> FormatAsync(ResourceDatabase database, object[] args)
     {
         // Initialization selects the startup locale, so settle it before capturing the resolving locale.
-        if (!LocalizationSettings.InitializationSettled)
+        if (!LocalizationSettings.InitializationSettledFor(ResolveOverrideLocale()))
             await LocalizationSettings.EnsureInitializedForUse();
         var locale = ResolvingLocale();
         var entry = await GetEntryAsync(locale, default);
@@ -191,8 +191,9 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
     {
         if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return string.Empty;
-        var entry = GetEntry();
-        return database.FormatEntry(entry, ResolvingLocale(), args, Scope(parentScope));
+        var locale = SyncResolvingLocale();
+        var entry = GetEntry(locale);
+        return database.FormatEntry(entry, locale, args, Scope(parentScope));
     }
 
     IVariableGroup Scope(IVariableGroup parentScope)
@@ -220,7 +221,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
         if (m_Changed == null)
             return;
         var version = BeginRefresh();
-        if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
+        if (LocalizationSettings.PreferSyncResolve)
         {
             var value = GetLocalizedString();
             if (!string.IsNullOrEmpty(value))
@@ -253,7 +254,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
 
     void PushTo(ChangeHandler handler)
     {
-        if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
+        if (LocalizationSettings.PreferSyncResolve)
         {
             var value = GetLocalizedString();
             if (!string.IsNullOrEmpty(value))

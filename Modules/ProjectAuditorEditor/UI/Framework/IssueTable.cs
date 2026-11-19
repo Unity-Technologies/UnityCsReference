@@ -306,7 +306,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                     group.NumVisibleChildren = childrenCount;
                     group.NumIgnoredChildren = ignoredChildrenCount;
-                    group.DisplayName = groupName;
+                    group.DisplayName = string.IsNullOrEmpty(groupName) ? Styles.EmptyGroup : groupName;
                     group.GroupId = null;
 
                     if (childrenCount > 0)
@@ -1208,6 +1208,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly GUIContent MixedSeverity = L10n.TextContent("Mixed", null, null, null);
             public static readonly string NoItemsFound = L10n.Tr("No {0} found.", null);
             public static readonly string NoItemsMatchFilters = L10n.Tr("No items match the current filters.", null);
+            public static readonly string EmptyGroup = L10n.Tr("(None)", null);
         }
     }
 }

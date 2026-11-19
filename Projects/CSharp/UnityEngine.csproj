@@ -3199,6 +3199,9 @@
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.cs">
       <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableEditorHooks.cs">
+      <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableEditorHooks.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableInterfaces.cs">
       <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableInterfaces.cs</Link>
     </Compile>
@@ -5349,6 +5352,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderedBounds.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderedBounds.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRepaintUpdater.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRepaintUpdater.cs</Link>
@@ -8127,7 +8133,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_nh3jbtdi/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_4xuebtzk/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

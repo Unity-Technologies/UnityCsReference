@@ -97,7 +97,7 @@ public partial class LocalizedEntry<TEntry> : LocalizedReference where TEntry : 
     /// </example>
     public Awaitable<TEntry> GetEntryAsync(CancellationToken cancellationToken = default)
     {
-        if (!LocalizationSettings.InitializationSettled)
+        if (!LocalizationSettings.InitializationSettledFor(ResolveOverrideLocale()))
             return InitializeThenResolveAsync(cancellationToken);
         return GetEntryAsync(ResolvingLocale(), cancellationToken);
     }
@@ -114,7 +114,7 @@ public partial class LocalizedEntry<TEntry> : LocalizedReference where TEntry : 
 
     async Awaitable<TEntry> InitializeThenResolveAsync(CancellationToken cancellationToken)
     {
-        await LocalizationSettings.EnsureInitializedForUse();
+        await LocalizationSettings.EnsureInitializedForUse(cancellationToken);
         return await GetEntryAsync(ResolvingLocale(), cancellationToken);
     }
 
@@ -139,9 +139,10 @@ public partial class LocalizedEntry<TEntry> : LocalizedReference where TEntry : 
     /// Read an entry from an already-loaded table.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedEntryGetEntryExample.cs"/>
     /// </example>
-    public TEntry GetEntry()
+    public TEntry GetEntry() => IsEmpty ? null : GetEntry(SyncResolvingLocale());
+
+    internal TEntry GetEntry(Locale locale)
     {
-        var locale = ResolvingLocale();
         var localeId = locale != null ? locale.Identifier : default;
         if (TryGetCachedEntry(localeId, out var cached))
             return cached;

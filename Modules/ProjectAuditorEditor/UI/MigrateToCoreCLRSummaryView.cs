@@ -77,10 +77,19 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (m_ViewManager.Report == null)
                 return;
 
+            if (!m_ViewManager.HasPendingCategories() && !m_ViewManager.Report.HasCategory(IssueCategory.Code))
+            {
+                Utility.DrawHelpBoxWithButton(Contents.CodeNotAnalyzedText, SharedContents.Analyze, MessageType.Info, () =>
+                {
+                    ProjectAuditorNavigator.RequestHomePage(HomePage.Tab.MigrateToCoreCLR);
+                });
+                return;
+            }
+
             EditorGUILayout.Space();
             DrawRuntimeVersions();
             EditorGUILayout.Space();
-            DrawSeverityBreakdown();
+            DrawIssueBreakdownSection();
 
             if (!m_ViewManager.HasPendingCategories() && m_Severities.TotalExcludingIgnoredAndFixed > 0)
             {
@@ -136,49 +145,12 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        void DrawSeverityBreakdown()
+        void DrawIssueBreakdownSection()
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
 
-            EditorGUILayout.LabelField(SharedContents.Summary, SharedStyles.BoldLabel);
-
-            // In progress
-            if (m_ViewManager.HasPendingCategories())
-            {
-                DrawAnalysisInProgress();
-                EditorGUILayout.EndVertical();
-                return;
-            }
-
-            var ignoredAndFixedInfo = BuildIgnoredFixedInfo(m_IgnoredIssueCount, m_FixedIssueCount);
-
-            if (m_Severities.TotalExcludingIgnoredAndFixed == 0)
-            {
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    EditorGUILayout.LabelField(
-                        m_ViewManager.Report.HasCategory(IssueCategory.Code) ? Contents.NoIssuesText : Contents.CodeNotAnalyzedText,
-                        SharedStyles.Label);
-
-                    if (!string.IsNullOrEmpty(ignoredAndFixedInfo))
-                    {
-                        GUILayout.Label(ignoredAndFixedInfo, SharedStyles.LabelRichTextGrey);
-                        GUILayout.FlexibleSpace();
-                    }
-                }
-            }
-            else
-            {
-                var majorAndCritical = m_Severities.MajorAndCritical;
-                if (majorAndCritical == 0)
-                    EditorGUILayout.LabelField(Contents.NoMajorIssuesText, SharedStyles.Label);
-                else
-                    EditorGUILayout.LabelField(string.Format(majorAndCritical == 1 ? Contents.SevereCountFormat : Contents.SevereCountPluralFormat, majorAndCritical), SharedStyles.Label);
-
-                GUILayout.Space(6);
-
-                DrawChartBar(horizontalPadding: 2, () => BuildSeverityChartElements(m_Severities));
-            }
+            EditorGUILayout.LabelField(Contents.IssuesBySeverity, SharedStyles.BoldLabel);
+            DrawChartBar(() => BuildSeverityChartElements(m_Severities));
 
             EditorGUILayout.EndVertical();
         }
@@ -189,18 +161,15 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             m_ShowTopTenIssues = Utility.BoldFoldout(m_ShowTopTenIssues, Contents.TopTenIssuesContent);
             if (m_ShowTopTenIssues)
+            {
+                DrawTopTenLabel(
+                    Contents.NoIssuesText, Contents.NoMajorIssuesText, Contents.SevereCountFormat, Contents.SevereCountPluralFormat,
+                    m_Severities.TotalExcludingIgnoredAndFixed, m_Severities.MajorAndCritical);
+
                 DrawTopTenIssues(m_TopTen, IsIssueIgnoredOrFiltered);
+            }
 
             EditorGUILayout.EndVertical();
-        }
-
-        static void DrawAnalysisInProgress()
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.Space(20);
-                DrawAnalysisInProgressLabel(Contents.Migration);
-            }
         }
 
         static class Contents
@@ -210,13 +179,13 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent TargetRuntime = L10n.TextContent("Target runtime:", null, null, null);
             public static readonly GUIContent MonoRuntimeValue = L10n.TextContent("Mono (.NET Standard 2.1)", null, null, null);
             public static readonly GUIContent CoreCLRRuntimeValue = L10n.TextContent("CoreCLR (.NET 10)", null, null, null);
+            public static readonly GUIContent IssuesBySeverity = L10n.TextContent("Issues by Severity", null, null, null);
 
-            public static readonly string SevereCountFormat = L10n.Tr("{0} issue will cause compilation failures or runtime exceptions on CoreCLR.", null);
-            public static readonly string SevereCountPluralFormat = L10n.Tr("{0} issues will cause compilation failures or runtime exceptions on CoreCLR.", null);
+            public static readonly string SevereCountFormat = L10n.Tr("{0} issue may cause compilation failures or runtime exceptions on CoreCLR.", null);
+            public static readonly string SevereCountPluralFormat = L10n.Tr("{0} issues may cause compilation failures or runtime exceptions on CoreCLR.", null);
             public static readonly string NoIssuesText = L10n.Tr("No CoreCLR migration issues found.", null);
             public static readonly string NoMajorIssuesText = L10n.Tr("No major CoreCLR migration issues found.", null);
             public static readonly string CodeNotAnalyzedText = L10n.Tr("Code analysis is not yet included in this report.", null);
-            public static readonly string Migration = L10n.Tr("Migration", null);
         }
     }
 }

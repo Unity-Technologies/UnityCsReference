@@ -724,6 +724,7 @@ namespace UnityEngine.UIElements.UIR
             if (m_BlockDirtyRegistration)
                 throw new InvalidOperationException("VisualElements cannot be removed from an active visual tree during generateVisualContent callback execution nor during visual tree rendering");
 
+            MarkRenderedBoundsDirty(ve);
             m_StatsElementsRemoved += RenderEvents.DepthFirstOnElementRemoving(this, ve);
 
 
@@ -776,8 +777,17 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        // See RenderTree.m_RenderedBounds
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void MarkRenderedBoundsDirty(VisualElement ve)
+        {
+            ve.renderData?.renderTree.MarkRenderedBoundsDirty();
+            ve.nestedRenderData?.renderTree.MarkRenderedBoundsDirty();
+        }
+
         public void UIEOnClippingChanged(VisualElement ve, bool hierarchical)
         {
+            MarkRenderedBoundsDirty(ve);
             RegisterDirty(ve, RenderDataDirtyTypes.Clipping | (hierarchical ? RenderDataDirtyTypes.ClippingHierarchy : 0), RenderDataDirtyTypeClasses.Clipping);
         }
 
@@ -796,11 +806,13 @@ namespace UnityEngine.UIElements.UIR
             RenderDataDirtyTypes flags =
                 (transformChanged ? RenderDataDirtyTypes.Transform : RenderDataDirtyTypes.None) |
                 (clipRectSizeChanged ? RenderDataDirtyTypes.ClipRectSize : RenderDataDirtyTypes.None);
+            MarkRenderedBoundsDirty(ve);
             RegisterDirty(ve, flags, RenderDataDirtyTypeClasses.TransformSize);
         }
 
         public void UIEOnVisualsChanged(VisualElement ve, bool hierarchical)
         {
+            MarkRenderedBoundsDirty(ve);
             RegisterDirty(ve, RenderDataDirtyTypes.Visuals | (hierarchical ? RenderDataDirtyTypes.VisualsHierarchy : 0), RenderDataDirtyTypeClasses.Visuals);
         }
 
@@ -848,6 +860,7 @@ namespace UnityEngine.UIElements.UIR
                 if (m_BlockDirtyRegistration)
                     throw new InvalidOperationException("VisualElements cannot change their display style during generateVisualContent callback execution nor during visual tree rendering");
 
+                MarkRenderedBoundsDirty(ve);
                 CommandManipulator.DisableElementRendering(this , ve, ve.disableRendering);
             }
         }

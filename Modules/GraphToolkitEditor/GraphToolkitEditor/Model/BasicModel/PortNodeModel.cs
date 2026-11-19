@@ -21,6 +21,9 @@ namespace Unity.GraphToolkit.Editor
         internal bool IsPortBeingReused { get; set; }
 
         /// <inheritdoc />
+        public override bool HasAccentBar => true;
+
+        /// <inheritdoc />
         #pragma warning disable UAC2001 // Avoid Linq
         public override IEnumerable<GraphElementModel> DependentModels => base.DependentModels.Concat(GetPorts());
 #pragma warning restore UAC2001

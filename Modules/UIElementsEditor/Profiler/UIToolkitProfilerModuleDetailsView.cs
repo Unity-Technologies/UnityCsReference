@@ -138,13 +138,13 @@ namespace UnityEditor.UIElements
             });
 
             columns.Add(MakePanelCountColumn("hierarchyChanges", L10n.Tr("Hierarchy Changes", null),
-                L10n.Tr("Number of hierarchy version changes (add/remove/reparent of VisualElements) since the previous frame.", null),
+                L10n.Tr("Number of hierarchy changes (add, remove, or reparent of visual elements) on this panel during the frame.", null),
                 r => r.hierarchyVersionChanges));
-            columns.Add(MakePanelCountColumn("repaintChanges", L10n.Tr("Repaint Changes", null),
-                L10n.Tr("Number of repaint version changes since the previous frame. High values indicate elements are being marked dirty frequently.", null),
+            columns.Add(MakePanelCountColumn("repaintChanges", L10n.Tr("Panel Changes", null),
+                L10n.Tr("Number of changes to visual elements (style, layout, transform, hierarchy, and others) on this panel during the frame. High values indicate elements are being marked dirty frequently.", null),
                 r => r.repaintVersionChanges));
-            columns.Add(MakePanelCountColumn("veCount", L10n.Tr("VE Count", null),
-                L10n.Tr("Total number of VisualElements in this panel's hierarchy.", null),
+            columns.Add(MakePanelCountColumn("veCount", L10n.Tr("Visual Elements", null),
+                L10n.Tr("Total number of visual elements in this panel's hierarchy.", null),
                 r => r.visualElementCount));
 
             // Flat list (no children); using the tree variant gives us a totals row and consistent

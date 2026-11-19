@@ -202,7 +202,7 @@ public static partial class PluralRules
     /// Mapping of each two-letter ISO language code to its <see cref="PluralRuleDelegate"/>.
     /// </summary>
     [AutoStaticsCleanupOnCodeReload] // public dictionary of delegates; drop user-added entries on reload
-    public static Dictionary<string, PluralRuleDelegate> IsoLangToDelegate { get; } = new(k_DefaultLangToDelegate);
+    public static Dictionary<string, PluralRuleDelegate> IsoLangToDelegate { get; internal set; } = new(k_DefaultLangToDelegate);
 
     /// <summary>
     /// Restores the built-in pluralization rule for every language.

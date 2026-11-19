@@ -33,6 +33,20 @@ class PlayLoopAnimationRequest : AccentRequest
     }
 }
 
+class PauseLoopAnimationRequest : AccentRequest
+{
+    public override Group requestGroup => Group.Animation;
+
+    // Speed of the paused animation, needed to restart it in a paused state when re-executing the request.
+    public float animationSpeed;
+
+    public PauseLoopAnimationRequest(Hash128 targetID, float animationSpeed)
+    {
+        TargetID = targetID;
+        this.animationSpeed = animationSpeed;
+    }
+}
+
 class StopLoopAnimationRequest : AccentRequest
 {
     public override Group requestGroup => Group.Animation;

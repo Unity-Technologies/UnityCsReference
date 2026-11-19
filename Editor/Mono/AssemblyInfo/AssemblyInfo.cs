@@ -16,7 +16,7 @@ using UnityEngine;
 
 // ADD_NEW_PLATFORM_HERE
 [assembly: InternalsVisibleTo("Unity.LiveNotes")]
-[assembly: InternalsVisibleTo("Unity.Audio.Tests")]
+[assembly: InternalsVisibleTo("Unity.Modules.Audio.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.Burst")]
 [assembly: InternalsVisibleTo("Unity.Burst.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.BurstModule")]
@@ -124,6 +124,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Unity.Modules.Audio.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorResources.Authoring")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorResources.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.Tilemap.Tests.Editor")]
@@ -214,6 +215,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.ShaderGraph.Editor")]
 [assembly: InternalsVisibleTo("Unity.Testing.SRP.Universal.Foundation.Editor")]
+[assembly: InternalsVisibleTo("Universal2DEditorTests")]
 
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]

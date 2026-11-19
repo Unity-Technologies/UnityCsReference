@@ -71,7 +71,7 @@ sealed class WireVisualManager
             return;
         }
 
-        if (m_Session.GraphView != null && !TryGetWireViews(wireReference, out _))
+        if (!IsWireValid(wireReference))
         {
             WireVisualStore.Clear(wireReference);
             return;
@@ -109,15 +109,28 @@ sealed class WireVisualManager
         UpdateVisualData(wireReference, data =>
         {
             data.IsAnimating = true;
+            data.IsPaused = false;
             data.AnimationSpeed = animationSpeed;
         });
     }
 
     internal void StopAnimation(WireReference wireReference)
-        => UpdateVisualData(wireReference, data => data.IsAnimating = false);
+    {
+        UpdateVisualData(wireReference, data =>
+        {
+            data.IsAnimating = false;
+            data.IsPaused = false;
+        });
+    }
 
     internal void PauseAnimation(WireReference wireReference)
     {
+        // Only a playing animation can be paused, matching GraphAnimator.Pause.
+        if (!WireVisualStore.TryGet(wireReference, out var data) || !data.IsAnimating || data.IsPaused)
+            return;
+
+        data.IsPaused = true;
+
         var graphView = m_Session.GraphView;
         if (!m_Enabled || graphView == null)
             return;
@@ -141,7 +154,7 @@ sealed class WireVisualManager
     {
         WireVisualStore.Clear(wireReference);
 
-        if (m_Session.GraphView != null && !TryGetWireViews(wireReference, out _))
+        if (!IsWireValid(wireReference))
             return;
 
         ClearWireVisual(wireReference);
@@ -170,12 +183,13 @@ sealed class WireVisualManager
 
     internal void ShowAll(bool show)
     {
-        if (m_Session.GraphView == null)
+        var graphView = m_Session.GraphView;
+        if (graphView == null)
             return;
 
         foreach (var (key, appearance) in WireVisualStore.AllWireVisuals)
         {
-            if (!TryGetWireViews(key.OutputPortID, key.InputPortID, out var wireViews))
+            if (!TryGetWireViews(graphView, key.OutputPortID, key.InputPortID, out var wireViews))
                 continue;
 
             foreach (var wireView in wireViews)
@@ -185,30 +199,56 @@ sealed class WireVisualManager
         }
     }
 
+    bool IsWireValid(WireReference wireReference)
+    {
+        // Resolve the ports through the session so that a wire of a displayed asset subgraph is not reported invalid.
+        return m_Session.GraphModel == null
+            || (m_Session.TryResolveElement(wireReference.OutputPortID, out var outputElement)
+                && m_Session.TryResolveElement(wireReference.InputPortID, out var inputElement)
+                && TryResolveVirtualWire(outputElement, inputElement, out _));
+    }
+
+    static bool TryResolveVirtualWire(GraphModel graphModel, Hash128 outputPortID, Hash128 inputPortID, out VirtualWire virtualWire)
+    {
+        virtualWire = null;
+
+        return graphModel.TryGetModelFromGuid(outputPortID, out var outputElement, true)
+            && graphModel.TryGetModelFromGuid(inputPortID, out var inputElement, true)
+            && TryResolveVirtualWire(outputElement, inputElement, out virtualWire);
+    }
+
+    static bool TryResolveVirtualWire(GraphElementModel outputElement, GraphElementModel inputElement, out VirtualWire virtualWire)
+    {
+        virtualWire = null;
+
+        if (outputElement is not PortModel outputPort || outputPort.Direction != PortDirection.Output)
+            return false;
+
+        if (inputElement is not PortModel inputPort || inputPort.Direction != PortDirection.Input)
+            return false;
+
+        if (outputPort.GraphModel != inputPort.GraphModel)
+            return false;
+
+        return VirtualWireBuilder.TryGetVirtualWire(outputPort, inputPort, out virtualWire);
+    }
+
     bool TryGetWireViews(WireReference wireReference, out List<WireView> wireViews)
         => TryGetWireViews(wireReference.OutputPortID, wireReference.InputPortID, out wireViews);
 
     bool TryGetWireViews(Hash128 outputPortID, Hash128 inputPortID, out List<WireView> wireViews)
+        => TryGetWireViews(m_Session.GraphView, outputPortID, inputPortID, out wireViews);
+
+    static bool TryGetWireViews(GraphView graphView, Hash128 outputPortID, Hash128 inputPortID, out List<WireView> wireViews)
     {
         wireViews = null;
 
-        var graphView = m_Session.GraphView;
-        if (graphView == null)
-            return false;
-
-        var graphModel = graphView.GraphModel;
-        if (!graphModel.TryGetModelFromGuid(outputPortID, out PortModel outputPort) || outputPort.Direction != PortDirection.Output)
-            return false;
-
-        if (!graphModel.TryGetModelFromGuid(inputPortID, out PortModel inputPort) || inputPort.Direction != PortDirection.Input)
-            return false;
-
-        if (outputPort.GraphModel != graphModel || inputPort.GraphModel != graphModel)
+        if (graphView?.GraphModel == null)
             return false;
 
         // A single public wire reference can map to multiple WireModels via the virtual wire (e.g. when
         // portals are involved), so we need to walk every underlying model to collect its view.
-        if (!VirtualWireBuilder.TryGetVirtualWire(outputPort, inputPort, out var virtualWire))
+        if (!TryResolveVirtualWire(graphView.GraphModel, outputPortID, inputPortID, out var virtualWire))
             return false;
 
         var wireModels = virtualWire.Wires;
@@ -234,9 +274,6 @@ sealed class WireVisualManager
 
     void ClearWireVisual(Hash128 outputPortID, Hash128 inputPortID)
     {
-        if (m_Session.GraphView == null)
-            return;
-
         if (!TryGetWireViews(outputPortID, inputPortID, out var wireViews))
             return;
 
@@ -248,10 +285,7 @@ sealed class WireVisualManager
 
     void SetWireVisual(WireReference wireReference, WireVisualData visualData)
     {
-        if (m_Session.GraphView == null || !Enabled)
-            return;
-
-        if (!TryGetWireViews(wireReference, out var wireViews))
+        if (!Enabled || !TryGetWireViews(wireReference, out var wireViews))
             return;
 
         foreach (var wireView in wireViews)

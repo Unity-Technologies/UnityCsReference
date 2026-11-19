@@ -679,14 +679,8 @@ internal static unsafe partial class SerializationBackendManagedCommands
         // write-side InvokeMethodCommand), so this is the single OBS invocation
         // for the callsite — see EmitInvokeInterfaceMethodCommandIfRequired.
 
-        // Instance methods on value types take their `this` as a managed byref to the
-        // struct data (NOT as a boxed MonoObject*). On Mono/IL2CPP the build side resolves
-        // the function pointer via GetMethodFunctionPointer -> MethodInfo.MethodHandle.
-        // GetFunctionPointer, which returns the underlying value-type instance entry. On
-        // CoreCLR that instance entry is not directly callable, so GetInterfaceMethodFunctionPointer
-        // returns the entry of a static StructCallbackInvokerHelper<T> shim instead. Either way
-        // the stored pointer is a `delegate*<ref byte, void>`, so passing `ref baseAddr` to the
-        // struct's inline data matches the ABI the calli expects.
+        // Mono/CoreCLR: fnPtr is a static StructCallbackInvokerHelper<T> entry taking `ref T`.
+        // IL2CPP: fnPtr is the struct method's instance entry, which takes `this` by ref.
         try
         {
             ((delegate*<ref byte, void>)fnPtr)(ref baseAddr);

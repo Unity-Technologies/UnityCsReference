@@ -810,6 +810,20 @@ namespace UnityEngine.UIElements
         // Authoring panels rely on this default; only the PanelSettings-owned game view panel overrides it.
         internal virtual bool animationPlaybackSuspended => false;
 
+        // On the panel because toggling clip playback replaces the animation system.
+        HashSet<VisualElement> m_PreviewingClipOwners;
+
+        internal void SetClipOwnerPreviewing(VisualElement owner, bool isPreviewing)
+        {
+            if (isPreviewing)
+                (m_PreviewingClipOwners ??= new HashSet<VisualElement>()).Add(owner);
+            else
+                m_PreviewingClipOwners?.Remove(owner);
+        }
+
+        internal bool IsClipOwnerPreviewing(VisualElement owner) =>
+            m_PreviewingClipOwners != null && m_PreviewingClipOwners.Contains(owner);
+
         public abstract ContextType contextType { get; }
 
         private TimeFunction m_TimeSinceStartupFunc;

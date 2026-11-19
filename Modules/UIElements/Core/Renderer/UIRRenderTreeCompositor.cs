@@ -336,7 +336,10 @@ namespace UnityEngine.UIElements.UIR
                     }
 
                     var owner = op.renderTree.rootRenderData.owner;
-                    Rect veBB = BoxShadowBounds.EncapsulateOuterShadow(owner, owner.boundingBox);
+                    // Only nested render trees are drawn into a texture sized from these bounds: the root tree doesn't walk the panel
+                    Rect veBB = op.parent != null
+                        ? op.renderTree.GetRenderedBounds()
+                        : BoxShadowBounds.EncapsulateOuterShadow(owner, owner.boundingBox);
                     if (UIRUtility.RectHasArea(veBB))
                         bounds = bounds == null ? veBB : UIRUtility.Encapsulate(bounds.Value, veBB);
                     else

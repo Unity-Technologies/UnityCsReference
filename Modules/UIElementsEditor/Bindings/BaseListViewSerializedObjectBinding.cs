@@ -82,9 +82,25 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
+        void RefreshPropertiesIfCountIsNot(int expectedCount)
+        {
+            if (properties.Count != expectedCount)
+                RefreshProperties();
+        }
+
+        void SyncPropertiesWithMinArraySize()
+        {
+            if (ArrayProperty.serializedObject.isEditingMultipleObjects && !IsOverMaxMultiEditLimit)
+                RefreshPropertiesIfCountIsNot(ArrayProperty.minArraySize);
+        }
+
         public object this[int index]
         {
-            get { return properties[index]; }
+            get
+            {
+                SyncPropertiesWithMinArraySize();
+                return properties[index];
+            }
             set { throw new NotImplementedException(); }
         }
 
@@ -101,7 +117,9 @@ namespace UnityEditor.UIElements.Bindings
                    if (IsOverMaxMultiEditLimit)
                         return 0;
 
-                   return ArrayProperty.minArraySize;
+                   var minArraySize = ArrayProperty.minArraySize;
+                   RefreshPropertiesIfCountIsNot(minArraySize);
+                   return minArraySize;
                 }
                 return properties != null ? properties.Count : 0;
             }
@@ -141,6 +159,7 @@ namespace UnityEditor.UIElements.Bindings
 
         public IEnumerator GetEnumerator()
         {
+            SyncPropertiesWithMinArraySize();
             return properties.GetEnumerator();
         }
 
@@ -150,6 +169,7 @@ namespace UnityEditor.UIElements.Bindings
 
             if (value != null && prop != null)
             {
+                SyncPropertiesWithMinArraySize();
                 return properties.IndexOf(prop);
             }
 

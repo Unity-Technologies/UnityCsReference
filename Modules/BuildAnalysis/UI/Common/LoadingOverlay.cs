@@ -8,7 +8,9 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Analysis
 {
-    internal sealed class LoadingOverlay : VisualElement
+    // Addressables' UXML uses this tag. To rename it, keep the old name with [MovedFrom].
+    [UxmlElement]
+    internal sealed partial class LoadingOverlay : VisualElement
     {
         private static readonly string ussClassName = "loading-overlay";
         private static readonly string spinnerUssClassName = ussClassName + "__spinner";

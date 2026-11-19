@@ -245,7 +245,9 @@ static partial class UIAssetRegistrySceneTracking
     /// <remarks>
     /// <para>
     /// For the deliberate, one-shot operations that settle an asset: saving or discarding a single asset from a
-    /// menu, and every discard through <see cref="UIAssetRegistry.DiscardAsset"/>. Their reimport rebuilds
+    /// menu, every save through <see cref="UIAssetRegistry.SaveAsset"/>, <see cref="UIAssetRegistry.SaveAssets"/>
+    /// and <see cref="UIAssetRegistry.SaveAll"/>, and every discard through
+    /// <see cref="UIAssetRegistry.DiscardAsset"/>. Their reimport rebuilds
     /// the document's asset tree, so every live element cloned from it is left pointing at a
     /// <see cref="VisualElementAsset"/> that has left the document. Deferring the re-clone means the editor
     /// draws a frame against that stale tree — the class names in the hierarchy flicker as the style sheet
@@ -253,8 +255,8 @@ static partial class UIAssetRegistrySceneTracking
     /// elements are gone, which is where its console errors come from.
     /// </para>
     /// <para>
-    /// Safe to run inline here, unlike from an edit command (see <see cref="ScheduleReload"/>): a menu action
-    /// or an unsaved-changes prompt holds none of the elements the re-clone releases.
+    /// Safe to run inline here, unlike from an edit command (see <see cref="ScheduleReload"/>): a menu action,
+    /// a save command or an unsaved-changes prompt holds none of the elements the re-clone releases.
     /// </para>
     /// </remarks>
     internal static void FlushPendingReloadNow() => FlushPendingReload();

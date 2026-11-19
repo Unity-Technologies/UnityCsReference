@@ -2760,22 +2760,22 @@ namespace UnityEngine.UIElements
         public Action<MeshGenerationContext> generateVisualContent
         {
             // A text element draws its text through a flag rather than by subscribing, so the delegate
-            // stays null on the elements that only ever wanted the default. The accessors put the handler
-            // back in the value they hand out and take it back off the value they are given, so `+=`,
-            // plain assignment and `= null` keep behaving exactly as they did when it was a real
-            // subscription: assigning replaces the text drawing, appending keeps it.
+            // stays null on the elements that only ever wanted the default. While the flag is set, the
+            // stored delegate is null or starts with the default handler, so `+=`, plain assignment and
+            // `= null` behave as they did for a real subscription: assigning replaces the text drawing,
+            // appending keeps it.
             get
             {
                 if ((m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) == 0)
                     return storedGenerateVisualContent;
 
-                return k_DefaultTextGenerateContent + storedGenerateVisualContent;
+                return storedGenerateVisualContent ?? k_DefaultTextGenerateContent;
             }
             set
             {
                 var toStore = (m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) == 0
                     ? value
-                    : StripDefaultTextGenerateContent(value);
+                    : NormalizeDefaultTextGenerateContent(value);
 
                 // Clearing something that was never stored must not create the storage.
                 if (toStore == null && (m_Flags & VisualElementFlags.HasPaintingComponent) == 0)
@@ -2785,9 +2785,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // Returns what to store, and clears the flag unless `value` still starts with the default text
-        // handler. Only reached on an element that currently draws default text.
-        Action<MeshGenerationContext> StripDefaultTextGenerateContent(Action<MeshGenerationContext> value)
+        // Returns what to store, and clears the flag unless `value` is the default text handler or starts
+        // with it. Only reached on an element that currently draws default text.
+        Action<MeshGenerationContext> NormalizeDefaultTextGenerateContent(Action<MeshGenerationContext> value)
         {
             if (value == null)
             {
@@ -2800,38 +2800,29 @@ namespace UnityEngine.UIElements
 
             var handlers = value.GetInvocationList();
             if (handlers.Length < 2 || !ReferenceEquals(handlers[0], k_DefaultTextGenerateContent))
-            {
                 m_Flags &= ~VisualElementFlags.UseDefaultTextGenerateContent;
-                return value;
-            }
 
-            Action<MeshGenerationContext> rest = null;
-            for (var i = 1; i < handlers.Length; i++)
-                rest += (Action<MeshGenerationContext>)handlers[i];
-
-            return rest;
+            return value;
         }
 
         static readonly Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new(ProfilerCategory.UIToolkit, "GenerateVisualContent");
 
         internal void InvokeGenerateVisualContent(MeshGenerationContext mgc)
         {
-            var drawsDefaultText = (m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) != 0;
             var callback = storedGenerateVisualContent;
+            var drawsOnlyDefaultText = callback == null && (m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) != 0;
 
-            if (!drawsDefaultText && callback == null)
+            if (callback == null && !drawsOnlyDefaultText)
                 return;
 
             try
             {
                 using (k_GenerateVisualContentMarker.Auto())
                 {
-                    // Ordered as the subscription was: the text first, then anything added after it. An
-                    // exception in the text handler skips the rest, exactly as it did in the multicast.
-                    if (drawsDefaultText)
+                    if (drawsOnlyDefaultText)
                         TextElement.OnGenerateVisualContent(mgc);
-
-                    callback?.Invoke(mgc);
+                    else
+                        callback.Invoke(mgc);
                 }
             }
             catch (Exception e)

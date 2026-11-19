@@ -167,6 +167,84 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
+        /// Options for what happens to bodies and worlds when a scene loads in Single mode, or when you open a scene in the Editor.
+        /// </summary>
+        /// <remarks>
+        /// A Single mode load closes every open scene, which destroys the GameObjects in them.
+        /// Bodies and worlds are not GameObjects, so this setting decides which of them are destroyed at the same time.
+        ///
+        /// Whatever the setting, a body or world is never destroyed when its owner is a GameObject, or a component on a GameObject, that the load keeps.
+        /// The load keeps a GameObject that you moved to the DontDestroyOnLoad scene with <see cref="UnityEngine.Object.DontDestroyOnLoad"/>, or one that has <see cref="HideFlags.DontSave"/> set.
+        /// Any other owner does not keep its bodies and worlds, including an asset such as a ScriptableObject, even though the load does not unload the asset.
+        /// You set a body's owner with <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/> and a world's owner with <see cref="PhysicsWorld.SetOwner(UnityEngine.Object)"/>.
+        /// A world is also kept while it holds a body whose owner survives.
+        ///
+        /// A body keeps its shapes and chains.
+        /// A joint is destroyed when either of the two bodies it connects is destroyed.
+        /// A world that is kept, including the default world, keeps any settings your scripts changed, such as its gravity.
+        ///
+        /// This setting has no effect on an additive scene load, on unloading a scene, or on entering and exiting Play mode in the Editor.
+        /// Additive loads and unloads never destroy bodies or worlds.
+        /// Entering and exiting Play mode destroys every body and world and creates the default world again from the project settings.
+        /// The one exception is entering Play mode with both Reload Domain and Reload Scene disabled, which keeps everything.
+        ///
+        /// Set it in the project settings with <see cref="PhysicsCoreSettings2D.sceneLoadMode"/>, and read it at runtime with <see cref="PhysicsWorld.sceneLoadMode"/>.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Keep a body when the next scene loads, by giving it an owner that survives the load.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class KeepBodyAcrossScenes : MonoBehaviour
+        /// {
+        ///     PhysicsBody m_Body;
+        ///     int m_OwnerKey;
+        ///
+        ///     void Start()
+        ///     {
+        ///         // Move this GameObject to the DontDestroyOnLoad scene so it survives a Single mode load.
+        ///         DontDestroyOnLoad(gameObject);
+        ///
+        ///         // Create a body owned by this component, so the body is kept when a scene loads.
+        ///         m_Body = PhysicsWorld.defaultWorld.CreateBody();
+        ///         m_OwnerKey = m_Body.SetOwner(this);
+        ///     }
+        ///
+        ///     void OnDestroy()
+        ///     {
+        ///         // An owned body can only be destroyed with the owner key that SetOwner returned.
+        ///         if (m_Body.isValid)
+        ///             m_Body.Destroy(m_OwnerKey);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public enum SceneLoadMode
+        {
+            /// <summary>
+            /// Destroys the bodies and worlds whose owner does not survive the load, apart from the default world, which is always kept.
+            /// </summary>
+            /// <remarks>
+            /// When nothing at all survives the load, the default world is also reset, so a scene behaves the same way every time it loads.
+            /// When something survives, the default world is not reset.
+            /// A script that survives the load can still hold a handle to a destroyed body, and after a reset a new body could take that body's handle, so the script would act on the wrong body.
+            /// </remarks>
+            Automatic,
+
+            /// <summary>
+            /// Keeps every body and world, so your scripts decide what to destroy.
+            /// </summary>
+            /// <remarks>
+            /// The default world is not reset.
+            /// To reset it yourself, destroy everything in it, then call <see cref="PhysicsWorld.Reset"/>.
+            /// </remarks>
+            Manual
+        }
+
+        /// <summary>
         /// Defines how the 2D Transforms from each <see cref="PhysicsBody"/> are written to the 3D Transform system.
         /// </summary>
         public enum TransformWriteMode
@@ -692,6 +770,15 @@ namespace Unity.U2D.Physics
         public static RenderingMode renderingMode => PhysicsGlobal_GetRenderingMode();
 
         /// <summary>
+        /// The bodies and worlds destroyed when a scene loads in Single mode, as set in the project settings.
+        /// </summary>
+        /// <remarks>
+        /// This is the value of <see cref="PhysicsCoreSettings2D.sceneLoadMode"/> in the project settings, and you cannot change it from a script.
+        /// See <see cref="PhysicsWorld.SceneLoadMode"/> for what each value does.
+        /// </remarks>
+        public static SceneLoadMode sceneLoadMode => PhysicsGlobal_GetSceneLoadMode();
+
+        /// <summary>
         /// Get the current value of <see cref="PhysicsCoreSettings2D.contactFilterMode"/>.
         /// </summary>
         /// <remarks>
@@ -927,6 +1014,11 @@ namespace Unity.U2D.Physics
         /// <remarks>
         /// A snapshot owns native memory and must be disposed after use.
         /// A snapshot is only valid for the same Unity build that produced it and is not a portable on-disk format.
+        /// A snapshot stores the world's <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/>, <see cref="PhysicsChain"/> and <see cref="PhysicsJoint"/> objects.
+        /// It also stores their user data, owner user data and owner, and the transform write mode of each body.
+        /// Restoring a snapshot keeps each object's owner as information, but nothing restored is owned, because every owner key is restored as zero.
+        /// No restored body has a <see cref="PhysicsBody.transformObject"/>, so a restored world never writes to a Transform until you set one again.
+        /// Callback targets are not restored, and the world's own state, such as its user data, name and draw settings, is never changed by a restore.
         /// </remarks>
         public struct Snapshot : IDisposable
         {
@@ -972,18 +1064,46 @@ namespace Unity.U2D.Physics
         /// The world keeps the same handles, so any <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/> and <see cref="PhysicsJoint"/> you already hold remain valid.
         /// Applying a snapshot taken from a different world means existing handles for this world may alias objects restored from the snapshot or report invalid.
         /// The snapshot image is fully validated before the world is touched, so a rejected snapshot leaves the world unchanged.
+        /// A restore changes and destroys objects without their owner keys.
+        /// It is refused when this world is owned, or when any of its bodies, shapes, chains or joints is owned.
+        /// The default world is permanently owned by Unity, so a snapshot can be applied to it as long as none of its objects are owned.
         /// </summary>
         /// <remarks>
+        /// A world containing objects created by physics components can't be restored over itself, because those objects are owned.
+        /// Copy it into a new world instead, with <see cref="PhysicsWorld.Create(Snapshot, PhysicsWorldDefinition)"/> or <see cref="Clone(bool)"/>.
+        /// See <see cref="Snapshot"/> for what a restore brings back.
+        /// Use <see cref="ApplySnapshot(Snapshot, bool)"/> to destroy the objects that were owned when the snapshot was created.
         /// Validating and applying a snapshot processes the whole image, so this is not intended to be called at high frequency.
         /// </remarks>
         /// <param name="snapshot">A snapshot produced by <see cref="CreateSnapshot"/> on a compatible world.</param>
-        /// <returns>Whether the world was restored. Returns false if the snapshot or world is invalid, or the image is rejected, in which case the world is unchanged.</returns>
-        public readonly bool ApplySnapshot(Snapshot snapshot)
+        /// <returns>
+        /// Whether the world was restored.
+        /// Returns false if the snapshot or world is invalid, the world or any of its objects is owned, or the image is rejected, in which case the world is unchanged.
+        /// </returns>
+        public readonly bool ApplySnapshot(Snapshot snapshot) => ApplySnapshot(snapshot, false);
+
+        /// <summary>
+        /// Restore this world to the state captured in <paramref name="snapshot"/>, in place, optionally destroying the objects that were owned when the snapshot was created.
+        /// With <paramref name="removeOwned"/> set, each owned body is destroyed along with its attached shapes, chains and joints, whether or not they were owned.
+        /// An owned shape on a body that was not owned is destroyed and the body is kept.
+        /// </summary>
+        /// <remarks>
+        /// The restore is refused in the same cases as <see cref="ApplySnapshot(Snapshot)"/>, which this matches when <paramref name="removeOwned"/> is false.
+        /// See <see cref="Snapshot"/> for what a restore brings back.
+        /// Validating and applying a snapshot processes the whole image, so this is not intended to be called at high frequency.
+        /// </remarks>
+        /// <param name="snapshot">A snapshot produced by <see cref="CreateSnapshot"/> on a compatible world.</param>
+        /// <param name="removeOwned">Whether to destroy the objects that were owned when the snapshot was created, instead of keeping them as unowned objects.</param>
+        /// <returns>
+        /// Whether the world was restored.
+        /// Returns false if the snapshot or world is invalid, the world or any of its objects is owned, or the image is rejected, in which case the world is unchanged.
+        /// </returns>
+        public readonly bool ApplySnapshot(Snapshot snapshot, bool removeOwned)
         {
             if (!snapshot.IsCreated)
                 return false;
 
-            return PhysicsWorld_RestoreSnapshot(this, snapshot.AsReadOnlySpan());
+            return PhysicsWorld_RestoreSnapshot(this, snapshot.AsReadOnlySpan(), removeOwned);
         }
 
         /// <summary>
@@ -994,12 +1114,33 @@ namespace Unity.U2D.Physics
         /// <see cref="PhysicsWorldDefinition.gravity"/>, <see cref="PhysicsWorldDefinition.bounceThreshold"/>, <see cref="PhysicsWorldDefinition.bounceIterations"/>, <see cref="PhysicsWorldDefinition.bouncePropagation"/>, <see cref="PhysicsWorldDefinition.contactHitEventThreshold"/>, <see cref="PhysicsWorldDefinition.contactFrequency"/>, <see cref="PhysicsWorldDefinition.contactDamping"/>, <see cref="PhysicsWorldDefinition.contactSpeed"/>, <see cref="PhysicsWorldDefinition.contactRecycleDistance"/>, <see cref="PhysicsWorldDefinition.maximumLinearSpeed"/>, <see cref="PhysicsWorldDefinition.sleepingAllowed"/>, <see cref="PhysicsWorldDefinition.continuousAllowed"/>, <see cref="PhysicsWorldDefinition.eventGroupingAllowed"/> and <see cref="PhysicsWorldDefinition.capacity"/>.
         /// All other <paramref name="definition"/> properties are applied normally, for example <see cref="PhysicsWorldDefinition.simulationWorkers"/> and <see cref="PhysicsWorldDefinition.simulationSubSteps"/>.
         /// To use a value other than the snapshot's, set the matching property on the returned world after this call.
+        /// Nothing in the new world is owned, but each object keeps its owner as information.
+        /// No body has a transform object, so the new world never writes to the Transforms the source world drives.
+        /// Use <see cref="Create(Snapshot, PhysicsWorldDefinition, bool)"/> to leave out the objects that were owned when the snapshot was created.
         /// Creating and restoring a world processes the whole image, so this is not intended to be called at high frequency.
         /// </remarks>
         /// <param name="snapshot">A snapshot produced by <see cref="CreateSnapshot"/>.</param>
         /// <param name="definition">The world definition supplying the settings the snapshot does not store.</param>
         /// <returns>The created world restored to the snapshot state, or an invalid world if the snapshot was rejected or no world could be created.</returns>
-        public static PhysicsWorld Create(Snapshot snapshot, PhysicsWorldDefinition definition)
+        public static PhysicsWorld Create(Snapshot snapshot, PhysicsWorldDefinition definition) => Create(snapshot, definition, false);
+
+        /// <summary>
+        /// Creates a new <see cref="PhysicsWorld"/> from <paramref name="snapshot"/>, optionally leaving out the objects that were owned when the snapshot was created.
+        /// With <paramref name="removeOwned"/> set, each owned body is left out along with its attached shapes, chains and joints, whether or not they were owned.
+        /// An owned shape on a body that was not owned is left out and the body is kept.
+        /// </summary>
+        /// <remarks>
+        /// Use this to copy a world built by physics components into a separate world without the objects those components own.
+        /// The settings come from <paramref name="snapshot"/> and <paramref name="definition"/> in the same way as <see cref="Create(Snapshot, PhysicsWorldDefinition)"/>.
+        /// Nothing in the new world is owned, but each object keeps its owner as information.
+        /// No body has a transform object, so the new world never writes to the Transforms the source world drives.
+        /// Creating and restoring a world processes the whole image, so this is not intended to be called at high frequency.
+        /// </remarks>
+        /// <param name="snapshot">A snapshot produced by <see cref="CreateSnapshot"/>.</param>
+        /// <param name="definition">The world definition supplying the settings the snapshot does not store.</param>
+        /// <param name="removeOwned">Whether to leave out the objects that were owned when the snapshot was created, instead of keeping them as unowned objects.</param>
+        /// <returns>The created world restored to the snapshot state, or an invalid world if the snapshot was rejected or no world could be created.</returns>
+        public static PhysicsWorld Create(Snapshot snapshot, PhysicsWorldDefinition definition, bool removeOwned)
         {
             // Create returns an invalid world when no world slots remain (a finite resource, see allocatedWorldCapacity); skip the restore in that case.
             var world = Create(definition);
@@ -1007,7 +1148,7 @@ namespace Unity.U2D.Physics
                 return default;
 
             // A rejected snapshot leaves the fresh world empty rather than restored, so hand back an invalid world instead of a silently empty one.
-            if (!world.ApplySnapshot(snapshot))
+            if (!world.ApplySnapshot(snapshot, removeOwned))
             {
                 world.Destroy();
                 return default;
@@ -1022,13 +1163,31 @@ namespace Unity.U2D.Physics
         /// <remarks>
         /// The clone is a separate world, so handles you hold for this world do not resolve against it; enumerate the clone with <see cref="GetBodies"/> and similar.
         /// The clone is not owned and its <see cref="userData"/> is not copied; callback options come across but any callback targets must be set on the clone.
+        /// Nothing in the clone is owned, but each object keeps its owner as information.
+        /// No body has a transform object, so the clone never writes to the Transforms this world drives.
         /// </remarks>
         /// <returns>The cloned world.</returns>
-        public readonly PhysicsWorld Clone()
+        public readonly PhysicsWorld Clone() => Clone(false);
+
+        /// <summary>
+        /// Creates a new <see cref="PhysicsWorld"/> that is a copy of this world, optionally leaving out the objects that are owned.
+        /// With <paramref name="removeOwned"/> set, each owned body is left out along with its attached shapes, chains and joints, whether or not they were owned.
+        /// An owned shape on a body that is not owned is left out and the body is kept.
+        /// </summary>
+        /// <remarks>
+        /// Use this to copy a world built by physics components into a separate world without the objects those components own.
+        /// The clone is a separate world, so handles you hold for this world do not resolve against it; enumerate the clone with <see cref="GetBodies"/> and similar.
+        /// The clone is not owned and its <see cref="userData"/> is not copied; callback options come across but any callback targets must be set on the clone.
+        /// Nothing in the clone is owned, but each object keeps its owner as information.
+        /// No body has a transform object, so the clone never writes to the Transforms this world drives.
+        /// </remarks>
+        /// <param name="removeOwned">Whether to leave out the objects that are owned, instead of copying them as unowned objects.</param>
+        /// <returns>The cloned world.</returns>
+        public readonly PhysicsWorld Clone(bool removeOwned)
         {
             // Persistent rather than Temp: the intermediate image can be large for a big world, and this is not a hot path.
             using var snapshot = CreateSnapshot(Allocator.Persistent);
-            return Create(snapshot, definition);
+            return Create(snapshot, definition, removeOwned);
         }
 
         /// <summary>
@@ -1105,6 +1264,11 @@ namespace Unity.U2D.Physics
         /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.
         /// </summary>
+        /// <remarks>
+        /// The owner also decides whether the worlds are kept when a scene loads in Single mode.
+        /// They are kept when their owner is a GameObject, or a component on one, that is in the DontDestroyOnLoad scene or has <see cref="HideFlags.DontSave"/> set.
+        /// See <see cref="PhysicsWorld.SceneLoadMode"/>.
+        /// </remarks>
         /// <param name="worlds">The worlds to set ownership for.</param>
         /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
         /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
@@ -1116,6 +1280,11 @@ namespace Unity.U2D.Physics
         /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
         /// </summary>
+        /// <remarks>
+        /// The owner also decides whether the world is kept when a scene loads in Single mode.
+        /// The world is kept when its owner is a GameObject, or a component on one, that is in the DontDestroyOnLoad scene or has <see cref="HideFlags.DontSave"/> set.
+        /// See <see cref="PhysicsWorld.SceneLoadMode"/>.
+        /// </remarks>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
         public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => SetOwner(stackalloc PhysicsWorld[1] { this }, owner, ownerKey);
@@ -1126,6 +1295,11 @@ namespace Unity.U2D.Physics
         /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
         /// </summary>
+        /// <remarks>
+        /// The owner also decides whether the world is kept when a scene loads in Single mode.
+        /// The world is kept when its owner is a GameObject, or a component on one, that is in the DontDestroyOnLoad scene or has <see cref="HideFlags.DontSave"/> set.
+        /// See <see cref="PhysicsWorld.SceneLoadMode"/>.
+        /// </remarks>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <returns>The owner key assigned.</returns>
         public readonly int SetOwner(UnityEngine.Object owner)

@@ -50,6 +50,9 @@ namespace UnityEditor
         [NativeMethod("SetGroupNameOverridesIF")]
         extern internal static void SetGroupNameOverrides(string[] assemblyNames, string[] groupNames);
 
+        [NativeMethod("UnloadEditorLocalizationAssetsForTestsIF")]
+        extern internal static void UnloadEditorLocalizationAssetsForTests();
+
         [NativeMethod(Name = "EnableEditorLocalization", IsThreadSafe = true)]
         extern public static bool enableEditorLocalization { get; set; }
 

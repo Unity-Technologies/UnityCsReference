@@ -14,7 +14,7 @@ namespace UnityEditor
     static partial class LocalizationGroupOverrides
     {
         [OnCodeLoaded]
-        static void PushGroupNameOverrides()
+        internal static void PushGroupNameOverrides()
         {
             var assemblyNames = new List<string>();
             var groupNames = new List<string>();

@@ -176,6 +176,14 @@ namespace Unity.GraphToolkit.Editor
         internal GraphAnimator Animator => m_GraphAnimator;
 
         /// <summary>
+        /// Raised after <see cref="Update"/> rebuilds the whole UI tree, which recreates every graph element view.
+        /// </summary>
+        /// <remarks>
+        /// This happens when the displayed graph changes, including when navigating into or out of a local subgraph.
+        /// </remarks>
+        internal event Action uiTreeRebuilt;
+
+        /// <summary>
         /// The display mode.
         /// </summary>
         public GraphViewDisplayMode DisplayMode { get; }
@@ -3202,6 +3210,9 @@ namespace Unity.GraphToolkit.Editor
             }
 
             DoUpdateProcessingErrorMarkers(updateType);
+
+            if (updateType == UpdateType.Complete)
+                uiTreeRebuilt?.Invoke();
         }
 
         /// <summary>

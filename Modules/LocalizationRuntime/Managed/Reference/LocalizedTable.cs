@@ -47,7 +47,7 @@ public class LocalizedTable : LocalizedReference
     {
         if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return AwaitableUtility.FromResult<ResourceTable>(null);
-        if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
+        if (LocalizationSettings.PreferSyncResolve)
         {
             var table = GetTable();
             if (table != null)

@@ -78,7 +78,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 else if (issue.Id == MigrationToURPModule.k_QualitySettings3DNotReadyDescriptor.Id)
                     QualitySettings3DIssueCount++;
                 else
-                    AccumulateStat(issue, ref m_Stats, false);
+                    AccumulateStat(issue, ref m_Stats);
             }
         }
 
@@ -186,34 +186,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             EditorGUILayout.LabelField(Contents.IssuesByArea, SharedStyles.BoldLabel);
 
-            // In progress
-            if (m_ViewManager.HasPendingCategories())
-            {
-                DrawAnalysisInProgress();
-                EditorGUILayout.EndVertical();
-                return;
-            }
-
             var ignoredAndFixedInfo = BuildIgnoredFixedInfo(m_Stats.NumIgnoredAreaIssues, m_Stats.NumFixedAreaIssues);
-
-            if (m_Stats.TotalExcludingIgnoredAndFixed == 0)
-            {
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    GUILayout.Label(Contents.NoIssuesText, SharedStyles.Label);
-
-                    if (!string.IsNullOrEmpty(ignoredAndFixedInfo))
-                    {
-                        GUILayout.Label(ignoredAndFixedInfo, SharedStyles.LabelRichTextGrey);
-                        GUILayout.FlexibleSpace();
-                    }
-                }
-            }
-            else
-            {
-                DrawChartBar(horizontalPadding: 2, () => BuildCategoryChartElements(m_Stats), ignoredAndFixedInfo);
-            }
-
+            DrawChartBar(() => BuildCategoryChartElements(m_Stats), ignoredAndFixedInfo);
             EditorGUILayout.EndVertical();
         }
 
@@ -239,15 +213,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                     MigrationToURPUtilities.OpenRenderPipelineConverter(null, null);
                     GUIUtility.ExitGUI();
                 }
-            }
-        }
-
-        static void DrawAnalysisInProgress()
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.Space(20);
-                DrawAnalysisInProgressLabel(Contents.Migration);
             }
         }
 
@@ -283,15 +248,10 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             if (m_ShowManualFixes)
             {
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    GUILayout.Space(12);
-                    var majorAndCritical = m_Stats.MajorAndCritical;
-                    if (majorAndCritical == 0)
-                        EditorGUILayout.LabelField(Contents.NoMajorIssuesText, SharedStyles.Label);
-                    else
-                        EditorGUILayout.LabelField(string.Format(majorAndCritical == 1 ? Contents.SevereCountFormat : Contents.SevereCountPluralFormat, majorAndCritical), SharedStyles.Label);
-                }
+                GUILayout.Space(6);
+                DrawTopTenLabel(
+                    Contents.NoIssuesText, Contents.NoMajorIssuesText, Contents.SevereCountFormat, Contents.SevereCountPluralFormat,
+                    m_Stats.TotalExcludingIgnoredAndFixed, m_Stats.MajorAndCritical);
 
                 GUILayout.Space(6);
                 DrawTopTenIssues(m_ManualFixesTopTen, IsManualIssueIgnoredOrFiltered);
@@ -309,11 +269,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent GoToWizardButton = L10n.TextContent("Continue Migration", null, null, null);
 
             public static readonly string SevereCountFormat = L10n.Tr("{0} issue might prevent your project from functioning on URP.", null);
-            public static readonly string SevereCountPluralFormat = L10n.Tr("{0} issues will prevent your project from functioning on URP.", null);
+            public static readonly string SevereCountPluralFormat = L10n.Tr("{0} issues might prevent your project from functioning on URP.", null);
             public static readonly string NoIssuesText = L10n.Tr("No URP migration issues found.", null);
             public static readonly string NoMajorIssuesText = L10n.Tr("No major URP migration issues found.", null);
             public static readonly string IssuesByArea = L10n.Tr("Issues by Area", null);
-            public static readonly string Migration = L10n.Tr("Migration", null);
         }
     }
 }

@@ -157,10 +157,7 @@ namespace UnityEditor.EditorTools
         {
             get
             {
-                if (EditorToolUtility.GetToolOwnerDefinition(stateToolOwnerType, out var ownerDef))
-                    return ownerDef.defaultContext;
-
-                return typeof(GameObjectToolContext);
+                return EditorToolUtility.GetDefaultContextType(stateToolOwnerType);
             }
         }
 

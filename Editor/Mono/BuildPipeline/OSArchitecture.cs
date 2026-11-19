@@ -13,7 +13,7 @@ namespace UnityEditor.Build
         ///<summary>Supported for MacOS and Windows.</summary>
         ARM64,
         ///<summary>Supported for MacOS. Deprecated for MacOS; use ARM64 instead.</summary>
-        x64ARM64,
+        [System.Obsolete(@"OSArchitecture.x64ARM64 is deprecated and will be removed in a future release.", false)] x64ARM64,
         ///<summary>Supported for Windows.</summary>
         x86,
     }

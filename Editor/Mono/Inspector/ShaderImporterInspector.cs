@@ -19,6 +19,7 @@ namespace UnityEditor
         internal class Styles
         {
             public static readonly GUIContent overridePreprocessor = L10n.TextContent("Override preprocessor", "Select preprocessor to use for this shader.", null, null);
+            public static readonly GUIContent ignoreFastBuildMode = L10n.TextContent("Ignore Fast Build Mode", "Import this shader with the regular shader build settings even when Fast Build mode is enabled.", null, null);
         }
 
         [Serializable]
@@ -42,6 +43,7 @@ namespace UnityEditor
         }
 
         SerializedProperty m_Properties;
+        SerializedProperty m_IgnoreFastBuildMode;
 
         internal override void OnHeaderControlsGUI()
         {
@@ -117,6 +119,7 @@ namespace UnityEditor
                 return;
 
             m_Properties = extraDataSerializedObject.FindProperty("m_Properties");
+            m_IgnoreFastBuildMode = serializedObject.FindProperty("m_IgnoreFastBuildMode");
         }
 
         private void ShowTextures()
@@ -227,6 +230,8 @@ namespace UnityEditor
 
             serializedObject.Update();
             extraDataSerializedObject.Update();
+
+            EditorGUILayout.PropertyField(m_IgnoreFastBuildMode, Styles.ignoreFastBuildMode);
 
             ShowTextures();
 

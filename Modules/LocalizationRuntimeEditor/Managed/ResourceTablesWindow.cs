@@ -22,6 +22,7 @@ partial class ResourceTablesWindow : EditorWindow
     const string k_ActionsCellUxml = "LocalizationRuntime/UXML/ResourceTableActionsCell.uxml";
     const string k_EmptyStateUxml = "LocalizationRuntime/UXML/ResourceTableEmptyState.uxml";
     const string k_ImportExportDirPref = "LocalizationRuntime.ImportExportDir";
+    internal const string k_LastCollectionKey = "LocalizationRuntime.ResourceTables.LastCollection";
 
     const string k_EntriesField = "m_Entries";
     const string k_ActionsColumnName = "actions";
@@ -93,9 +94,24 @@ partial class ResourceTablesWindow : EditorWindow
         get => m_Collection;
         set
         {
-            m_Collection = value;
+            SetCollection(value);
             RefreshAll();
         }
+    }
+
+    void SetCollection(ResourceTableCollection collection)
+    {
+        m_Collection = collection;
+        if (collection != null && AssetDatabase.TryGetGUIDAndLocalFileIdentifier(collection, out var guid, out long _))
+            EditorUserSettings.SetConfigValue(k_LastCollectionKey, guid);
+    }
+
+    static ResourceTableCollection LoadSavedCollection()
+    {
+        var guid = EditorUserSettings.GetConfigValue(k_LastCollectionKey);
+        if (string.IsNullOrEmpty(guid))
+            return null;
+        return AssetDatabase.LoadAssetAtPath<ResourceTableCollection>(AssetDatabase.GUIDToAssetPath(guid));
     }
 
     void OnEnable()
@@ -118,8 +134,7 @@ partial class ResourceTablesWindow : EditorWindow
     void OnCollectionsChanged()
     {
         RefreshCollectionsList();
-        if (m_Collection != null)
-            RebuildTree();
+        RebuildTree();
     }
 
     void OnUndoRedoPerformed()
@@ -202,7 +217,7 @@ partial class ResourceTablesWindow : EditorWindow
         {
             foreach (var obj in selection)
             {
-                m_Collection = obj as ResourceTableCollection;
+                SetCollection(obj as ResourceTableCollection);
                 RebuildTree();
                 break;
             }
@@ -304,6 +319,15 @@ partial class ResourceTablesWindow : EditorWindow
         var collections = AssetProviderEditors.GetKnownCollections();
         m_CollectionsList.itemsSource = collections;
         m_CollectionsList.Rebuild();
+        if (m_Collection == null)
+        {
+            var saved = LoadSavedCollection();
+            if (saved != null && collections.Contains(saved))
+                m_Collection = saved;
+            else
+                m_Collection = collections.Count > 0 ? collections[0] : null;
+        }
+
         var selectedIndex = m_Collection != null ? collections.IndexOf(m_Collection) : -1;
         if (selectedIndex >= 0)
             m_CollectionsList.SetSelectionWithoutNotify(new List<int> { selectedIndex });
@@ -971,7 +995,7 @@ partial class ResourceTablesWindow : EditorWindow
         if (collection == null)
             return;
 
-        m_Collection = collection;
+        SetCollection(collection);
         RefreshAll();
     }
 

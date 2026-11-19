@@ -131,7 +131,10 @@ namespace UnityEditor
             if (EditorToolbar(content, EditorToolManager.activeToolContext as T, contexts, out selected))
             {
                 if (EditorToolManager.activeToolContext == selected)
-                    ToolManager.SetActiveContext<GameObjectToolContext>();
+                {
+                    var defaultContext = EditorToolUtility.GetDefaultContextType(typeof(SceneView));
+                    ToolManager.SetActiveContext(defaultContext);
+                }
                 else
                     EditorToolManager.activeToolContext = selected;
             }

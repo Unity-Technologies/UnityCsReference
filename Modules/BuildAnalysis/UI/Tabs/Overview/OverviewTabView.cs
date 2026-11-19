@@ -208,15 +208,19 @@ namespace UnityEditor.Build.Analysis
         }
 
         // Leave an already-missing path unchanged so the existence check below still reports it.
+        // A macOS player is an .app bundle: a directory, but opening it launches the player, so treat it as a file.
         private static string NormalizeToDirectory(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return string.Empty;
-            if (Directory.Exists(path))
-                return path;
-            if (File.Exists(path))
+            if (File.Exists(path) || (IsAppBundle(path) && Directory.Exists(path)))
                 return Path.GetDirectoryName(path) ?? string.Empty;
             return path;
+        }
+
+        private static bool IsAppBundle(string path)
+        {
+            return string.Equals(Path.GetExtension(path), ".app", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

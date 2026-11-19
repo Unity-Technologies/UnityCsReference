@@ -558,6 +558,7 @@ namespace UnityEditor.Modules
                 .Select(e => new StreamingAssetsFile { File = e.src.ToString(), RelativePath = e.dst.ToString() })
                 .ToArray(),
             UseNewInputSystem = IsNewInputSystemEnabled(),
+            LinkUGK = Application.HasARGV("forceLinkUGK") || PlayerSettings.IsUGKSelectedForBuild(args.target),
 #pragma warning disable UAC2001 // Avoid Linq
             ManagedAssemblies = GetFilesWithRoleFromBuildReport(args.report, "ManagedLibrary", "DependentManagedLibrary", "ManagedEngineAPI")
 #pragma warning restore UAC2001

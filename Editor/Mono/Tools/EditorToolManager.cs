@@ -58,6 +58,9 @@ namespace UnityEditor.EditorTools
 
             bool m_ChangingActiveTool, m_ChangingActiveContext;
 
+            [SerializeField]
+            string m_ContextTypeNameReplacedByStage;
+
             public PivotMode pivotMode
             {
                 get { return m_PivotMode; }
@@ -335,6 +338,12 @@ namespace UnityEditor.EditorTools
                     if (ctx == activeToolContext)
                         return;
 
+                    if (!EditorToolUtility.IsContextSupported(ctx.GetType(), stateToolOwnerType))
+                    {
+                        Debug.LogWarning($"Tool context {ctx.GetType()} is not supported in the current stage.");
+                        return;
+                    }
+
                     m_ChangingActiveContext = true;
 
                     // Make sure to get the active tool enum prior to setting the context, otherwise we'll be comparing
@@ -541,7 +550,7 @@ namespace UnityEditor.EditorTools
                 if (restored != null)
                 {
                     // todo Use generated Context
-                    if (previousComponentToolCache.contextType != null)
+                    if (previousComponentToolCache.contextType != null && EditorToolUtility.IsContextSupported(previousComponentToolCache.contextType, stateToolOwnerType))
                         activeToolContext = GetComponentContext(previousComponentToolCache.contextType, stateToolOwnerType);
 
                     activeTool = restored.GetEditor<EditorTool>();
@@ -569,10 +578,49 @@ namespace UnityEditor.EditorTools
                 EditorToolUtility.InstantiateComponentContexts(componentContexts, stateToolOwnerType);
 
                 var restoredContext = componentContexts.Find(x => x.editorType == activeContextType);
-                if (restoredContext != null)
+                if (restoredContext != null && activeContextType != defaultToolContextType && EditorToolUtility.IsContextSupported(activeContextType, stateToolOwnerType))
                     activeToolContext = restoredContext.GetEditor<EditorToolContext>();
 
                 sortedContextsDataCache.SetDirty();
+            }
+
+            internal void RefreshStageToolContexts()
+            {
+                sortedContextsDataCache.SetDirty();
+
+                var defaultContextType = defaultToolContextType;
+                var defaultContext = GetSingleton(defaultContextType) as EditorToolContext;
+                var activeContext = activeToolContext;
+                var activeContextType = activeContext.GetType();
+                var stageOverridesContexts = stateToolOwnerType == typeof(SceneView) && ToolManager.TryGetCurrentStageToolContextOverride(out _);
+
+                // Replace the active context when:
+                // - it is not supported in the current stage,
+                // - it is a component context that can't be activated as is.
+                if (!EditorToolUtility.IsContextSupported(activeContextType, stateToolOwnerType)
+                    || (EditorToolUtility.IsComponentEditor(activeContextType)
+                        && (activeContextType == defaultContextType) != singletonObjects.Contains(activeContext)))
+                {
+                    // Record the context this stage drops, unless one is already recorded.
+                    if (stageOverridesContexts && string.IsNullOrEmpty(m_ContextTypeNameReplacedByStage) && !EditorToolUtility.IsContextSupported(activeContextType, stateToolOwnerType))
+                        m_ContextTypeNameReplacedByStage = activeContextType.AssemblyQualifiedName;
+
+                    var contextTypeReplacedByStage = string.IsNullOrEmpty(m_ContextTypeNameReplacedByStage) ? null : Type.GetType(m_ContextTypeNameReplacedByStage);
+
+                    // Once no override applies, the recorded context is restored if it can be set, otherwise the default is used.
+                    if (!stageOverridesContexts && contextTypeReplacedByStage != null && ToolManager.CanSetActiveContext(contextTypeReplacedByStage, stateToolOwnerType))
+                        ToolManager.SetActiveContext(contextTypeReplacedByStage, stateToolOwnerType);
+                    else
+                        activeToolContext = defaultContext;
+                }
+
+                // The recorded context is only kept while an override applies.
+                if (!stageOverridesContexts)
+                    m_ContextTypeNameReplacedByStage = null;
+
+                if (stateToolOwnerType == typeof(SceneView))
+                    availableToolsChanged?.Invoke();
+                availableToolsChangedForOwner?.Invoke(stateToolOwnerType);
             }
 
             public void EnsureCurrentToolIsNotNull()
@@ -1003,6 +1051,11 @@ namespace UnityEditor.EditorTools
             instance.defaultState.TrackerRebuilt();
             foreach (var state in instance.customStates)
                 state.TrackerRebuilt();
+        }
+
+        internal static void RefreshStageToolContexts()
+        {
+            instance.defaultState.RefreshStageToolContexts();
         }
 
         internal static T GetSingleton<T>() where T : ScriptableObject

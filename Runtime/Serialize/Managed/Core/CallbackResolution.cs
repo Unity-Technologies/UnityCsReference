@@ -60,18 +60,18 @@ internal static unsafe partial class SerializationBackendManagedCommands
     }
 
 
-    // CoreCLR-only interface-method resolver for struct-callback dispatch. The native side
-    // (Common.cpp ResolveInterfaceMethodFunctionPointer, ENABLE_CORECLR) passes the declaring
+    // CoreCLR/Mono interface-method resolver for struct-callback dispatch. The native side
+    // (Common.cpp ResolveInterfaceMethodFunctionPointer, ENABLE_CORECLR || ENABLE_MONO) passes the declaring
     // TYPE handle + a SerializationCallbackMethod enum selector (not a method-name string, and
     // never a raw MethodDesc*) — so we avoid the
     // synthetic-handle path that aborts for methods in dynamically-loaded ALCs. We instantiate
     // the StructCallbackInvokerHelper<T> shim for the concrete struct type and return its
     // static entry point; the struct-callback callsites invoke it via `delegate*<ref byte, void>`
-    // calli, identical to Mono/IL2CPP. Returns IntPtr.Zero (callback skipped) on any failure.
+    // calli, identical to IL2CPP. Returns IntPtr.Zero (callback skipped) on any failure.
     [RequiredByNativeCode]
     internal static IntPtr GetInterfaceMethodFunctionPointer(IntPtr typeHandleValue, SerializationCallbackMethod callbackMethod)
     {
-        // Not reachable on Mono/IL2CPP — native only calls this under ENABLE_CORECLR
+        // Not reachable on IL2CPP — native only calls this under ENABLE_CORECLR || ENABLE_MONO
         // (see Common.cpp ResolveInterfaceMethodFunctionPointer).
         return IntPtr.Zero;
     }

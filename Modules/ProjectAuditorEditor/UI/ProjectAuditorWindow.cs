@@ -1944,7 +1944,17 @@ namespace Unity.ProjectAuditor.Editor.UI
                 using (new GUILayout.HorizontalScope())
                 {
                     GUILayout.Space(4);
-                    GUILayout.Label(activeView.Description, GUILayout.MinWidth(360), GUILayout.ExpandWidth(true));
+
+                    if (m_ViewManager.HasPendingCategories())
+                    {
+                        var text = AnalysisView.SharedContents.AnalysisInProgressText;
+                        GUILayout.Label(EditorGUIUtility.TrTextContent($"{text}|{Utility.GetStatusWheelFrame()}", text, string.Empty, Utility.GetIcon(Utility.IconType.StatusWheel).image));
+                    }
+                    else
+                    {
+                        GUILayout.Label(activeView.Description, GUILayout.MinWidth(360), GUILayout.ExpandWidth(true));
+                    }
+
                     GUILayout.FlexibleSpace();
                 }
             }

@@ -55,6 +55,7 @@ public readonly struct NodeReference : IEquatable<NodeReference>
     /// The progress fill amount displayed on the referenced node's accent bar, expressed as a percentage.
     /// </summary>
     /// <exception cref="ObjectDisposedException">Thrown when you access this method after you call <see cref="Context.Dispose"/> on the context.</exception>
+    /// <exception cref="ArgumentException">Thrown when you set this property and the reference doesn't correspond to a node in the current <see cref="Context"/>, or corresponds to a node that has no accent bar.</exception>
     /// <remarks>
     /// Accepted values range from -100 to 100. A positive value fills the bar from left to right.
     /// A negative value fills it from right to left. A value of <c>0</c> hides the bar.
@@ -62,6 +63,7 @@ public readonly struct NodeReference : IEquatable<NodeReference>
     /// Call the setter to start applying the override. Call <see cref="NodeReference.ClearCustomization"/> to remove the override.
     /// Setting this property has no effect when the <see cref="NodeReference"/> has no associated <see cref="Context"/>, such as when it is <c>default</c>.
     /// Throws <see cref="ObjectDisposedException"/> when you access this method after you call <see cref="Context.Dispose"/> on the context.
+    /// Throws <see cref="ArgumentException"/> when you set this property and the reference doesn't correspond to a node in the current <see cref="Context"/>, or corresponds to a node that has no accent bar.
     /// </remarks>
     public readonly float FillAmount
     {

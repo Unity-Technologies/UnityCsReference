@@ -67,6 +67,9 @@ public interface IStartupLocalePrepare
     /// <remarks>
     /// Runs once per initialization. An exception thrown here is logged and the run continues, so the selector should
     /// leave itself in a state where <see cref="IStartupLocaleSelector.GetStartupLocale"/> can return null.
+    /// Initialization waits for this method, so nothing inside it can wait for initialization. Awaiting
+    /// <see cref="LocalizationSettings.InitializeAsync"/>, or a value in the selected locale, waits for this method to
+    /// return, so it never finishes. To read a value here, pass the locale to read it in.
     /// </remarks>
     /// <param name="settings">The localization settings that are initializing.</param>
     /// <param name="cancellationToken">The token that signals the preparation should be canceled.</param>

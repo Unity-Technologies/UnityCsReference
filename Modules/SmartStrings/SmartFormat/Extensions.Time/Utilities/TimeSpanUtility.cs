@@ -18,9 +18,8 @@ namespace Unity.SmartStrings.Extensions.Time.Utilities;
 static class TimeSpanUtility
 {
     // Scratch state for the in-progress ToTimeParts() call: each field is written near the top of that
-    // call before it is read, so nothing meaningful survives the call, let alone a code reload. s_Round
-    // and s_TimeTextInfo only ever hold values the caller passed in or this type's own rounding
-    // helpers, so neither can pin reloadable user code.
+    // call before it is read, so nothing meaningful survives the call, let alone a code reload.
+    // s_TimeTextInfo only ever holds the value the caller passed in, so it cannot pin reloadable user code.
     [NoAutoStaticsCleanup]
     static TimeSpanFormatOptions s_RangeMin;
     [NoAutoStaticsCleanup]
@@ -29,8 +28,6 @@ static class TimeSpanUtility
     static bool s_LessThan;
     [NoAutoStaticsCleanup]
     static bool s_Abbreviate;
-    [NoAutoStaticsCleanup]
-    static Func<double, double> s_Round;
     [NoAutoStaticsCleanup]
     static TimeTextInfo s_TimeTextInfo;
 
@@ -103,67 +100,27 @@ static class TimeSpanUtility
         }
         s_LessThan = options.Mask(TimeSpanFormatOptionsPresets.LessThan) != TimeSpanFormatOptions.LessThanOff;
         s_Abbreviate = options.Mask(TimeSpanFormatOptionsPresets.Abbreviate) != TimeSpanFormatOptions.AbbreviateOff;
-        s_Round = s_LessThan ? (Func<double, double>)Math.Floor : Math.Ceiling;
         s_TimeTextInfo = timeTextInfo;
 
-        switch (s_RangeMin)
-        {
-            case TimeSpanFormatOptions.RangeWeeks:
-                fromTime = TimeSpan.FromDays(s_Round(fromTime.TotalDays / 7) * 7);
-                break;
-            case TimeSpanFormatOptions.RangeDays:
-                fromTime = TimeSpan.FromDays(s_Round(fromTime.TotalDays));
-                break;
-            case TimeSpanFormatOptions.RangeHours:
-                fromTime = TimeSpan.FromHours(s_Round(fromTime.TotalHours));
-                break;
-            case TimeSpanFormatOptions.RangeMinutes:
-                fromTime = TimeSpan.FromMinutes(s_Round(fromTime.TotalMinutes));
-                break;
-            case TimeSpanFormatOptions.RangeSeconds:
-                fromTime = TimeSpan.FromSeconds(s_Round(fromTime.TotalSeconds));
-                break;
-            case TimeSpanFormatOptions.RangeMilliSeconds:
-                fromTime = TimeSpan.FromMilliseconds(s_Round(fromTime.TotalMilliseconds));
-                break;
-        }
+        // TimeSpan.MinValue cannot be negated, so it is formatted as TimeSpan.MaxValue
+        var ticks = fromTime.Ticks;
+        var isNegative = ticks < 0;
+        if (isNegative)
+            ticks = ticks == long.MinValue ? long.MaxValue : -ticks;
+
+        var ticksPerRangeMin = TicksPerUnit(s_RangeMin);
+        var remainingUnits = ticks / ticksPerRangeMin;
+        if (!s_LessThan && ticks % ticksPerRangeMin != 0)
+            remainingUnits++;
+        var addSign = isNegative && remainingUnits > 0;
 
         // Create our result:
         var result = new List<string>();
         for (var i = rangeMax; i >= s_RangeMin; i = (TimeSpanFormatOptions)((int)i >> 1))
         {
-            // Determine the value and title:
-            int value;
-            switch (i)
-            {
-                case TimeSpanFormatOptions.RangeWeeks:
-                    value = (int)Math.Floor(fromTime.TotalDays / 7);
-                    fromTime -= TimeSpan.FromDays(value * 7);
-                    break;
-                case TimeSpanFormatOptions.RangeDays:
-                    value = (int)Math.Floor(fromTime.TotalDays);
-                    fromTime -= TimeSpan.FromDays(value);
-                    break;
-                case TimeSpanFormatOptions.RangeHours:
-                    value = (int)Math.Floor(fromTime.TotalHours);
-                    fromTime -= TimeSpan.FromHours(value);
-                    break;
-                case TimeSpanFormatOptions.RangeMinutes:
-                    value = (int)Math.Floor(fromTime.TotalMinutes);
-                    fromTime -= TimeSpan.FromMinutes(value);
-                    break;
-                case TimeSpanFormatOptions.RangeSeconds:
-                    value = (int)Math.Floor(fromTime.TotalSeconds);
-                    fromTime -= TimeSpan.FromSeconds(value);
-                    break;
-                case TimeSpanFormatOptions.RangeMilliSeconds:
-                    value = (int)Math.Floor(fromTime.TotalMilliseconds);
-                    fromTime -= TimeSpan.FromMilliseconds(value);
-                    break;
-                default:
-                    // Should never happen. Ensures 'value' and 'fromTime' are always set.
-                    continue;
-            }
+            var unitsPerValue = TicksPerUnit(i) / ticksPerRangeMin;
+            var value = remainingUnits / unitsPerValue;
+            remainingUnits -= value * unitsPerValue;
 
             //Determine whether to display this value
             if (!ShouldTruncate(value, result.Count > 0, out var displayThisValue)) continue;
@@ -178,10 +135,27 @@ static class TimeSpanUtility
             }
         }
 
+        if (addSign && result.Count > 0)
+            result[0] = "-" + result[0];
+
         return result;
     }
 
-    static bool ShouldTruncate(int value, bool textStarted, out bool displayThisValue)
+    static long TicksPerUnit(TimeSpanFormatOptions unit)
+    {
+        return unit switch
+        {
+            TimeSpanFormatOptions.RangeWeeks => TimeSpan.TicksPerDay * 7,
+            TimeSpanFormatOptions.RangeDays => TimeSpan.TicksPerDay,
+            TimeSpanFormatOptions.RangeHours => TimeSpan.TicksPerHour,
+            TimeSpanFormatOptions.RangeMinutes => TimeSpan.TicksPerMinute,
+            TimeSpanFormatOptions.RangeSeconds => TimeSpan.TicksPerSecond,
+            TimeSpanFormatOptions.RangeMilliSeconds => TimeSpan.TicksPerMillisecond,
+            _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, null)
+        };
+    }
+
+    static bool ShouldTruncate(long value, bool textStarted, out bool displayThisValue)
     {
         displayThisValue = false;
         switch (s_Truncate)
@@ -205,7 +179,7 @@ static class TimeSpanUtility
         return false;
     }
 
-    static void PrepareOutput(int value, bool isRangeMin, bool hasTextStarted, List<string> result, ref bool displayThisValue)
+    static void PrepareOutput(long value, bool isRangeMin, bool hasTextStarted, List<string> result, ref bool displayThisValue)
     {
         // we need to display SOMETHING (even if it's zero)
         if (isRangeMin && !hasTextStarted)

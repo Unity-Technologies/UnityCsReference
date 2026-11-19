@@ -17,7 +17,7 @@ class ActiveScenarioWindow : EditorWindow, IHasCustomMenu
 
     const string k_Stylesheet = "PlayMode/UI/Framework.uss";
     const string k_WindowTitle = "Active Scenario";
-    const string k_EditButtonText = "Edit Scenario";
+    internal const string k_EditButtonText = "Edit Scenario";
     const string k_HeaderClassName = "unity-active-scenario__header";
     const string k_TitleBarClassName = "unity-active-scenario__title-bar";
     const string k_TitleLabelClassName = "unity-active-scenario__title-label";

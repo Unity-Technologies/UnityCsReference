@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     internal sealed class UnitySynchronizationContext : SynchronizationContext
     {
         private const int kAwqInitialCapacity = 20;

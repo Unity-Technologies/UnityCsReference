@@ -16,6 +16,8 @@ partial class ResourceFolderProviderEditor : AssetProviderEditor
     [AutoStaticsCleanup] // warn once bookkeeping; a reload should let the warning fire again
     static HashSet<EntityId> s_WarnedTables;
 
+    internal override bool TracksChanges => true;
+
     protected override void RegisterTable(IAssetProvider provider, ResourceTableCollection collection, ResourceTable table)
     {
         if (provider is not ResourceFolderProvider resources)
@@ -28,11 +30,7 @@ partial class ResourceFolderProviderEditor : AssetProviderEditor
             return;
         }
         s_WarnedTables?.Remove(table.GetEntityId());
-        resources.RemoveAliasesTo(resourcesPath);
-        var guidAddress = GuidTableAddress(collection, table);
-        if (!string.IsNullOrEmpty(guidAddress))
-            resources.AddOwnedAlias(guidAddress, resourcesPath);
-        resources.AddOwnedAlias(TableAddress(collection, table), resourcesPath);
+        Changed |= resources.SetOwnedAliases(resourcesPath, TableAddress(collection, table), GuidTableAddress(collection, table));
     }
 
     protected override void UnregisterTable(IAssetProvider provider, ResourceTableCollection collection, ResourceTable table)
@@ -41,8 +39,8 @@ partial class ResourceFolderProviderEditor : AssetProviderEditor
             return;
         var guidAddress = GuidTableAddress(collection, table);
         if (!string.IsNullOrEmpty(guidAddress))
-            resources.Remove(guidAddress);
-        resources.Remove(TableAddress(collection, table));
+            Changed |= resources.Remove(guidAddress);
+        Changed |= resources.Remove(TableAddress(collection, table));
     }
 
     public override void ClearRegistrations(IAssetProvider provider)

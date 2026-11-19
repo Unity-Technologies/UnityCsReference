@@ -123,6 +123,13 @@ namespace UnityEngine.UIElements
                 this.asset = asset;
             }
 
+            public UsingEntry(string alias, string path, VisualTreeAsset asset)
+            {
+                this.alias = alias;
+                this.path = path;
+                this.asset = asset;
+            }
+
             public bool Equals(UsingEntry other)
             {
                 return alias == other.alias && path == other.path && asset == other.asset;
@@ -914,6 +921,9 @@ namespace UnityEngine.UIElements
                 return entry.asset;
 
             string path = entry.path;
+            if (string.IsNullOrEmpty(path))
+                return null;
+
             return Panel.LoadResource(path, typeof(VisualTreeAsset),1) as VisualTreeAsset;
         }
 
@@ -936,6 +946,12 @@ namespace UnityEngine.UIElements
         internal void RegisterTemplate(string templateName, VisualTreeAsset asset)
         {
             InsertUsingEntry(new UsingEntry(templateName, asset));
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal void RegisterTemplate(string templateName, string path, VisualTreeAsset asset)
+        {
+            InsertUsingEntry(new UsingEntry(templateName, path, asset));
         }
 
         internal bool TryRegisterTemplate(string templateName, VisualTreeAsset asset)

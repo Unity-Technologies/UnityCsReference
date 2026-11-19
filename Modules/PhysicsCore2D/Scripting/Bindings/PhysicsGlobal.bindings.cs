@@ -27,6 +27,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsCore2D::Global_GetLengthUnitsPerMeter")] extern internal static float PhysicsGlobal_GetLengthUnitsPerMeter();
         [NativeMethod(Name = "PhysicsCore2D::Global_GetTransformChangeMode")] extern internal static PhysicsWorld.TransformChangeMode PhysicsGlobal_GetTransformChangeMode();
         [NativeMethod(Name = "PhysicsCore2D::Global_GetRenderingMode")] extern internal static PhysicsWorld.RenderingMode PhysicsGlobal_GetRenderingMode();
+        [NativeMethod(Name = "PhysicsCore2D::Global_GetSceneLoadMode")] extern internal static PhysicsWorld.SceneLoadMode PhysicsGlobal_GetSceneLoadMode();
         [NativeMethod(Name = "PhysicsCore2D::Global_IsRenderingAllowed")] extern internal static bool PhysicsGlobal_IsRenderingAllowed();
         [NativeMethod(Name = "PhysicsCore2D::Global_CalculateWorldTransformWrite")] extern internal static PhysicsBuffer PhysicsGlobal_CalculateWorldTransformWrite(PhysicsWorld world, PhysicsWorld.TransformPlane transformPlane, PhysicsWorld.TransformPlaneCustom transformPlaneCustom, PhysicsWorld.TransformWriteMode transformWriteMode, IntPtr transformAccessArrayIntPtr);
         [NativeMethod(Name = "PhysicsCore2D::Global_CheckTransformChanges")] extern internal static int PhysicsGlobal_CheckTransformChanges();

@@ -365,7 +365,10 @@ namespace Unity.U2D.Physics
         /// A space is bound by creating it with the world overload of Create.
         /// </summary>
         /// <remarks>
-        /// See <see cref="Create(PhysicsWorld)"/>.
+        /// Destroying the world does not destroy the space, including when a scene load destroys the world.
+        /// The space keeps its proxies, and this property then returns a world whose <see cref="PhysicsWorld.isValid"/> is false.
+        /// Every method that needs the world, such as <see cref="SyncShapes"/>, then throws <see cref="System.InvalidOperationException"/>.
+        /// See <see cref="Create(PhysicsWorld)"/> and <see cref="PhysicsWorld.SceneLoadMode"/>.
         /// </remarks>
         public readonly PhysicsWorld sourceWorld => PhysicsSpace_GetSourceWorld(this);
 

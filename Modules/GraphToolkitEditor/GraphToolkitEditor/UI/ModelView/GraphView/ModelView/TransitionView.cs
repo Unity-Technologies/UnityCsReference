@@ -478,7 +478,12 @@ namespace Unity.GraphToolkit.Editor
             appearance ??= new TransitionVisualData();
 
             if (appearance.IsAnimating)
+            {
+                // The animator can only pause a playing animation.
                 GraphView.Animator.Play(this, appearance.AnimationSpeed);
+                if (appearance.IsPaused)
+                    GraphView.Animator.Pause(this);
+            }
             else
                 GraphView.Animator.Stop(this);
 

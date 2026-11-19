@@ -1003,6 +1003,8 @@ namespace UnityEditor.UIElements
                 buttonGroup.Add(new Button { text = i.ToString() });
             }
 
+            var isRemovingButtons = false;
+
             // Discard the adjustments populating made, then start reporting changes.
             buttonGroup.SetValueWithoutNotify((ToggleButtonGroupState)propertyCopy.structValue);
             buttonGroup.RegisterValueChangedCallback(OnToggleGroupChanged);
@@ -1015,6 +1017,9 @@ namespace UnityEditor.UIElements
 
             void OnToggleGroupChanged(ChangeEvent<ToggleButtonGroupState> evt)
             {
+                if (isRemovingButtons)
+                    return;
+
                 var current = (ToggleButtonGroupState)propertyCopy.structValue;
 
                 // Writing an unchanged value dirties the asset and rebuilds the inspector, which loops.
@@ -1046,13 +1051,21 @@ namespace UnityEditor.UIElements
                 }
                 else if (currentLength > newLength)
                 {
-                    for (var i = newLength; i < currentLength; i++)
+                    isRemovingButtons = true;
+                    try
                     {
-                        var lastItem = buttonGroup.Query<Button>(className: ToggleButtonGroup.buttonClassName).Last();
-                        if (lastItem == null)
-                            break;
+                        for (var i = newLength; i < currentLength; i++)
+                        {
+                            var lastItem = buttonGroup.Query<Button>(className: ToggleButtonGroup.buttonClassName).Last();
+                            if (lastItem == null)
+                                break;
 
-                        lastItem.RemoveFromHierarchy();
+                            lastItem.RemoveFromHierarchy();
+                        }
+                    }
+                    finally
+                    {
+                        isRemovingButtons = false;
                     }
                 }
 

@@ -226,7 +226,7 @@ namespace Unity.U2D.Physics.Editor
         /// <remarks>
         /// Editor tooling that draws into its own world can use this to follow the override, by reading <see cref="settings"/> and applying the selected values to that world.
         /// </remarks>
-        [AutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload] // a handler can belong to code being unloaded, so handlers are removed on code reload but kept through play mode, as the override is
         public static event Action changed;
 
         /// <summary>
@@ -301,8 +301,9 @@ namespace Unity.U2D.Physics.Editor
         private const string k_EnabledKey = "PhysicsCore2D.DrawOverride.Enabled";
         private const string k_SettingsKey = "PhysicsCore2D.DrawOverride.Settings";
 
-        [AutoStaticsCleanup] private static bool s_Enabled;
-        [AutoStaticsCleanup] private static Settings s_Settings;
+        // The saved preference, read from EditorPrefs again on every code load, so it is kept through play mode the same as the native override it was sent to.
+        [NoAutoStaticsCleanup] private static bool s_Enabled;
+        [NoAutoStaticsCleanup] private static Settings s_Settings;
 
         #endregion
     }

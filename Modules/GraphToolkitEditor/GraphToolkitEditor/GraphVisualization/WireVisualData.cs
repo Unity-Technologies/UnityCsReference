@@ -25,6 +25,14 @@ class WireVisualData
     public float AnimationSpeed { get; set; } = 1f;
 
     /// <summary>
+    /// Whether the flow animation is paused, keeping its current position.
+    /// </summary>
+    /// <remarks>
+    /// Only has an effect when <see cref="IsAnimating"/> is true.
+    /// </remarks>
+    public bool IsPaused { get; set; }
+
+    /// <summary>
     /// Whether the wire is drawn with a dashed pattern, or null to use the wire's own value.
     /// </summary>
     /// <remarks>

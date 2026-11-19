@@ -36,6 +36,9 @@ internal static partial class AssetProviderEditors
     [AutoStaticsCleanup] // asset scan cache; CollectionsChanged already drops it
     [IgnoreForUAL0015("Asset paths of the collection scan result, refilled with it by ScanCollections()")]
     static HashSet<string> s_CollectionAssetPaths;
+    [AutoStaticsCleanup] // names last registered; the first change event after a reload registers again
+    [IgnoreForUAL0015("Last registered collection names, refilled by the next change event")]
+    static Dictionary<SharedTableData, string> s_RegisteredNames;
 
     sealed class DefaultAssetProviderEditor : AssetProviderEditor { }
 
@@ -51,6 +54,42 @@ internal static partial class AssetProviderEditors
             s_Collections = null;
             s_CollectionAssetPaths = null;
         };
+
+        ObjectChangeEvents.changesPublished -= OnObjectChangesPublished;
+        ObjectChangeEvents.changesPublished += OnObjectChangesPublished;
+    }
+
+    static void OnObjectChangesPublished(ref ObjectChangeEventStream stream)
+    {
+        var refreshed = false;
+        for (var i = 0; i < stream.length; i++)
+        {
+            if (stream.GetEventType(i) != ObjectChangeKind.ChangeAssetObjectProperties)
+                continue;
+            stream.GetChangeAssetObjectPropertiesEvent(i, out var data);
+            if (EditorUtility.EntityIdToObject(data.entityId) is not SharedTableData shared)
+                continue;
+            s_RegisteredNames ??= new Dictionary<SharedTableData, string>();
+            if (s_RegisteredNames.TryGetValue(shared, out var registered) && registered == shared.TableCollectionName)
+                continue;
+            RefreshRegistrations(shared);
+            s_RegisteredNames[shared] = shared.TableCollectionName;
+            refreshed = true;
+        }
+        if (refreshed)
+            LocalizationEditorSettings.QueueEditModeTableRefresh();
+    }
+
+    static void RefreshRegistrations(SharedTableData shared)
+    {
+        foreach (var collection in CollectionsUsing(shared))
+        {
+            if (string.IsNullOrEmpty(collection.ProviderId))
+                continue;
+            var provider = ResolveProvider(collection);
+            if (provider != null)
+                MoveCollectionWithoutUndo(collection, provider);
+        }
     }
 
     /// <summary>
@@ -298,9 +337,15 @@ internal static partial class AssetProviderEditors
             ? new UnityEngine.Object[] { collection, settings }
             : new UnityEngine.Object[] { collection }, "Change Content Source");
 
+        MoveCollectionWithoutUndo(collection, target);
+    }
+
+    static void MoveCollectionWithoutUndo(ResourceTableCollection collection, IAssetProvider target)
+    {
         // A collection that moved provider (in or out of a Resources folder) must lose its stale tables first.
         var previous = string.IsNullOrEmpty(collection.ProviderId) ? null : ResolveProvider(collection);
-        if (previous != null && !ReferenceEquals(previous, target))
+        var moved = previous != null && !ReferenceEquals(previous, target);
+        if (moved)
             (GetEditor(previous) ?? s_Default).UnregisterCollection(previous, collection);
 
         var targetId = target.Id;
@@ -310,9 +355,20 @@ internal static partial class AssetProviderEditors
             EditorUtility.SetDirty(collection);
         }
 
-        (GetEditor(target) ?? s_Default).RegisterCollection(target, collection);
+        var editor = GetEditor(target) ?? s_Default;
+        var tracksChanges = editor.TracksChanges;
+        if (tracksChanges)
+            editor.Changed = false;
+        editor.RegisterCollection(target, collection);
 
-        if (settings != null)
+        if (collection.SharedData != null)
+        {
+            s_RegisteredNames ??= new Dictionary<SharedTableData, string>();
+            s_RegisteredNames[collection.SharedData] = collection.SharedData.TableCollectionName;
+        }
+
+        var settings = LocalizationEditorSettings.ActiveSettings;
+        if (settings != null && (moved || !tracksChanges || editor.Changed))
             EditorUtility.SetDirty(settings);
     }
 
@@ -393,7 +449,7 @@ internal static partial class AssetProviderEditors
 
         var claimedType = ClaimingProviderType(assetPath);
         if (claimedType != null)
-            return EnsureProviderOfType(chain, claimedType);
+            return EnsureProviderOfType(settings, chain, claimedType);
 
         // The selected provider is maintained to always be a live entry in the chain (or null).
         var selected = settings.SelectedProvider;
@@ -408,7 +464,7 @@ internal static partial class AssetProviderEditors
         return null;
     }
 
-    static IAssetProvider EnsureProviderOfType(AssetProvider chain, Type type)
+    static IAssetProvider EnsureProviderOfType(LocalizationSettings settings, AssetProvider chain, Type type)
     {
         foreach (var provider in chain.Providers)
         {
@@ -417,6 +473,7 @@ internal static partial class AssetProviderEditors
         }
         var created = (IAssetProvider)Activator.CreateInstance(type);
         chain.AddProvider(created);
+        EditorUtility.SetDirty(settings);
         return created;
     }
 

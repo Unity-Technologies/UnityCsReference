@@ -508,11 +508,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         if ((progress?.IsCancelled ?? false) && !cancellationSource.IsCancellationRequested)
                             cancellationSource.Cancel();
 
+                        // A blocking audit spins the main thread, so the compilation's continuations queued on it never run otherwise
+                        if (analysisParams.Blocking)
+                            (SynchronizationContext.Current as UnitySynchronizationContext)?.Exec();
+
                         yield return new WaitForEndOfFrame();
                     }
 
                     if (compilationTask.IsCanceled || (progress?.IsCancelled ?? false))
                     {
+                        if (!(progress?.IsCancelled ?? false))
+                            Debug.Log($"[{ProjectAuditor.DisplayName}] Code analysis was interrupted by a script compilation request. Analyze again once the compilation finishes.");
                         if (mergedIssues.Count > 0)
                             analysisParams.OnIncomingIssues(mergedIssues);
                         analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Cancelled, threadExecutionTimeMs);

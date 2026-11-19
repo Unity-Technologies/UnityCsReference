@@ -139,7 +139,7 @@ public static partial class Smart
     /// <returns>A <see cref="SmartFormatter"/> with core extensions registered:
     /// 
     /// <see cref="ISource"/>s:
-    /// <see cref="StringSource"/>, <see cref="ListFormatter"/>, <see cref="DictionarySource"/>,
+    /// <see cref="StringSource"/>, <see cref="ListFormatter"/>, <see cref="PersistentVariablesSource"/>, <see cref="DictionarySource"/>,
     /// <see cref="PropertiesSource"/>, <see cref="DefaultSource"/>, <see cref="KeyValuePairSource"/>
     /// 
     /// 

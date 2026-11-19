@@ -38,7 +38,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             Hierarchy,
             ZoomTool,
             Fix,
-            Download,
             Load,
             Save,
             Trash,
@@ -73,7 +72,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         const string k_HierarchyIconName = "UnityEditor.SceneHierarchyWindow";
         const string k_ZoomToolIconName = "ViewToolZoom";
         const string k_FixIconName = "Profiler.Custom";
-        const string k_DownloadIconName = "Download-Available";
         const string k_LoadIconName = "Import";
         const string k_SaveIconName = "SaveAs";
         const string k_TrashIconName = "TreeEditor.Trash";
@@ -338,8 +336,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     return L10n.IconContent(k_ZoomToolIconName, tooltip, null);
                 case IconType.Fix:
                     return L10n.IconContent(k_FixIconName, tooltip, null);
-                case IconType.Download:
-                    return L10n.IconContent(k_DownloadIconName, tooltip, null);
                 case IconType.View:
                     return L10n.IconContent(k_ViewIconName, tooltip, null);
                 case IconType.Help:

@@ -207,7 +207,7 @@ class LocalizedStringElement : LocalizedReferenceElement
         try
         {
             var live = LiveLocalizedString();
-            text = ResourceDatabase.Format(Formatter(), value, Array.Empty<object>(), live?.LocalVariables);
+            text = ResourceDatabase.Format(Formatter(), table.CultureInfo, value, Array.Empty<object>(), live?.LocalVariables);
         }
         catch (Exception e)
         {

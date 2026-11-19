@@ -52,6 +52,7 @@ namespace PlayerBuildProgramLibrary.Data
         public bool GenerateIdeProject;
         public bool Development;
         public bool UseNewInputSystem;
+        public bool LinkUGK;
         public GenerateNativePluginsForAssembliesSettings GenerateNativePluginsForAssembliesSettings;
         public Services Services;
         public string[] ManagedAssemblies;

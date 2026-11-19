@@ -209,11 +209,7 @@ internal class StyleSheetsWindow : EditorWindow
         var registry = UIAssetRegistry.LiveInstance;
 
         // Batch the imports so saving an imported sheet doesn't reimport its dirty importers first.
-        using (new AssetDatabase.AssetEditingScope())
-        {
-            foreach (var styleSheet in unsaved)
-                registry?.SaveAsset(styleSheet, CommandSources.StyleSheets);
-        }
+        registry?.SaveAssets(unsaved, CommandSources.StyleSheets);
 
         // Deliberately re-derived instead of base.SaveChanges(): a write that did not land — a read-only or
         // unchecked-out file — leaves the sheet dirty, and the flag staying set is what aborts the close.

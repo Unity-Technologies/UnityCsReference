@@ -756,7 +756,7 @@ namespace UnityEditor.Shaders
 
             if (m_FastBuildInfoBox != null)
             {
-                m_FastBuildInfoBox.text = L10n.Tr("In Fast Build mode, Unity converts compatible keywords to dynamic branching to reduce shader compilation time. The list below shows an approximation of the overrides in effect. Custom overrides are restored when Fast Build is disabled.", null);
+                m_FastBuildInfoBox.text = L10n.Tr("In Fast Build mode, Unity converts compatible multi_compile keywords to dynamic branching to reduce shader compilation time. Other keywords keep their regular behavior. The list below shows an approximation of the overrides in effect. Custom overrides are restored when Fast Build is disabled.", null);
             }
         }
 
@@ -777,8 +777,9 @@ namespace UnityEditor.Shaders
         // of the user's overrides. Display data only: never saved, and the build does not read it.
         //
         // Follows ShaderBuildSettings::ApplyOverridesOnKeywordDeclaration as closely as a project-wide
-        // list can: an override reducing a declaration to a single keyword survives, since dynamic
-        // branching has nothing left to collapse, and any other override is taken over.
+        // list can: shader_feature declarations and their overrides are left alone, an override reducing
+        // a declaration to a single keyword survives, since dynamic branching has nothing left to
+        // collapse, and any other override is taken over.
         private void BuildFastBuildDisplayedOverrides()
         {
             m_FastBuildDisplayedOverrides.Clear();
@@ -792,6 +793,9 @@ namespace UnityEditor.Shaders
             foreach (var declaration in gatheredDeclarations)
             {
                 if (declaration.IsRestrictedInEveryInstance(ShaderKeywordOverrideRestriction.NoDynamicBranch))
+                    continue;
+
+                if (IsDeclaredOnlyAsShaderFeature(declaration))
                     continue;
 
                 var convertedOverride = new ShaderBuildSettings.KeywordDeclarationOverride();
@@ -834,6 +838,14 @@ namespace UnityEditor.Shaders
                 if (!takenOverUserOverride[i])
                     m_FastBuildDisplayedOverrides.Add(m_KeywordDeclarationOverrides[i].DeepCopy());
             }
+        }
+
+        // A declaration that is multi_compile or dynamic_branch in any shader is converted in that shader
+        private static bool IsDeclaredOnlyAsShaderFeature(ShaderKeywordDeclarationInfo declaration)
+        {
+            return declaration.IsDeclaredAs(ShaderBuildSettings.ShaderVariantGenerationMode.MaterialUsageBasedVariants) &&
+                !declaration.IsDeclaredAs(ShaderBuildSettings.ShaderVariantGenerationMode.AllVariants) &&
+                !declaration.IsDeclaredAs(ShaderBuildSettings.ShaderVariantGenerationMode.SingleVariantWithDynamicBranching);
         }
 
         private void RefreshKeywordOverridesListView()

@@ -148,6 +148,14 @@ public abstract partial class LocalizedReference
 
     private protected Locale ResolvingLocale() => ResolveOverrideLocale() ?? LocalizationSettings.SelectedLocale;
 
+    // The startup locale is chosen while initialization runs, so a synchronous read has to ask for the run before it
+    // captures the locale, or it resolves in the project locale that the run is about to replace.
+    private protected Locale SyncResolvingLocale()
+    {
+        LocalizationSettings.RequestInitialization();
+        return ResolvingLocale();
+    }
+
     /// <summary>
     /// Called when the reference changes so subclasses can refresh any live listeners.
     /// </summary>

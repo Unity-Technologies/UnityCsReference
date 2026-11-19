@@ -312,7 +312,9 @@ namespace Unity.ProjectAuditor.Editor
                         {
                             stopwatch.Stop();
                             if (isCancelled)
-                                Debug.Log($"[{DisplayName}] Analysis was cancelled by the user.");
+                                Debug.Log((progress?.IsCancelled ?? false)
+                                    ? $"[{DisplayName}] Analysis was cancelled by the user."
+                                    : $"[{DisplayName}] Analysis was cancelled.");
                             if (logTimingsInfo)
                                 Debug.Log($"[{DisplayName}] Analysis took: " + stopwatch.ElapsedMilliseconds / 1000.0f +
                                     " seconds.");

@@ -43,6 +43,8 @@ namespace Unity.U2D.Physics.Editor
             var offsetField = new Vector2Field(offsetLabel) { tooltip = Tooltips.offset };
             offsetField.AddToClassList(Vector2Field.alignedFieldUssClassName);
 
+            var invalidCountHelpBox = new HelpBox(invalidCountMessage, HelpBoxMessageType.Warning);
+
             body.Add(shapeField);
             body.Add(boxSizeField);
             body.Add(regularSizeField);
@@ -51,6 +53,7 @@ namespace Unity.U2D.Physics.Editor
 
             body.Add(new PropertyField(property.FindPropertyRelative(nameof(PolygonGeometry.m_Radius))));
             body.Add(new PropertyField(property.FindPropertyRelative(nameof(PolygonGeometry.m_Count))));
+            body.Add(invalidCountHelpBox);
             body.Add(new PropertyField(property.FindPropertyRelative(nameof(PolygonGeometry.vertices))));
             body.Add(CreateSeparator());
 
@@ -76,7 +79,8 @@ namespace Unity.U2D.Physics.Editor
             // Shows the shape found from the current vertices, and the size and offset fields that match it.
             void Refresh()
             {
-                var shape = DetectShape(ReadGeometry(property), out var size, out var transform);
+                var geometry = ReadGeometry(property);
+                var shape = DetectShape(geometry, out var size, out var transform);
 
                 // A change rebuilds the first selected object's geometry and writes it to every selected object, so it is only allowed when they all have the same geometry.
                 // When they differ, the shape shows the mixed-value dash and cannot be changed, and Size and Offset are hidden since no single shape applies to them all.
@@ -93,6 +97,7 @@ namespace Unity.U2D.Physics.Editor
                 boxSizeField.style.display = showSizeAndOffset && shape == Shape.Box ? DisplayStyle.Flex : DisplayStyle.None;
                 regularSizeField.style.display = showSizeAndOffset && shape != Shape.Box ? DisplayStyle.Flex : DisplayStyle.None;
                 offsetField.style.display = showSizeAndOffset ? DisplayStyle.Flex : DisplayStyle.None;
+                invalidCountHelpBox.style.display = IsCountValid(geometry) ? DisplayStyle.None : DisplayStyle.Flex;
             }
 
             // Writes the geometry to the property, or leaves the property alone when the geometry is not a known shape.
@@ -142,7 +147,8 @@ namespace Unity.U2D.Physics.Editor
             transform = PhysicsTransform.identity;
 
             // An empty geometry, such as a rejected change, has no vertices, and reading them as a span would throw.
-            if (geometry.count < 3)
+            // A count above the most vertices a polygon allows, which serialized data can hold, also throws when read as a span.
+            if (!IsCountValid(geometry))
                 return Shape.Custom;
 
             var vertexSpan = geometry.AsReadOnlySpan();
@@ -207,6 +213,10 @@ namespace Unity.U2D.Physics.Editor
             return shape;
         }
 
+        // Whether the vertex count is one a polygon can have.
+        // The Count field keeps the count in range, but serialized data written without it can hold any count.
+        internal static bool IsCountValid(PolygonGeometry geometry) => geometry.count >= 3 && geometry.count <= PhysicsConstants.MaxPolygonVertices;
+
         // Whether the geometry is detected as one of the shapes, which every change the shape fields make must be before it is written.
         // Checking the result rather than the input means a change can never write vertices that then show as Custom, even through rounding at the smallest size.
         internal static bool IsKnownShape(PolygonGeometry geometry) => DetectShape(geometry, out _, out _) != Shape.Custom;
@@ -245,26 +255,45 @@ namespace Unity.U2D.Physics.Editor
             return true;
         }
 
-        // Creates the chosen shape to fit the bounds of the current vertices, so the polygon stays about the same size and in the same place.
-        // A box fills the bounds, and a regular polygon takes half the larger side of the bounds as the distance from its center to each vertex.
+        // Creates the chosen shape at about the size and in the place of the current geometry, unturned.
+        // A box takes the full width and height of the current geometry, and a regular polygon takes half the larger of the two as the distance from its center to each vertex.
+        // A geometry that is already one of the shapes keeps its center, and a regular polygon counts as a box twice its center to vertex distance on each side, so switching shapes back and forth keeps the same size and place.
+        // Any other geometry uses the bounds of its vertices, since it has no center or size of its own.
         internal static PolygonGeometry CreateShape(Shape shape, PolygonGeometry geometry)
         {
-            // An empty geometry has no vertices to read, so it uses a unit box as its bounds.
-            var vertexSpan = geometry.count > 0 ? geometry.AsReadOnlySpan() : ReadOnlySpan<Vector2>.Empty;
-            var boundsMin = vertexSpan.Length > 0 ? vertexSpan[0] : -0.5f * Vector2.one;
-            var boundsMax = vertexSpan.Length > 0 ? vertexSpan[0] : 0.5f * Vector2.one;
+            var minimumSize = minimumSizeScale * PhysicsWorld.linearSlop;
+            var currentShape = DetectShape(geometry, out var currentSize, out var currentTransform);
+            Vector2 boxSize;
+            Vector2 center;
 
-            for (var i = 1; i < vertexSpan.Length; ++i)
+            if (currentShape != Shape.Custom)
             {
-                boundsMin = Vector2.Min(boundsMin, vertexSpan[i]);
-                boundsMax = Vector2.Max(boundsMax, vertexSpan[i]);
+                boxSize = currentShape == Shape.Box ? currentSize : 2.0f * currentSize;
+                center = currentTransform.position;
+            }
+            else
+            {
+                // An empty geometry has no vertices to read, so it uses a unit box as its bounds.
+                // A count above the most vertices a polygon allows cannot be read as a span either, so it uses the unit box too.
+                var vertexSpan = geometry.count > 0 && geometry.count <= PhysicsConstants.MaxPolygonVertices ? geometry.AsReadOnlySpan() : ReadOnlySpan<Vector2>.Empty;
+                var boundsMin = vertexSpan.Length > 0 ? vertexSpan[0] : -0.5f * Vector2.one;
+                var boundsMax = vertexSpan.Length > 0 ? vertexSpan[0] : 0.5f * Vector2.one;
+
+                for (var i = 1; i < vertexSpan.Length; ++i)
+                {
+                    boundsMin = Vector2.Min(boundsMin, vertexSpan[i]);
+                    boundsMax = Vector2.Max(boundsMax, vertexSpan[i]);
+                }
+
+                // The fitted size is raised to the smallest size the shape fields allow, so tiny vertices still give a shape that can be chosen.
+                boxSize = Vector2.Max(boundsMax - boundsMin, minimumSize * Vector2.one);
+                center = 0.5f * (boundsMin + boundsMax);
             }
 
-            // The fitted size is raised to the smallest size the shape fields allow, so tiny vertices still give a shape that can be chosen.
-            var boundsSize = Vector2.Max(boundsMax - boundsMin, minimumSizeScale * PhysicsWorld.linearSlop * Vector2.one);
-            var transform = new PhysicsTransform(0.5f * (boundsMin + boundsMax));
+            // Half the side of a box at the smallest size is below the smallest size a regular polygon allows, so it is raised to that.
+            var regularSize = Mathf.Max(0.5f * Mathf.Max(boxSize.x, boxSize.y), minimumSize);
 
-            return ResizeShape(shape, shape == Shape.Box ? boundsSize : 0.5f * Mathf.Max(boundsSize.x, boundsSize.y) * Vector2.one, geometry.radius, transform);
+            return ResizeShape(shape, shape == Shape.Box ? boxSize : regularSize * Vector2.one, geometry.radius, new PhysicsTransform(center));
         }
 
         // Creates the shape at the given size and placement.
@@ -323,6 +352,9 @@ namespace Unity.U2D.Physics.Editor
         internal const float separatorHeight = 1.0f;
         internal const float separatorMargin = 4.0f;
 
+        // The warning shown under the Count field when the vertex count is outside the range a polygon allows.
+        internal static readonly string invalidCountMessage = $"Count must be from 3 to {PhysicsConstants.MaxPolygonVertices}. The geometry is not valid until Count is in that range.";
+
         // The decimal places the size and offset fields show, enough to hide the float error left by working them out from the vertices.
         private const int displayDecimalPlaces = 5;
 
@@ -361,8 +393,10 @@ namespace Unity.U2D.Physics.Editor
 
             var verticesProperty = property.FindPropertyRelative(nameof(PolygonGeometry.vertices));
             var normalsProperty = property.FindPropertyRelative(nameof(PolygonGeometry.normals));
-            var shape = PolygonGeometryInspector.DetectShape(PolygonGeometryInspector.ReadGeometry(property), out _, out _);
+            var geometry = PolygonGeometryInspector.ReadGeometry(property);
+            var shape = PolygonGeometryInspector.DetectShape(geometry, out _, out _);
             var shapeLineCount = shape == PolygonGeometryInspector.Shape.Custom || property.hasMultipleDifferentValues ? 1 : 3;
+            var invalidCountHeight = PolygonGeometryInspector.IsCountValid(geometry) ? 0.0f : EditorGUIUtility.standardVerticalSpacing + GetInvalidCountHelpBoxHeight(EditorGUI.indentLevel + 1);
 
             // Measured in wide mode, the same as they are drawn, so every Vector2 takes a single line.
             var wideMode = EditorGUIUtility.wideMode;
@@ -375,6 +409,7 @@ namespace Unity.U2D.Physics.Editor
                 + (EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight) * shapeLineCount
                 + EditorGUIUtility.standardVerticalSpacing + PolygonGeometryInspector.separatorHeight + PolygonGeometryInspector.separatorMargin * 2.0f
                 + (EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight) * 2
+                + invalidCountHeight
                 + EditorGUIUtility.standardVerticalSpacing + verticesHeight
                 + EditorGUIUtility.standardVerticalSpacing + PolygonGeometryInspector.separatorHeight + PolygonGeometryInspector.separatorMargin * 2.0f
                 + EditorGUIUtility.standardVerticalSpacing + normalsHeight
@@ -466,6 +501,13 @@ namespace Unity.U2D.Physics.Editor
                 EditorGUI.PropertyField(new Rect(position.x, y, position.width, lineHeight), countProperty, false);
                 y += lineHeight + spacing;
 
+                if (!PolygonGeometryInspector.IsCountValid(geometry))
+                {
+                    var invalidCountHelpBoxHeight = GetInvalidCountHelpBoxHeight(EditorGUI.indentLevel);
+                    EditorGUI.HelpBox(EditorGUI.IndentedRect(new Rect(position.x, y, position.width, invalidCountHelpBoxHeight)), invalidCountContent);
+                    y += invalidCountHelpBoxHeight + spacing;
+                }
+
                 var verticesHeight = EditorGUI.GetPropertyHeight(verticesProperty, true);
                 EditorGUI.PropertyField(new Rect(position.x, y, position.width, verticesHeight), verticesProperty, true);
                 y += verticesHeight + spacing;
@@ -524,6 +566,21 @@ namespace Unity.U2D.Physics.Editor
 
             #endregion
         }
+
+        // Measures the warning under the Count field at the Inspector's width, indented to the given level, so the whole message shows however narrow the Inspector is.
+        // GetPropertyHeight has no rect to measure against, so the drawing measures it the same way to match the height reserved for it.
+        private static float GetInvalidCountHelpBoxHeight(int indentLevel)
+        {
+            var oldIndentLevel = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = indentLevel;
+            var width = EditorGUI.IndentedRect(new Rect(0.0f, 0.0f, EditorGUIUtility.currentViewWidth, 0.0f)).width;
+            EditorGUI.indentLevel = oldIndentLevel;
+
+            return EditorStyles.helpBox.CalcHeight(invalidCountContent, width);
+        }
+
+        // The warning under the Count field with its warning icon, used both to measure and to draw it.
+        private static GUIContent invalidCountContent => EditorGUIUtility.TrTextContentWithIcon(PolygonGeometryInspector.invalidCountMessage, MessageType.Warning, null);
 
         #endregion
     }

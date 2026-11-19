@@ -69,6 +69,7 @@ namespace UnityEngine.UIElements
             }
 
             elementPanel?.styleAnimationSystem?.CancelElementClipAnimation(this);
+            elementPanel?.SetClipOwnerPreviewing(this, false);
 
             styleAnimation.CancelAllAnimations();
         }
@@ -100,7 +101,12 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetUIAnimationClipPreviewing(bool isPreviewing)
         {
-            elementPanel?.styleAnimationSystem?.SetClipPreviewing(this, isPreviewing);
+            var panel = elementPanel;
+            if (panel == null)
+                return;
+
+            panel.SetClipOwnerPreviewing(this, isPreviewing);
+            panel.styleAnimationSystem?.SetClipPreviewing(this, isPreviewing);
         }
 
         ValueAnimation<float> ITransitionAnimations.Start(float from, float to, int durationMs, Action<VisualElement, float> onValueChanged)

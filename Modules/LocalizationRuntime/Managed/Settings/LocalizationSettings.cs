@@ -47,8 +47,6 @@ public partial class LocalizationSettings : ScriptableObject
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
     internal static void ResetStaticsForPlayMode()
     {
-        SelectedLocaleChanged = null;
-        InitializationCompleted = null;
         s_WarnedNoSettings = false;
         if (s_Instance != null)
         {
@@ -60,6 +58,9 @@ public partial class LocalizationSettings : ScriptableObject
             s_Instance.m_Initializing = false;
             s_Instance.m_Preparing = false;
             s_Instance.m_InitializationRequested = false;
+            s_Instance.m_SelectedBeforeInitialization = false;
+            s_Instance.StartupSelector = null;
+            s_Instance.m_StallWarned = false;
             s_Instance.CompleteInitWaiters();
             s_Instance.m_SelectedLocaleCode = s_Instance.m_ProjectLocaleCode;
         }
@@ -83,17 +84,23 @@ public partial class LocalizationSettings : ScriptableObject
     [SerializeField] bool m_DeferInitialization;
 #pragma warning restore CS0649
 
+    // Long enough that a slow platform sign-in or save-file load does not trip the warning.
+    const float k_StallWarningSeconds = 30f;
+
     string m_SelectedLocaleCode;
     bool m_Initialized;
     bool m_Initializing;
     bool m_Preparing;
     bool m_InitializationRequested;
+    bool m_SelectedBeforeInitialization;
+    bool m_StallWarned;
+    float m_StallWarningSeconds = k_StallWarningSeconds;
 #pragma warning disable CS0649
     int m_InitGeneration;
 #pragma warning restore CS0649
     CancellationTokenSource m_InitCts;
     CancellationTokenSource m_PreloadCts;
-    List<AwaitableCompletionSource> m_InitWaiters;
+    List<InitWaiter> m_InitWaiters;
 
     /// <summary>
     /// Raised after the selected locale changes.
@@ -110,7 +117,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// </example>
     /// <seealso cref="SelectedLocale"/>
     /// <seealso cref="InitializationCompleted"/>
-    [AutoStaticsCleanup] // holds subscriber delegates; mirrors ResetStaticsForPlayMode()
+    [NoAutoStaticsCleanup] // localized references and language controls subscribe once and outlive Play Mode
     public static event Action<Locale> SelectedLocaleChanged;
 
     /// <summary>
@@ -128,8 +135,17 @@ public partial class LocalizationSettings : ScriptableObject
     /// </example>
     /// <seealso cref="InitializeAsync"/>
     /// <seealso cref="SelectedLocaleChanged"/>
-    [AutoStaticsCleanup] // holds subscriber delegates; mirrors ResetStaticsForPlayMode()
+    [NoAutoStaticsCleanup] // localized references and language controls subscribe once and outlive Play Mode
     public static event Action InitializationCompleted;
+
+    // The selected locale goes back to the project locale on a Play Mode transition without raising a change.
+    [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
+    internal static void RefreshSubscribers(string previousCode)
+    {
+        var current = SelectedLocale;
+        if (!string.Equals(previousCode, current?.Code, StringComparison.OrdinalIgnoreCase))
+            SelectedLocaleChanged?.Invoke(current);
+    }
 
     /// <summary>
     /// The active settings instance, or null when none is registered.
@@ -275,7 +291,8 @@ public partial class LocalizationSettings : ScriptableObject
     /// <seealso cref="IsInitialized"/>
     public bool DeferInitialization => m_DeferInitialization;
     /// <summary>
-    /// The selector that chose the startup locale, or null when the chain fell through to the project locale.
+    /// The selector that chose the startup locale, or null when the chain fell through to the project locale or
+    /// <see cref="SelectedLocale"/> was set before initialization finished.
     /// </summary>
     /// <remarks>
     /// Set during <see cref="InitializeAsync"/>. Read it to tell whether a user override was applied at startup or
@@ -369,6 +386,8 @@ public partial class LocalizationSettings : ScriptableObject
     /// Reading this returns the active locale, falling back to <see cref="ProjectLocale"/> when no explicit
     /// selection has been made. Setting it changes the locale and raises <see cref="SelectedLocaleChanged"/>. The
     /// value is stored as a locale code, so the assigned locale should be one of the <see cref="AvailableLocales"/>.
+    /// Setting it before initialization finishes takes priority over the <see cref="StartupSelectors"/>, which are
+    /// then not evaluated.
     /// </remarks>
     public static Locale SelectedLocale
     {
@@ -381,8 +400,11 @@ public partial class LocalizationSettings : ScriptableObject
         }
         set
         {
-            if (s_Instance != null)
-                s_Instance.SetSelectedLocale(value);
+            if (s_Instance == null)
+                return;
+            if (!s_Instance.m_Initialized)
+                s_Instance.m_SelectedBeforeInitialization = true;
+            s_Instance.SetSelectedLocale(value);
         }
     }
 
@@ -612,8 +634,8 @@ public partial class LocalizationSettings : ScriptableObject
 
     // The asynchronous on-demand path. A deferred project starts the run itself, so this waits for it rather than
     // starting one; the caller is already awaiting, so it simply resolves later than it would have.
-    internal static Awaitable EnsureInitializedForUse()
-        => s_Instance != null ? s_Instance.EnsureInitialized(mayStart: false) : AwaitableUtility.Completed();
+    internal static Awaitable EnsureInitializedForUse(CancellationToken cancellationToken = default)
+        => s_Instance != null ? s_Instance.EnsureInitialized(mayStart: false, cancellationToken) : AwaitableUtility.Completed();
 
     // The synchronous on-demand path. It cannot wait, so starting the run is the only way it could return a value,
     // and starting it is exactly what a deferred project asked us not to do.
@@ -635,19 +657,102 @@ public partial class LocalizationSettings : ScriptableObject
     bool Deferred => m_DeferInitialization && Application.isPlaying
         && !m_InitializationRequested && !m_Initialized;
 
-    internal static bool InitializationSettled => s_Instance == null || s_Instance.m_Initialized || s_Instance.m_Preparing;
+    internal static bool InitializationSettled => s_Instance == null || s_Instance.m_Initialized;
 
-    Awaitable EnsureInitialized(bool mayStart)
+    // A read for a named locale does not depend on the startup selection, and the selector being prepared may be the
+    // one reading, so it resolves rather than waiting for the run it is part of.
+    internal static bool InitializationSettledFor(Locale locale)
+        => InitializationSettled || (locale != null && s_Instance.m_Preparing);
+
+    // A synchronous resolve cannot wait, so a deferred project is not offered one: the awaited path waits for
+    // InitializeAsync instead of throwing.
+    internal static bool PreferSyncResolve
+        => s_Instance != null && s_Instance.m_PreferredLoading == LoadingPreference.Synchronous && !s_Instance.Deferred;
+
+    Awaitable EnsureInitialized(bool mayStart, CancellationToken cancellationToken = default)
     {
-        // See InitializationSettled: waiting while the run prepares would deadlock, so resolve with the current state.
-        if (m_Initialized || m_Preparing)
+        if (m_Initialized)
             return AwaitableUtility.Completed();
         // Awaitables are single-await, so every caller gets its own completion source.
-        var waiter = new AwaitableCompletionSource();
-        (m_InitWaiters ??= new List<AwaitableCompletionSource>()).Add(waiter);
+        var waiter = new InitWaiter { Source = new AwaitableCompletionSource() };
+        (m_InitWaiters ??= new List<InitWaiter>()).Add(waiter);
+        if (cancellationToken.CanBeCanceled)
+            waiter.Registration = cancellationToken.Register(() => CancelInitWaiterOnMainThread(waiter));
         if (mayStart || !Deferred)
             StartInitialization();
-        return waiter.Awaitable;
+        else
+            WatchForInitializationStall();
+        return waiter.Source.Awaitable;
+    }
+
+    // Tests shorten the wait; nothing else changes it.
+    internal float StallWarningSeconds
+    {
+        get => m_StallWarningSeconds;
+        set => m_StallWarningSeconds = value;
+    }
+
+    void WatchForInitializationStall()
+    {
+        if (m_StallWarned)
+            return;
+        m_StallWarned = true;
+        WarnIfInitializationStallsAsync();
+    }
+
+    // Nothing can tell a long wait from a stuck one, so say so once and leave the run alone. The deadline is real
+    // time polled per frame rather than WaitForSecondsAsync, because only the next-frame queue keeps the editor's
+    // player loop running while it waits.
+    async void WarnIfInitializationStallsAsync()
+    {
+        var generation = m_InitGeneration;
+        var seconds = m_StallWarningSeconds;
+        try
+        {
+            var deadline = Time.realtimeSinceStartup + seconds;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                await Awaitable.NextFrameAsync();
+                if (generation != m_InitGeneration || m_Initialized)
+                    return;
+            }
+            Debug.LogWarning(m_InitializationRequested
+                ? $"Localized values have been waiting {seconds:0.##} seconds for localization to initialize. A startup selector's PrepareAsync, or a provider's DiscoverLocalesAsync, has not returned, and neither may await the run it is part of."
+                : $"Localized values have been waiting {seconds:0.##} seconds for LocalizationSettings.InitializeAsync. Defer Initialization is on, so nothing resolves until you call it.");
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+    }
+
+    // The waiter list belongs to the main thread, and a token can be cancelled from any of them. Awaiting the main
+    // thread resolves without a frame when the caller is already on it.
+    async void CancelInitWaiterOnMainThread(InitWaiter waiter)
+    {
+        try
+        {
+            await Awaitable.MainThreadAsync();
+            CancelInitWaiter(waiter);
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+    }
+
+    // One caller giving up leaves the run alone: everything else waiting on it still needs it to finish.
+    void CancelInitWaiter(InitWaiter waiter)
+    {
+        if (waiter.Done)
+            return;
+        waiter.Done = true;
+        waiter.Registration.Dispose();
+        waiter.Source.TrySetCanceled();
+        m_InitWaiters?.Remove(waiter);
     }
 
     void StartInitialization()
@@ -657,6 +762,9 @@ public partial class LocalizationSettings : ScriptableObject
             return;
         m_Initializing = true;
         RunInitializeAsync();
+        // The run finishes inline unless a provider or a selector yields, so only one still going needs watching.
+        if (!m_Initialized)
+            WatchForInitializationStall();
     }
 
     async void RunInitializeAsync()
@@ -682,10 +790,13 @@ public partial class LocalizationSettings : ScriptableObject
             if (generation != m_InitGeneration)
                 return;
 
-            var selected = SelectStartupLocale(null, out var selectedBy);
-            StartupSelector = selectedBy;
-            if (selected != null)
-                SetSelectedLocale(selected);
+            if (!m_SelectedBeforeInitialization)
+            {
+                var selected = SelectStartupLocale(null, out var selectedBy);
+                StartupSelector = selectedBy;
+                if (selected != null)
+                    SetSelectedLocale(selected);
+            }
 
             m_Initialized = true;
             if (m_StartupSelectors != null)
@@ -786,7 +897,20 @@ public partial class LocalizationSettings : ScriptableObject
         if (waiters == null)
             return;
         foreach (var waiter in waiters)
-            waiter.SetResult();
+        {
+            if (waiter.Done)
+                continue;
+            waiter.Done = true;
+            waiter.Registration.Dispose();
+            waiter.Source.TrySetResult();
+        }
+    }
+
+    sealed class InitWaiter
+    {
+        public AwaitableCompletionSource Source;
+        public CancellationTokenRegistration Registration;
+        public bool Done;
     }
 
     void OnEnable()

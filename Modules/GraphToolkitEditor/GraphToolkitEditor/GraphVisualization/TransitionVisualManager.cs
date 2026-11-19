@@ -60,7 +60,7 @@ sealed class TransitionVisualManager
     /// Setting a new value overwrites any existing visual data for that transition.
     /// Set the <paramref name="visualData"/> to <see langword="null"/> to clear the transition visual for the given transition. This restores the default transition drawing until you set a new visual.
     /// This is equivalent to calling <see cref="Clear(Hash128)"/> for the given transition.
-    /// If the transition no longer resolves to any transition view in the graph (for example after it was removed), any stored visual data for that transition is removed and the call has no further effect on the canvas.
+    /// If the transition no longer exists in the graph, its local subgraphs, or the graph the window currently displays (for example after it was removed), any stored visual data for that transition is removed and the call has no further effect on the canvas.
     /// </remarks>
     public void Set(Hash128 transitionID, TransitionVisualData visualData)
     {
@@ -70,7 +70,7 @@ sealed class TransitionVisualManager
             return;
         }
 
-        if (m_Session.GraphView != null && !TryGetTransitionView(transitionID, out _))
+        if (!m_Session.IsElementValid<TransitionSupportModel>(transitionID))
         {
             TransitionVisualStore.Clear(transitionID);
             NotifyIconChanged(transitionID);
@@ -110,22 +110,33 @@ sealed class TransitionVisualManager
         UpdateVisualData(transitionID, data =>
         {
             data.IsAnimating = true;
+            data.IsPaused = false;
             data.AnimationSpeed = animationSpeed;
         });
     }
 
     internal void StopAnimation(Hash128 transitionID)
-        => UpdateVisualData(transitionID, data => data.IsAnimating = false);
+    {
+        UpdateVisualData(transitionID, data =>
+        {
+            data.IsAnimating = false;
+            data.IsPaused = false;
+        });
+    }
 
     internal void PauseAnimation(Hash128 transitionID)
     {
-        if (!m_Enabled || m_Session.GraphView == null)
+        // Only a playing animation can be paused, matching GraphAnimator.Pause.
+        if (!TransitionVisualStore.TryGet(transitionID, out var data) || !data.IsAnimating || data.IsPaused)
             return;
 
-        if (!TryGetTransitionView(transitionID, out var transitionView))
+        data.IsPaused = true;
+
+        var graphView = m_Session.GraphView;
+        if (!m_Enabled || !TryGetTransitionView(graphView, transitionID, out var transitionView))
             return;
 
-        m_Session.GraphView.Animator.Pause(transitionView);
+        graphView.Animator.Pause(transitionView);
     }
 
     /// <summary>
@@ -134,14 +145,14 @@ sealed class TransitionVisualManager
     /// <param name="transitionID">The ID of the transition whose custom appearance should be cleared.</param>
     /// <remarks>
     /// The transition reverts to the default drawing until you set a new appearance with <see cref="Set(Hash128, TransitionVisualData)"/>.
-    /// If the transition no longer resolves to any transition view in the graph, any stored appearance for that transition is removed and the call has no further effect on the canvas.
+    /// If the transition no longer exists in the graph, its local subgraphs, or the graph the window currently displays, any stored appearance for that transition is removed and the call has no further effect on the canvas.
     /// </remarks>
     public void Clear(Hash128 transitionID)
     {
         TransitionVisualStore.Clear(transitionID);
         NotifyIconChanged(transitionID);
 
-        if (m_Session.GraphView != null && !TryGetTransitionView(transitionID, out _))
+        if (!m_Session.IsElementValid<TransitionSupportModel>(transitionID))
             return;
 
         ClearTransitionVisual(transitionID);
@@ -176,14 +187,15 @@ sealed class TransitionVisualManager
 
     internal void ShowAll(bool show)
     {
-        if (m_Session.GraphView == null)
+        var graphView = m_Session.GraphView;
+        if (graphView == null)
             return;
 
         foreach (var (transitionID, appearance) in TransitionVisualStore.AllTransitionVisuals)
         {
             NotifyIconChanged(transitionID);
 
-            if (!TryGetTransitionView(transitionID, out var transitionView))
+            if (!TryGetTransitionView(graphView, transitionID, out var transitionView))
                 continue;
 
             transitionView.SetAppearance(show ? appearance : null);
@@ -191,26 +203,23 @@ sealed class TransitionVisualManager
     }
 
     bool TryGetTransitionView(Hash128 transitionID, out TransitionView transitionView)
+        => TryGetTransitionView(m_Session.GraphView, transitionID, out transitionView);
+
+    static bool TryGetTransitionView(GraphView graphView, Hash128 transitionID, out TransitionView transitionView)
     {
         transitionView = null;
 
-        if (m_Session.GraphView == null)
+        var graphModel = graphView?.GraphModel;
+        if (graphModel == null || !graphModel.TryGetModelFromGuid<TransitionSupportModel>(transitionID, out var transitionSupportModel))
             return false;
 
-        var graphModel = m_Session.GraphView.GraphModel;
-        if (!graphModel.TryGetModelFromGuid<TransitionSupportModel>(transitionID, out var transitionSupportModel))
-            return false;
-
-        transitionView = transitionSupportModel.GetView<TransitionView>(m_Session.GraphView);
+        transitionView = transitionSupportModel.GetView<TransitionView>(graphView);
 
         return transitionView != null;
     }
 
     void ClearTransitionVisual(Hash128 transitionID)
     {
-        if (m_Session.GraphView == null)
-            return;
-
         if (!TryGetTransitionView(transitionID, out var transitionView))
             return;
 
@@ -219,10 +228,7 @@ sealed class TransitionVisualManager
 
     void SetTransitionVisual(Hash128 transitionID, TransitionVisualData visualData)
     {
-        if (m_Session.GraphView == null || !Enabled)
-            return;
-
-        if (!TryGetTransitionView(transitionID, out var transitionView))
+        if (!Enabled || !TryGetTransitionView(transitionID, out var transitionView))
             return;
 
         transitionView.SetAppearance(visualData);

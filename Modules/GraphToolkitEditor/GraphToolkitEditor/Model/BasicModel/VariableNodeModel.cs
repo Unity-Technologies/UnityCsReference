@@ -37,6 +37,9 @@ namespace Unity.GraphToolkit.Editor
         public PortModel MainPortModel => m_MainPortModel;
         public PortModel ValuePortModel { get; private set; }
 
+        /// <inheritdoc />
+        public override bool HasAccentBar => Mode == VariableNodeMode.Set;
+
         public VariableNodeMode Mode
         {
             get => m_Mode == VariableNodeMode.Set && (VariableDeclarationModel?.CanCreateSetVariableNode ?? false) ? VariableNodeMode.Set : VariableNodeMode.Get;

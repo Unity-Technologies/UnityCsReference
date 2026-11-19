@@ -40,7 +40,8 @@ namespace UnityEditor.Build.Analysis
         private readonly Dictionary<GUID, int> m_ItemIdByGuid = new Dictionary<GUID, int>();
 
         // SetRootItems forgets collapsed rows, so the user's collapses are reapplied.
-        private readonly HashSet<int> m_CollapsedItemIds = new HashSet<int>();
+        private readonly HashSet<GUID> m_CollapsedBuilds = new HashSet<GUID>();
+        private bool m_CollapsedBuildsLoaded;
         private bool m_RestoringExpandedState;
 
         private BuildEntry[] m_AllBuilds = Array.Empty<BuildEntry>();
@@ -90,6 +91,8 @@ namespace UnityEditor.Build.Analysis
             m_AllBuilds = builds ?? Array.Empty<BuildEntry>();
             m_BuildHistoryLimit = buildHistoryLimit;
             m_Relationships = relationships ?? new BuildRelationships();
+            if (!m_CollapsedBuildsLoaded)
+                LoadCollapsedBuilds();
             if (m_AllPlatformNames.Length < m_AllBuilds.Length)
                 m_AllPlatformNames = new string[m_AllBuilds.Length];
             for (var i = 0; i < m_AllBuilds.Length; i++)
@@ -349,8 +352,11 @@ namespace UnityEditor.Build.Analysis
             try
             {
                 m_BuildListView.ExpandAll();
-                foreach (var itemId in m_CollapsedItemIds)
-                    m_BuildListView.CollapseItem(itemId, collapseAllChildren: false, refresh: false);
+                foreach (var buildSessionGUID in m_CollapsedBuilds)
+                {
+                    if (m_ItemIdByGuid.TryGetValue(buildSessionGUID, out var itemId))
+                        m_BuildListView.CollapseItem(itemId, collapseAllChildren: false, refresh: false);
+                }
             }
             finally
             {
@@ -364,10 +370,53 @@ namespace UnityEditor.Build.Analysis
             if (m_RestoringExpandedState || args.id < 0)
                 return;
 
-            if (args.isExpanded)
-                m_CollapsedItemIds.Remove(args.id);
+            SetItemExpanded(args.id, args.isExpanded);
+
+            // A recursive expand or collapse is reported once, for the clicked row only.
+            if (args.isAppliedToAllChildren)
+            {
+                var viewController = m_BuildListView.viewController;
+                var childIds = viewController.GetChildrenIds(args.id);
+                var descendantIds = viewController.GetAllItemIds(childIds);
+                foreach (var descendantId in descendantIds)
+                    SetItemExpanded(descendantId, args.isExpanded);
+            }
+
+            SaveCollapsedBuilds();
+        }
+
+        private void SetItemExpanded(int itemId, bool isExpanded)
+        {
+            if (!m_BuildListView.viewController.HasChildren(itemId))
+                return;
+
+            var buildSessionGUID = m_BuildListView.GetItemDataForId<BuildEntry>(itemId).BuildSessionGUID;
+            if (isExpanded)
+                m_CollapsedBuilds.Remove(buildSessionGUID);
             else
-                m_CollapsedItemIds.Add(args.id);
+                m_CollapsedBuilds.Add(buildSessionGUID);
+        }
+
+        private void LoadCollapsedBuilds()
+        {
+            m_CollapsedBuildsLoaded = true;
+            foreach (var guidString in BuildAnalysisWindowState.instance.collapsedBuilds)
+            {
+                if (GUID.TryParse(guidString, out var buildSessionGUID))
+                    m_CollapsedBuilds.Add(buildSessionGUID);
+            }
+        }
+
+        private void SaveCollapsedBuilds()
+        {
+            // Only builds still in the history are saved, so deleted builds drop out.
+            var collapsedBuilds = new List<string>(m_CollapsedBuilds.Count);
+            foreach (var build in m_AllBuilds)
+            {
+                if (m_CollapsedBuilds.Contains(build.BuildSessionGUID))
+                    collapsedBuilds.Add(build.BuildSessionGUID.ToString());
+            }
+            BuildAnalysisWindowState.instance.SetCollapsedBuilds(collapsedBuilds);
         }
 
         private int GetItemId(GUID buildSessionGUID)

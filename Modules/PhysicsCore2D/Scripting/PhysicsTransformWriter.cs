@@ -140,8 +140,9 @@ namespace Unity.U2D.Physics
                     QuarantineNonFinitePoses(ref transformWriteTweens);
 
                     // Fetch the callback target.
+                    // A destroyed Unity object is not called, the same as no target.
                     var callbackTarget = transformWriteCallbackTarget as PhysicsCallbacks.ITransformWriteCallback;
-                    if (callbackTarget != null)
+                    if (callbackTarget != null && !PhysicsEvents.IsDestroyedCallbackTarget(transformWriteCallbackTarget))
                     {
                         // Create the event.
                         var transformWriteEvent = new PhysicsEvents.TransformWriteEvent(

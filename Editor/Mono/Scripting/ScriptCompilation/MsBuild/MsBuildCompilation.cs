@@ -403,11 +403,8 @@ partial class MsBuildCompilation
 
     internal async Task<CompilationMessages> RequestAnalysisCompilationAsync(string configuration, int parentProgressId, CancellationToken cancellationToken)
     {
-        // Reject if a build is already active or pending; conversely, once this build owns
-        // _currentBuildState the tick loop won't start a normal compile until it finishes (see
-        // TickCompilationPipeline). Reusing the same fields the normal path uses means IsCompiling() reports
-        // true and a later RequestMsBuildScriptCompilation cancels this build cleanly.
-        if (_requestedBuild || _currentBuildTask != null || _currentBuildState != null)
+        // A requested compile waits for this build (see TickCompilationPipeline), but a pending restore must run first since this build doesn't restore
+        if (_shouldRestore || _currentBuildTask != null || _currentBuildState != null)
         {
             return new CompilationMessages
             {

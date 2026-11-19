@@ -135,7 +135,7 @@ public class Locale
         }
     }
 
-    static CultureInfo ResolveCulture(string code)
+    internal static CultureInfo ResolveCulture(string code)
     {
         if (string.IsNullOrEmpty(code))
             return CultureInfo.InvariantCulture;

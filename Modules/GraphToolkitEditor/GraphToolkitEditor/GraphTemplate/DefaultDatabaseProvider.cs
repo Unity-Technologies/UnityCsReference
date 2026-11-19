@@ -46,7 +46,7 @@ namespace Unity.GraphToolkit.Editor
         List<ItemLibraryDatabaseBase> m_TypeDatabases;
 
         // Used to track whether m_GraphVariablesDatabases needs to be recreated when variables have changed in the graph
-        HashSet<Hash128> m_ExistingVariableGuids;
+        Dictionary<Hash128, (string title, TypeHandle dataType)> m_ExistingVariables;
 
         /// <summary>
         /// The <see cref="GraphModel"/> associated with the provider.
@@ -112,58 +112,38 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public virtual IReadOnlyList<ItemLibraryDatabaseBase> GetGraphVariablesDatabases()
         {
-            // If there are no variable databases, we create them.
-            if (m_GraphVariablesDatabases == null)
+            // If there are already variable databases, we check if they need to be recreated because the graph's variables have changed.
+            if (m_GraphVariablesDatabases != null)
             {
-                // Add all variables in the graph to m_ExistingVariableGuids.
-                m_ExistingVariableGuids = new HashSet<Hash128>(GraphModel.VariableDeclarations.Count);
-                for (var i = 0; i < GraphModel.VariableDeclarations.Count; i++)
+                var shouldRecreateVariableDatabases = GraphModel.VariableDeclarations.Count != m_ExistingVariables.Count;
+                for (var i = 0; !shouldRecreateVariableDatabases && i < GraphModel.VariableDeclarations.Count; i++)
                 {
-                    m_ExistingVariableGuids.Add(GraphModel.VariableDeclarations[i].Guid);
+                    var variable = GraphModel.VariableDeclarations[i];
+                    if (!m_ExistingVariables.TryGetValue(variable.Guid, out var existing) ||
+                        existing.title != variable.Title ||
+                        existing.dataType != variable.DataType)
+                    {
+                        // A variable was added, renamed or had its type changed, we must recreate the variable databases.
+                        shouldRecreateVariableDatabases = true;
+                    }
                 }
 
-                return m_GraphVariablesDatabases = new List<ItemLibraryDatabaseBase>
-                {
-                    InitialGraphVariablesDatabase().Build()
-                };
+                if (!shouldRecreateVariableDatabases)
+                    return m_GraphVariablesDatabases;
             }
 
-            // If there are already variable databases, we check if they need to be recreated because the graph's variables have changed.
-            var shouldRecreateVariableDatabases = false;
-            var existingVariableGuidsToRemove = new HashSet<Hash128>(m_ExistingVariableGuids);
+            m_ExistingVariables ??= new Dictionary<Hash128, (string, TypeHandle)>(GraphModel.VariableDeclarations.Count);
+            m_ExistingVariables.Clear();
             for (var i = 0; i < GraphModel.VariableDeclarations.Count; i++)
             {
-                if (m_ExistingVariableGuids.Add(GraphModel.VariableDeclarations[i].Guid))
-                {
-                    // A new variable was added, we must recreate the variable databases.
-                    shouldRecreateVariableDatabases = true;
-                }
-                else
-                {
-                    // The variable is part of the graph and already in m_ExistingVariableGuids. We don't remove its guid from m_ExistingVariableGuids.
-                    existingVariableGuidsToRemove.Remove(GraphModel.VariableDeclarations[i].Guid);
-                }
+                var variable = GraphModel.VariableDeclarations[i];
+                m_ExistingVariables[variable.Guid] = (variable.Title, variable.DataType);
             }
 
-            // Remove guids of variables that aren't in the graph anymore from m_ExistingVariableGuids.
-            foreach (var guidToRemove in existingVariableGuidsToRemove)
+            return m_GraphVariablesDatabases = new List<ItemLibraryDatabaseBase>
             {
-                if (m_ExistingVariableGuids.Remove(guidToRemove))
-                {
-                    // A variable was removed, we must recreate the variable databases.
-                    shouldRecreateVariableDatabases = true;
-                }
-            }
-
-            if (shouldRecreateVariableDatabases)
-            {
-                m_GraphVariablesDatabases = new List<ItemLibraryDatabaseBase>
-                {
-                    InitialGraphVariablesDatabase().Build()
-                };
-            }
-
-            return m_GraphVariablesDatabases;
+                InitialGraphVariablesDatabase().Build()
+            };
         }
 
         /// <summary>

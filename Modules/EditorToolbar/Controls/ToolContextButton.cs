@@ -191,15 +191,13 @@ namespace UnityEditor.Toolbars
 
             var activeCtx = EditorToolManager.GetActiveToolContext(ownerType);
 
-            var defaultCtxType = typeof(GameObjectToolContext);
-            if (EditorToolUtility.GetToolOwnerDefinition(ownerType, out var ownerDef))
-                defaultCtxType = ownerDef.defaultContext ?? typeof(GameObjectToolContext);
+            var defaultCtxType = EditorToolUtility.GetDefaultContextType(ownerType);
 
             Type activeContextType = activeCtx != null ? activeCtx.GetType() :defaultCtxType;
             
             icon = EditorToolUtility.GetContextIcon(activeContextType, out _).image as Texture2D;
             text = EditorToolUtility.GetToolName(activeContextType);
-            tooltip = $"Active Context: {EditorToolUtility.GetContextName(activeContextType, forTooltip:true)}\n\n{k_Tooltip}";
+            tooltip = $"Active Context: {EditorToolUtility.GetContextName(activeContextType, ownerType, forTooltip:true)}\n\n{k_Tooltip}";
         }
     }
 }

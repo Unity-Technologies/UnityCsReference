@@ -54,10 +54,11 @@ namespace UnityEditor.TextCore.Text
         const float k_SubsetCharactersAreaHeight = 48; // three wrapped lines; taller content scrolls
         const float k_MissingCodePointsMaxHeight = 150; // list hugs its content, then scrolls
 
-        string m_SubsetCharactersInput;
+        internal string m_SubsetCharactersInput;
         Vector2 m_SubsetCharactersScroll;
         SubsetPreset m_SubsetPreset = SubsetPreset.Custom;
-        bool m_SubsetSectionInitialized;
+        // Another inspector (the Properties window) can apply or remove the subset, so track which one the inputs show.
+        string m_SubsetInputsLoadedFrom;
         // Probing the cmap and previewing the subset size load the source font, so cache per input rather than per repaint.
         string m_MissingCodePointsFor;
         string m_MissingCodePoints;
@@ -111,17 +112,7 @@ namespace UnityEditor.TextCore.Text
                 return;
             }
 
-            if (!m_SubsetSectionInitialized)
-            {
-                m_SubsetSectionInitialized = true;
-                if (active)
-                {
-                    int presetIndex = Array.IndexOf(k_SubsetPresetRanges, activeRecipe.characters);
-                    m_SubsetPreset = presetIndex >= 0 ? (SubsetPreset)presetIndex : SubsetPreset.Custom;
-                    if (m_SubsetPreset == SubsetPreset.Custom)
-                        m_SubsetCharactersInput = UnicodeRanges.ToCharacters(activeRecipe.characters, k_SubsetInputMaxLength) ?? string.Empty;
-                }
-            }
+            LoadSubsetInputs(active ? activeRecipe.characters : null);
 
             if (active)
                 EditorGUILayout.LabelField(new GUIContent("Active Subset"), new GUIContent($"{UnicodeRanges.CountCodePoints(activeRecipe.characters)} code points", activeRecipe.characters));
@@ -201,9 +192,9 @@ namespace UnityEditor.TextCore.Text
                 {
                     if (GUILayout.Button("Update Subset", GUILayout.Width(120)))
                     {
-                        if (!FontSubsetterManager.ApplySubset(m_fontAsset, ranges, out string error))
-                            Debug.LogError($"Font subsetting failed: {error}", m_fontAsset);
-                        m_MissingCodePointsFor = null;
+                        // A focused Characters field keeps drawing its own edit buffer instead of the applied characters.
+                        GUI.FocusControl(null);
+                        ApplySubsetInputs(ranges);
                         GUIUtility.ExitGUI();
                     }
                 }
@@ -212,7 +203,6 @@ namespace UnityEditor.TextCore.Text
                     if (GUILayout.Button("Remove Subset", GUILayout.Width(120)))
                     {
                         FontSubsetterManager.RemoveSubset(m_fontAsset);
-                        m_SubsetSectionInitialized = false;
                         m_MissingCodePointsFor = null;
                         GUIUtility.ExitGUI();
                     }
@@ -221,6 +211,30 @@ namespace UnityEditor.TextCore.Text
 
             EditorGUILayout.Space();
             EditorGUI.indentLevel = 0;
+        }
+
+        // The inputs then reload from the applied subset like in any other inspector, so all of them show the same characters.
+        internal void ApplySubsetInputs(string ranges)
+        {
+            if (!FontSubsetterManager.ApplySubset(m_fontAsset, ranges, out string error))
+                Debug.LogError($"Font subsetting failed: {error}", m_fontAsset);
+            m_MissingCodePointsFor = null;
+        }
+
+        // activeCharacters is null when no subset is applied.
+        internal void LoadSubsetInputs(string activeCharacters)
+        {
+            if (activeCharacters == m_SubsetInputsLoadedFrom)
+                return;
+
+            m_SubsetInputsLoadedFrom = activeCharacters;
+            if (activeCharacters == null)
+                return;
+
+            int presetIndex = Array.IndexOf(k_SubsetPresetRanges, activeCharacters);
+            m_SubsetPreset = presetIndex >= 0 ? (SubsetPreset)presetIndex : SubsetPreset.Custom;
+            if (m_SubsetPreset == SubsetPreset.Custom)
+                m_SubsetCharactersInput = UnicodeRanges.ToCharacters(activeCharacters, k_SubsetInputMaxLength) ?? string.Empty;
         }
 
         // Returns null when the baked character set exceeds the Characters field limit.

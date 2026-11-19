@@ -113,7 +113,11 @@ public static partial class LocalizationEditorSettings
     [AutoStaticsCleanup] // a queued delayCall does not survive the reload that would clear this
     static bool s_EditModeRefreshQueued;
 
-    static void OnCollectionsChanged()
+    internal static bool IsEditModeRefreshQueued => s_EditModeRefreshQueued;
+
+    static void OnCollectionsChanged() => QueueEditModeTableRefresh();
+
+    internal static void QueueEditModeTableRefresh()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || s_EditModeRefreshQueued)
             return;
@@ -130,10 +134,23 @@ public static partial class LocalizationEditorSettings
             FileTablePlaymodeGenerator.PrepareForEditMode();
     }
 
+    // Carried from ExitingEditMode to EnteredPlayMode; a domain reload in between clears it.
+    [NoAutoStaticsCleanup]
+    static string s_LocaleCodeBeforePlayMode;
+
     static void OnPlayModeStateChanged(PlayModeStateChange state)
     {
+        if (state == PlayModeStateChange.EnteredPlayMode)
+        {
+            if (s_LocaleCodeBeforePlayMode != null)
+                LocalizationSettings.RefreshSubscribers(s_LocaleCodeBeforePlayMode);
+            s_LocaleCodeBeforePlayMode = null;
+            return;
+        }
+
         if (state != PlayModeStateChange.ExitingEditMode && state != PlayModeStateChange.EnteredEditMode)
             return;
+        var previousCode = LocalizationSettings.SelectedLocale?.Code;
         LocalizationSettings.ResetStaticsForPlayMode();
         VariantResolver.ResetStatics();
         Providers.FileTables.TableDataConverter.ResetStatics();
@@ -141,12 +158,14 @@ public static partial class LocalizationEditorSettings
 
         if (state == PlayModeStateChange.ExitingEditMode)
         {
+            s_LocaleCodeBeforePlayMode = previousCode;
             FileTablePlaymodeGenerator.PrepareForPlayMode();
         }
         else
         {
             FileTablePlaymodeGenerator.ClearAndRelease();
             FileTablePlaymodeGenerator.PrepareForEditMode();
+            LocalizationSettings.RefreshSubscribers(previousCode);
         }
     }
 

@@ -147,6 +147,12 @@ namespace UnityEditor
             return 0;
         }
 
+        [RequiredByNativeCode]
+        static Attribute[] GetRequireComponents(Type type)
+        {
+            return Attribute.GetCustomAttributes(type, typeof(RequireComponent), false);
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         struct MonoCreateAssetItem
         {

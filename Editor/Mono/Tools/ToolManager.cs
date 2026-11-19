@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.ShortcutManagement;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UObject = UnityEngine.Object;
@@ -30,9 +31,16 @@ namespace UnityEditor.EditorTools
             if (context != null && (!typeof(EditorToolContext).IsAssignableFrom(context) || context.IsAbstract))
                 throw new ArgumentException("Type must be assignable to EditorToolContext, and not abstract.", "context");
 
-            var ctx = context != null ? context : typeof(GameObjectToolContext);
+            var defaultContext = EditorToolUtility.GetDefaultContextType(contextOwner);
+            var ctx = context != null ? context : defaultContext;
 
-            if (EditorToolUtility.IsComponentEditor(ctx))
+            if (!EditorToolUtility.IsContextSupported(ctx, contextOwner))
+            {
+                Debug.LogWarning($"Tool context {ctx} is not supported in the current stage.");
+                return;
+            }
+
+            if (EditorToolUtility.IsComponentEditor(ctx) && ctx != defaultContext)
             {
                 var instance = EditorToolManager.GetComponentContext(ctx, toolOwner:contextOwner, true);
                 if (instance == null)
@@ -70,7 +78,10 @@ namespace UnityEditor.EditorTools
             if (context == null || !typeof(EditorToolContext).IsAssignableFrom(context) || context.IsAbstract)
                 return false;
 
-            if (!EditorToolUtility.IsComponentEditor(context))
+            if (!EditorToolUtility.IsContextSupported(context, contextOwner))
+                return false;
+
+            if (!EditorToolUtility.IsComponentEditor(context) || context == EditorToolUtility.GetDefaultContextType(contextOwner))
                 return true;
 
             return EditorToolManager.GetComponentContext(context, toolOwner: contextOwner, true) != null;
@@ -79,6 +90,87 @@ namespace UnityEditor.EditorTools
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool CanSetActiveContext<T>() where T : EditorToolContext
             => CanSetActiveContext(typeof(T));
+
+        internal readonly struct StageToolContextOverride
+        {
+            public Type defaultContext { get; }
+            public Type[] supportedContexts { get; }
+
+            public StageToolContextOverride(Type defaultContext, Type[] supportedContexts)
+            {
+                this.defaultContext = defaultContext;
+                this.supportedContexts = supportedContexts;
+            }
+        }
+
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Stage tool context overrides are registered again by their owners on the next code load")]
+        static Dictionary<Type, StageToolContextOverride> s_StageToolContextOverrides = new();
+
+        /// <summary>
+        /// Overrides the Scene view's default and supported tool contexts while a stage of the given type is the current stage.
+        /// </summary>
+        /// <param name="stageType">The stage type to override, matched exactly. Must derive from Stage, not be abstract, and not be MainStage.</param>
+        /// <param name="defaultContext">The context that becomes the default in the stage.</param>
+        /// <param name="supportedContexts">Contexts allowed in addition to the default. Null allows all contexts, an empty array allows only the default.</param>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static void RegisterStageToolContextOverride(Type stageType, Type defaultContext, Type[] supportedContexts)
+        {
+            if (stageType == null || !typeof(Stage).IsAssignableFrom(stageType) || stageType.IsAbstract)
+                throw new ArgumentException("Type must be assignable to Stage, and not abstract.", nameof(stageType));
+
+            if (stageType == typeof(MainStage))
+                throw new ArgumentException("The tool contexts of the main stage cannot be overridden.", nameof(stageType));
+
+            if (defaultContext == null || !typeof(EditorToolContext).IsAssignableFrom(defaultContext) || defaultContext.IsAbstract)
+                throw new ArgumentException("Type must be assignable to EditorToolContext, and not abstract.", nameof(defaultContext));
+
+            if (supportedContexts != null)
+            {
+                foreach (var supportedContext in supportedContexts)
+                {
+                    if (supportedContext == null || !typeof(EditorToolContext).IsAssignableFrom(supportedContext) || supportedContext.IsAbstract)
+                        throw new ArgumentException("Types must be assignable to EditorToolContext, and not abstract.", nameof(supportedContexts));
+                }
+            }
+
+            if (s_StageToolContextOverrides.ContainsKey(stageType))
+                throw new InvalidOperationException($"A tool context override is already registered for {stageType}.");
+
+            s_StageToolContextOverrides.Add(stageType, new StageToolContextOverride(defaultContext, supportedContexts));
+            RefreshStageToolContextsIfCurrent(stageType);
+        }
+
+        /// <summary>
+        /// Removes the tool context override registered for the given stage type.
+        /// </summary>
+        /// <param name="stageType">The stage type whose override to remove.</param>
+        internal static void UnregisterStageToolContextOverride(Type stageType)
+        {
+            if (stageType != null && s_StageToolContextOverrides.Remove(stageType))
+                RefreshStageToolContextsIfCurrent(stageType);
+        }
+
+        static void RefreshStageToolContextsIfCurrent(Type stageType)
+        {
+            var currentStage = StageNavigationManager.instance.currentStage;
+            if (currentStage != null && currentStage.GetType() == stageType)
+                EditorToolManager.RefreshStageToolContexts();
+        }
+
+        internal static bool TryGetCurrentStageToolContextOverride(out StageToolContextOverride stageOverride)
+        {
+            stageOverride = default;
+
+            if (s_StageToolContextOverrides.Count == 0)
+                return false;
+
+            var currentStage = StageNavigationManager.instance.currentStage;
+            if (currentStage == null)
+                return false;
+
+            return s_StageToolContextOverrides.TryGetValue(currentStage.GetType(), out stageOverride);
+        }
         
         internal static Type GetActiveToolType(Type toolOwnerType)
         {
@@ -357,10 +449,7 @@ namespace UnityEditor.EditorTools
         internal static void ExitToolContext()
         {
             var toolsOwnerType = EditorToolUtility.GetToolOwnerFromFocusedWindow();
-            if (EditorToolUtility.GetToolOwnerDefinition(toolsOwnerType, out var toolOwnerDef))
-                SetActiveContext(toolOwnerDef.defaultContext, toolsOwnerType);
-            else
-                SetActiveContext(typeof(GameObjectToolContext), toolsOwnerType);
+            SetActiveContext(EditorToolUtility.GetDefaultContextType(toolsOwnerType), toolsOwnerType);
         }
 
         [Shortcut("Tools/Cycle Tool Modes", typeof(ToolShortcutContext), KeyCode.G)]
@@ -381,14 +470,6 @@ namespace UnityEditor.EditorTools
             if (sortedAvailableCtxs.Count <= 1)
                 return;
 
-            ctxIdx++;
-            if (active is GameObjectToolContext)
-            {
-                // GO ctx is always idx 0 in sorted context association list, therefore if it's active, we can immediately cycle into idx 1 context.
-                SetActiveContext(sortedAvailableCtxs[ctxIdx].editor, toolsOwnerType);
-                return;
-            }
-
             // Iterate over context associations until we reach the currently active type
             while (sortedAvailableCtxs[ctxIdx].editor != active.GetType())
             {
@@ -407,10 +488,7 @@ namespace UnityEditor.EditorTools
                 SetActiveContext(sortedAvailableCtxs[ctxIdx].editor, toolsOwnerType);
             else
             {
-                if (EditorToolUtility.GetToolOwnerDefinition(toolsOwnerType, out var toolOwnerDef))
-                    SetActiveContext(toolOwnerDef.defaultContext, toolsOwnerType);
-                else
-                    SetActiveContext(typeof(GameObjectToolContext), toolsOwnerType);
+                SetActiveContext(sortedAvailableCtxs[0].editor, toolsOwnerType);
             }
         }
     }

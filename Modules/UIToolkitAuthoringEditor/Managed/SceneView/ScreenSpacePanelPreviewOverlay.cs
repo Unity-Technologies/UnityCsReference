@@ -414,13 +414,7 @@ namespace Unity.UIToolkit.Editor
 
             m_PanelElement.PanelSettings = target.panelSettings;
 
-            var subRoot = m_PanelElement.subRootVisualElement;
-            subRoot?.Clear();
-
             var visualTreeAsset = target.visualTreeAsset;
-            if (visualTreeAsset != null && subRoot != null)
-                visualTreeAsset.CloneTree(subRoot);
-
             m_BoundAsset = visualTreeAsset;
             m_BoundSettings = target.panelSettings;
             m_BoundLayoutSignature = target.panelSettings != null ? GetLayoutSignature(target.panelSettings) : default;
@@ -434,6 +428,12 @@ namespace Unity.UIToolkit.Editor
 
             RefreshContentState();
             RequestLayout();
+
+            // Cloned last: an element can throw on attach, and the bound state must be recorded first.
+            var subRoot = m_PanelElement.subRootVisualElement;
+            subRoot?.Clear();
+            if (visualTreeAsset != null && subRoot != null)
+                visualTreeAsset.CloneTree(subRoot);
         }
 
         void ClearPreview()

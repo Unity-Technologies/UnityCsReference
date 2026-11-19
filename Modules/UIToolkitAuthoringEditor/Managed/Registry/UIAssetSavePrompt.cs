@@ -106,26 +106,21 @@ static partial class UIAssetSavePrompt
             return false;
 
         var registry = UIAssetRegistry.instance;
-        var succeeded = true;
-
-        // Batch the imports so saving a template doesn't reimport its dirty dependents first.
-        using var batch = choice == UIAssetSaveChoice.Save ? new AssetDatabase.AssetEditingScope() : null;
+        if (choice == UIAssetSaveChoice.Save)
+            return registry.SaveAssets(assets);
 
         foreach (var asset in assets)
         {
-            // Saving or discarding a document also covers the stylesheets it references, so by the time we
-            // reach those sheets they are usually already settled — skip them rather than rewriting (or
-            // force-reimporting) a file that now matches disk.
+            // Discarding a document also covers the stylesheets it references, so by the time we reach those
+            // sheets they are usually already settled — skip them rather than force-reimporting a file that
+            // now matches disk.
             if (asset == null || !registry.IsDirty(asset))
                 continue;
 
-            if (choice == UIAssetSaveChoice.Save)
-                succeeded &= registry.SaveAsset(asset);
-            else
-                registry.DiscardAsset(asset);
+            registry.DiscardAsset(asset);
         }
 
-        return succeeded;
+        return true;
     }
 
     /// <summary>

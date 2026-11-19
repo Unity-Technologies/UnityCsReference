@@ -5266,6 +5266,9 @@
     <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisWindow.cs">
       <Link>Modules\BuildAnalysis\UI\BuildAnalysisWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildAnalysisWindowState.cs">
+      <Link>Modules\BuildAnalysis\UI\BuildAnalysisWindowState.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\BuildListPanel.cs">
       <Link>Modules\BuildAnalysis\UI\BuildListPanel.cs</Link>
     </Compile>
@@ -18112,7 +18115,7 @@
     <Compile Include="..\..\artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs">
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
-    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_5249\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_6c40\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_5852\buildTools\UnityEditor.MSBuild.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_5852\buildTools\Unity.BuildService.dll" />
     <Reference Include="..\..\artifacts\Stevedore\msbu-tools_5852\asmDefToCSProj\AsmDefToCSProjLib.dll" />
@@ -18148,7 +18151,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_nh3jbtdi/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_4xuebtzk/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

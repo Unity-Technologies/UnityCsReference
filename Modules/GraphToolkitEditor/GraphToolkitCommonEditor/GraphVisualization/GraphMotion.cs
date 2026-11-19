@@ -192,11 +192,11 @@ public sealed class GraphMotion
     /// The animation loops indefinitely until you call <see cref="Stop"/> or <see cref="Pause"/>.
     /// While the animation plays, the accent bar overrides any fill amount previously set through <see cref="NodeReference.FillAmount"/> or the node model's <c>FillAmount</c> property.
     /// Call <see cref="Play"/> again on the same node after <see cref="Pause"/> to resume the animation at the new speed.
-    /// Throws <see cref="ArgumentException"/> when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>.
+    /// Throws <see cref="ArgumentException"/> when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>, or corresponds to a node that has no accent bar.
     /// </remarks>
     /// <param name="node">The node on which to play the animation.</param>
     /// <param name="animationSpeed">Speed multiplier for the animation. Higher values move the animated segment faster. The default value is 1.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="node"/>  doesn't correspond to a node in the current <see cref="Context"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>, or corresponds to a node that has no accent bar.</exception>
     /// <example>
     /// <code>
     /// NodeReference nodeRef = context.GetNodeReference(nodeID);
@@ -215,10 +215,10 @@ public sealed class GraphMotion
     /// </summary>
     /// <remarks>
     /// If a fill amount has been set on the node (either via <see cref="NodeReference.FillAmount"/> or via the node model's <c>FillAmount</c> property), the bar remains visible at that fill amount instead.
-    /// Throws <see cref="ArgumentException"/> when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>.
+    /// Throws <see cref="ArgumentException"/> when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>, or corresponds to a node that has no accent bar.
     /// </remarks>
     /// <param name="node">The node on which to stop the animation.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>, or corresponds to a node that has no accent bar.</exception>
     /// <example>
     /// <code>
     /// NodeReference nodeRef = context.GetNodeReference(nodeID);
@@ -239,12 +239,12 @@ public sealed class GraphMotion
     /// </summary>
     /// <remarks>
     /// Freezes the looping animation at its current state and keeps the accent bar visible on the node.
-    /// Call <see cref="Play"/> again to resume the animation at the requested speed.
+    /// Call <see cref="Play"/> again to resume the animation at the requested speed. The animation restarts from the beginning when it resumes.
     /// If you pause a node that has no active animation there is no visible effect.
-    /// Throws <see cref="ArgumentException"/> when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>.
+    /// Throws <see cref="ArgumentException"/> when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>, or corresponds to a node that has no accent bar.
     /// </remarks>
     /// <param name="node">The node on which to pause the animation.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="node"/> doesn't correspond to a node in the current <see cref="Context"/>, or corresponds to a node that has no accent bar.</exception>
     /// <example>
     /// <code>
     /// NodeReference nodeRef = context.GetNodeReference(nodeID);
@@ -314,7 +314,7 @@ public sealed class GraphMotion
     /// </summary>
     /// <remarks>
     /// Freezes the looping animation at its current state and keeps the accent bar visible on the state.
-    /// Call <see cref="Play"/> again to resume the animation at the requested speed.
+    /// Call <see cref="Play"/> again to resume the animation at the requested speed. The animation restarts from the beginning when it resumes.
     /// If you pause a state that has no active animation there is no visible effect.
     /// Throws <see cref="ArgumentException"/> when <paramref name="state"/> doesn't correspond to a state in the current <see cref="Context"/>.
     /// </remarks>

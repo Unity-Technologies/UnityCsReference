@@ -260,7 +260,8 @@ namespace UnityEditor.Search
         // 3- Add metadata to document hash.
         // 4- Keywords per document.
         // 5- Index material references of all Renderer types.
-        internal const int version = 5;
+        // 6- Index properties inside SerializeReference fields.
+        internal const int version = 6;
 
         /// <summary>
         /// Name of the index. Generally this name is given by a user from a <see cref="SearchDatabase.Settings"/>

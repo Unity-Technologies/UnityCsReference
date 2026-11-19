@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
@@ -174,9 +175,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_Timings.GameObjectAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.GameObject);
         }
 
-        protected void AccumulateStat(ReportItem issue, ref Stats stats, bool includeIgnoredAndHidden)
+        protected void AccumulateStat(ReportItem issue, ref Stats stats)
         {
-            var countsTowardArea = includeIgnoredAndHidden || !IsIgnoredOrHidden(issue);
+            var countsTowardArea = !IsIgnoredOrHidden(issue);
 
             switch (issue.Category)
             {
@@ -241,19 +242,54 @@ namespace Unity.ProjectAuditor.Editor.UI
             return $"({ignoredCount} ignored, {fixedCount} fixed)";
         }
 
-        protected void DrawChartBar(float horizontalPadding, Func<List<ChartUtil.Element>> getter, string extraTotalInfo = null)
+        protected void DrawTopTenLabel(string noIssuesText, string noMajorIssuesText, string severeCountFormat, string severeCountPluralFormat, int totalIssuesExcludingIgnoredAndFixed, int totalMajorAndCriticalIssues)
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.Space(horizontalPadding);
+                GUILayout.Space(12);
+
+                if (totalIssuesExcludingIgnoredAndFixed == 0)
+                    GUILayout.Label(noIssuesText, SharedStyles.Label);
+                else if (totalMajorAndCriticalIssues == 0)
+                    EditorGUILayout.LabelField(noMajorIssuesText, SharedStyles.Label);
+                else
+                    EditorGUILayout.LabelField(string.Format(totalMajorAndCriticalIssues == 1 ? severeCountFormat : severeCountPluralFormat, totalMajorAndCriticalIssues), SharedStyles.Label);
+            }
+        }
+
+        protected void DrawChartBar(Func<List<ChartUtil.Element>> getter, string extraTotalInfo = null)
+        {
+            GUILayout.Space(6);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                const int kHorizontalPadding = 2;
+                GUILayout.Space(kHorizontalPadding);
 
                 // Drawing through the window's Draw2D lets the bar geometry be clipped (via
                 // Draw2D.SetClipRect) to stay inside the scroll view the PA window handles.
                 ChartUtil.DrawHorizontalStackedBar(m_Window.Draw2D, 14, null, getter(),
                     "{0}", "N0", true, false, true, extraTotalInfo);
 
-                GUILayout.Space(horizontalPadding);
+                GUILayout.Space(kHorizontalPadding);
             }
+        }
+
+        // Display analysis time in sensible units
+        protected static string FormatAnalysisTime(long analysisTimeMs)
+        {
+            var timeSpan = TimeSpan.FromMilliseconds(analysisTimeMs);
+            if (timeSpan.TotalSeconds >= 1)
+                timeSpan = TimeSpan.FromSeconds(Math.Round(timeSpan.TotalSeconds, MidpointRounding.AwayFromZero));
+
+            if (timeSpan.TotalHours >= 1)
+                return $"{(int)timeSpan.TotalHours}h {timeSpan.Minutes}m";
+            if (timeSpan.TotalMinutes >= 1)
+                return $"{timeSpan.Minutes}m {timeSpan.Seconds}s";
+            if (timeSpan.TotalSeconds >= 1)
+                return $"{timeSpan.Seconds}s";
+
+            return $"{timeSpan.TotalMilliseconds:F0}ms";
         }
 
         // Empty buckets are left out of the legend.
@@ -278,25 +314,52 @@ namespace Unity.ProjectAuditor.Editor.UI
             return elements;
         }
 
-        protected static List<ChartUtil.Element> BuildCategoryChartElements(Stats stats)
+        protected List<ChartUtil.Element> BuildCategoryChartElements(Stats stats)
         {
             var colors = Utility.GetCategoryColors();
             var elements = new List<ChartUtil.Element>(4);
 
-            AddChartElement(elements, "Code", stats.NumCodeIssues, colors[0], Utility.IconType.Square);
-            AddChartElement(elements, "Assets", stats.NumAssetIssues, colors[1], Utility.IconType.Square);
-            AddChartElement(elements, "Game Objects", stats.NumGameObjectIssues, colors[2], Utility.IconType.Square);
-            AddChartElement(elements, "Settings", stats.NumSettingIssues, colors[3], Utility.IconType.Square);
+            AddCategoryChartElement(elements, "Code", stats.NumCodeIssues, colors[0], m_Timings.CodeAnalysisTime, IssueCategory.Code);
+            AddCategoryChartElement(elements, "Assets", stats.NumAssetIssues, colors[1], m_Timings.AssetsAnalysisTime, IssueCategory.AssetIssue);
+            AddCategoryChartElement(elements, "Game Objects", stats.NumGameObjectIssues, colors[2], m_Timings.GameObjectAnalysisTime, IssueCategory.GameObject);
+            AddCategoryChartElement(elements, "Settings", stats.NumSettingIssues, colors[3], m_Timings.SettingsAnalysisTime, IssueCategory.ProjectSetting);
 
             return elements;
         }
 
-        // "<title> analysis is still running" plus the animated status wheel.
-        protected static void DrawAnalysisInProgressLabel(string title)
+        void AddCategoryChartElement(List<ChartUtil.Element> elements, string label, int count, Color color, long analysisTimeMs, IssueCategory category)
         {
-            var text = string.Format(Contents.AnalysisInProgressText, title);
-            GUILayout.Label(EditorGUIUtility.TrTextContent($"{text}|{Utility.GetStatusWheelFrame()}",
-                text, string.Empty, Utility.GetIcon(Utility.IconType.StatusWheel).image));
+            var pending = m_ViewManager.HasPendingCategory(category);
+            var analyzed = m_ViewManager.Report.HasCategory(category);
+            var info = !pending && analyzed ? $"found in {FormatAnalysisTime(analysisTimeMs)}" : null;
+            var button = pending ? null : !analyzed ? SharedContents.Analyze : (m_ViewManager.HasView(category) && count > 0) ? Contents.Review : null;
+
+            // The count of a pending category is partial, so it stays out of the bar and total
+            string valueText;
+            if (pending)
+            {
+                valueText = "Analyzing...";
+                count = 0;
+            }
+            else if (!analyzed)
+            {
+                valueText = "Not Analyzed";
+            }
+            else if (count == 0)
+            {
+                valueText = "No issues found";
+            }
+            else
+            {
+                valueText = count == 1 ? "1 issue" : $"{count} issues";
+            }
+
+            elements.Add(new ChartUtil.Element(label, $"{label} issues", count, color, Utility.GetIcon(Utility.IconType.Square),
+                info, button, () =>
+                {
+                    m_Window.GotoCategory(category);
+                    GUIUtility.ExitGUI();
+                }, valueText));
         }
 
         protected bool IsIgnored(ReportItem issue)
@@ -332,10 +395,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
 #pragma warning disable UAC2001, UAC2005, UAC2010 // Avoid Linq
                     topTen.Issues = m_ViewManager.Report.GetAllIssues()
-                        .Where(i =>
-                            !m_ViewManager.HasPendingCategory(i.Category)
-                            && !filter.Invoke(i)
-                        ).GroupBy(i => i.DescriptorIdAsString)
+                        .Where(i => !filter.Invoke(i))
+                        .GroupBy(i => i.DescriptorIdAsString)
                         .OrderBy(GetHighestGroupSeverity)
                         .ThenByDescending(group => group.Count())
                         .ThenBy(group => GetTopTenAreasOrder(group.First().Id.GetDescriptor().Areas))
@@ -653,8 +714,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             public static readonly GUIContent SessionInformationContent = L10n.TextContent("Session Information", null, null, null);
             public static readonly GUIContent MoreDetails = L10n.TextContent("More Details", null, null, null);
-
-            public static readonly string AnalysisInProgressText = L10n.Tr("{0} analysis is still running in the background (see more in Window > General > Progress)", null);
+            public static readonly GUIContent Review = L10n.TextContent("Review", null, null, null);
         }
     }
 }

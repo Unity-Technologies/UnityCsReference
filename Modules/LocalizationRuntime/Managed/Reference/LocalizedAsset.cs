@@ -73,7 +73,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
 
     void PushTo(ChangeHandler handler)
     {
-        if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
+        if (LocalizationSettings.PreferSyncResolve)
         {
             var asset = GetLocalizedAsset();
             if (asset != null)
@@ -144,7 +144,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
     {
         if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return AwaitableUtility.FromResult<TObject>(null);
-        if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
+        if (LocalizationSettings.PreferSyncResolve)
         {
             var asset = GetLocalizedAsset();
             if (asset != null)
@@ -156,7 +156,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
     async Awaitable<TObject> LoadAsync(ResourceDatabase database)
     {
         // Initialization selects the startup locale, so settle it before capturing the resolving locale.
-        if (!LocalizationSettings.InitializationSettled)
+        if (!LocalizationSettings.InitializationSettledFor(ResolveOverrideLocale()))
             await LocalizationSettings.EnsureInitializedForUse();
         var locale = ResolvingLocale();
         var entry = await GetEntryAsync(locale, default);
@@ -181,8 +181,9 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
     {
         if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return null;
-        var entry = GetEntry();
-        return database.LoadLocalizedAsset<TObject>(entry, ResolvingLocale());
+        var locale = SyncResolvingLocale();
+        var entry = GetEntry(locale);
+        return database.LoadLocalizedAsset<TObject>(entry, locale);
     }
 
     /// <summary>
@@ -202,7 +203,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
         if (m_Changed == null)
             return;
         var version = BeginRefresh();
-        if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
+        if (LocalizationSettings.PreferSyncResolve)
         {
             var asset = GetLocalizedAsset();
             if (asset != null)

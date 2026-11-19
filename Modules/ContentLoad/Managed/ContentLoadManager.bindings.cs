@@ -187,6 +187,12 @@ namespace Unity.Loading
         [FreeFunction("ContentLoad::UnregisterContentDirectory")]
         internal static extern void UnregisterInternal(ContentDirectoryHandle handle);
 
+        // Rewrites the directory's manifest so every load of a source loadable, explicit or through a
+        // cross-file reference, resolves to its target instead. Call after RegisterContentDirectory and
+        // before loading content from the directory. On failure nothing is applied and false is returned.
+        [FreeFunction("ContentLoad::ApplyContentRedirects")]
+        internal static extern bool ApplyContentRedirects(ContentDirectoryHandle contentDirectory, LoadableObjectId[] redirectSources, LoadableObjectId[] redirectTargets);
+
         /// <summary>
         /// Retrieve all root assets from all registered content directories.
         /// </summary>

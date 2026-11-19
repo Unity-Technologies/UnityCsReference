@@ -85,7 +85,7 @@ namespace UnityEngine.UIElements
         // Returns the same result as TransformAlignedRect(pivotedMatrixWithLayout, rec), but will try to use
         // simplified calculations for elements with no scale or rotation.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        void TransformAlignedRectToParentSpace(ref Rect rect)
+        internal void TransformAlignedRectToParentSpace(ref Rect rect)
         {
             if (hasDefaultRotationAndScale)
             {

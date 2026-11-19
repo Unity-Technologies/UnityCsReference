@@ -111,7 +111,7 @@ public class SubStringFormatter : FormatterBase
             case SubStringOutOfRangeBehavior.ReturnEmptyString:
                 return ReadOnlySpan<char>.Empty;
             case SubStringOutOfRangeBehavior.ReturnStartIndexToEndOfString:
-                return currentValue.Slice((int)Math.Max(startPos, 0));
+                return currentValue.Slice((int)Math.Clamp(startPos, 0, currentValue.Length));
             default:
                 throw new ArgumentOutOfRangeException(nameof(parameters), $"Start index {startPos} and length {length} are outside the string of length {currentValue.Length}.");
         }
@@ -122,8 +122,6 @@ public class SubStringFormatter : FormatterBase
         long startPos = ParseIndex(parameters[0]);
         if (startPos < 0)
             startPos = currentValue.Length + startPos;
-        if (startPos > currentValue.Length)
-            startPos = currentValue.Length;
 
         long length = parameters.Length > 1 ? ParseIndex(parameters[1]) : currentValue.Length - startPos;
         if (length < 0)

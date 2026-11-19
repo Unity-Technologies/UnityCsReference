@@ -70,7 +70,7 @@ namespace Unity.UI.Builder
             };
             m_GradientField.AddToClassList(k_RowClassName);
             // The swatch editor resamples the stops, so per-stop vars lose their anchor.
-            m_GradientField.RegisterValueChangedCallback(_ => OnControlChanged(m_VarBindings.ClearStops));
+            m_GradientField.RegisterValueChangedCallback(_ => OnControlChanged(m_VarBindings.ClearStops, true));
             // Intercept the interactions that would open the built-in gradient picker
             // (see GradientField.HandleEventBubbleUp) and open the stops popup instead.
             m_GradientField.RegisterCallback<MouseDownEvent>(evt =>
@@ -175,7 +175,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        void OnControlChanged(Action clearOverriddenVarNames)
+        void OnControlChanged(Action clearOverriddenVarNames, bool fromSwatch = false)
         {
             if (m_SuppressChangeEvents)
                 return;
@@ -194,7 +194,9 @@ namespace Unity.UI.Builder
                 shape = (BackgroundGradientShape)m_ShapeField.value,
                 size = (BackgroundGradientSize)m_SizeField.value,
                 position = m_PositionField.value,
-                stops = UnityGradientToBackgroundStops(m_GradientField.value),
+                stops = fromSwatch
+                    ? UnityGradientToBackgroundStops(m_GradientField.value)
+                    : (value.IsEmpty() ? defaultAuthoringGradient : value).stops,
             };
             m_VarBindings.SyncStopCount(built.stops.Length);
             value = built;

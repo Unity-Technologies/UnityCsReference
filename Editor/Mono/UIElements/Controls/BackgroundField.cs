@@ -296,7 +296,7 @@ namespace UnityEditor.UIElements
             var output = new List<BackgroundGradientStop>(times.Count);
             foreach (var t in times)
             {
-                output.Add(BackgroundGradientStop.Percent(g.Evaluate(t), Mathf.Clamp01(t)));
+                output.Add(BackgroundGradientStop.Percent(g.Evaluate(t), Mathf.Clamp01((float)System.Math.Round(t, 4))));
                 if (output.Count >= max) break;
             }
             if (output.Count < times.Count && !s_WarnedTooManyGradientKeys)

@@ -439,7 +439,7 @@ namespace UnityEngine.Audio
         /// </remarks>
         /// <seealso cref="Pipe.SendData"/>
         /// <example>
-        /// <code source="../../../../../Tests/EditModeAndPlayModeTests/Audio/Assets/DocCodeExamples/SAP_HowToUseGetAvailableData.cs"/>
+        /// <code source="../../../Tests/UTFTests/Common/DocCodeExamples/SAP_HowToUseGetAvailableData.cs"/>
         /// </example>
         public unsafe ref struct AvailableData
         {

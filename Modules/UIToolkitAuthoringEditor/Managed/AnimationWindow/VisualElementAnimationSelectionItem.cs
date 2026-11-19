@@ -172,7 +172,8 @@ namespace Unity.UIToolkit.Editor
 
         public override void Synchronize()
         {
-            HealDetachedClipOwner();
+            var activeClipBeforeHeal = m_UIClip;
+            bool healed = HealDetachedClipOwner();
 
             // Treat a released or detached owner as "no clips" - reading resolvedStyle on a recycled
             // layout node throws from LayoutDataAccess. The responder picks up a fresh selection on
@@ -184,30 +185,35 @@ namespace Unity.UIToolkit.Editor
             }
 
             ReconcileClips(m_ClipOwner.resolvedStyle.animationNames);
+
+            // Only once the clips are reconciled, so the preview follows the clip that is active now.
+            if (healed && m_UIClip != null)
+                (m_Controller as VisualElementAnimationWindowController)?.OnPreviewTargetReplaced(m_UIClip != activeClipBeforeHeal);
         }
 
         // A staging-panel rebuild - an undo touching the edited asset, for one - replaces the tree while
         // this item keeps the element it was created around: detached, refusing a binder, unstyleable.
         // The authoring asset id survives the rebuild, so the live counterpart can be adopted in place.
-        void HealDetachedClipOwner()
+        bool HealDetachedClipOwner()
         {
             if (m_ClipOwner == null || m_ClipOwner.panel != null)
-                return;
+                return false;
 
             var asset = m_ClipOwner.visualElementAsset;
             var root = (StageUtility.GetCurrentStage() as VisualElementEditingStage)?.GetAuthoringPanel()?.visualTree;
             if (asset == null || root == null)
-                return;
+                return false;
 
             var live = FindByAssetId(root, asset.id);
             if (live == null)
-                return;
+                return false;
 
             m_ClipOwner = live;
 
             // The resolution cache pairs this selection with the binder of the element it replaced;
             // released, the next query pairs it with the adopted element's binder.
             UIAnimationBindingResolution.Release(this);
+            return true;
         }
 
         static VisualElement FindByAssetId(VisualElement element, int assetId)

@@ -52,6 +52,7 @@ namespace Unity.Burst.Editor
 
         private const string msbuildReadySessionKey = "BURST_MSBUILD_READY";
         private const string packagesChangedSessionKey = "BURST_PACKAGES_CHANGED";
+        private const string assembliesDroppedSessionKey = "BURST_ASSEMBLIES_DROPPED";
 
         private static CompilationTaskReason _currentBuildKind;
 
@@ -204,6 +205,20 @@ namespace Unity.Burst.Editor
             var packagesChanged = SessionState.GetBool(packagesChangedSessionKey, false);
             BurstCompiler.DomainReload(assemblyNamesAndDefines, packagesChanged);
             SessionState.SetBool(packagesChangedSessionKey, false);
+
+            // OnAssemblyCompilationFinished ignores every assembly of a build that had a C# compile error, because
+            // ScriptAssembly.HasCompileErrors is set for the whole build. The assemblies that did get built are still
+            // loaded by this domain, so report them now or all of their entry points are rejected. Under MSBU
+            // NotifyBurstAboutAllEditorAssemblies already does this after every domain reload.
+            if (SessionState.GetBool(assembliesDroppedSessionKey, false))
+            {
+                SessionState.SetBool(assembliesDroppedSessionKey, false);
+
+                if (!UnityEditor.Compilation.CompilationPipeline.IsUsingMSBuild())
+                {
+                    NotifyBurstAboutBuiltEditorAssemblies();
+                }
+            }
 
             // Under MSBU, per-assembly compilation events (assemblyCompilationFinished /
             // assemblyCompilationNotRequired) do not fire on domain reloads, and buildFinished
@@ -602,6 +617,7 @@ namespace Unity.Burst.Editor
                     UnityEngine.Debug.Log($"{DateTime.UtcNow} Burst - ignoring '{assembly.Filename}' because it failed C# compilation");
                 }
 
+                SessionState.SetBool(assembliesDroppedSessionKey, true);
                 return;
             }
 
@@ -626,6 +642,25 @@ namespace Unity.Burst.Editor
             }
 
             BurstCompiler.NotifyAssemblyCompilationNotRequired(Path.GetFileNameWithoutExtension(arg1));
+        }
+
+        private static void NotifyBurstAboutBuiltEditorAssemblies()
+        {
+            BurstCompiler.NotifyCompilationStarted(
+                GetAssemblyFolders(),
+                BurstAssemblyDisable.GetDisabledAssemblies(BurstAssemblyDisable.DisableType.Editor, ""));
+
+            foreach (var assembly in UnityEditor.Compilation.CompilationPipeline
+                .GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor))
+            {
+                // If C# compilation fails, the output won't exist on disk
+                if (File.Exists(assembly.outputPath))
+                {
+                    BurstCompiler.NotifyAssemblyCompilationFinished(assembly.name, assembly.defines);
+                }
+            }
+
+            BurstCompiler.NotifyCompilationFinished();
         }
 
         // MSBU counterpart to Bee's per-assembly assemblyCompilationNotRequired event, which
