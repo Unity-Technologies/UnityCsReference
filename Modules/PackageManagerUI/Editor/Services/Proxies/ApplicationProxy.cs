@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditorInternal;
 using UnityEngine;
 using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Networking;
@@ -20,7 +19,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<bool> focusChanged;
 
         string dataPath { get; }
-        string userAppDataPath { get; }
         bool isInternetReachable { get; }
         bool isBatchMode { get; }
         bool isUpmRunning { get; }
@@ -64,7 +62,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<bool> focusChanged = delegate {};
 
         public string dataPath => Application.dataPath;
-        public string userAppDataPath => InternalEditorUtility.userAppDataFolder;
 
         public bool isInternetReachable => m_IsInternetReachable;
 

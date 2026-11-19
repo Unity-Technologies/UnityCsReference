@@ -307,7 +307,7 @@ namespace UnityEngine.UIElements
         {
             var boundValues = new ReadOnlySpan<UIAnimationBoundProperty>(values.ToPointer(), count);
 
-            // Batch composite writes (filter, background): the Set* calls mutate a per-(element, id)
+            // Batch composite writes (filter, background, grid line): the Set* calls mutate a per-(element, id)
             // buffer, and we call ApplyPropertyAnimation once per pair in the Flush* methods.
             m_BatchingCompositeWrites = true;
             try
@@ -329,6 +329,7 @@ namespace UnityEngine.UIElements
                 m_BatchingCompositeWrites = false;
                 FlushPendingFilterWrites();
                 FlushPendingBackgroundWrites();
+                FlushPendingGridLineWrites();
             }
         }
 

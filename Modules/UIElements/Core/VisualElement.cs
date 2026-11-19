@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
     // pseudo states are used for common states of a widget
     // they are addressable from CSS via the pseudo state syntax ":selected" for example
     // while css class list can solve the same problem, pseudo states are a fast commonly agreed upon path for common cases.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
     [Flags]
     internal enum PseudoStates
     {
@@ -103,6 +103,10 @@ namespace UnityEngine.UIElements
         HasStyleSheetsComponent = 1L << 50,
         // Element has bindings tracked by the data binding manager of its panel
         HasTrackedBindings = 1L << 51,
+        // A component on the element syncs its custom style values directly from the style pass
+        HasComponentStyleSync = 1L << 52,
+        // The next style pass syncs component custom style values even if the element's style is unchanged
+        ComponentStyleSyncPending = 1L << 53,
         // Every private component's presence bit, cleared together when an element releases its components
         PrivateComponentMask = HasDataBindingComponent | HasAnimationComponent | HasPaintingComponent |
             HasViewDataComponent | HasStyleSheetsComponent,
@@ -111,7 +115,7 @@ namespace UnityEngine.UIElements
             EligibleToReceiveFocusFromDisabledChild
     }
 
-    // Free bits: 15, 16, 17, 30, 31, and 52 upwards.
+    // Free bits: 15, 16, 17, 30, 31, and 54 upwards.
     internal static class VisualElementFlagsShift
     {
         public const int LanguageDirection = 26;
@@ -238,7 +242,6 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class ObjectListPool<T>
     {
         [AutoStaticsCleanupOnCodeReload]
@@ -1131,7 +1134,7 @@ namespace UnityEngine.UIElements
 
         internal Rect rect
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get
             {
@@ -1342,7 +1345,7 @@ namespace UnityEngine.UIElements
 
         internal Rect worldClip
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 return renderData?.clippingRect ?? Rect.zero;
@@ -1396,7 +1399,7 @@ namespace UnityEngine.UIElements
             set => transformFlags = value ? transformFlags | VisualElementTransformFlags.BoundingBoxDirtiedSinceLastLayoutPass : transformFlags & ~VisualElementTransformFlags.BoundingBoxDirtiedSinceLastLayoutPass;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal unsafe PseudoStates pseudoStates
         {
             get
@@ -1639,7 +1642,7 @@ namespace UnityEngine.UIElements
         // dictionary lookup that the string overload incurs. Use this overload from controls
         // that always assign the same name string by hoisting that string into a `static
         // readonly UniqueStyleString` constant.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEngine.HierarchyModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEngine.HierarchyModule")]
         internal void SetName(UniqueStyleString uniqueName)
         {
             if (nameId == uniqueName.id)
@@ -1959,7 +1962,6 @@ namespace UnityEngine.UIElements
         }
 
         [UxmlObjectReference("Bindings"), UxmlInternalField, HideInInspector]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal List<Binding> bindings
         {
             get
@@ -1986,13 +1988,13 @@ namespace UnityEngine.UIElements
 
         internal string fullTypeName
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => typeData.fullTypeName;
         }
 
         internal string typeName
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => typeData.typeName;
         }
 
@@ -2031,11 +2033,11 @@ namespace UnityEngine.UIElements
 
         internal ref ComputedStyle computedStyle
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => ref layoutNode.ComputedStyle;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         // Variables that children inherit
         internal StyleVariableContext variableContext = StyleVariableContext.none;
 
@@ -2054,14 +2056,12 @@ namespace UnityEngine.UIElements
             set => m_Flags = value ? m_Flags | VisualElementFlags.StyleInitialized : m_Flags & ~VisualElementFlags.StyleInitialized;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool stylesDirty
         {
             get => (m_Flags & VisualElementFlags.StyleDirty) == VisualElementFlags.StyleDirty;
             set => m_Flags = value ? m_Flags | VisualElementFlags.StyleDirty : m_Flags & ~VisualElementFlags.StyleDirty;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool stylesAncestorOfDirty
         {
             get => (m_Flags & VisualElementFlags.StyleAncestorOfDirty) == VisualElementFlags.StyleAncestorOfDirty;
@@ -2149,7 +2149,7 @@ namespace UnityEngine.UIElements
             UpdateClassSelectorData();
         }
 
-#pragma warning disable UA5000 // Enqueues layout node and text buffers for main-thread release, since they cannot be freed on the finalizer thread.
+#pragma warning disable UAC0045 // Enqueues layout node and text buffers for main-thread release, since they cannot be freed on the finalizer thread.
         ~VisualElement()
         {
             try
@@ -2169,7 +2169,7 @@ namespace UnityEngine.UIElements
                 Debug.LogException(e);
             }
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         private protected const string k_ElementReleaseExceptionMessage = "You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.";
 
@@ -2505,7 +2505,7 @@ namespace UnityEngine.UIElements
             EventDispatchUtilities.HandleEvent(e, this);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void IncrementVersion(VersionChangeType changeType)
         {
             elementPanel?.OnVersionChanged(this, changeType);
@@ -2778,22 +2778,22 @@ namespace UnityEngine.UIElements
         public Action<MeshGenerationContext> generateVisualContent
         {
             // A text element draws its text through a flag rather than by subscribing, so the delegate
-            // stays null on the elements that only ever wanted the default. The accessors put the handler
-            // back in the value they hand out and take it back off the value they are given, so `+=`,
-            // plain assignment and `= null` keep behaving exactly as they did when it was a real
-            // subscription: assigning replaces the text drawing, appending keeps it.
+            // stays null on the elements that only ever wanted the default. While the flag is set, the
+            // stored delegate is null or starts with the default handler, so `+=`, plain assignment and
+            // `= null` behave as they did for a real subscription: assigning replaces the text drawing,
+            // appending keeps it.
             get
             {
                 if ((m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) == 0)
                     return storedGenerateVisualContent;
 
-                return k_DefaultTextGenerateContent + storedGenerateVisualContent;
+                return storedGenerateVisualContent ?? k_DefaultTextGenerateContent;
             }
             set
             {
                 var toStore = (m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) == 0
                     ? value
-                    : StripDefaultTextGenerateContent(value);
+                    : NormalizeDefaultTextGenerateContent(value);
 
                 // Clearing something that was never stored must not create the storage.
                 if (toStore == null && (m_Flags & VisualElementFlags.HasPaintingComponent) == 0)
@@ -2803,9 +2803,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // Returns what to store, and clears the flag unless `value` still starts with the default text
-        // handler. Only reached on an element that currently draws default text.
-        Action<MeshGenerationContext> StripDefaultTextGenerateContent(Action<MeshGenerationContext> value)
+        // Returns what to store, and clears the flag unless `value` is the default text handler or starts
+        // with it. Only reached on an element that currently draws default text.
+        Action<MeshGenerationContext> NormalizeDefaultTextGenerateContent(Action<MeshGenerationContext> value)
         {
             if (value == null)
             {
@@ -2818,38 +2818,29 @@ namespace UnityEngine.UIElements
 
             var handlers = value.GetInvocationList();
             if (handlers.Length < 2 || !ReferenceEquals(handlers[0], k_DefaultTextGenerateContent))
-            {
                 m_Flags &= ~VisualElementFlags.UseDefaultTextGenerateContent;
-                return value;
-            }
 
-            Action<MeshGenerationContext> rest = null;
-            for (var i = 1; i < handlers.Length; i++)
-                rest += (Action<MeshGenerationContext>)handlers[i];
-
-            return rest;
+            return value;
         }
 
         static readonly Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new(ProfilerCategory.UIToolkit, "GenerateVisualContent");
 
         internal void InvokeGenerateVisualContent(MeshGenerationContext mgc)
         {
-            var drawsDefaultText = (m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) != 0;
             var callback = storedGenerateVisualContent;
+            var drawsOnlyDefaultText = callback == null && (m_Flags & VisualElementFlags.UseDefaultTextGenerateContent) != 0;
 
-            if (!drawsDefaultText && callback == null)
+            if (callback == null && !drawsOnlyDefaultText)
                 return;
 
             try
             {
                 using (k_GenerateVisualContentMarker.Auto())
                 {
-                    // Ordered as the subscription was: the text first, then anything added after it. An
-                    // exception in the text handler skips the rest, exactly as it did in the multicast.
-                    if (drawsDefaultText)
+                    if (drawsOnlyDefaultText)
                         TextElement.OnGenerateVisualContent(mgc);
-
-                    callback?.Invoke(mgc);
+                    else
+                        callback.Invoke(mgc);
                 }
             }
             catch (Exception e)
@@ -2872,7 +2863,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal string GetFullHierarchicalViewDataKey()
         {
             StringBuilder key = new StringBuilder();
@@ -2930,7 +2921,7 @@ namespace UnityEngine.UIElements
             return viewData.GetScriptable<T>(keyWithType);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void OverwriteFromViewData(object obj, string key)
         {
             if (obj == null)
@@ -2960,7 +2951,7 @@ namespace UnityEngine.UIElements
             viewDataPersistentData.Overwrite(obj, keyWithType);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SaveViewData()
         {
             if (elementPanel != null
@@ -2995,7 +2986,7 @@ namespace UnityEngine.UIElements
             OnViewDataReady();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual void OnViewDataReady() {}
 
         /// <summary>
@@ -3126,7 +3117,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetInlineRule(StyleSheet sheet, StyleRule rule, StyleVariableContext variableContext = null)
         {
             if (inlineStyleAccess == null)
@@ -3136,7 +3127,7 @@ namespace UnityEngine.UIElements
         }
 
         // Used by the builder to apply the inline styles without passing by SetComputedStyle
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void UpdateInlineRule(StyleSheet sheet, StyleRule rule)
         {
             UpdateInlineRule(sheet, rule, null);
@@ -3250,7 +3241,7 @@ namespace UnityEngine.UIElements
 
         internal int classListCount
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_ClassList.Count;
         }
 
@@ -3550,7 +3541,7 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal object GetProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);
@@ -3562,14 +3553,14 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetProperty(PropertyName key, object value)
         {
             CheckUserKeyArgument(key);
             SetPropertyInternal(key, value);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool HasProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);
@@ -3717,7 +3708,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static TElement WithClassList<TElement>(this TElement ele, UniqueStyleString className)
             where TElement : VisualElement
         {
@@ -3725,7 +3716,7 @@ namespace UnityEngine.UIElements
             return ele;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static TElement WithClassList<TElement>(this TElement ele, UniqueStyleString className, UniqueStyleString className2)
             where TElement : VisualElement
         {
@@ -3733,7 +3724,7 @@ namespace UnityEngine.UIElements
             return ele;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static TElement WithClassList<TElement>(this TElement ele, UniqueStyleString className, UniqueStyleString className2, UniqueStyleString className3)
             where TElement : VisualElement
         {
@@ -3748,7 +3739,7 @@ namespace UnityEngine.UIElements
             return ele;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static TElement WithClassList<TElement>(this TElement ele, params UniqueStyleString[] classNames)
             where TElement : VisualElement
         {
@@ -3756,7 +3747,7 @@ namespace UnityEngine.UIElements
             return ele;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static TElement WithClassList<TElement>(this TElement ele, string className)
             where TElement : VisualElement
         {
@@ -3766,7 +3757,7 @@ namespace UnityEngine.UIElements
             return ele;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static TElement WithClassList<TElement>(this TElement ele, string className, string className2)
             where TElement : VisualElement
         {
@@ -3775,7 +3766,7 @@ namespace UnityEngine.UIElements
         }
 
         private static readonly string[] k_ThreeStrings = new string[3];
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static TElement WithClassList<TElement>(this TElement ele, string className, string className2, string className3)
             where TElement : VisualElement
         {
@@ -3786,7 +3777,7 @@ namespace UnityEngine.UIElements
             return ele;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static TElement WithClassList<TElement>(this TElement ele, params string[] classNames)
             where TElement : VisualElement
         {

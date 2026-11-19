@@ -32,7 +32,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckIsCreated()
+        readonly void CheckIsCreated()
         {
             if (!IsCreated)
             {
@@ -44,7 +44,7 @@ namespace Unity.Collections
         /// Retrieve the current rewindable allocator.
         /// </summary>
         /// <value>The Allocator retrieved.</value>
-        public ref RewindableAllocator Allocator
+        public readonly ref RewindableAllocator Allocator
         {
             get
             {
@@ -57,7 +57,7 @@ namespace Unity.Collections
         /// Check whether the double rewindable allocators is created.
         /// </summary>
         /// <value>True if current allocator is not null, otherwise false.</value>
-        public bool IsCreated => Pointer != null;
+        public readonly bool IsCreated => Pointer != null;
 
         /// <summary>
         /// Construct a double rewindable allocators by allocating the allocators from backingAllocator and registering them.
@@ -111,7 +111,7 @@ namespace Unity.Collections
         [VisibleToOtherModules("UnityEngine.EntitiesModule")]
         internal bool EnableBlockFree
         {
-            get
+            readonly get
             {
                 Assert.IsTrue(UpdateAllocatorHelper0.Allocator.EnableBlockFree == UpdateAllocatorHelper1.Allocator.EnableBlockFree);
                 return UpdateAllocatorHelper0.Allocator.EnableBlockFree;

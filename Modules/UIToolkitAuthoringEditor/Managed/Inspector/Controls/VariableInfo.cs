@@ -7,7 +7,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal struct VariableInfo
 {
     public VariableInfo(StyleVariable styleVariable, string description = null)

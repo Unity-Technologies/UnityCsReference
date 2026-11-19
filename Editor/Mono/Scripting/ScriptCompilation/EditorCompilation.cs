@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using NiceIO;
 using Bee.BeeDriver;
 using ScriptCompilationBuildProgram.Data;
@@ -15,6 +16,7 @@ using Unity.Profiling;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
 using UnityEditor.Scripting.Compilers;
+using UnityEditor.Scripting.ScriptCompilation.MsBuild;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -70,7 +72,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public string Name;
             public AssemblyFlags Flags;
 
-            [NoAutoStaticsCleanup] // immutable sentinel value (Name=null), safe to persist across reload
             public static readonly TargetAssemblyInfo Unknown = new TargetAssemblyInfo { Flags = AssemblyFlags.None, Name = null };
         }
 
@@ -116,6 +117,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public event Action<ScriptAssembly> assemblyCompilationNotRequired;
         public event Action<ScriptAssembly, UnityEditor.Compilation.CompilerMessage[]> assemblyCompilationFinished;
 
+        // Raises the internal assemblyCompilationFinished event. Used by the MSBuild pipeline to
+        // synthesize per-assembly events for subscribers (incl. BurstLoader) that were otherwise
+        // Bee-only. Timing is best-effort — see CompilationPipeline docs.
+        public void RaiseAssemblyCompilationFinished(ScriptAssembly scriptAssembly, UnityEditor.Compilation.CompilerMessage[] messages)
+        {
+            assemblyCompilationFinished?.Invoke(scriptAssembly, messages);
+        }
+
+        public void RaiseCompilationStarted(object context)
+        {
+            compilationStarted?.Invoke(context);
+        }
+
+        public void RaiseCompilationFinished(object context)
+        {
+            compilationFinished?.Invoke(context);
+        }
+
         class BeeScriptCompilationState
         {
             public CancellationTokenSource CancellationTokenSource { get; set; }
@@ -126,6 +145,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             public int AsyncProgressBarToken { get; set; }
         }
+
+        const int k_ActiveBuildCancelTimeoutSeconds = 30;
 
         BeeScriptCompilationState _currentBeeScriptCompilationState;
 
@@ -209,6 +230,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (UnityEditor.MPE.ProcessService.level == UnityEditor.MPE.ProcessLevel.Secondary)
             {
                 Console.WriteLine($"[ScriptCompilation] NOT recompiling scripts because this is a secondary process. Reason to compile was: {reason}");
+                return;
+            }
+
+            // Only the Editor's own instance hands off to MSBuild; tests compile with their own instances.
+            if (this == EditorCompilationInterface.Instance && MsBuildCompilationInterface.IsEnabled())
+            {
+                MsBuildCompilationInterface.RequestMsBuildScriptCompilation(false, reason);
                 return;
             }
 
@@ -836,6 +864,53 @@ namespace UnityEditor.Scripting.ScriptCompilation
             _currentBeeScriptCompilationState?.CancellationTokenSource.Cancel();
         }
 
+        // Bee logs from thread-pool threads when its processes exit, which faults once the runtime is torn down.
+        public void CancelAndWaitForActiveBuild()
+        {
+            var scriptCompilationState = _currentBeeScriptCompilationState;
+            if (scriptCompilationState == null)
+                return;
+
+            var activeBuildTaskObject = scriptCompilationState.ActiveBuild.TaskObject;
+            if (!activeBuildTaskObject.IsCompleted)
+                scriptCompilationState.CancellationTokenSource.Cancel();
+
+            var deadline = DateTime.UtcNow.AddSeconds(k_ActiveBuildCancelTimeoutSeconds);
+            WaitWhilePumping(activeBuildTaskObject, deadline);
+
+            // The backend can still be exiting after a successful build returns
+            if (activeBuildTaskObject.IsCompletedSuccessfully)
+                WaitWhilePumping(activeBuildTaskObject.Result.ProfileOutputWritingTask, deadline);
+        }
+
+        static void WaitWhilePumping(Task task, DateTime deadline)
+        {
+            if (task == null)
+                return;
+
+            var synchroContext = SynchronizationContext.Current as UnitySynchronizationContext;
+            while (!task.IsCompleted && DateTime.UtcNow < deadline)
+            {
+                try
+                {
+                    task.Wait(100);
+                }
+                catch (AggregateException)
+                {
+                    // Cancellation and build failures are expected while quitting
+                }
+
+                try
+                {
+                    synchroContext?.Exec();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+        }
+
         void WarnIfThereAreAssembliesWithoutAnyScripts(ScriptAssemblySettings scriptAssemblySettings, ScriptAssembly[] scriptAssemblies)
         {
             foreach (var targetAssembly in customTargetAssemblies.Values)
@@ -1417,6 +1492,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var messagesForAssembly = nodeResultIndicesRelatedToAssembly.SelectMany(index => compilerMessagesForNodeResults[index]).ToArray();
 #pragma warning restore UAC2001
                 scriptAssembly.HasCompileErrors = !beeDriverResult.Success;
+                UnityEditor.Compilation.CompilationPipeline.RaiseAssemblyCompilationStarted(scriptAssembly.FullPath);
                 assemblyCompilationFinished?.Invoke(scriptAssembly, ConvertCompilerMessages(messagesForAssembly));
             }
         }

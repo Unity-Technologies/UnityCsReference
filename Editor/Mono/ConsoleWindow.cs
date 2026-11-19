@@ -96,6 +96,7 @@ namespace UnityEditor
             public static readonly GUIContent StopForError = L10n.TextContent("Stop for Error", null, null, null);
             public static readonly GUIContent UseMonospaceFont = L10n.TextContent("Use Monospace font", null, null, null);
             public static readonly GUIContent StripLoggingCallstack = L10n.TextContent("Strip logging callstack", null, null, null);
+            public static readonly GUIContent SearchOnline = L10n.TextContent("Search Online", "Search the web for this message. Choose the search engine in Preferences > General.", null, null);
 
             public static int LogStyleLineCount
             {
@@ -674,26 +675,23 @@ namespace UnityEditor
                         }
                         else if (e.type == EventType.MouseDown && e.clickCount == 1 && e.button == 1 && el.position.Contains(e.mousePosition))
                         {
-                            if (entryContextClicked != null && entryContextClicked.GetInvocationList().Length > 0)
+                            LogEntry entry = new LogEntry();
+                            LogEntries.GetEntryInternal(el.row, entry);
+
+                            bool entryIsSelected = m_ListView.selectedItems != null &&
+                                el.row < m_ListView.selectedItems.Length &&
+                                m_ListView.selectedItems[el.row];
+
+                            if (!entryIsSelected)
                             {
-                                LogEntry entry = new LogEntry();
-                                LogEntries.GetEntryInternal(el.row, entry);
+                                m_ListView.row = el.row;
+                                m_ListView.selectedItems = new bool[el.row + 1];
+                                m_ListView.selectedItems[el.row] = true;
 
-                                bool entryIsSelected = m_ListView.selectedItems != null &&
-                                    el.row < m_ListView.selectedItems.Length &&
-                                    m_ListView.selectedItems[el.row];
-
-                                if (!entryIsSelected)
-                                {
-                                    m_ListView.row = el.row;
-                                    m_ListView.selectedItems = new bool[el.row + 1];
-                                    m_ListView.selectedItems[el.row] = true;
-
-                                    DestroyLatestRestoreEntry();
-                                }
-
-                                entryContextClicked?.Invoke(entry);
+                                DestroyLatestRestoreEntry();
                             }
+
+                            ShowEntryContextMenu(entry);
                         }
                         else if (e.type == EventType.Repaint)
                         {
@@ -846,7 +844,10 @@ namespace UnityEditor
                 float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(stackWithHyperlinks), position.width);
 
                 var rect = EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height + 10));
-                EditorGUI.ScrollableLabelAreaInternal(rect, stackWithHyperlinks, ref m_TextScroll, Constants.MessageStyle);
+                if (e.type == EventType.ContextClick && rect.Contains(e.mousePosition))
+                    ShowDetailsContextMenu(rect, stackWithHyperlinks);
+                else
+                    EditorGUI.ScrollableLabelAreaInternal(rect, stackWithHyperlinks, ref m_TextScroll, Constants.MessageStyle);
                 EditorGUILayout.EndHorizontal();
 
                 SplitterGUILayout.EndVerticalSplit();
@@ -868,6 +869,56 @@ namespace UnityEditor
                 // Enforce autoscroll according to any potentially new rows having been added during OnGUI
                 SetScrollPosYFromRow(m_ListView.totalRows);
             }
+        }
+
+        static void ShowEntryContextMenu(LogEntry entry)
+        {
+            var menu = BuildEntryContextMenu(entry);
+            menu.ShowAsContext();
+            Event.current.Use();
+        }
+
+        internal static GenericMenu BuildEntryContextMenu(LogEntry entry)
+        {
+            var menu = new GenericMenu();
+
+            // Subscribers show their own menu, so their items are merged into this one
+            GenericMenu.CollectShownItems(menu, () => entryContextClicked?.Invoke(entry));
+            if (menu.GetItemCount() > 0)
+                menu.AddSeparator(string.Empty);
+
+            AddSearchOnlineItem(menu, entry.message);
+            return menu;
+        }
+
+        void ShowDetailsContextMenu(Rect rect, string text)
+        {
+            var menu = new GenericMenu();
+
+            // The text area shows its own Copy menu, so its items are merged into this one
+            GenericMenu.CollectShownItems(menu, () => EditorGUI.ScrollableLabelAreaInternal(rect, text, ref m_TextScroll, Constants.MessageStyle));
+
+            // Without the text area's menu the shared text editor may belong to another control
+            var textAreaHandledClick = menu.GetItemCount() > 0;
+            if (textAreaHandledClick)
+                menu.AddSeparator(string.Empty);
+
+            var editor = EditorGUI.s_RecycledEditor;
+            var searchText = textAreaHandledClick && editor.hasSelection
+                ? ConsoleSearchOnline.GetSelectionSearchText(editor.SelectedText)
+                : m_ActiveText;
+            AddSearchOnlineItem(menu, searchText);
+
+            menu.ShowAsContext();
+            Event.current.Use();
+        }
+
+        static void AddSearchOnlineItem(GenericMenu menu, string text)
+        {
+            if (ConsoleSearchOnline.CanSearch(text))
+                menu.AddItem(Constants.SearchOnline, false, () => ConsoleSearchOnline.Search(text));
+            else
+                menu.AddDisabledItem(Constants.SearchOnline);
         }
 
         private void SetScrollPosY(float posY)

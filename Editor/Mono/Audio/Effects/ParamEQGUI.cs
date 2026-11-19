@@ -70,7 +70,7 @@ namespace UnityEditor
             return new Color(col.r, col.g, col.b, col.a * blend);
         }
 
-        // Maps from normalized frequency to real frequency
+        // Maps normalized frequency to real frequency when forward is true, and back otherwise
         static double MapNormalizedFrequency(double f, double sr, bool useLogScale, bool forward)
         {
             double maxFreq = 0.5 * sr;
@@ -113,7 +113,6 @@ namespace UnityEditor
                     break;
 
                 case EventType.MouseUp:
-                    // Signal
                     if (GUIUtility.hotControl == controlID && evt.button == 0)
                     {
                         GUIUtility.hotControl = 0;

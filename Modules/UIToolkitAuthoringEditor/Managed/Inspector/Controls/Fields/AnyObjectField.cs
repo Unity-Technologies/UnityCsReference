@@ -16,7 +16,6 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Field that can accept any object, including non-Unity objects.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class AnyObjectField : ObjectField
     {
         public static readonly string UssClassName = "unity-any-object-field";

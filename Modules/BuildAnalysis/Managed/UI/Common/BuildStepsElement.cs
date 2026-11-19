@@ -1,0 +1,479 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace UnityEditor.Build.Analysis
+{
+    [UxmlElement]
+    internal partial class BuildStepsElement : BuildSection
+    {
+        private const int k_FixedItemHeight = 26;
+        private const int k_MaxVisibleRows = 13;
+        private const string k_UssPath = "BuildAnalysis/StyleSheets/BuildSteps.uss";
+
+        // Fits an error and a warning badge side by side at their widest, "999+", since a column
+        // cannot size itself to its cells.
+        private const int k_BadgeColumnWidth = 116;
+
+        private const float k_NameColumnShare = 0.35f;
+        private const float k_NameColumnMinWidth = 150f;
+        private const float k_MetaColumnShare = 0.1f;
+        private const float k_MetaColumnMinWidth = 120f;
+
+        public static readonly string emptyLabelUssClassName = "build-steps__empty-label";
+
+        private struct StepItemData
+        {
+            public string Name;
+            public long DurationMs;
+            public float PercentOfTotal;
+            public int WarningCount;
+            public int ErrorCount;
+            public string Tooltip;
+        }
+
+        private sealed class StepNode
+        {
+            public BuildAnalysisStep Step;
+            public List<StepNode> Children = new List<StepNode>();
+        }
+
+        private readonly MultiColumnTreeView m_TreeView;
+        private readonly Column m_NameColumn;
+        private readonly Column m_MetaColumn;
+        private readonly Label m_EmptyLabel;
+
+        // A step's id is its index in its own report, so expansion is remembered by path of names, not by id.
+        private readonly HashSet<string> m_ExpandedStepPaths = new HashSet<string>(StringComparer.Ordinal);
+        private readonly Dictionary<int, string> m_StepPathById = new Dictionary<int, string>();
+
+        // Null collapses the section body when there are no steps.
+        [UxmlAttribute]
+        public string emptyStateText
+        {
+            get => m_EmptyLabel.text;
+            set => m_EmptyLabel.text = value;
+        }
+
+        // Tooltip for a step's name cell, or null for none. Read on the next Bind.
+        public Func<BuildAnalysisStep, string> stepTooltip { get; set; }
+
+        public BuildStepsElement() : base("Build Steps", padContent: false)
+        {
+            var styleSheet = EditorGUIUtility.LoadRequired(k_UssPath) as StyleSheet;
+            styleSheets.Add(styleSheet);
+
+            m_TreeView = new MultiColumnTreeView
+            {
+                fixedItemHeight = k_FixedItemHeight,
+                selectionType = SelectionType.None,
+                horizontalScrollingEnabled = false,
+            };
+            m_TreeView.AddToClassList("build-steps-tree");
+            m_TreeView.columns.primaryColumnName = "name";
+
+            m_NameColumn = new Column
+            {
+                name = "name",
+                minWidth = k_NameColumnMinWidth,
+                stretchable = false,
+                resizable = false,
+                makeCell = () =>
+                {
+                    var label = new Label();
+                    label.AddToClassList("build-step-name");
+                    label.RegisterCallback<ClickEvent>(OnNameCellClicked);
+                    // Not label.tooltip, because an elided label overwrites that with its own text.
+                    label.RegisterCallback<TooltipEvent>(OnNameCellTooltip);
+                    return label;
+                },
+                bindCell = BindNameCell,
+            };
+            m_TreeView.columns.Add(m_NameColumn);
+
+            m_TreeView.columns.Add(new Column
+            {
+                name = "badges",
+                width = k_BadgeColumnWidth,
+                stretchable = false,
+                resizable = false,
+                makeCell = MakeBadgeCell,
+                bindCell = BindBadgeCell,
+            });
+
+            m_TreeView.columns.Add(new Column
+            {
+                name = "bar",
+                stretchable = true,
+                resizable = false,
+                makeCell = () =>
+                {
+                    var bar = new VisualElement();
+                    bar.AddToClassList("build-step-bar");
+                    var fill = new VisualElement();
+                    fill.AddToClassList("build-step-bar-fill");
+                    bar.Add(fill);
+                    return bar;
+                },
+                bindCell = BindBarCell,
+            });
+
+            m_MetaColumn = new Column
+            {
+                name = "meta",
+                minWidth = k_MetaColumnMinWidth,
+                stretchable = false,
+                resizable = false,
+                makeCell = () =>
+                {
+                    var label = new Label();
+                    label.AddToClassList("build-step-meta");
+                    label.selection.isSelectable = true;
+                    label.tooltip = "Percentage of the total build duration";
+                    return label;
+                },
+                bindCell = BindMetaCell,
+            };
+            m_TreeView.columns.Add(m_MetaColumn);
+
+            m_TreeView.RegisterCallback<GeometryChangedEvent>(OnTreeGeometryChanged);
+
+            // horizontalScrollingEnabled=false suppresses scroll interaction, but the
+            // horizontal scroller can still claim layout space transiently during resize,
+            // triggering a feedback loop (horizontal bar appears → steals height →
+            // vertical bar appears → steals width → repeat). Setting Hidden on the
+            // ScrollView directly ensures it never occupies space and breaks the loop.
+            m_TreeView.Q<ScrollView>().horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+
+            Add(m_TreeView);
+
+            m_EmptyLabel = new Label();
+            m_EmptyLabel.AddToClassList(emptyLabelUssClassName);
+            m_EmptyLabel.style.display = DisplayStyle.None;
+            Add(m_EmptyLabel);
+
+            // Keep the TreeView in the DOM (never display:none) so the layout engine
+            // resolves its width before Rebuild() is called — required for the
+            // stretchable name column to size correctly.
+            m_TreeView.style.height = 0;
+            // The default theme gives collection views a 40px min-height, which would keep the empty tree open.
+            m_TreeView.style.minHeight = 0;
+        }
+
+        public void Bind(BuildAnalysis analysis, BuildLogMessages messages)
+        {
+            Bind(analysis.Tables.Steps, analysis.Summary.TotalTimeMs, messages);
+        }
+
+        // A totalTimeMs of zero or less falls back to the sum of the steps.
+        public void Bind(BuildAnalysisStep[] steps, long totalTimeMs, BuildLogMessages messages = null)
+        {
+            // SetRootItems drops expansion state (no viewDataKey), so re-apply it by step-name path, since ids are report-local indices.
+            CaptureExpandedStepPaths();
+
+            if (steps == null || steps.Length == 0)
+            {
+                SetEmpty();
+                return;
+            }
+
+            m_EmptyLabel.style.display = DisplayStyle.None;
+
+            var totalMs = totalTimeMs;
+            if (totalMs <= 0)
+            {
+                for (var i = 0; i < steps.Length; i++)
+                    totalMs += steps[i].DurationMs;
+            }
+
+            if (totalMs <= 0)
+                totalMs = 1;
+
+            var badges = ComputeStepBadges(steps, messages);
+            m_StepPathById.Clear();
+            var items = BuildTreeViewItems(steps, totalMs, badges, stepTooltip, m_StepPathById);
+            if (items.Count == 0)
+            {
+                SetEmpty();
+                return;
+            }
+
+            m_TreeView.SetRootItems(items);
+            RestoreExpandedStepPaths();
+            m_TreeView.Rebuild();
+
+            m_TreeView.style.height = Math.Min(items.Count, k_MaxVisibleRows) * k_FixedItemHeight;
+        }
+
+        private void SetEmpty()
+        {
+            m_StepPathById.Clear();
+            m_TreeView.SetRootItems(new List<TreeViewItemData<StepItemData>>());
+            m_TreeView.Rebuild();
+            m_TreeView.style.height = 0;
+            m_EmptyLabel.style.display = string.IsNullOrEmpty(m_EmptyLabel.text) ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+
+        private void CaptureExpandedStepPaths()
+        {
+            foreach (var pair in m_StepPathById)
+            {
+                // A row without children cannot be expanded, so it says nothing about what the user chose.
+                if (!m_TreeView.viewController.HasChildren(pair.Key))
+                    continue;
+
+                if (m_TreeView.IsExpanded(pair.Key))
+                    m_ExpandedStepPaths.Add(pair.Value);
+                else
+                    m_ExpandedStepPaths.Remove(pair.Value);
+            }
+        }
+
+        private void RestoreExpandedStepPaths()
+        {
+            foreach (var pair in m_StepPathById)
+            {
+                if (m_ExpandedStepPaths.Contains(pair.Value))
+                    m_TreeView.ExpandItem(pair.Key, refresh: false);
+            }
+        }
+
+        private void OnTreeGeometryChanged(GeometryChangedEvent evt)
+        {
+            var width = evt.newRect.width;
+            if (Mathf.Approximately(width, evt.oldRect.width))
+                return;
+
+            m_NameColumn.width = width * k_NameColumnShare;
+            m_MetaColumn.width = width * k_MetaColumnShare;
+        }
+
+        private void BindNameCell(VisualElement element, int index)
+        {
+            var data = m_TreeView.GetItemDataForIndex<StepItemData>(index);
+            var label = (Label)element;
+            label.text = data.Name;
+            // Cells are recycled, so a cell's row is only known from its latest bind.
+            label.userData = m_TreeView.GetIdForIndex(index);
+        }
+
+        // UUM-142301: clicking the name does what clicking the arrow does.
+        private void OnNameCellClicked(ClickEvent evt)
+        {
+            if (evt.currentTarget is not Label label || label.userData is not int id
+                || !m_TreeView.viewController.HasChildren(id))
+                return;
+
+            if (m_TreeView.IsExpanded(id))
+                m_TreeView.CollapseItem(id);
+            else
+                m_TreeView.ExpandItem(id);
+        }
+
+        // Registered in makeCell, so this runs before the handler that elision adds.
+        private void OnNameCellTooltip(TooltipEvent evt)
+        {
+            if (evt.currentTarget is not Label label || label.userData is not int id)
+                return;
+
+            var text = m_TreeView.GetItemDataForId<StepItemData>(id).Tooltip;
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            evt.tooltip = label.isElided ? label.text + "\n\n" + text : text;
+            evt.rect = label.worldBound;
+            evt.StopImmediatePropagation();
+        }
+
+        private void BindBadgeCell(VisualElement element, int index)
+        {
+            var data = m_TreeView.GetItemDataForIndex<StepItemData>(index);
+
+            var warnBadge = element.Q(className: "build-step-badge--warn");
+            var errorBadge = element.Q(className: "build-step-badge--error");
+
+            warnBadge.style.display = data.WarningCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            warnBadge.Q<Label>(className: "build-step-badge-count").text = FormatUtility.FormatCappedCount(data.WarningCount);
+            warnBadge.tooltip = FormatBadgeTooltip(data.WarningCount, "Warning");
+
+            errorBadge.style.display = data.ErrorCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            errorBadge.Q<Label>(className: "build-step-badge-count").text = FormatUtility.FormatCappedCount(data.ErrorCount);
+            errorBadge.tooltip = FormatBadgeTooltip(data.ErrorCount, "Error");
+        }
+
+        private void BindBarCell(VisualElement element, int index)
+        {
+            var data = m_TreeView.GetItemDataForIndex<StepItemData>(index);
+            element.Q(className: "build-step-bar-fill").style.width =
+                Length.Percent(Mathf.Clamp(data.PercentOfTotal, 0f, 100f));
+        }
+
+        private void BindMetaCell(VisualElement element, int index)
+        {
+            var data = m_TreeView.GetItemDataForIndex<StepItemData>(index);
+            ((Label)element).text = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0:F1}% ({1})",
+                data.PercentOfTotal,
+                FormatUtility.FormatDuration(data.DurationMs));
+        }
+
+        private static string FormatBadgeTooltip(int count, string severity)
+        {
+            var plural = count == 1 ? severity : severity + "s";
+            return $"{count} {plural}. Filter by this step in the Build Logs console to view.";
+        }
+
+        private static VisualElement MakeBadgeCell()
+        {
+            var container = new VisualElement();
+            container.AddToClassList("build-step-badges");
+            container.Add(MakeSingleBadge("error", "error-icon-small"));
+            container.Add(MakeSingleBadge("warn", "warn-icon-small"));
+            return container;
+        }
+
+        private static VisualElement MakeSingleBadge(string modifier, string iconClass)
+        {
+            var badge = new VisualElement();
+            badge.AddToClassList("build-step-badge");
+            badge.AddToClassList($"build-step-badge--{modifier}");
+            var icon = new VisualElement();
+            icon.AddToClassList("build-step-badge-icon");
+            icon.AddToClassList(iconClass);
+            badge.Add(icon);
+            var count = new Label();
+            count.AddToClassList("build-step-badge-count");
+            badge.Add(count);
+            return badge;
+        }
+
+        // The build log reconstructs its own step list, so its counts cross over to the report's steps by
+        // name. Steps that share a name would show the same badge, which no observed build produces.
+        internal static Dictionary<int, (int Warnings, int Errors)> ComputeStepBadges(
+            BuildAnalysisStep[] steps, BuildLogMessages messages)
+        {
+            var result = new Dictionary<int, (int Warnings, int Errors)>();
+            if (messages == null || messages.StepNames.Length == 0)
+                return result;
+
+            var countsByName = new Dictionary<string, BuildLogStepCounts>(messages.StepNames.Length, StringComparer.Ordinal);
+            for (var i = 0; i < messages.StepNames.Length; i++)
+                countsByName[messages.StepNames[i]] = messages.StepCounts[i];
+
+            foreach (var step in steps)
+            {
+                if (step.Name == null || !countsByName.TryGetValue(step.Name, out var counts))
+                    continue;
+
+                if (counts.Warnings > 0 || counts.Errors > 0)
+                    result[step.Id] = (counts.Warnings, counts.Errors);
+            }
+
+            return result;
+        }
+
+        // Without escaping, a step named "Copy/files" would key identically to "files" nested under "Copy".
+        private static string EscapePathSegment(string name)
+        {
+            if (name.IndexOf('\\') < 0 && name.IndexOf('/') < 0 && name.IndexOf('#') < 0)
+                return name;
+
+            return name.Replace("\\", "\\\\").Replace("/", "\\/").Replace("#", "\\#");
+        }
+
+        private static List<TreeViewItemData<StepItemData>> BuildTreeViewItems(
+            BuildAnalysisStep[] steps, long totalMs, Dictionary<int, (int Warnings, int Errors)> badges,
+            Func<BuildAnalysisStep, string> tooltip, Dictionary<int, string> pathById)
+        {
+            var roots = BuildStepTree(steps);
+            var result = new List<TreeViewItemData<StepItemData>>();
+            var pathOccurrences = new Dictionary<string, int>(StringComparer.Ordinal);
+
+            for (var i = 0; i < roots.Count; i++)
+            {
+                var root = roots[i];
+                // Depth-0 is the top-level container step (e.g. "Build player") which adds
+                // no value to the user — promote its children directly as root items.
+                if (root.Step.Depth == 0)
+                {
+                    for (var j = 0; j < root.Children.Count; j++)
+                        result.Add(ConvertNode(root.Children[j], totalMs, badges, tooltip, string.Empty, pathById, pathOccurrences));
+                }
+                else
+                {
+                    result.Add(ConvertNode(root, totalMs, badges, tooltip, string.Empty, pathById, pathOccurrences));
+                }
+            }
+
+            return result;
+        }
+
+        private static TreeViewItemData<StepItemData> ConvertNode(
+            StepNode node, long totalMs, Dictionary<int, (int Warnings, int Errors)> badges,
+            Func<BuildAnalysisStep, string> tooltip, string parentPath, Dictionary<int, string> pathById,
+            Dictionary<string, int> pathOccurrences)
+        {
+            var percent = (float)node.Step.DurationMs * 100f / totalMs;
+            badges.TryGetValue(node.Step.Id, out var counts);
+
+            var name = node.Step.Name ?? "Unknown";
+            var segment = EscapePathSegment(name);
+            var namePath = parentPath.Length == 0 ? segment : parentPath + "/" + segment;
+            // Same-named siblings are common (e.g. one "Load object" per object), so number repeats in tree order.
+            pathOccurrences.TryGetValue(namePath, out var occurrence);
+            pathOccurrences[namePath] = occurrence + 1;
+            var path = occurrence == 0 ? namePath : namePath + "#" + occurrence;
+            pathById[node.Step.Id] = path;
+
+            var data = new StepItemData
+            {
+                Name = FormatUtility.FormatStepName(name),
+                DurationMs = node.Step.DurationMs,
+                PercentOfTotal = percent,
+                WarningCount = counts.Warnings,
+                ErrorCount = counts.Errors,
+                Tooltip = tooltip?.Invoke(node.Step),
+            };
+
+            if (node.Children.Count == 0)
+                return new TreeViewItemData<StepItemData>(node.Step.Id, data);
+
+            var children = new List<TreeViewItemData<StepItemData>>(node.Children.Count);
+            for (var i = 0; i < node.Children.Count; i++)
+                children.Add(ConvertNode(node.Children[i], totalMs, badges, tooltip, path, pathById, pathOccurrences));
+
+            return new TreeViewItemData<StepItemData>(node.Step.Id, data, children);
+        }
+
+        private static List<StepNode> BuildStepTree(BuildAnalysisStep[] steps)
+        {
+            var roots = new List<StepNode>();
+            var stack = new Stack<StepNode>();
+
+            for (var i = 0; i < steps.Length; i++)
+            {
+                var node = new StepNode { Step = steps[i] };
+
+                while (stack.Count > 0 && stack.Peek().Step.Depth >= node.Step.Depth)
+                    stack.Pop();
+
+                if (stack.Count == 0)
+                    roots.Add(node);
+                else
+                    stack.Peek().Children.Add(node);
+
+                stack.Push(node);
+            }
+
+            return roots;
+        }
+    }
+}

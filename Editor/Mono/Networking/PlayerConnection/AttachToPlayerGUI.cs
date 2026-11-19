@@ -391,14 +391,14 @@ namespace UnityEditor.Networking.PlayerConnection
 
         private bool disposed = false; // To detect redundant calls
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Intentional leak warning: logs an error when the connection state was not disposed.
         ~GeneralConnectionState()
         {
             if (!disposed)
                 // Referring to the interface here, because the user only knows about the public IConnectionState interfaces and nothing about the internal GeneralConnectionState (except for the fact that it's about to show up in this error's callstack)
                 Debug.LogError("IConnectionState was not Disposed! Please make sure to call Dispose in OnDisable of the EditorWindow in which it was used.");
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public void Dispose()
         {

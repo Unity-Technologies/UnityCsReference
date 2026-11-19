@@ -11,7 +11,7 @@ namespace Unity.UIToolkit.Editor;
 /// </summary>
 sealed class SetPreviewThemeCommand : Command<SetPreviewThemeCommand>
 {
-    public static SetPreviewThemeCommand GetPooled(object source, PreviewThemeState themeState, ThemeStyleSheet theme)
+    public static SetPreviewThemeCommand GetPooled(object source, PreviewThemeState themeState, StyleSheet theme)
     {
         var cmd = GetPooled();
         cmd.Source = source;
@@ -20,15 +20,15 @@ sealed class SetPreviewThemeCommand : Command<SetPreviewThemeCommand>
         return cmd;
     }
 
-    public static void Execute(object source, PreviewThemeState themeState, ThemeStyleSheet theme)
+    public static void Execute(AuthoringContext context, object source, PreviewThemeState themeState, StyleSheet theme)
     {
         using var command = GetPooled(source, themeState, theme);
-        UICommandQueue.Execute(command);
+        context.Messages.Execute(command);
     }
 
     PreviewThemeState m_ThemeState;
 
-    public ThemeStyleSheet Theme { get; private set; }
+    public StyleSheet Theme { get; private set; }
 
     protected override void Init()
     {

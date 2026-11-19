@@ -2,66 +2,55 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
-using UnityEditor.SceneManagement;
-using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    // Shared lifecycle for the UI selection editors (VisualElement / StyleRule): keeps the inspector's
-    // animation-recording state in sync with AnimationMode. Subclasses supply the inspector and the
-    // recording context for their target type.
+    // Shared lifecycle for the UI selection editors (VisualElement / StyleRule): shows the content of the target,
+    // which keeps the inspector's animation-recording state in sync with AnimationMode. Subclasses supply the
+    // content for their target type.
     abstract class UISelectionEditor : UnityEditor.Editor
     {
-        // The recording start/stop events don't fire when AnimationMode enters plain preview, so we
-        // also watch this each tick to refresh the inspector on those transitions.
-        bool m_LastInAnimationMode;
+        UISelectionInspectorContent m_Content;
 
-        // The inspector this editor drives (search reset, dispose, recording state).
-        protected abstract UIInspector Inspector { get; }
+        // The context of the target: where the inspector reads its document and sends its messages.
+        protected AuthoringContext Context => AuthoringContext.For(target as UISelectionObject);
 
-        // Recording context for this editor's target (element vs rule), or null when not applicable.
-        protected abstract StyleInspectorAnimationRecordingContext CreateRecordingContext();
+        protected abstract UISelectionInspectorContent CreateContent();
 
         protected virtual void OnEnable()
         {
-            AnimationMode.onAnimationRecordingStart += OnRecordingStateChanged;
-            AnimationMode.onAnimationRecordingStop += OnRecordingStateChanged;
-            m_LastInAnimationMode = AnimationMode.InAnimationMode();
-            EditorApplication.update += OnEditorUpdate;
-            UIStageNavigation.StageSettled += OnStageChanged;
+            if (m_Content != null)
+                m_Content.Target = target as UISelectionObject;
         }
 
         protected virtual void OnDisable()
         {
-            AnimationMode.onAnimationRecordingStart -= OnRecordingStateChanged;
-            AnimationMode.onAnimationRecordingStop -= OnRecordingStateChanged;
-            EditorApplication.update -= OnEditorUpdate;
-            UIStageNavigation.StageSettled -= OnStageChanged;
+            if (m_Content != null)
+                m_Content.Target = null;
         }
 
-        protected virtual void OnDestroy() => Inspector?.Dispose();
-
-        void OnStageChanged(Stage _) => Inspector?.ResetSearch();
-
-        void OnRecordingStateChanged() => ApplyState();
-
-        void OnEditorUpdate()
+        protected virtual void OnDestroy()
         {
-            var inMode = AnimationMode.InAnimationMode();
-            if (inMode == m_LastInAnimationMode)
-                return;
-            m_LastInAnimationMode = inMode;
-            ApplyState();
+            m_Content?.Dispose();
+            m_Content = null;
         }
 
-        // Pushes the current recording context onto the inspector. Subclasses override to also apply
-        // target-specific state (edit flags, header visibility, ...).
-        protected virtual void ApplyState()
+        // The header comes first: the inspector GUI is built right after it, from the same content.
+        internal override VisualElement CreateInspectorHeaderGUI()
         {
-            if (Inspector == null)
-                return;
-            Inspector.RefreshRecordingState(CreateRecordingContext());
+            m_Content?.Dispose();
+            m_Content = CreateContent();
+            m_Content.Target = target as UISelectionObject;
+            return m_Content.Header;
+        }
+
+        public override VisualElement CreateInspectorGUI()
+        {
+            if (m_Content == null)
+                CreateInspectorHeaderGUI();
+
+            return m_Content.Inspector;
         }
 
         public override bool UseDefaultMargins() => false; // no artificial padding

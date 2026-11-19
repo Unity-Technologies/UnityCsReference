@@ -84,15 +84,33 @@ internal static unsafe partial class SerializationBackendManagedCommands
         // A gather-stream bracket: the gather owns its only fire, so it is not
         // gated on the null-slot contract.
         InvokeCallbackIgnoresNullSlot = 42,
+        // Exec-only span loop over an unmanaged V2SpanHost: the collection
+        // loop's positions on the same layouts, with no frame (the cursor pair
+        // holds element addresses).
+        SpanEnterOrSkip = 43,
+        SpanBulkTail = 44,
+        SpanRepeatOrFallthrough = 45,
+        SpanRepeatOrExit = 46,
+        SpanMemCpy = 47,
+        // Mapped reads only: templates composed from a SchemaMapping (Commands.h).
+        MappedSkipSubtree = 48,
+        MappedConvertPrimitive = 49,
+        MappedNativeRead = 50,
+        MappedAssignEmpty = 51,
+        MappedAssignReference = 52,
+        MappedEnterStoredArea = 53,
+        MappedSeekArea = 54,
+        MappedExitStoredArea = 55,
         // COMPOSER-ONLY opcodes, kept together at the end so the executed set
         // stays dense from 0: they describe a type rather than being code, the
         // publish lowering rewrites every one of them, and reaching an
         // executor is a lowering bug (the switches default-throw). Mirrored
         // here only to keep the two enums identical.
-        CollectionEnter = 43,
-        CollectionEnterFactory = 44,
-        CollectionExit = 45,
-        MergeableCopyList = 46,
+        CollectionEnter = 56,
+        CollectionEnterFactory = 57,
+        CollectionExit = 58,
+        MergeableCopyList = 59,
+        SpanEnter = 60,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -123,6 +141,16 @@ internal static unsafe partial class SerializationBackendManagedCommands
         public uint fieldOffset;             // relative to the current frame
         public uint destOffset;              // relative to the enclosing fixed block
         public uint byteCount;               // multiple of 4, >= 12
+    }
+
+    // Mirror of V2SpanHost in ManagedSerialization.h. Must stay in sync.
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct V2SpanHost
+    {
+        public byte* elements;
+        public int count;
+        public int pad;
+        public IntPtr resize;                // read only: (V2SpanHost*, int count, NativeReadBufferContext*) -> byte*
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -198,6 +226,156 @@ internal static unsafe partial class SerializationBackendManagedCommands
         public ushort size4;
     }
 
+    // Mirror of V2SkipOp (Commands.h).
+    internal enum V2SkipOp : uint
+    {
+        End = 0,
+        Fixed = 1,
+        Align = 2,
+        ArrayFixed = 3,
+        Array = 4,
+        RegistryFrame = 5,
+        Record = 6,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct V2CmdMappedSkipSubtree  // 8 bytes, followed by programWords uint words, or a V2ExternalProgram when 0
+    {
+        public byte op;
+        public byte elementZeroBytes;        // primitive element bytes to zero first (Commands.h)
+        public ushort size4;
+        public ushort ensureSum;             // doc §12: window bytes to guarantee after this command
+        public ushort programWords;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct V2ExternalProgram  // 16 bytes; mirror of Commands.h
+    {
+        public ulong words;
+        public uint count;
+        public uint pad;
+    }
+
+    // Mirror of V2PrimitiveKind (Commands.h).
+    internal enum V2PrimitiveKind : byte
+    {
+        Bool = 0,
+        SInt8 = 1,
+        UInt8 = 2,
+        SInt16 = 3,
+        UInt16 = 4,
+        SInt32 = 5,
+        UInt32 = 6,
+        SInt64 = 7,
+        UInt64 = 8,
+        Float = 9,
+        Double = 10,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct V2CmdMappedConvertPrimitive  // 16 bytes
+    {
+        public byte op;
+        public byte pad0;
+        public ushort size4;
+        public uint fieldOffset;
+        public ushort ensureSum;             // doc §12: window bytes to guarantee after this command
+        public V2PrimitiveKind storedKind;
+        public V2PrimitiveKind targetKind;
+        public byte storedPad;
+        public byte flags;                   // kV2ConvertFlag*
+        public ushort elementStride;         // managed element stride, for kV2ConvertFlagCollectionTail
+    }
+
+    private const ushort kV2AssignReferenceFlagLegacyId = 1 << 0;
+
+    private const byte kV2ConvertFlagDiscard = 1 << 0;
+    private const byte kV2ConvertFlagCollectionTail = 1 << 1;
+    private const byte kV2ConvertFlagElement = 1 << 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct V2CmdMappedNativeRead  // 56 bytes
+    {
+        public byte op;
+        public byte pad0;
+        public ushort size4;
+        public uint fieldOffset;
+        public ulong dispatcher;             // native (peer, SafeBinaryRead*, storedNode)
+        public ulong storedNode;
+        public ulong wrapperTypeHandle;
+        public ulong wrapperCtor;
+        public ulong postDispatch;           // optional managed hook, as SimpleNativeType's readUserData4
+        public uint ptrFieldOffset;
+        public ushort ensureSum;             // doc §12: window bytes to guarantee after this command
+        public ushort clearBytes;            // no wrapper only: bytes of the field zeroed before the read
+    }
+
+    // Mirror of V2AssignEmptyMode (Commands.h).
+    internal enum V2AssignEmptyMode : byte
+    {
+        String = 0,
+        Collection = 1,
+        CollectionFactory = 2,
+        Dictionary = 3,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct V2CmdMappedAssignEmpty  // 24 bytes
+    {
+        public byte op;
+        public byte pad0;                    // collection kind (low nibble)
+        public ushort size4;
+        public uint fieldOffset;
+        public ushort ensureSum;             // doc §12: window bytes to guarantee after this command
+        public V2AssignEmptyMode mode;
+        public byte flags;                   // kV2AssignEmptyFlag* bits
+        public uint pad2;
+        public ulong elementTypeOrFactory;   // RuntimeTypeHandle, or the sized factory
+    }
+
+    private const byte kV2AssignEmptyFlagIfNull = 1;
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct V2CmdMappedEnterStoredArea  // 12 bytes, followed by programWords uint words, or a V2ExternalProgram when 0
+    {
+        public byte op;
+        public byte pad0;
+        public ushort size4;
+        public ushort ensureSum;             // doc §12: window bytes to guarantee after this command
+        public ushort programWords;
+        public uint slots;                   // the Record ops in the program
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct V2CmdMappedStoredArea  // 12 bytes; MappedSeekArea and MappedExitStoredArea
+    {
+        public byte op;
+        public byte pad0;
+        public ushort size4;
+        public ushort ensureSum;             // doc §12: window bytes to guarantee after this command
+        public ushort pad;
+        public uint slot;                    // MappedSeekArea: the slot to move to; MappedExitStoredArea: the area's slot count
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct V2CmdMappedAssignReference  // 64 bytes + the pointer-width field pair
+    {
+        public byte op;
+        public byte pad0;
+        public ushort size4;
+        public ushort ensureSum;             // doc §12: window bytes to guarantee after this command
+        public ushort flags;                 // kV2AssignReferenceFlag*
+        public ulong readGroupHandler;
+        public ulong userData;
+        public V2ExternalFixedEntry entry;
+        public UnityObjectReadEntry readEntry;
+        public uint segment;                 // FUID path segment a legacy reference registers for missing types, or kV2NoPathSegment
+        public ulong input0;                 // the reference the handler reads: zero, or the widened legacy id
+        public ulong input1;
+        public IntPtr field;
+        public IntPtr fieldParent;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct V2CmdString              // 12 bytes
     {
@@ -265,13 +443,14 @@ internal static unsafe partial class SerializationBackendManagedCommands
 
     // Exec-only stream header; the executor wrappers consume and skip it.
     [StructLayout(LayoutKind.Sequential)]
-    internal struct V2CmdStreamHeader        // 8 bytes; mirror of Commands.h
+    internal struct V2CmdStreamHeader        // 12 bytes; mirror of Commands.h
     {
         public byte op;
         public byte pad0;
         public ushort size4;
         public ushort maxFrameDepth;         // frame-stack slots the executor needs (1 = root only)
-        public ushort pad;
+        public ushort rootEnsureSum;         // doc §12: the root region staged before the first command
+        public uint storedAreaSlots;         // stored position slots a mapped read's areas hold at once
     }
 
     // Collection loop commands (mirror of Commands.h). Setup plus the first
@@ -287,7 +466,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
         public uint elementStride;
         public uint delta;                   // skip: one-past-this-command + delta = the next test
         public ushort bodyEnsureSum;         // doc §12: body arm
-        public ushort exitEnsureSum;         // doc §12: skip arm
+        public ushort wireStride;            // out-of-line templates: fixed per-element extent in the allocation
         public uint stride;
         public ulong elementTypeHandle;      // READ: reuse-or-allocate
     }
@@ -303,7 +482,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
         public uint elementStride;
         public uint delta;
         public ushort bodyEnsureSum;
-        public ushort exitEnsureSum;
+        public ushort wireStride;
         public uint stride;
         public ulong sizedFactoryPtr;
     }
@@ -393,7 +572,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
         public ulong readUserData4;
         public ushort ensureSum;             // doc §12: window guarantee after the native crossing
         public ushort pad;
-        public uint pad2;                    // explicit tail padding (8-byte struct alignment)          // GUIStyle: managed post-dispatch hook
+        public uint outOfLineWireBytes;      // out-of-line variant fixed inline extent (measured at compose; feeds stride sums); 0 on classic templates
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -420,7 +599,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct V2CmdEnterElementSource  // 64 bytes; mirror of Commands.h
+    internal struct V2CmdEnterElementSource  // 72 bytes; mirror of Commands.h
     {
         public byte op;
         public byte pad0;                    // kV2Pad0FlagPushFuidFrame
@@ -431,8 +610,10 @@ internal static unsafe partial class SerializationBackendManagedCommands
         public uint segmentIndex;            // FUID path segment; kV2NoPathSegment when FUID is absent
         public ushort bodyEnsureSum;         // doc §12: body-entry guarantee
         public ushort exitEnsureSum;         // doc §12: empty-skip guarantee
+        public uint wireStride;              // out-of-line templates: fixed per-entry extent in the allocation
+        public uint pad2;
         public ulong elementTypeHandle;      // READ: staging Array.CreateInstance
-        public ulong sourceHandler;          // write: (object, ref V2FuidBuilder, ctx*, ulong) -> Array
+        public ulong sourceHandler;          // (object, ref V2FuidBuilder, EntityId host, ulong) -> Array
         public ulong sinkHandler;            // read: (ref byte, Array, ref V2FuidBuilder, ctx*, ulong); 0 = template is write-only
         public ulong sourceUserData;         // opaque per-instantiation payload
         public ulong sinkUserData;           // opaque per-instantiation payload
@@ -455,6 +636,8 @@ internal static unsafe partial class SerializationBackendManagedCommands
                                              // on write brackets, OnAfterDeserialize on read brackets);
                                              // 0 for the class flavor, which cast-dispatches the interface
     }
+
+    private const byte kV2Pad0FlagDynamicOutOfLineCapable = 0x20;
 
     private const byte kV2CallbackFlavorStruct = 1;
 

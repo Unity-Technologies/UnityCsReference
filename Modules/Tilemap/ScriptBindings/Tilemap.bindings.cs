@@ -70,6 +70,9 @@ namespace UnityEngine.Tilemaps
         ///<summary>A <see cref="Tile" /> was set, cleared or refreshed, so any of its properties may have changed.</summary>
         Replaced = 1 << 0,
         ///<summary>The animation of a <see cref="Tile" /> changed.</summary>
+        ///<remarks>The <see cref="Tilemap" /> reports a new animation frame only when the animation has
+        ///<see cref="TileAnimationFlags.UpdatePhysics" />, because the frame changes the <see cref="Sprite" /> the
+        ///<see cref="Tile" /> collides with. It reports the frame together with <see cref="Replaced" />.</remarks>
         SpriteAnimation = 1 << 1,
         ///<summary>The transform matrix of a <see cref="Tile" /> changed.</summary>
         Transform = 1 << 2,
@@ -81,7 +84,8 @@ namespace UnityEngine.Tilemaps
         ColliderType = 1 << 5,
 
         ///<summary>The changes which require colliders to be rebuilt for physics.</summary>
-        ///<remarks>Test against this to ignore changes that cannot affect collision, such as a tile being recolored.</remarks>
+        ///<remarks>Test against this to ignore changes that cannot affect collision, such as a tile being recolored.
+        ///This includes a new animation frame of a tile whose animation has <see cref="TileAnimationFlags.UpdatePhysics" />.</remarks>
         Physics = Replaced | Transform | ColliderType,
     }
 

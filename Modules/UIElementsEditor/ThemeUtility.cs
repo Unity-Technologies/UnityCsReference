@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Canvas theme types for UI preview and editing.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal enum CanvasTheme
     {
         ProjectSettings,
@@ -43,13 +43,10 @@ namespace UnityEditor.UIElements
         internal const string defaultRuntimeThemeContent = "@import url(\"" + ThemeRegistry.kThemeScheme +
                                                          "://default\");\nVisualElement {}";
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal const string DefaultThemeSuffix = " (Default)";
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal const string ProjectThemeSuffix = " (Project)";
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal const string BuiltInDefaultRuntimeThemeName = "Built-in Default Runtime Theme";
 
         [NoAutoStaticsCleanup]
@@ -95,10 +92,8 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Gets the built-in default runtime theme. Lazy-loaded on first access.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static ThemeStyleSheet builtInDefaultRuntimeTheme
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
                 if (s_BuiltInDefaultRuntimeTheme == null)
@@ -111,10 +106,8 @@ namespace UnityEditor.UIElements
         private static SortedSet<string> s_ThemeFiles;
 
         /// Gets available theme files in the project.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static SortedSet<string> themeFiles
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
                 if (s_ThemeFiles == null)
@@ -128,7 +121,7 @@ namespace UnityEditor.UIElements
         }
 
         // Refresh the available theme files in the project.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void RefreshRuntimeThemeFiles()
         {
             // Explicitly create a new collection and rebuild it
@@ -159,7 +152,7 @@ namespace UnityEditor.UIElements
             themeFilesChanged?.Invoke();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static ThemeStyleSheet FindProjectDefaultRuntimeThemeAssetOrDefault()
         {
             var projectDefaultTssAsset = FindProjectDefaultRuntimeThemeAsset();
@@ -169,7 +162,6 @@ namespace UnityEditor.UIElements
             return defaultTssAsset;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static ThemeStyleSheet FindProjectDefaultRuntimeThemeAsset()
         {
             // Return cached value if available
@@ -234,7 +226,7 @@ namespace UnityEditor.UIElements
                    || assetString == DeleteNewlinesAndWhitespaces(PanelSettingsCreator.GetTssTemplateContent());
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool IsEditorCanvasTheme(CanvasTheme theme)
         {
             return theme is CanvasTheme.Default or CanvasTheme.Dark or CanvasTheme.Light;
@@ -245,14 +237,12 @@ namespace UnityEditor.UIElements
             return Regex.Replace(str, @"[\r\n\s]+", string.Empty);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool HasLocalThemeOverride()
         {
             return m_EditorCanvasTheme != CanvasTheme.ProjectSettings ||
                    m_RuntimeCanvasTheme != CanvasTheme.ProjectSettings;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void SetEditorThemeOverride(CanvasTheme canvasTheme, ThemeStyleSheet themeSheet)
         {
             m_EditorCanvasTheme = canvasTheme;
@@ -260,7 +250,6 @@ namespace UnityEditor.UIElements
             SaveThemeOverrides();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void SetRuntimeThemeOverride(CanvasTheme canvasTheme, ThemeStyleSheet themeSheet)
         {
             m_RuntimeCanvasTheme = canvasTheme;
@@ -268,7 +257,6 @@ namespace UnityEditor.UIElements
             SaveThemeOverrides();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void ClearThemeOverrides()
         {
             SetEditorThemeOverride(CanvasTheme.ProjectSettings, null);
@@ -287,7 +275,6 @@ namespace UnityEditor.UIElements
             EditorPrefs.SetString(k_RuntimeThemePathKey, runtimeThemePath);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void LoadThemeOverrides()
         {
             if (EditorPrefs.HasKey(k_EditorCanvasThemeKey))
@@ -325,7 +312,6 @@ namespace UnityEditor.UIElements
         /// 1. User override
         /// 2. Project settings (from UIToolkitProjectSettings) or Fall-backs
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static (CanvasTheme theme, ThemeStyleSheet sheet) GetEffectiveTheme(bool isEditorExtensionMode)
         {
             // Ensure theme overrides are loaded from EditorPrefs on first access
@@ -355,7 +341,6 @@ namespace UnityEditor.UIElements
         /// Returns the project-level theme preference (ignoring user overrides).
         /// This is layer 2 of the theme hierarchy: Project settings → built-in defaults.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static (CanvasTheme theme, ThemeStyleSheet sheet) GetProjectDefaultTheme(bool isEditorExtensionMode)
         {
             if (isEditorExtensionMode)
@@ -381,7 +366,7 @@ namespace UnityEditor.UIElements
             return (runtimeCanvasTheme, runtimeTheme);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static string NicifyThemeName(ThemeStyleSheet theme)
         {
             if (theme == null) return string.Empty;
@@ -396,7 +381,7 @@ namespace UnityEditor.UIElements
         /// Returns a KVP of editor theme options (Default, Dark, Light) to the display names.
         /// Used in Dropdowns showing list of theme options.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static Dictionary<CanvasTheme, string> GetEditorThemesToDisplayName()
         {
             return s_EditorThemesDisplayNames;
@@ -405,7 +390,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Returns runtime theme options to display names.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static Dictionary<ThemeStyleSheet, string> GetRuntimeThemesToDisplayName()
         {
             // Return cached value if available
@@ -430,7 +415,7 @@ namespace UnityEditor.UIElements
             return res;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static StyleSheet GetStyleSheetForTheme(CanvasTheme theme, ThemeStyleSheet customThemeStyleSheet)
         {
             switch (theme)
@@ -456,6 +441,29 @@ namespace UnityEditor.UIElements
                         ? UIElementsEditorUtility.GetCommonDarkStyleSheet()
                         : UIElementsEditorUtility.GetCommonLightStyleSheet();
             }
+        }
+
+        // Dark and Light only: the active editor theme resolves to one of them.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal static bool TryGetEditorCanvasTheme(StyleSheet styleSheet, out CanvasTheme theme)
+        {
+            theme = CanvasTheme.ProjectSettings;
+            if (styleSheet == null)
+                return false;
+
+            if (styleSheet == UIElementsEditorUtility.GetCommonDarkStyleSheet())
+                theme = CanvasTheme.Dark;
+            else if (styleSheet == UIElementsEditorUtility.GetCommonLightStyleSheet())
+                theme = CanvasTheme.Light;
+
+            return theme != CanvasTheme.ProjectSettings;
+        }
+
+        // Editor themes need an editor-context panel; every other theme, and no theme, previews in a runtime panel.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static ContextType GetContextTypeForTheme(StyleSheet theme)
+        {
+            return TryGetEditorCanvasTheme(theme, out _) ? ContextType.Editor : ContextType.Player;
         }
 
         class ThemePostprocessor : AssetPostprocessor

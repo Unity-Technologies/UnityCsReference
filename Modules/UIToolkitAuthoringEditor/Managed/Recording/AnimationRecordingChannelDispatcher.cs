@@ -403,14 +403,14 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyRecordingChannel.GridLine:
                     if (typeof(T) == typeof(StyleGridLine))
                     {
-                        if (!TryGetRawGridLine(Unsafe.As<T, StyleGridLine>(ref v), out var raw))
+                        if (!TryGetGridLine(Unsafe.As<T, StyleGridLine>(ref v), out var gridLine))
                             return false;
-                        cs.ApplyPropertyAnimation(element, id, raw);
+                        cs.ApplyPropertyAnimation(element, id, gridLine.rawValue);
                         return true;
                     }
                     if (typeof(T) == typeof(GridLine))
                     {
-                        cs.ApplyPropertyAnimation(element, id, ToRawGridLine(Unsafe.As<T, GridLine>(ref v)));
+                        cs.ApplyPropertyAnimation(element, id, Unsafe.As<T, GridLine>(ref v).rawValue);
                         return true;
                     }
                     return false;
@@ -780,13 +780,13 @@ namespace Unity.UIToolkit.Editor
                 case StylePropertyRecordingChannel.GridLine:
                     if (typeof(T) == typeof(StyleGridLine))
                     {
-                        var tmp = new StyleGridLine(FromRawGridLine(cs.ReadPropertyAnimationInt(stylePropertyId)));
+                        var tmp = new StyleGridLine(GridLine.FromRawValue(cs.ReadPropertyAnimationInt(stylePropertyId)));
                         previousValue = Unsafe.As<StyleGridLine, T>(ref tmp);
                         return true;
                     }
                     if (typeof(T) == typeof(GridLine))
                     {
-                        var tmp = FromRawGridLine(cs.ReadPropertyAnimationInt(stylePropertyId));
+                        var tmp = GridLine.FromRawValue(cs.ReadPropertyAnimationInt(stylePropertyId));
                         previousValue = Unsafe.As<GridLine, T>(ref tmp);
                         return true;
                     }
@@ -1308,24 +1308,25 @@ namespace Unity.UIToolkit.Editor
 
                 case StylePropertyRecordingChannel.GridLine:
                 {
-                    int prevRaw;
-                    int curRaw;
+                    GridLine prev;
+                    GridLine cur;
                     if (typeof(T) == typeof(StyleGridLine))
                     {
-                        if (!TryGetRawGridLine(Unsafe.As<T, StyleGridLine>(ref p), out prevRaw)
-                            || !TryGetRawGridLine(Unsafe.As<T, StyleGridLine>(ref c), out curRaw))
+                        if (!TryGetGridLine(Unsafe.As<T, StyleGridLine>(ref p), out prev)
+                            || !TryGetGridLine(Unsafe.As<T, StyleGridLine>(ref c), out cur))
                             return false;
                     }
                     else if (typeof(T) == typeof(GridLine))
                     {
-                        prevRaw = ToRawGridLine(Unsafe.As<T, GridLine>(ref p));
-                        curRaw = ToRawGridLine(Unsafe.As<T, GridLine>(ref c));
+                        prev = Unsafe.As<T, GridLine>(ref p);
+                        cur = Unsafe.As<T, GridLine>(ref c);
                     }
                     else
                     {
                         return false;
                     }
-                    AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, null, prevRaw, curRaw);
+                    AddGridLineModification(list, target, elementPath, propName, ".placement", UIAnimationBinder.kGridLinePlacementChannel, prev, cur);
+                    AddGridLineModification(list, target, elementPath, propName, ".value", UIAnimationBinder.kGridLineValueChannel, prev, cur);
                     return true;
                 }
 
@@ -1334,21 +1335,14 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        static bool TryGetRawGridLine(StyleGridLine value, out int raw)
+        static void AddGridLineModification(List<UndoPropertyModification> list, UnityEngine.Object target, string elementPath, string propName, string suffix, int channel, GridLine prev, GridLine cur)
+            => AnimationRecordingStyleBridge.AddModification(list, target, elementPath, propName, suffix,
+                UIAnimationBinder.ReadGridLineChannel(prev, channel), UIAnimationBinder.ReadGridLineChannel(cur, channel));
+
+        static bool TryGetGridLine(StyleGridLine value, out GridLine gridLine)
         {
-            raw = value.keyword == StyleKeyword.Undefined ? ToRawGridLine(value.value) : 0;
+            gridLine = value.keyword == StyleKeyword.Undefined ? value.value : GridLine.Auto;
             return value.keyword == StyleKeyword.Undefined || value.keyword == StyleKeyword.Auto;
-        }
-
-        static int ToRawGridLine(GridLine value) => value.isSpan ? -value.span : value.line;
-
-        static GridLine FromRawGridLine(int raw)
-        {
-            if (raw > 0)
-                return GridLine.AtLine(raw);
-            if (raw < 0)
-                return GridLine.Span(raw == int.MinValue ? int.MaxValue : -raw);
-            return GridLine.Auto;
         }
     }
 }

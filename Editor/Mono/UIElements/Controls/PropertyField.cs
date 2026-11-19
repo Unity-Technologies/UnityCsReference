@@ -69,6 +69,17 @@ namespace UnityEditor.UIElements
 
         string m_Label;
 
+        // For a caller handling the bind event before this field does: the field builds with the label then.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal void SetLabelWithoutRebind(string value)
+        {
+            if (m_Label == value)
+                return;
+
+            m_Label = value;
+            NotifyPropertyChanged(labelProperty);
+        }
+
         bool m_ShowFirstFoldoutHeader = true;
 
         // When set to false, a property that would normally render with a top-level
@@ -103,12 +114,12 @@ namespace UnityEditor.UIElements
         PropertyField m_DrawParentProperty;
         VisualElement m_DecoratorDrawersContainer;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal event Action reset;
 
         internal SerializedProperty serializedProperty
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_SerializedProperty;
         }
 
@@ -909,7 +920,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
+        [VisibleToOtherModules("UnityEditor.ContentLoadModule", "UnityEditor.EntitiesModule")]
         internal static void ConfigureFieldStyles<TField, TValue>(TField field) where TField : BaseField<TValue>
         {
             field.labelElement.AddToClassList(labelUssClassNameUnique);
@@ -1003,6 +1014,8 @@ namespace UnityEditor.UIElements
                 buttonGroup.Add(new Button { text = i.ToString() });
             }
 
+            var isRemovingButtons = false;
+
             // Discard the adjustments populating made, then start reporting changes.
             buttonGroup.SetValueWithoutNotify((ToggleButtonGroupState)propertyCopy.structValue);
             buttonGroup.RegisterValueChangedCallback(OnToggleGroupChanged);
@@ -1015,6 +1028,9 @@ namespace UnityEditor.UIElements
 
             void OnToggleGroupChanged(ChangeEvent<ToggleButtonGroupState> evt)
             {
+                if (isRemovingButtons)
+                    return;
+
                 var current = (ToggleButtonGroupState)propertyCopy.structValue;
 
                 // Writing an unchanged value dirties the asset and rebuilds the inspector, which loops.
@@ -1046,13 +1062,21 @@ namespace UnityEditor.UIElements
                 }
                 else if (currentLength > newLength)
                 {
-                    for (var i = newLength; i < currentLength; i++)
+                    isRemovingButtons = true;
+                    try
                     {
-                        var lastItem = buttonGroup.Query<Button>(className: ToggleButtonGroup.buttonClassName).Last();
-                        if (lastItem == null)
-                            break;
+                        for (var i = newLength; i < currentLength; i++)
+                        {
+                            var lastItem = buttonGroup.Query<Button>(className: ToggleButtonGroup.buttonClassName).Last();
+                            if (lastItem == null)
+                                break;
 
-                        lastItem.RemoveFromHierarchy();
+                            lastItem.RemoveFromHierarchy();
+                        }
+                    }
+                    finally
+                    {
+                        isRemovingButtons = false;
                     }
                 }
 

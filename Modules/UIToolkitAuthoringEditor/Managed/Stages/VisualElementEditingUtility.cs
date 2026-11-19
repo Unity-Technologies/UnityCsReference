@@ -225,23 +225,21 @@ static class VisualElementEditingUtility
     }
 
     /// <summary>
-    /// Resolves where a paste operation should land for the current stage.
+    /// Resolves where a paste operation should land in <paramref name="context"/>: its document session, or for
+    /// <see cref="AuthoringContext.Global"/> outside the UI Stage, the scene documents.
     /// </summary>
-    public static bool TryResolvePasteParent(VisualElement selected, out VisualElement parentElement,
-        out VisualElementAsset parentAsset)
+    public static bool TryResolvePasteParent(AuthoringContext context, VisualElement selected,
+        out VisualElement parentElement, out VisualElementAsset parentAsset)
     {
-        switch (StageUtility.GetCurrentStage())
-        {
-            case VisualElementEditingStage uiStage:
-                return TryResolvePasteParentInUIStage(uiStage, selected, out parentElement, out parentAsset);
-            case MainStage _:
-            case PrefabStage _:
-                return TryResolvePasteParentInMainStage(selected, out parentElement, out parentAsset);
-            default:
-                parentElement = null;
-                parentAsset = null;
-                return false;
-        }
+        if (context.Session is { } session)
+            return TryResolvePasteParent(session, selected, out parentElement, out parentAsset);
+
+        if (context.IsGlobal && StageUtility.GetCurrentStage() is MainStage or PrefabStage)
+            return TryResolvePasteParentInMainStage(selected, out parentElement, out parentAsset);
+
+        parentElement = null;
+        parentAsset = null;
+        return false;
     }
 
     // Paste lands as a sibling of the selected element (into its logical parent), or — when that parent is the
@@ -258,7 +256,7 @@ static class VisualElementEditingUtility
 
         if (selected is IPanelComponentRootElement)
             parentElement = selected;
-        else if (UIToolkitStageUtility.GetEditFlags(selected).IsFullyEditable())
+        else if (UIToolkitStageUtility.GetMainStageEditFlags(selected).IsFullyEditable())
             parentElement = selected.parent != null
                 ? GetLogicalParentFromPhysicalParent(selected.parent) ?? selected
                 : selected;
@@ -280,11 +278,16 @@ static class VisualElementEditingUtility
     // element's parent is read-only, it falls back to the local root of the (sub-)document being edited.
     // Reparenting onto the local root always targets the edited document's root asset, since the live local root
     // has no backing asset of its own (or, when editing in context, is the parent document's template instance).
-    static bool TryResolvePasteParentInUIStage(VisualElementEditingStage stage, VisualElement selected,
+    public static bool TryResolvePasteParent(UIDocumentSession session, VisualElement selected,
         out VisualElement parentElement, out VisualElementAsset parentAsset)
     {
-        var localRoot = stage.ResolveLocalRoot();
-        var rootAsset = stage.EditedVisualTreeAsset != null ? stage.EditedVisualTreeAsset.visualTree : null;
+        parentElement = null;
+        parentAsset = null;
+        if (session.IsDocumentReadOnly)
+            return false;
+
+        var localRoot = session.ResolveLocalRoot();
+        var rootAsset = session.EditedVisualTreeAsset != null ? session.EditedVisualTreeAsset.visualTree : null;
 
         parentElement = localRoot;
         parentAsset = rootAsset;
@@ -295,7 +298,7 @@ static class VisualElementEditingUtility
                 parentElement = GetLogicalParentFromPhysicalParent(selected.parent) ?? parentElement;
             // A read-only parent belongs to another document, such as an instanced template, that must stay untouched.
             if (parentElement != null && parentElement != localRoot &&
-                !stage.Context.GetElementEditFlags(parentElement).IsFullyEditable())
+                !session.GetElementEditFlags(parentElement).IsFullyEditable())
                 parentElement = localRoot;
             parentAsset = parentElement?.visualElementAsset ?? parentAsset;
         }
@@ -312,9 +315,9 @@ static class VisualElementEditingUtility
     /// <summary>
     /// Whether the clipboard holds content that can be pasted — either pending cut elements or valid UXML.
     /// </summary>
-    public static bool CanPasteContent()
+    public static bool CanPasteContent(AuthoringContext context)
     {
-        var cut = Clipboard.GetClipboardForStage()?.GetCutElements();
+        var cut = Clipboard.For(context).GetCutElements();
         if (cut != null && cut.Count > 0)
         {
             foreach (var asset in cut)
@@ -334,12 +337,13 @@ static class VisualElementEditingUtility
     /// Whether the clipboard holds content to paste under the paste parent: valid UXML, or cut elements that can
     /// move there.
     /// </summary>
-    public static bool CanPasteContent(VisualElement parentElement, VisualElementAsset parentAsset)
+    public static bool CanPasteContent(AuthoringContext context, VisualElement parentElement,
+        VisualElementAsset parentAsset)
     {
-        if (!CanPasteContent())
+        if (!CanPasteContent(context))
             return false;
 
-        var cutElements = Clipboard.GetClipboardForStage()?.GetCutElements();
+        var cutElements = Clipboard.For(context).GetCutElements();
         return cutElements == null || cutElements.Count == 0 ||
             CanMoveCutElements(cutElements, parentElement, parentAsset);
     }
@@ -380,7 +384,8 @@ static class VisualElementEditingUtility
     /// Returns <see langword="false"/> when the clipboard is empty, the content is not valid UXML,
     /// or the paste would create a circular template dependency.
     /// </summary>
-    public static bool TryPasteCopied(object source, VisualElement parentElement, VisualElementAsset parentAsset)
+    public static bool TryPasteCopied(AuthoringContext context, object source, VisualElement parentElement,
+        VisualElementAsset parentAsset)
     {
         if (!Clipboard.IsSystemCopyBufferUxml())
             return false;
@@ -391,8 +396,8 @@ static class VisualElementEditingUtility
             if (CopiedContentWouldCauseCircularDependency(parentElement, targetDocument, Clipboard.SystemCopyBuffer))
                 return false;
 
-            PasteElementsCommand.Execute(source, Clipboard.SystemCopyBuffer, parentAsset);
-            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parentElement);
+            PasteElementsCommand.Execute(source, Clipboard.SystemCopyBuffer, parentAsset, context);
+            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(context, parentElement);
             return true;
         }
         catch (ArgumentException)

@@ -108,12 +108,12 @@ namespace UnityEngine
             public uint startInstance {get; set;}
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Intentional leak warning: logs when Dispose was not called, since DestroyBuffer is not thread-safe.
         ~GraphicsBuffer()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public void Dispose()
         {
@@ -237,6 +237,11 @@ namespace UnityEngine
             if((usageFlags & UsageFlags.LockBufferForWrite) != 0 && (target & Target.CopyDestination) != 0)
             {
                 throw new ArgumentException("Attempting to create a LockBufferForWrite capable buffer that can be copied into. LockBufferForWrite buffers are read-only on the GPU.");
+            }
+
+            if ((target & Target.Raw) != 0 && (target & Target.Structured) != 0)
+            {
+                Debug.LogWarning("This GraphicsBuffer uses both Target.Raw and Target.Structured. On DirectX 11 and DirectX 12, you can bind it only as a ByteAddressBuffer. Binding it as a StructuredBuffer causes undefined behavior and can make the GPU stop responding. Use only one of these targets.");
             }
 
             m_Ptr = InitBuffer(target, usageFlags, count, stride);

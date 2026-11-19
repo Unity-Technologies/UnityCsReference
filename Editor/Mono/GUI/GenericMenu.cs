@@ -21,6 +21,9 @@ namespace UnityEditor
         static ObjectPool<GenericMenu> s_Pool =
             new ObjectPool<GenericMenu>(() => new GenericMenu(), null, m => m.menuItems.Clear());
 
+        [NoAutoStaticsCleanup] // only set for the duration of CollectShownItems
+        static GenericMenu s_ShownItemsCollector;
+
         // Callback function, called when a menu item is selected
         public delegate void MenuFunction();
 
@@ -102,6 +105,8 @@ namespace UnityEditor
         /// </summary>
         public void ShowAsContext()
         {
+            if (TryAddToShownItemsCollector())
+                return;
             if (Event.current == null)
                 return;
             DropDown(new Rect(Event.current.mousePosition, Vector2.zero));
@@ -122,6 +127,8 @@ namespace UnityEditor
         /// <param name="position"></param>
         internal void DropDown(Rect position, bool shouldDiscardMenuOnSecondClick)
         {
+            if (TryAddToShownItemsCollector())
+                return;
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
             position.x = temp.x;
             position.y = temp.y;
@@ -134,6 +141,8 @@ namespace UnityEditor
         /// <param name="position"></param>
         internal void DropDownScreenSpace(Rect position, bool shouldDiscardMenuOnSecondClick)
         {
+            if (TryAddToShownItemsCollector())
+                return;
             string[] titles = new string[m_MenuItems.Count];
             bool[] enabled = new bool[m_MenuItems.Count];
             ArrayList selected = new ArrayList();
@@ -157,6 +166,30 @@ namespace UnityEditor
         internal void Popup(Rect position, int selectedIndex)
         {
             DropDown(position);
+        }
+
+        // Menus shown during showMenus add their items to collector instead of opening
+        internal static void CollectShownItems(GenericMenu collector, System.Action showMenus)
+        {
+            var previousCollector = s_ShownItemsCollector;
+            s_ShownItemsCollector = collector;
+            try
+            {
+                showMenus();
+            }
+            finally
+            {
+                s_ShownItemsCollector = previousCollector;
+            }
+        }
+
+        bool TryAddToShownItemsCollector()
+        {
+            if (s_ShownItemsCollector == null || s_ShownItemsCollector == this)
+                return false;
+
+            s_ShownItemsCollector.m_MenuItems.AddRange(m_MenuItems);
+            return true;
         }
 
         private void CatchMenu(object userData, string[] options, int selected)

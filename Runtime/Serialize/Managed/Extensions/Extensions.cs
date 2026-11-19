@@ -112,6 +112,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
         public IntPtr pptrCollectArrayHandler;
         public IntPtr entityIdCollectGroupHandler;
         public IntPtr entityIdCollectArrayHandler;
+        // version 24: the out-of-line format runs through the same arms (see ExtensionTable.h).
     }
 
     // Mirror of V2ExecutorArgs in ExtensionTable.h. Must stay in sync.
@@ -332,7 +333,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
         {
             var table = (V2ExtensionTable*)buffer;
             *table = default;
-            table->version = 21;
+            table->version = 24;
             table->pptrWireBytes = 12;  // LocalSerializedObjectIdentifier
             table->pptrArrayHandler = (IntPtr)(delegate*<byte[], int, uint, NativeBufferContext*, ulong, void>)&V2WriteUnityObjectArray;
             table->pptrGroupHandler = (IntPtr)(delegate*<ref byte, byte*, int, byte*, NativeBufferContext*, ulong, void>)&V2WriteUnityObjectGroup;
@@ -363,7 +364,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
             s_V2ReadExecutorEntryDelegate = V2ReadExecutorEntry;
             table->writeExecutorEntry = Marshal.GetFunctionPointerForDelegate(s_V2WriteExecutorEntryDelegate);
             table->readExecutorEntry = Marshal.GetFunctionPointerForDelegate(s_V2ReadExecutorEntryDelegate);
-            table->dictionaryElementSourceHandler = (IntPtr)(delegate*<object, ref V2FuidBuilder, NativeBufferContext*, ulong, Array>)&V2DictionaryElementSource;
+            table->dictionaryElementSourceHandler = (IntPtr)(delegate*<object, ref V2FuidBuilder, EntityId, ulong, Array>)&V2DictionaryElementSource;
             table->dictionaryElementSinkHandler = (IntPtr)(delegate*<ref byte, Array, ref V2FuidBuilder, NativeReadBufferContext*, ulong, void>)&V2DictionaryElementSink;
             table->srReadArrayHandler = (IntPtr)(delegate*<byte[], int, long, byte*, NativeReadBufferContext*, byte*, byte*, void>)&V2ReadSerializeReferenceArray;
             s_V2RegisterConstructorDelegate = V2RegisterConstructorEntry;

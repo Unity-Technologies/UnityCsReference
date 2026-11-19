@@ -33,7 +33,7 @@ namespace Unity.UIToolkit.Editor
 
         public override void PopulateMenu(DropdownMenu menu)
         {
-            UIViewportContextMenuUtility.PopulateMenu(menu, CommandSources.Menus);
+            UIViewportContextMenuUtility.PopulateMenu(AuthoringContext.Global, menu, CommandSources.Menus);
         }
     }
 

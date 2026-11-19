@@ -22,6 +22,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Pool;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
@@ -492,6 +493,16 @@ namespace UnityEditor
         static EntityId[] s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining;
         [AutoStaticsCleanupOnCodeReload]
         static HashSet<EntityId> s_CachedChildRenderersForOutliningHashSet;
+
+        static void RebuildSelectionOutlineCache()
+        {
+            using (ListPool<GameObject>.Get(out var selected))
+            {
+                Selection.GetLoadedObjects(selected);
+                HandleUtility.FilterEntityIds(NoAllocHelpers.CreateReadOnlySpan(selected), out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining, out s_CachedChildRenderersForOutliningHashSet);
+            }
+            s_SelectionCacheDirty = false;
+        }
 
         [Serializable]
         public class SceneViewState
@@ -1182,19 +1193,21 @@ namespace UnityEditor
 
             for (int i = m_AdditionalSettings.Count - 1; i >= 0; --i)
             {
+                // Entries are null when their serialized type cannot be resolved
                 var filteringType = m_AdditionalSettings[i]?.filteringRenderPipelineAssetType;
+                if (filteringType == null)
+                    continue;
 
-                if (!s_MapPackageNameToFilteringType.ContainsKey(filteringType))
+                if (!s_MapPackageNameToFilteringType.TryGetValue(filteringType, out var containingPackage))
                 {
-                    var packageInfo = PackageManager.PackageInfo.FindForAssembly(filteringType.Assembly);
-                    var containingPackage = packageInfo?.name;
+                    containingPackage = PackageManager.PackageInfo.FindForAssembly(filteringType.Assembly)?.name;
                     if (string.IsNullOrEmpty(containingPackage))
-                        return;
+                        continue;
 
                     s_MapPackageNameToFilteringType[filteringType] = containingPackage;
                 }
 
-                if (IsPackageBeingRemoved(s_MapPackageNameToFilteringType[filteringType]))
+                if (IsPackageBeingRemoved(containingPackage))
                     m_AdditionalSettings.RemoveAt(i);
             }
         }
@@ -2249,7 +2262,7 @@ namespace UnityEditor
         [MenuItem("GameObject/Move To View %&f", true)]
         static bool ValidateMoveToView()
         {
-            return lastActiveSceneView != null && (Selection.transforms.Length != 0);
+            return lastActiveSceneView != null && (Selection.activeTransform != null);
         }
 
         [MenuItem("GameObject/Align With View %#f", secondaryPriority = 4)]
@@ -2678,10 +2691,7 @@ namespace UnityEditor
                 if (evt.type == EventType.Repaint)
                 {
                     if (s_SelectionCacheDirty)
-                    {
-                        HandleUtility.FilterEntityIds(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining, out s_CachedChildRenderersForOutliningHashSet);
-                        s_SelectionCacheDirty = false;
-                    }
+                        RebuildSelectionOutlineCache();
 
                     OutlineDrawMode selectionOutlineWireFlags = 0;
                     if (AnnotationUtility.showSelectionOutline) selectionOutlineWireFlags |= OutlineDrawMode.SelectionOutline;
@@ -2787,10 +2797,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint && selectionDrawModeMask != 0)
             {
                 if (s_SelectionCacheDirty)
-                {
-                    HandleUtility.FilterEntityIds(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining, out s_CachedChildRenderersForOutliningHashSet);
-                    s_SelectionCacheDirty = false;
-                }
+                    RebuildSelectionOutlineCache();
 
                 Handles.DrawOutlineOrWireframeInternal(kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, 1 - alphaMultiplier, s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining, selectionDrawModeMask);
                 Handles.Internal_FinishDrawingCamera(m_Camera, drawGizmos);
@@ -4339,6 +4346,9 @@ namespace UnityEditor
 
         public void MoveToView()
         {
+            if (Selection.activeTransform == null)
+                return;
+
             FixNegativeSize();
             Vector3 dif = pivot - Tools.handlePosition;
             if (m_2DMode) dif.z = 0f;
@@ -4589,7 +4599,7 @@ namespace UnityEditor
                             {
                                 Editor.m_AllowMultiObjectAccess = true;
                                 bool canEditMultipleObjects = editor.canEditMultipleObjects;
-                                for (int n = 0; n < editor.targets.Length; n++)
+                                for (int n = 0; n < editor.targetCount; n++)
                                 {
                                     ResetOnSceneGUIState();
                                     editor.referenceTargetIndex = n;
@@ -4664,7 +4674,7 @@ namespace UnityEditor
                     {
                         bool canEditMultipleObjects = editor.canEditMultipleObjects;
                         Editor.m_AllowMultiObjectAccess = true;
-                        for (int n = 0; n < editor.targets.Length; n++)
+                        for (int n = 0; n < editor.targetCount; n++)
                         {
                             editor.referenceTargetIndex = n;
                             // Ironically, only allow multi object access inside OnPreSceneGUI if editor does NOT support multi-object editing.

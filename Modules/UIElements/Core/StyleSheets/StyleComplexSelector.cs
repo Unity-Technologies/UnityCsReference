@@ -39,7 +39,7 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class StyleComplexSelector
     {
         // Hash keys for the most relevant parts of a complex selector to use against the style sheet's Bloom filter.
@@ -61,7 +61,7 @@ namespace UnityEngine.UIElements
         {
             [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             internal set;
         }
 
@@ -73,7 +73,6 @@ namespace UnityEngine.UIElements
         public StyleSelector[] selectors
         {
             get => m_Selectors;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set => m_Selectors = value;
         }
 
@@ -91,7 +90,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [SerializeField]
         internal int ruleIndex;
 

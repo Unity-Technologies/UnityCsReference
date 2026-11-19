@@ -12,7 +12,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class UxmlUtility
     {
         const string s_CommaEncoded = "%2C";

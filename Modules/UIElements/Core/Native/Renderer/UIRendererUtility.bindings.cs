@@ -147,6 +147,9 @@ namespace UnityEngine.UIElements.UIR
         [NativeMethod(IsThreadSafe = true)] extern static void SetVectorArray(IntPtr shaderPropertySheet, int name, Vector4[] values, int count);
         [NativeMethod(IsThreadSafe = true)] public extern static IntPtr GetVertexDeclaration(VertexAttributeDescriptor[] vertexAttributes);
         [NativeMethod(IsThreadSafe = true)] public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl, KickRangesReason kickReason);
+        [NativeMethod(IsThreadSafe = true)] public extern static bool SupportsInstancedQuads();
+        // Draws instanceCount quads of 6 vertices each, with per-instance values from the block's arrays. Main thread only.
+        public extern static bool DrawInstancedQuads([NotNull] Material material, int passIndex, MaterialPropertyBlock instanceProperties, int instanceCount);
         [NativeMethod(IsThreadSafe = true)] public extern static IntPtr AllocateShaderPropertySheet();
         [NativeMethod(IsThreadSafe = true)] public extern static void SetAllTextures(IntPtr shaderPropertySheet, IntPtr textureNames, IntPtr texturePtrs, int count);
         [NativeMethod(IsThreadSafe = true)] public extern static void SetPropertyBlock(MaterialPropertyBlock props);

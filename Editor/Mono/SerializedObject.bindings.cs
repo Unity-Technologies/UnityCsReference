@@ -100,9 +100,9 @@ namespace UnityEditor
             m_NativeObjectPtr = nativeObjectPtr;
         }
 
-#pragma warning disable UA5000 // Releases the native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Releases the native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
         ~SerializedObject() { Dispose(); }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public void Dispose()
         {
@@ -213,6 +213,27 @@ namespace UnityEditor
 
         [NativeMethod(Name = "SerializedObjectBindings::LookupDataComponentTypeId", IsFreeFunction = true)]
         extern static uint LookupDataComponentTypeIdNative(IntPtr backendTypePtr);
+
+        // The type the inspected object is an instance of: the Object's type for Unity objects, the struct type
+        // for data components, and null otherwise. Uses the first target like targetObject.
+        internal Type GetTargetType()
+        {
+            if (hasUnityObjectTargets)
+            {
+                var target = targetObject;
+                return target != null ? target.GetType() : null;
+            }
+
+            if (isTargetDataComponent)
+                return m_DataComponentType ??= FindDataComponentType(targetEntityId);
+
+            return null; // Pure entities will be handled here
+        }
+
+        Type m_DataComponentType;
+
+        [NativeMethod(Name = "SerializedObjectBindings::FindDataComponentType", IsFreeFunction = true)]
+        extern static Type FindDataComponentType(EntityId id);
 
         internal PropertyModification ExtractPropertyModification(string propertyPath)
         {
@@ -328,12 +349,6 @@ namespace UnityEditor
         }
 
         internal extern InspectorMode inspectorMode
-        {
-            get;
-            set;
-        }
-
-        internal extern DataMode inspectorDataMode
         {
             get;
             set;

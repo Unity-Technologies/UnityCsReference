@@ -139,11 +139,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             var fetchStatusTracker = Register(new FetchStatusTracker());
             var assetStoreCachePathProxy = Register(new AssetStoreCachePathProxy());
             var resourceLoader = Register(new ResourceLoader());
+            var internalEditorUtilityProxy = Register(new InternalEditorUtilityProxy());
 
             var assetSelectionHandler = Register(new AssetSelectionHandler(selectionWindowProxy));
             var assetStoreRestAPI = Register(new AssetStoreRestAPI(unityConnectProxy, jsonParser, httpClientFactory));
             var localInfoHandler = Register(new LocalInfoHandler(assetStoreUtils, ioProxy));
-            var assetStoreCache = Register(new AssetStoreCache(applicationProxy, httpClientFactory, ioProxy));
+            var assetStoreCache = Register(new AssetStoreCache(internalEditorUtilityProxy, httpClientFactory, ioProxy));
             var operationFactory = Register(new OperationFactory(unityConnectProxy, assetStoreRestAPI, assetStoreCache, dateTimeProxy));
             var assetStoreClient = Register(new AssetStoreClientV2(assetStoreCache, assetStoreRestAPI, fetchStatusTracker, assetDatabaseProxy, operationFactory, localInfoHandler));
             var assetStorePackageInstaller = Register(new AssetStorePackageInstaller(ioProxy, assetStoreCache, assetDatabaseProxy, assetSelectionHandler, applicationProxy));
@@ -165,7 +166,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packageProgressTracker = Register(new PackageProgressTracker(upmClient, assetStoreDownloadManager, fetchStatusTracker));
             var upmCacheRootClient = Register(new UpmCacheRootClient(clientProxy, applicationProxy, dateTimeProxy));
             var delayedSelectionHandler = Register(new DelayedSelectionHandler(packageDatabase, pageManager, pageRefreshHandler, upmCache, settingsProxy));
-            var packageCreator = Register(new PackageCreator(upmClient, upmCache, unityConnectProxy, ioProxy, dateTimeProxy));
+            var packageCreator = Register(new PackageCreator(upmClient, upmCache, unityConnectProxy, ioProxy, dateTimeProxy, internalEditorUtilityProxy));
             var inProjectPackagesMonitor = Register(new InProjectPackagesMonitor(applicationProxy, settingsProxy, upmCache, upmRegistryClient, packageDatabase, pageRefreshHandler, upmClient));
             var operationDispatcher = Register(new PackageOperationDispatcher(assetStorePackageInstaller, assetStoreDownloadManager, upmClient, selectionProxy, assetDatabaseProxy));
 
@@ -174,11 +175,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(new PackageManagerWindowProxy());
             Register(new LicenceProxy());
             Register(new ExtensionManager(packageManagerPrefs));
-            Register(new PackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, fetchStatusTracker, upmRegistryClient, ioProxy, applicationProxy, packageProgressTracker));
+            Register(new PackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, fetchStatusTracker, upmRegistryClient, ioProxy, applicationProxy, internalEditorUtilityProxy, packageProgressTracker));
             Register(new SampleFactory(ioProxy, upmCache, sampleCache, packageDatabase));
             Register(new PackageLinkFactory(upmCache, assetStoreCache, applicationProxy, ioProxy));
             Register(new DropdownHandler(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, pageManager, operationDispatcher, customDisplayDialog, packageCreator, applicationProxy));
-            Register(new ModalManager(applicationProxy, ioProxy, resourceLoader, unityConnectProxy, upmClient));
+            Register(new ModalManager(applicationProxy, ioProxy, resourceLoader, unityConnectProxy, upmClient, settingsProxy));
 
             // We need to save some services as serialized members for them to survive domain reload properly
             m_SerializedUnityConnectProxy = unityConnectProxy;

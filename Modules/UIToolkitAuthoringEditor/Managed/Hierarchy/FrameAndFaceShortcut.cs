@@ -34,11 +34,11 @@ static partial class FrameAndFaceShortcut
     {
         public bool active =>
             EditorWindow.focusedWindow is SceneView or HierarchyWindow or UIViewportWindow &&
-            Selection.activeObject is UISelectionObject &&
+            AuthoringContext.Global.Selection.ActiveObject is UISelectionObject &&
             StageUtility.GetCurrentStage() is MainStage or VisualElementEditingStage;
     }
 
     [Shortcut(ShortcutId, typeof(ShortcutContext), KeyCode.F, ShortcutModifiers.Alt)]
     static void OnShortcut(ShortcutArguments args)
-        => RequestFramingCommand.Execute(CommandSources.Hierarchy, element: null, orientToFace: true);
+        => RequestFramingCommand.Execute(AuthoringContext.Global, CommandSources.Hierarchy, element: null, orientToFace: true);
 }

@@ -34,6 +34,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPageManager m_PageManager;
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IModalManager m_ModalManager;
+        private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
 
         private readonly DisableConditionList<IPackageVersion> m_DisableConditions;
 
@@ -47,7 +48,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             ServicesContainer.instance.Resolve<IPackageOperationDispatcher>(),
             ServicesContainer.instance.Resolve<IPageManager>(),
             ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
-            ServicesContainer.instance.Resolve<IModalManager>())
+            ServicesContainer.instance.Resolve<IModalManager>(),
+            ServicesContainer.instance.Resolve<IInternalEditorUtilityProxy>())
         {
         }
 
@@ -61,7 +63,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IPackageOperationDispatcher operationDispatcher,
             IPageManager pageManager,
             IUnityConnectProxy unityConnect,
-            IModalManager modalManager)
+            IModalManager modalManager,
+            IInternalEditorUtilityProxy internalEditorUtilityProxy)
         {
             m_Application = application;
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
@@ -72,6 +75,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = pageManager;
             m_UnityConnect = unityConnect;
             m_ModalManager = modalManager;
+            m_InternalEditorUtilityProxy = internalEditorUtilityProxy;
 
             m_DisableConditions = new(
                 new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
@@ -129,10 +133,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 new PackageToolBarSimpleButton(new UpdateAction(m_OperationDispatcher, m_Application, m_PackageDatabase, m_PageManager)),
                 new PackageToolBarSimpleButton(new LocateAction(m_Application)),
                 new PackageToolBarSimpleButton(new SignInAction(m_UnityConnect, m_Application)),
-                new PackageToolBarSimpleButton(new ExportAction(m_ModalManager, m_UnityConnect)),
+                new PackageToolBarSimpleButton(new ExportAction(m_ModalManager)),
                 new PackageToolBarSimpleButton(new AddAction(m_OperationDispatcher, m_Application, m_PackageDatabase)),
                 new LegacyFormatDropdownButton(m_OperationDispatcher, m_AssetStoreDownloadManager, m_UnityConnect, m_Application),
-                new ManageDropdownButton(m_Application, m_UpmCache, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager)
+                new ManageDropdownButton(m_Application, m_UpmCache, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_InternalEditorUtilityProxy)
             };
 
             foreach (var button in m_BuiltInToolBarButtons)

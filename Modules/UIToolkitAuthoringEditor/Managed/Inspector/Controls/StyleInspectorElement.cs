@@ -332,7 +332,7 @@ internal sealed partial class StyleInspectorElement : VisualElement, IVisualElem
     /// <summary>
     /// Sets the animation recording controller on the <see cref="AuthoringContext"/>.
     /// Called by <see cref="VisualElementInspector.RefreshRecordingState"/> when the controller
-    /// is updated by <see cref="VisualElementSelectionEditor"/>.
+    /// is updated by <see cref="VisualElementSelectionInspectorContent"/>.
     /// The value is kept so it survives detach/reattach cycles and is applied
     /// when the context is created in <see cref="HandleEventBubbleUp"/>.
     /// </summary>

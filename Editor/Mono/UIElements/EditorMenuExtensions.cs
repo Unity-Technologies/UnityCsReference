@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
     static class EditorMenuExtensions
     {
         // DropdownMenu
@@ -89,9 +90,17 @@ namespace UnityEditor.UIElements
             genericMenu.DropDown(new Rect(position, Vector2.zero), triggerEvent.elementTarget, DropdownMenuSizeMode.Auto);
         }
 
+        // For panels without a screen position: the menu is placed at a rect of another element that has one.
+        public static void DoDisplayEditorMenu(this DropdownMenu menu, EventBase triggerEvent, Rect rect, VisualElement ve)
+        {
+            PrepareMenu(menu, triggerEvent).DropDown(rect, ve, DropdownMenuSizeMode.Auto);
+        }
+
         public static Rect GUIToScreenRect(VisualElement targetElement, Rect position)
         {
             var panel = targetElement.elementPanel;
+            if (panel == null)
+                throw new ArgumentException("The element is not on a panel.", nameof(targetElement));
 
             if (panel.contextType == ContextType.Editor && panel.ownerObject is View view)
             {

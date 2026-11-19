@@ -16,6 +16,7 @@ using Unity.Collections;
 using UnityEngine.Analytics;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
+using UnityEditor.UIElements;
 using UnityEditor.SceneManagement;
 using UnityEditor.Scripting.ScriptCompilation.MsBuild;
 using Unity.Scripting.LifecycleManagement;
@@ -52,6 +53,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent packageManagerLogLevelOverridden = L10n.TextContent("Package Manager Log Level currently overridden by -enablePackageManagerTraces command-line argument.", null, null, null);
             public static readonly GUIContent changingThisSettingRequiresRestart = L10n.TextContent("Changing this setting requires a restart to take effect.", null, null, null);
+            public static readonly GUIContent invalidConsoleSearchUrl = L10n.TextContent("Enter a URL that starts with http:// or https:// and contains {0} where the search text goes, for example https://www.example.com/search?q={0}. Until then, Search Online uses Google.", null, null, null);
         }
 
         class GICachePropertiesNonSearchable
@@ -92,6 +94,8 @@ namespace UnityEditor
             public static readonly GUIContent alternatingRowBackground = L10n.TextContent("Enable Alternating Row Background", "When enabled, even and odd rows will have different background colors.", null, null);
             public static readonly GUIContent nameColumnStretchable = L10n.TextContent("Auto stretch Name Column", "When enabled, the name column will automatically stretch to take as much space as possible.", null, null);
             public static readonly GUIContent gameObjectIconMode = L10n.TextContent("GameObject Icons", "Controls how the new Hierarchy window replaces GameObject icons.", null, null);
+            public const string milliseconds = "ms";
+            public static readonly GUIContent updateTimeBudget = L10n.TextContent("Update Time Budget", "Set the maximum time in milliseconds that the Hierarchy window spends updating each frame. Any remaining updates continues in the next frame.", null, null);
             public static readonly GUIContent[] gameObjectIconModeOptions =
             {
                 L10n.TextContent("Use components and custom icons", null, null, null),
@@ -111,6 +115,16 @@ namespace UnityEditor
                 L10n.TextContent("Custom", "You specify how many milliseconds per frame the Editor can idle.", null, null),
             };
             public static readonly GUIContent progressDialogDelay = L10n.TextContent("Busy Progress Delay", "Delay in seconds before 'Unity is busy' progress bar shows up.", null, null);
+            public static readonly GUIContent consoleSearchEngine = L10n.TextContent("Console Search Engine", "The search engine that Search Online uses in the Console's context menus.", null, null);
+            public static readonly GUIContent[] consoleSearchEngineOptions =
+            {
+                L10n.TextContent("Google", null, null, null),
+                L10n.TextContent("Bing", null, null, null),
+                L10n.TextContent("DuckDuckGo", null, null, null),
+                L10n.TextContent("Unity Discussions", null, null, null),
+                L10n.TextContent("Custom", null, null, null),
+            };
+            public static readonly GUIContent consoleCustomSearchUrl = L10n.TextContent("Search URL", "The URL that Search Online opens. {0} is replaced with the log message or the selected text.", null, null);
             public static readonly GUIContent enableSnapping = L10n.TextContent("Graph Snapping", "If enabled, GraphElements in Graph Views (such as Shader Graph) align with one another when you move them. If disabled, GraphElements move freely.", null, null);
 
             public static readonly GUIContent packageManagerLogLevel = L10n.TextContent("Package Manager Log Level",
@@ -592,13 +606,14 @@ By default, Windows will combine these under a single taskbar item.", null, null
                     GeneralProperties.editorSkinOptions);
                 if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
                 {
-                    var restarting = EditorApplication.DisplayRestartRequiredDialog(GeneralProperties.editorSkin.text, beforeRestart: () =>
-                    {
-                        EditorGUIUtility.skinIndex = newSkin;
-                        EditorPrefs.Sync();
-                    });
-                    if (!restarting)
-                        InternalEditorUtility.SwitchSkinAndRepaintAllViews();
+                    // Cancelling leaves the theme untouched, the popup reverts on the next repaint
+                    EditorApplication.DisplayRestartRequiredDialog(GeneralProperties.editorSkin.text,
+                        beforeRestart: () =>
+                        {
+                            EditorGUIUtility.skinIndex = newSkin;
+                            EditorPrefs.Sync();
+                        },
+                        cancelLabel: L10n.Tr("Cancel", null));
                 }
             }
 
@@ -620,14 +635,13 @@ By default, Windows will combine these under a single taskbar item.", null, null
                         EditorPrefs.SetString("user_editor_font", selectedFontName);
                     }
 
-                    // Refresh skin to get new font
-                    Unsupported.ClearSkinCache();
-
-                    // Force a domain reload to get arround caching issue
-                    EditorUtility.RequestScriptReload();
-                    //EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
-
-                    EditorApplication.DisplayRestartRequiredDialog(GeneralProperties.editorFont.text);
+                    // Deferred so WritePreferences stores the sharpness under the old font's key first
+                    // and this OnGUI pass finishes with unchanged styles.
+                    EditorApplication.delayCall += () =>
+                    {
+                        EditorResources.OnEditorFontChanged();
+                        m_EditorTextSharpness = EditorTextSettings.defaultTextSettings.GetEditorTextSharpness();
+                    };
                 }
             }
 
@@ -638,9 +652,8 @@ By default, Windows will combine these under a single taskbar item.", null, null
                 EditorPrefs.SetInt("EditorTextRenderingMode", (int)m_EditorTextRenderingMode);
                 EditorTextSettings.SetEditorTextRenderingMode(m_EditorTextRenderingMode);
 
-                // Force a domain reload to get arround caching issue (changing to bitmap might change the sizes that the code is not expecting to change)
-                //EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
-                EditorUtility.RequestScriptReload();
+                UIElementsEditorUtility.ApplyEditorTextSettingsToLivePanels();
+                EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
             }
 
             if (EditorTextSettings.GetEditorTextRenderingMode() == EditorTextRenderingMode.SDF)
@@ -653,9 +666,8 @@ By default, Windows will combine these under a single taskbar item.", null, null
                 EditorPrefs.SetInt("EditorTextGeneratorTypeV2", (int)m_EditorTextGeneratorType);
                 EditorTextSettings.SetEditorTextGeneratorType(m_EditorTextGeneratorType);
 
-                // Force a domain reload to get arround caching issue (changing to bitmap might change the sizes that the code is not expecting to change)
-                //EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
-                EditorUtility.RequestScriptReload();
+                UIElementsEditorUtility.ApplyEditorTextSettingsToLivePanels();
+                EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
             }
 
             if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
@@ -719,6 +731,8 @@ By default, Windows will combine these under a single taskbar item.", null, null
             DrawEnableHelperBar();
             DrawEnableTooltipsInPlayMode();
 
+            DrawConsoleSearchOnlineOptions();
+
             DrawLoggingOptions();
 
             EditorGUILayout.Space();
@@ -737,11 +751,26 @@ By default, Windows will combine these under a single taskbar item.", null, null
             var alternatingRows = EditorGUILayout.Toggle(GeneralProperties.alternatingRowBackground, HierarchyPreferences.AlternatingRowBackground);
             var useQueryBuilder = EditorGUILayout.Toggle(GeneralProperties.queryBuilder, HierarchyPreferences.UseQueryBuilder);
             var gameObjectIconMode = EditorGUILayout.Popup(GeneralProperties.gameObjectIconMode, HierarchyPreferences.GameObjectIconMode.value, GeneralProperties.gameObjectIconModeOptions);
+            float updateTimeBudget;
+            EditorGUI.s_UnitString = GeneralProperties.milliseconds;
+            try
+            {
+                updateTimeBudget = EditorGUILayout.FloatField(GeneralProperties.updateTimeBudget, HierarchyPreferences.UpdateTimeBudget);
+            }
+            finally
+            {
+                EditorGUI.s_UnitString = null;
+            }
+
             if (EditorGUI.EndChangeCheck())
             {
                 HierarchyPreferences.AlternatingRowBackground.value = alternatingRows;
                 HierarchyPreferences.UseQueryBuilder.value = useQueryBuilder;
                 HierarchyPreferences.GameObjectIconMode.value = gameObjectIconMode;
+
+                // A budget of zero or less drops the update to one step per frame, so an in-progress edit is left uncommitted
+                if (updateTimeBudget > 0f)
+                    HierarchyPreferences.UpdateTimeBudget.value = updateTimeBudget;
             }
             EditorGUI.EndDisabled();
             EditorGUI.indentLevel--;
@@ -961,6 +990,28 @@ By default, Windows will combine these under a single taskbar item.", null, null
                 // Transfer native
                 EditorApplication.UpdateTooltipsInPlayModeSettings();
             }
+        }
+
+        void DrawConsoleSearchOnlineOptions()
+        {
+            EditorGUI.BeginChangeCheck();
+            var searchEngine = (ConsoleSearchOnline.SearchEngine)EditorGUILayout.Popup(GeneralProperties.consoleSearchEngine,
+                (int)ConsoleSearchOnline.searchEngine, GeneralProperties.consoleSearchEngineOptions);
+            if (EditorGUI.EndChangeCheck())
+                ConsoleSearchOnline.searchEngine = searchEngine;
+
+            if (searchEngine != ConsoleSearchOnline.SearchEngine.Custom)
+                return;
+
+            EditorGUI.indentLevel++;
+            EditorGUI.BeginChangeCheck();
+            var urlTemplate = EditorGUILayout.DelayedTextField(GeneralProperties.consoleCustomSearchUrl, ConsoleSearchOnline.customUrlTemplate);
+            if (EditorGUI.EndChangeCheck())
+                ConsoleSearchOnline.customUrlTemplate = urlTemplate;
+
+            if (!ConsoleSearchOnline.IsValidCustomUrlTemplate(urlTemplate))
+                EditorGUILayout.HelpBox(GeneralPropertiesNonSearchable.invalidConsoleSearchUrl.text, MessageType.Warning);
+            EditorGUI.indentLevel--;
         }
 
         public void ApplyChangesToPrefs(bool force = false)

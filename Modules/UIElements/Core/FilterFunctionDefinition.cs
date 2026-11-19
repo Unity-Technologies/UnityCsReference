@@ -45,22 +45,22 @@ namespace UnityEngine.UIElements
             set => m_InterpolationDefaultValue = value;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 
         internal FilterParameter defaultValue;
 
         // Code-only (not serialized): default(struct) must mean "no clamp" so declarations without
         // an explicit range (e.g. deserialized custom definitions) stay unclamped.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool hasFloatRange;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal float minFloatValue;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal float maxFloatValue;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal float ClampFloat(float value)
         {
             if (!hasFloatRange)
@@ -205,6 +205,13 @@ namespace UnityEngine.UIElements
         public delegate void ApplyFilterPassSettingsDelegate(MaterialPropertyBlock mpb, FilterPassContext context);
 
         /// <summary>The optional callback to apply the pass settings to the material property block.</summary>
+        /// <remarks>
+        /// Before it runs, the block holds the properties of <see cref="parameterBindings"/> and of
+        /// <see cref="writeParametersCallback"/>. The callback can override them. A pass with this callback draws one
+        /// element at a time. Use it only for values that differ between elements and that
+        /// <see cref="writeParametersCallback"/> can't write, such as a texture for each element. Assign a texture that
+        /// is the same for every element to the material instead.
+        /// </remarks>
         public ApplyFilterPassSettingsDelegate applySettingsCallback { get; set; }
 
         /// <summary>The optional callback to compute the required read and write margins for the effect.</summary>
@@ -222,6 +229,24 @@ namespace UnityEngine.UIElements
         // (drop-shadow offsets) need real neighborhood content, while kernel passes must clamp at
         // the element edge like browsers clamp the backdrop, or surrounding colors bleed in.
         internal bool expandsBackdropCapture { get; set; }
+
+        /// <summary>The optional callback that writes the per-element parameters of the pass.</summary>
+        /// <param name="writer">The writer for the properties of the pass.</param>
+        /// <param name="context">The context of the filter pass for which the function is being called.</param>
+        public delegate void WriteParametersDelegate(FilterParameterWriter writer, FilterPassContext context);
+
+        /// <summary>
+        /// The optional callback that writes the per-element parameters of the pass.
+        /// </summary>
+        /// <remarks>
+        /// UI Toolkit calls it once per frame and filtered element, before rendering. Before it runs, each property of
+        /// <see cref="parameterBindings"/> receives its filter parameter. The writer is not valid after the call.
+        ///
+        /// When the material has GPU instancing enabled and the shader declares the properties with Unity's instancing
+        /// macros, UI Toolkit draws the pass of many filtered elements together, each element with its own values.
+        /// Otherwise, it draws one element at a time with the same values.
+        /// </remarks>
+        public WriteParametersDelegate writeParametersCallback { get; set; }
 
         [SerializeField]
         private string m_OutputTextureName;

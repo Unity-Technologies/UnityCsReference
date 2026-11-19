@@ -24,16 +24,14 @@ internal static unsafe partial class SerializationBackendManagedCommands
         }
     }
 
-    // Read (M7c): the read dispatcher consumes the CachedReader into the
-    // field's own address after a syncReader rewind, under a scoped pin for
-    // the interior crossing.
+    // Read (M7c): the read dispatcher reads into the field's own address
+    // (V2DispatchNativeRead), under a scoped pin for the interior crossing.
     private static unsafe void V2ReadNativeValueStruct(ref byte field, byte* cmdRaw, NativeReadBufferContext* ctx)
     {
         var cmd = (V2CmdExternalDynamic*)cmdRaw;
         fixed (byte* fieldPtr = &field)
         {
-            InvokeSyncReader(ctx);
-            ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, void>)(void*)cmd->readUserData)((IntPtr)fieldPtr, ctx->transfer, IntPtr.Zero);
+            V2DispatchNativeRead(ctx, (nint)cmd->readUserData, (IntPtr)fieldPtr);
         }
     }
 }

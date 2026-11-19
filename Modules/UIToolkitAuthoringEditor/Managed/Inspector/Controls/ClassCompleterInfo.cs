@@ -7,7 +7,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 struct ClassCompleterInfo
 {
     public ClassCompleterInfo(StyleSelectorPart selectorPart, StyleSheet sheet)

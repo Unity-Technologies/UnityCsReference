@@ -49,9 +49,9 @@ namespace UnityEditor.Scripting.ScriptCompilation.MsBuild
             => Instance.RequestAnalysisCompilationAsync(analysisConfiguration, parentProgressId, cancellationToken);
 
         [RequiredByNativeCode]
-        public static void InitializeMsBuild(bool createInitCsrpojs, MSBuildCompilationOptions compilationOptions)
+        public static void InitializeMsBuild(MSBuildCompilationOptions compilationOptions)
         {
-            Instance.Initialize(createInitCsrpojs, compilationOptions);
+            Instance.Initialize(compilationOptions);
         }
 
         [RequiredByNativeCode]
@@ -73,6 +73,12 @@ namespace UnityEditor.Scripting.ScriptCompilation.MsBuild
         public static bool HaveScriptsForEditorBeenCompiledSinceLastDomainReloadMsBuild()
         {
             return Instance.HaveScriptsForEditorBeenCompiledSinceLastDomainReload();
+        }
+
+        [RequiredByNativeCode]
+        public static bool DoesProjectFolderHaveAnyScriptsMsBuild()
+        {
+            return Instance.DoesProjectFolderHaveAnyScripts();
         }
 
         [RequiredByNativeCode]

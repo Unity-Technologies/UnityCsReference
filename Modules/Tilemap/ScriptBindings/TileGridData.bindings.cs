@@ -5,25 +5,21 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.Tilemaps
 {
-    // Blittable mirror of the native Tile (Modules/Tilemap/Public/TilemapTile.h). The
-    // layout is asserted on the native side in TileGridData.h; change both together.
-    //
-    // Every member is field or bit math with no icall, so a Burst-compiled job can read
-    // cells directly.
+    // Blittable mirror of the native Tile; the layout is asserted in TileGridData.h. Members must stay icall-free for Burst.
     [StructLayout(LayoutKind.Sequential)]
     [VisibleToOtherModules]
     internal struct TileCellData
     {
-        // Bits 0-29 of the flags word are TileFlags; bits 30-31 are the collider type
-        // (kTileColliderFlagsStart == 30 in TilemapTile.h).
-        const uint k_FlagsMask = 0x3FFFFFFFu;
+        // Bits 0-27 of the flags word are TileFlags; bits 28-29 are internal animation state and bits 30-31 are
+        // the collider type (kTileUserEditable and kTileColliderFlagsStart == 30 in TilemapTile.h).
+        const uint k_FlagsMask = 0x0FFFFFFFu;
         const int k_ColliderShift = 30;
         const uint k_InvalidAssetIndex = 0xFFFFFFFFu;   // Tile::kInvalidTileAssetIndex
         const uint k_IsPositionAnimated = 1u << 29;     // kTileIsPositionAnimated
@@ -45,8 +41,7 @@ namespace UnityEngine.Tilemaps
         public Tile.ColliderType colliderType => (Tile.ColliderType)(allFlags >> k_ColliderShift);
     }
 
-    // Blittable mirror of the native ScriptingTilePreviewCellData (Modules/Tilemap/Public/TileGridData.h): one
-    // editor preview Tile and the cell it is in. Its indices address the preview side arrays of TileGridDataArray.
+    // Blittable mirror of the native ScriptingTilePreviewCellData. Its indices address the preview arrays of TileGridDataArray.
     [StructLayout(LayoutKind.Sequential)]
     [VisibleToOtherModules]
     internal struct TilePreviewCellData
@@ -55,12 +50,18 @@ namespace UnityEngine.Tilemaps
         public TileCellData cell;
     }
 
-    // A single 16x16 storage chunk of the tile grid, viewed as blittable data.
-    //
-    // This is NOT a mirror of the native TileChunk, which is not blittable (it inherits
-    // ConcurrentNode and holds a spin lock and an atomic). It is a view: a pointer to
-    // the chunk's live Tile storage plus its coordinate.
+    // Blittable mirror of the native ScriptingTileChunkEntry.
     [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct TileChunkEntry
+    {
+        public TileCellData* tiles;
+        public Vector3Int chunkCoord;
+    }
+
+    // View of one 16x16 chunk: its live Tile storage and coordinate. Shares the safety handle of its TileGridDataArray,
+    // so a copy kept past the snapshot cannot read freed chunk memory, and invalidation completes a job holding one.
+    [NativeContainer]
+    [NativeContainerIsReadOnly]
     [VisibleToOtherModules]
     internal unsafe struct TileChunkData
     {
@@ -72,14 +73,22 @@ namespace UnityEngine.Tilemaps
         [NativeDisableUnsafePtrRestriction] internal TileCellData* m_Tiles;
         internal Vector3Int m_ChunkCoord;
 
+        internal AtomicSafetyHandle m_Safety;
+
         public Vector3Int chunkCoord => m_ChunkCoord;
         public int cellCount => kCells;
 
-        // Cells are visited in row-major (y-major, x-minor) order and include empty
-        // slots; filter on TileCellData.isOccupied.
-        public TileCellData this[int localIndex] => m_Tiles[localIndex];
+        // Row-major and includes empty slots; check TileCellData.isOccupied.
+        public TileCellData this[int localIndex]
+        {
+            get
+            {
+                CheckCellReadAccess(localIndex);
+                return m_Tiles[localIndex];
+            }
+        }
 
-        // Mirrors TileChunk::CellPositionAt. Pure math, no icall.
+        // Mirrors TileChunk::CellPositionAt.
         public Vector3Int CellPositionAt(int localIndex)
         {
             return new Vector3Int(
@@ -87,27 +96,32 @@ namespace UnityEngine.Tilemaps
                 (m_ChunkCoord.y << kLogSide) | ((localIndex >> kLogSide) & k_Mask),
                 m_ChunkCoord.z);
         }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        void CheckCellReadAccess(int localIndex)
+        {
+            if (localIndex < 0 || localIndex >= kCells)
+                FailCellIndexError(localIndex);
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+        }
+
+        static void FailCellIndexError(int localIndex)
+        {
+            throw new IndexOutOfRangeException($"Index {localIndex} is out of range of '{kCells}' cells in {nameof(TileChunkData)}.");
+        }
     }
 
-    // A read-only snapshot of a Tilemap's tile grid, safe to hand to jobs.
-    //
-    // The chunk entries point at live chunk storage rather than copies. Mutating the
-    // tilemap while this is alive therefore yields undefined *contents*, but never a
-    // crash: chunk allocations are pool-stable for the grid's lifetime (see
-    // ConcurrentTileGrid.h), so a snapshot of a garbage-collected chunk reads stale
-    // data rather than freed memory.
-    //
-    // The tile / sprite / matrix / colour arrays ARE copies, and are index-preserving: a
-    // TileCellData's tileAssetIndex, spriteIndex, matrixIndex and colorIndex address them directly.
-    // The animated sprite table and the editor preview cells and arrays are copies too.
+    // Read-only snapshot of a Tilemap's tile grid for jobs. Chunk cells are live storage; every other array is a copy,
+    // and the side tables are index-preserving. Tile edits after acquiring make cell contents undefined, but the Get*
+    // resolvers stay in bounds. Dispose it, and complete its jobs, before the Tilemap is cleared, resized, compressed,
+    // reloaded or destroyed: those free chunk memory. Collections checks then invalidate the snapshot, so reads throw
+    // until it is disposed; without them, reading it is undefined.
     [NativeContainer]
-    [NativeContainerSupportsMinMaxWriteRestriction]
+    [NativeContainerIsReadOnly]
     [VisibleToOtherModules]
     internal unsafe struct TileGridDataArray : IDisposable
     {
-        // The job safety system walks nested fields and rejects the IntPtr inside
-        // TilemapBuffer unless the restriction is lifted here. These buffers are
-        // read-only for the job's lifetime, which is what makes that sound.
+        // Job safety rejects TilemapBuffer's IntPtr otherwise; the buffers are read-only while jobs run.
         [NativeDisableUnsafePtrRestriction] internal Tilemap.TilemapBuffer m_Chunks;
         [NativeDisableUnsafePtrRestriction] internal Tilemap.TilemapBuffer m_TileIds;
         [NativeDisableUnsafePtrRestriction] internal Tilemap.TilemapBuffer m_SpriteIds;
@@ -120,24 +134,24 @@ namespace UnityEngine.Tilemaps
         [NativeDisableUnsafePtrRestriction] internal Tilemap.TilemapBuffer m_PreviewMatrices;
         [NativeDisableUnsafePtrRestriction] internal Tilemap.TilemapBuffer m_PreviewColors;
 
-        // Makes Dispose() idempotent, as the IDisposable contract requires. An empty
-        // tilemap legitimately yields null buffers, so buffer nullness cannot stand in
-        // for "already disposed".
+        // An empty Tilemap yields null buffers, so buffer nullness cannot mark a disposed snapshot.
         internal int m_IsCreated;
 
-        internal int m_MinIndex;
-        internal int m_MaxIndex;
         internal AtomicSafetyHandle m_Safety;
 
-        // Number of live chunks in the snapshot.
         public int Length => m_Chunks.length;
 
         public TileChunkData this[int index]
         {
             get
             {
-                CheckElementReadAccess(index);
-                return ((TileChunkData*)m_Chunks.buffer)[index];
+                CheckElementReadAccess(index, Length);
+                var entry = ((TileChunkEntry*)m_Chunks.buffer)[index];
+                TileChunkData chunk;
+                chunk.m_Tiles = entry.tiles;
+                chunk.m_ChunkCoord = entry.chunkCoord;
+                chunk.m_Safety = m_Safety;
+                return chunk;
             }
         }
 
@@ -146,29 +160,30 @@ namespace UnityEngine.Tilemaps
         public int matrixCount => m_Matrices.length;
         public int colorCount => m_Colors.length;
 
-        // Resolution helpers for the indices stored on a cell. Callable from Burst.
+        // An index outside the table, such as a sentinel or one written after acquiring, gives the neutral value
+        // of an unused slot: EntityId.None, identity or white.
         public EntityId GetTileEntityId(uint tileAssetIndex)
         {
-            CheckSideArrayReadAccess((int)tileAssetIndex, m_TileIds.length);
-            return ((EntityId*)m_TileIds.buffer)[tileAssetIndex];
+            CheckReadAccess();
+            return tileAssetIndex < (uint)m_TileIds.length ? ((EntityId*)m_TileIds.buffer)[tileAssetIndex] : EntityId.None;
         }
 
         public EntityId GetSpriteEntityId(uint spriteIndex)
         {
-            CheckSideArrayReadAccess((int)spriteIndex, m_SpriteIds.length);
-            return ((EntityId*)m_SpriteIds.buffer)[spriteIndex];
+            CheckReadAccess();
+            return spriteIndex < (uint)m_SpriteIds.length ? ((EntityId*)m_SpriteIds.buffer)[spriteIndex] : EntityId.None;
         }
 
         public Matrix4x4 GetMatrix(ushort matrixIndex)
         {
-            CheckSideArrayReadAccess(matrixIndex, m_Matrices.length);
-            return ((Matrix4x4*)m_Matrices.buffer)[matrixIndex];
+            CheckReadAccess();
+            return matrixIndex < (uint)m_Matrices.length ? ((Matrix4x4*)m_Matrices.buffer)[matrixIndex] : Matrix4x4.identity;
         }
 
         public Color GetColor(ushort colorIndex)
         {
-            CheckSideArrayReadAccess(colorIndex, m_Colors.length);
-            return ((Color*)m_Colors.buffer)[colorIndex];
+            CheckReadAccess();
+            return colorIndex < (uint)m_Colors.length ? ((Color*)m_Colors.buffer)[colorIndex] : Color.white;
         }
 
         // The sprites of animated Tiles, addressed by TileCellData.animatedSpriteIndex.
@@ -176,8 +191,8 @@ namespace UnityEngine.Tilemaps
 
         public EntityId GetAnimatedSpriteEntityId(uint animatedSpriteIndex)
         {
-            CheckSideArrayReadAccess((int)animatedSpriteIndex, m_AnimatedSpriteIds.length);
-            return ((EntityId*)m_AnimatedSpriteIds.buffer)[animatedSpriteIndex];
+            CheckReadAccess();
+            return animatedSpriteIndex < (uint)m_AnimatedSpriteIds.length ? ((EntityId*)m_AnimatedSpriteIds.buffer)[animatedSpriteIndex] : EntityId.None;
         }
 
         // Editor preview Tiles, sorted by y, then x, then z. Always empty outside the Editor.
@@ -189,34 +204,35 @@ namespace UnityEngine.Tilemaps
 
         public TilePreviewCellData GetPreviewCell(int index)
         {
-            CheckSideArrayReadAccess(index, m_PreviewCells.length);
+            CheckElementReadAccess(index, m_PreviewCells.length);
             return ((TilePreviewCellData*)m_PreviewCells.buffer)[index];
         }
 
         public EntityId GetPreviewTileEntityId(uint tileAssetIndex)
         {
-            CheckSideArrayReadAccess((int)tileAssetIndex, m_PreviewTileIds.length);
-            return ((EntityId*)m_PreviewTileIds.buffer)[tileAssetIndex];
+            CheckReadAccess();
+            return tileAssetIndex < (uint)m_PreviewTileIds.length ? ((EntityId*)m_PreviewTileIds.buffer)[tileAssetIndex] : EntityId.None;
         }
 
         public EntityId GetPreviewSpriteEntityId(uint spriteIndex)
         {
-            CheckSideArrayReadAccess((int)spriteIndex, m_PreviewSpriteIds.length);
-            return ((EntityId*)m_PreviewSpriteIds.buffer)[spriteIndex];
+            CheckReadAccess();
+            return spriteIndex < (uint)m_PreviewSpriteIds.length ? ((EntityId*)m_PreviewSpriteIds.buffer)[spriteIndex] : EntityId.None;
         }
 
         public Matrix4x4 GetPreviewMatrix(ushort matrixIndex)
         {
-            CheckSideArrayReadAccess(matrixIndex, m_PreviewMatrices.length);
-            return ((Matrix4x4*)m_PreviewMatrices.buffer)[matrixIndex];
+            CheckReadAccess();
+            return matrixIndex < (uint)m_PreviewMatrices.length ? ((Matrix4x4*)m_PreviewMatrices.buffer)[matrixIndex] : Matrix4x4.identity;
         }
 
         public Color GetPreviewColor(ushort colorIndex)
         {
-            CheckSideArrayReadAccess(colorIndex, m_PreviewColors.length);
-            return ((Color*)m_PreviewColors.buffer)[colorIndex];
+            CheckReadAccess();
+            return colorIndex < (uint)m_PreviewColors.length ? ((Color*)m_PreviewColors.buffer)[colorIndex] : Color.white;
         }
 
+        // Dispose only one copy. Without collections checks, disposing a second copy frees every buffer again.
         public void Dispose()
         {
             if (m_IsCreated == 0)
@@ -238,33 +254,20 @@ namespace UnityEngine.Tilemaps
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        void CheckElementReadAccess(int index)
+        void CheckReadAccess()
         {
-            if (index < m_MinIndex || index > m_MaxIndex)
-                FailOutOfRangeError(index);
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        void CheckSideArrayReadAccess(int index, int length)
+        void CheckElementReadAccess(int index, int length)
         {
             if (index < 0 || index >= length)
-                FailSideArrayRangeError(index, length);
+                FailOutOfRangeError(index, length);
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
         }
 
-        [BurstDiscard]
-        void FailOutOfRangeError(int index)
-        {
-            if (index < Length && (m_MinIndex != 0 || m_MaxIndex != Length - 1))
-                throw new IndexOutOfRangeException(
-                    $"Index {index} is out of restricted IJobParallelFor range [{m_MinIndex}...{m_MaxIndex}] in {nameof(TileGridDataArray)}.\n" +
-                    "You can only access the element at the job index, unless [NativeDisableParallelForRestriction] is used on the variable.");
-            throw new IndexOutOfRangeException($"Index {index} is out of range of '{Length}' Length.");
-        }
-
-        [BurstDiscard]
-        void FailSideArrayRangeError(int index, int length)
+        static void FailOutOfRangeError(int index, int length)
         {
             throw new IndexOutOfRangeException($"Index {index} is out of range of '{length}' Length.");
         }
@@ -274,10 +277,7 @@ namespace UnityEngine.Tilemaps
     [VisibleToOtherModules]
     internal static class TilemapTileGridDataExtensions
     {
-        // Snapshots the tilemap's tile grid for job / Burst consumption.
-        //
-        // Main thread only. Dispose the result when done -- it owns eleven native
-        // allocations. See TileGridDataArray for the mutation contract.
+        // Main thread only. See TileGridDataArray for the lifetime contract.
         public static TileGridDataArray AcquireReadOnlyTileGridData(this Tilemap tilemap, MemoryLabel memoryLabel)
         {
             if (tilemap == null)
@@ -291,15 +291,25 @@ namespace UnityEngine.Tilemaps
                 memoryLabel);
             result.m_IsCreated = 1;
 
-            result.m_MinIndex = 0;
-            result.m_MaxIndex = result.Length - 1;
-            AtomicSafetyHandle.CreateHandle(out result.m_Safety, Allocator.TempJob);
-            // Secondary version with writing disabled makes the snapshot genuinely
-            // read-only from a job's point of view, as MeshDataArray does.
-            AtomicSafetyHandle.SetAllowSecondaryVersionWriting(result.m_Safety, false);
-            AtomicSafetyHandle.UseSecondaryVersion(ref result.m_Safety);
+            // Read-only secondary version, owned by the Tilemap so it can invalidate the snapshot.
+            result.m_Safety = Internal_RegisterTileGridSnapshot(tilemap);
+            InitStaticSafetyId(ref result.m_Safety);
             return result;
         }
+
+        [NoAutoStaticsCleanup] // static safety ids are stable across code reload; re-registering would leak ids
+        static int s_StaticSafetyId;
+
+        // Names TileGridDataArray in safety errors, such as the one for a snapshot its Tilemap invalidated.
+        static void InitStaticSafetyId(ref AtomicSafetyHandle handle)
+        {
+            if (s_StaticSafetyId == 0)
+                s_StaticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<TileGridDataArray>();
+            AtomicSafetyHandle.SetStaticSafetyId(ref handle, s_StaticSafetyId);
+        }
+
+        [FreeFunction("TileGridDataBindings::RegisterTileGridSnapshot")]
+        extern static AtomicSafetyHandle Internal_RegisterTileGridSnapshot([NotNull] Tilemap tilemap);
 
         [FreeFunction("TileGridDataBindings::AcquireTileGridData")]
         extern static void Internal_AcquireTileGridData([NotNull] Tilemap tilemap,

@@ -509,12 +509,10 @@ class LocalizationSettingsProvider : SettingsProvider
 
     void BuildStartupSelectors(VisualElement root, SerializedObject serialized)
     {
-        var selectors = serialized.FindProperty("m_StartupSelectors");
-        // StartupLocaleSelectorDrawer already titles each row by its concrete type, so no element label is needed here.
-        root.Add(MakeManagedReferenceList(serialized, selectors, (_, button) => ShowAddSelectorMenu(serialized, button)));
+        root.Add(StartupSelectorList.Create(serialized.FindProperty(StartupSelectorList.PropertyPath), ScheduleRebuild));
     }
 
-    static ListView MakeManagedReferenceList(SerializedObject serialized, SerializedProperty array, Action<BaseListView, Button> onAdd,
+    internal static ListView MakeManagedReferenceList(SerializedObject serialized, SerializedProperty array, Action<BaseListView, Button> onAdd,
         Func<Type, string> elementLabel = null)
     {
         var path = array.propertyPath;
@@ -580,30 +578,6 @@ class LocalizationSettingsProvider : SettingsProvider
             "ModulePseudoLocale" => L10n.Tr("Pseudo locale", null),
             var name => ObjectNames.NicifyVariableName(name),
         };
-    }
-
-    void ShowAddSelectorMenu(SerializedObject serialized, Button button)
-    {
-        // The startup-selector list is order-based and allows repeated selector types, so offer every type.
-        var types = new List<Type>(AssetProviderEditors.GetInstantiableTypes<IStartupLocaleSelector>(excludeUnityObjects: true));
-        types.Sort((a, b) => string.Compare(SelectorDisplayName(a), SelectorDisplayName(b), StringComparison.Ordinal));
-
-        var menu = new GenericDropdownMenu();
-        foreach (var type in types)
-        {
-            var captured = type;
-            menu.AddItem(SelectorDisplayName(type), false, () =>
-            {
-                serialized.Update();
-                var arr = serialized.FindProperty("m_StartupSelectors");
-                var idx = arr.arraySize;
-                arr.InsertArrayElementAtIndex(idx);
-                arr.GetArrayElementAtIndex(idx).managedReferenceValue = Activator.CreateInstance(captured);
-                serialized.ApplyModifiedProperties();
-                ScheduleRebuild();
-            });
-        }
-        menu.DropDown(button.worldBound, button, DropdownMenuSizeMode.Auto);
     }
 
     void BuildContentSources(VisualElement root, LocalizationSettings active, SerializedObject serialized)

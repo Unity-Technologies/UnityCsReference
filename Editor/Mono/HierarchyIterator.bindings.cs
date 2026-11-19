@@ -95,9 +95,9 @@ public sealed class HierarchyIterator : IHierarchyIterator
         GC.SuppressFinalize(this);
     }
 
-#pragma warning disable UA5000 // Releases the native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Releases the native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
     ~HierarchyIterator() { Dispose(false); }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
     public extern EntityId entityId { get; }
     public extern Object pptrValue { [FreeFunction("HierarchyPropertyBindings::PPtrValue", HasExplicitThis = true)] get; }

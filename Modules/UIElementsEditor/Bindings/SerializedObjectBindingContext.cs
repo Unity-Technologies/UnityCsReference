@@ -14,7 +14,6 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements.Bindings;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal partial class SerializedObjectBindingContext
 {
     public ulong lastRevision { get; private set; }
@@ -612,7 +611,6 @@ internal partial class SerializedObjectBindingContext
 
     private static readonly PropertyName FindContextPropertyKey = "__UnityBindingContext";
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static SerializedObjectBindingContext GetBindingContextFromElement(VisualElement element)
     {
         if (element is IBindable && element.GetBinding(BindingExtensions.s_SerializedBindingId) is SerializedObjectBindingBase bindingBase)
@@ -647,7 +645,6 @@ internal partial class SerializedObjectBindingContext
 
     #region SerializedObject Version Update
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal void UpdateRevision()
     {
         if (IsValid())
@@ -969,9 +966,7 @@ internal partial class SerializedObjectBindingContext
 
     internal static event Action<uint, uint> PostProcessTrackedPropertyChanges
     {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         add => m_PostProcessTrackedPropertyChanges += value;
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         remove => m_PostProcessTrackedPropertyChanges -= value;
     }
 

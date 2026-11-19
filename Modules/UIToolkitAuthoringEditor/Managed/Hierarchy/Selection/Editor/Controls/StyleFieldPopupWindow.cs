@@ -11,7 +11,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [MovedFrom("Unity.UI.Builder")]
     internal class StyleFieldPopupWindow : EditorWindow
     {

@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -30,7 +31,7 @@ namespace Unity.Transforms
         private IntPtr mainThreadOnlyTransformPointers;
         internal EntityId* mainThreadOnlyEntityReferences;
 
-        private ulong ecsOwner;
+        private WorldUnmanaged ecsOwner;
         private uint ecsAccess;
 
         internal int changeDispatchIndex;

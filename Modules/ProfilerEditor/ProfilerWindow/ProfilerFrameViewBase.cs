@@ -9,6 +9,7 @@ using UnityEditor.Profiling;
 using UnityEditor.MPE;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Unity.Profiling.Editor;
 using Unity.Scripting.LifecycleManagement;
@@ -114,7 +115,7 @@ namespace UnityEditorInternal.Profiling
             L10n.TextContent("Hierarchy", null, null, null),
             L10n.TextContent("Inverted Hierarchy", null, null, null),
             L10n.TextContent("Raw Hierarchy", null, null, null),
-            L10n.TextContent("New Timeline (Experimental)", null, null, null),
+            L10n.TextContent("Old Timeline (Legacy)", null, null, null),
         };
 
         internal static GUIContent GetCPUProfilerViewTypeName(ProfilerViewType viewType)
@@ -124,9 +125,9 @@ namespace UnityEditorInternal.Profiling
                 case ProfilerViewType.Hierarchy:
                     return kCPUProfilerViewTypeNames[1];
                 case ProfilerViewType.Timeline:
-                    return kCPUProfilerViewTypeNames[0];
-                case ProfilerViewType.TimelineV2:
                     return kCPUProfilerViewTypeNames[4];
+                case ProfilerViewType.TimelineV2:
+                    return kCPUProfilerViewTypeNames[0];
                 case ProfilerViewType.RawHierarchy:
                     return kCPUProfilerViewTypeNames[3];
                 case ProfilerViewType.InvertedHierarchy:
@@ -138,11 +139,11 @@ namespace UnityEditorInternal.Profiling
 
         static readonly int[] kCPUProfilerViewTypes = new int[]
         {
-            (int)ProfilerViewType.Timeline,
+            (int)ProfilerViewType.TimelineV2,
             (int)ProfilerViewType.Hierarchy,
             (int)ProfilerViewType.InvertedHierarchy,
             (int)ProfilerViewType.RawHierarchy,
-            (int)ProfilerViewType.TimelineV2,
+            (int)ProfilerViewType.Timeline,
         };
 
         static readonly GUIContent[] kGPUProfilerViewTypeNames = new GUIContent[]
@@ -208,9 +209,14 @@ namespace UnityEditorInternal.Profiling
 
         protected void DrawCPUGPUTime(float cpuTimeMs, float gpuTimeMs)
         {
-            var cpuTime = cpuTimeMs > 0 ? string.Format("{0:N2}", cpuTimeMs) : "--";
-            var gpuTime = gpuTimeMs > 0 ? string.Format("{0:N2}", gpuTimeMs) : "--";
+            var cpuTime = FormatCPUGPUTime(cpuTimeMs);
+            var gpuTime = FormatCPUGPUTime(gpuTimeMs);
             GUILayout.Label(string.Format(BaseStyles.cpuGPUTime.text, cpuTime, gpuTime), EditorStyles.toolbarLabel);
+        }
+
+        internal static string FormatCPUGPUTime(float timeMs)
+        {
+            return timeMs > 0 ? timeMs.ToString("N2", CultureInfo.InvariantCulture) : "--";
         }
 
         protected void ShowLargeTooltip(Vector2 pos, Rect fullRect, GUIContent content, ReadOnlyCollection<string> selectedSampleStack,

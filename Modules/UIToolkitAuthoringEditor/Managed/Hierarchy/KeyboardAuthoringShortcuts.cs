@@ -42,31 +42,51 @@ static partial class KeyboardAuthoringShortcuts
             ShortcutIntegration.instance.contextManager.RegisterToolContext(s_Context);
     }
 
-    static bool HasUISelection => Selection.activeObject is VisualElementSelection or VisualTreeAssetSelection;
+    static bool HasUISelection(AuthoringContext context)
+        => context.Selection.ActiveObject is VisualElementSelection or VisualTreeAssetSelection;
 
     // With nothing selected, an add in the UI Stage lands at the end of the edited document's root.
-    static bool CanAddAfter => HasUISelection || StageUtility.GetCurrentStage() is VisualElementEditingStage;
+    static bool CanAddAfter(AuthoringContext context) => HasUISelection(context) || context.IsEditingDocument;
+
+    // A window with a context of its own, like the UI Builder, edits its own document; any other window edits the
+    // scene's.
+    static AuthoringContext ResolveContext()
+        => TryGetFocusedWindowContext(out var context) ? context : AuthoringContext.Global;
+
+    static bool TryGetFocusedWindowContext(out AuthoringContext context)
+    {
+        context = EditorWindow.focusedWindow is { } window ? AuthoringContext.For(window.rootVisualElement) : null;
+        return context is { IsGlobal: false, IsDisposed: false };
+    }
 
     class ShortcutContext : IShortcutContext
     {
-        public bool active =>
-            EditorWindow.focusedWindow is HierarchyWindow or UIViewportWindow &&
-            CanAddAfter &&
-            StageUtility.GetCurrentStage() is MainStage or VisualElementEditingStage;
+        public bool active
+        {
+            get
+            {
+                if (TryGetFocusedWindowContext(out var context))
+                    return CanAddAfter(context);
+
+                return EditorWindow.focusedWindow is HierarchyWindow or UIViewportWindow &&
+                       CanAddAfter(AuthoringContext.Global) &&
+                       StageUtility.GetCurrentStage() is MainStage or VisualElementEditingStage;
+            }
+        }
     }
 
     /// <summary>
     /// Appends the hierarchy editing operations, each labeled with its current shortcut binding.
     /// </summary>
-    internal static void AppendMenuActions(DropdownMenu menu)
+    internal static void AppendMenuActions(AuthoringContext context, DropdownMenu menu)
     {
-        TryCaptureSelection(out var assets, out _);
+        TryCaptureSelection(context, out var assets, out _);
 
-        AppendMenuAction(menu, AddAfterLabel, AddAfterId, AddAfter, CanAddAfter);
-        AppendMenuAction(menu, AddChildLabel, AddChildId, AddChild, HasUISelection);
-        AppendMenuAction(menu, ReplaceLabel, ReplaceId, Replace, ReplaceElementTypeCommand.Validate(assets));
-        AppendMenuAction(menu, WrapLabel, WrapId, Wrap, WrapElementsCommand.Validate(assets));
-        AppendMenuAction(menu, UnwrapLabel, UnwrapId, Unwrap, UnwrapElementsCommand.Validate(assets));
+        AppendMenuAction(menu, AddAfterLabel, AddAfterId, () => AddAfter(context), CanAddAfter(context));
+        AppendMenuAction(menu, AddChildLabel, AddChildId, () => AddChild(context), HasUISelection(context));
+        AppendMenuAction(menu, ReplaceLabel, ReplaceId, () => Replace(context), ReplaceElementTypeCommand.Validate(assets));
+        AppendMenuAction(menu, WrapLabel, WrapId, () => Wrap(context), WrapElementsCommand.Validate(assets));
+        AppendMenuAction(menu, UnwrapLabel, UnwrapId, () => Unwrap(context), UnwrapElementsCommand.Validate(assets));
     }
 
     static void AppendMenuAction(DropdownMenu menu, string label, string shortcutId, Action action, bool enabled)
@@ -74,53 +94,51 @@ static partial class KeyboardAuthoringShortcuts
             action, enabled);
 
     [Shortcut(AddAfterId, typeof(ShortcutContext), KeyCode.N, ShortcutModifiers.Action | ShortcutModifiers.Shift)]
-    static void AddAfter()
-        => UIElementsProvider.ShowLibraryPicker("Add Element", includeDocuments: true,
-            item => InsertNextToSelection(item, SiblingPlacement.After));
+    static void AddAfter() => AddAfter(ResolveContext());
+
+    static void AddAfter(AuthoringContext context)
+        => UIElementsProvider.ShowLibraryPicker(context, "Add Element", includeDocuments: true,
+            item => MenuUtility.InsertNextToSelection(context, item, SiblingPlacement.After));
 
     [Shortcut(AddChildId, typeof(ShortcutContext), KeyCode.N, ShortcutModifiers.Alt | ShortcutModifiers.Shift)]
-    static void AddChild()
+    static void AddChild() => AddChild(ResolveContext());
+
+    static void AddChild(AuthoringContext context)
     {
         // The shortcut context also stays active without a selection, which only Add Element After can use.
-        if (!HasUISelection)
+        if (!HasUISelection(context))
             return;
 
-        UIElementsProvider.ShowLibraryPicker("Add Child Element", includeDocuments: true, item =>
-        {
-            if (item.isAsset)
-            {
-                if (item.visualTreeAsset != null)
-                    MenuUtility.AddTemplateAsLastChild(item.visualTreeAsset);
-                return;
-            }
-
-            if (item.libraryType.type != null)
-                MenuUtility.AddElementAsLastChild(item.libraryType.type, item.libraryType.variantName);
-        });
+        UIElementsProvider.ShowLibraryPicker(context, "Add Child Element", includeDocuments: true,
+            item => MenuUtility.AddAsLastChild(context, item));
     }
 
     [Shortcut(ReplaceId, typeof(ShortcutContext), KeyCode.R, ShortcutModifiers.Action)]
-    static void Replace()
+    static void Replace() => Replace(ResolveContext());
+
+    static void Replace(AuthoringContext context)
     {
-        if (!TryCaptureSelection(out var assets, out var parents) || !ReplaceElementTypeCommand.Validate(assets))
+        if (!TryCaptureSelection(context, out var assets, out var parents) || !ReplaceElementTypeCommand.Validate(assets))
             return;
 
-        UIElementsProvider.ShowLibraryPicker("Replace With", includeDocuments: false, item =>
+        UIElementsProvider.ShowLibraryPicker(context, "Replace With", includeDocuments: false, item =>
         {
             var status = ReplaceElementTypeCommand.Execute(CommandSources.Hierarchy, assets, item.libraryType.type,
-                item.libraryType.variantName);
+                item.libraryType.variantName, context);
             if (status != CommandExecutionStatus.Success)
                 return;
 
-            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parents);
+            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(context, parents);
             ReloadDocumentsOf(parents);
         });
     }
 
     [Shortcut(WrapId, typeof(ShortcutContext), KeyCode.G, ShortcutModifiers.Action | ShortcutModifiers.Shift)]
-    static void Wrap()
+    static void Wrap() => Wrap(ResolveContext());
+
+    static void Wrap(AuthoringContext context)
     {
-        if (!TryCaptureSelection(out var assets, out var parents))
+        if (!TryCaptureSelection(context, out var assets, out var parents))
             return;
 
         if (!WrapElementsCommand.Validate(assets))
@@ -129,27 +147,29 @@ static partial class KeyboardAuthoringShortcuts
             return;
         }
 
-        UIElementsProvider.ShowLibraryPicker("Wrap In", includeDocuments: false,
-            item => Wrap(assets, parents, item.libraryType.type, item.libraryType.variantName));
+        UIElementsProvider.ShowLibraryPicker(context, "Wrap In", includeDocuments: false,
+            item => Wrap(context, assets, parents, item.libraryType.type, item.libraryType.variantName));
     }
 
-    internal static void Wrap(VisualElementAsset[] assets, VisualElement[] parents, Type wrapperType,
-        string variantName)
+    internal static void Wrap(AuthoringContext context, VisualElementAsset[] assets, VisualElement[] parents,
+        Type wrapperType, string variantName)
     {
-        var status = WrapElementsCommand.Execute(CommandSources.Hierarchy, assets, wrapperType, variantName);
+        var status = WrapElementsCommand.Execute(CommandSources.Hierarchy, assets, wrapperType, variantName, context);
         if (status != CommandExecutionStatus.Success)
             return;
 
         // The wrapped siblings share one parent, which the single new wrapper hangs from.
-        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parents[0]);
+        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(context, parents[0]);
         ReloadDocumentsOf(parents);
-        UIToolkitStageUtility.RequestRenameOfPendingSelection();
+        UIToolkitStageUtility.RequestRenameOfPendingSelection(context);
     }
 
     [Shortcut(UnwrapId, typeof(ShortcutContext), KeyCode.G, ShortcutModifiers.Action)]
-    internal static void Unwrap()
+    internal static void Unwrap() => Unwrap(ResolveContext());
+
+    internal static void Unwrap(AuthoringContext context)
     {
-        if (!TryCaptureSelection(out var assets, out var parents))
+        if (!TryCaptureSelection(context, out var assets, out var parents))
             return;
 
         // One parent per promoted element child, in the order the command requests their selection.
@@ -163,32 +183,20 @@ static partial class KeyboardAuthoringShortcuts
             }
         }
 
-        if (UnwrapElementsCommand.Execute(CommandSources.Hierarchy, assets) != CommandExecutionStatus.Success)
+        if (UnwrapElementsCommand.Execute(CommandSources.Hierarchy, assets, context) != CommandExecutionStatus.Success)
             return;
 
-        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(promotedParents);
+        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(context, promotedParents);
         ReloadDocumentsOf(parents);
     }
 
-    static void InsertNextToSelection(LibraryItem item, SiblingPlacement placement)
-    {
-        if (item.isAsset)
-        {
-            if (item.visualTreeAsset != null)
-                MenuUtility.InsertTemplateNextToSelection(item.visualTreeAsset, placement);
-            return;
-        }
-
-        if (item.libraryType.type != null)
-            MenuUtility.InsertElementNextToSelection(item.libraryType.type, item.libraryType.variantName, placement);
-    }
-
     // Captured before the picker opens so the edit targets what was selected when the shortcut fired.
-    internal static bool TryCaptureSelection(out VisualElementAsset[] assets, out VisualElement[] parents)
+    internal static bool TryCaptureSelection(AuthoringContext context, out VisualElementAsset[] assets,
+        out VisualElement[] parents)
     {
         using var assetsHandle = ListPool<VisualElementAsset>.Get(out var assetList);
         using var elementsHandle = ListPool<VisualElement>.Get(out var elementList);
-        UIViewportContextMenuUtility.FilterSelection(assetList, elementList);
+        UIViewportContextMenuUtility.FilterSelection(context, assetList, elementList);
 
         assets = assetList.ToArray();
         parents = new VisualElement[elementList.Count];

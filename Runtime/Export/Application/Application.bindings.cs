@@ -250,14 +250,12 @@ namespace UnityEngine
         // version/minor/major as separate integers. currently used only internally
         extern internal static int unityVersionVer
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             [FreeFunction("Application_Bindings::GetUnityVersionVer", IsThreadSafe = true)]
             get;
         }
 
         extern internal static int unityVersionMaj
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             [FreeFunction("Application_Bindings::GetUnityVersionMaj", IsThreadSafe = true)]
             get;
         }

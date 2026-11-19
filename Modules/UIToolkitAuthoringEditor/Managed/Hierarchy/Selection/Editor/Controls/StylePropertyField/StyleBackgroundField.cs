@@ -192,10 +192,12 @@ namespace Unity.UIToolkit.Editor
         {
             if (m_VarContextElement == null)
                 return default;
-            return StyleVariableUtility.FindVariable(m_VarContextElement, varName, false);
+            return StyleVariableUtility.FindVariable(m_VarContextElement, varName,
+                EditorExtensionAuthoring.IsEnabledFor(m_VarContextElement));
         }
 
-        Color? ResolveVariableColor(string varName) => StyleVariableUtility.GetColor(ResolveVariable(varName));
+        Color? ResolveVariableColor(string varName)
+            => m_VarContextElement == null ? null : StyleVariableUtility.GetColor(m_VarContextElement, varName, EditorExtensionAuthoring.IsEnabledFor(m_VarContextElement));
 
         void OpenStopsPopup()
         {
@@ -209,7 +211,7 @@ namespace Unity.UIToolkit.Editor
             m_StopsEditor.resolveVariableSheet = name => ResolveVariable(name).Sheet;
             m_StopsEditor.resolveVariableColor = ResolveVariableColor;
             m_StopsEditor.getCurrentVisualElement = () => m_VarContextElement;
-            m_StopsEditor.getEditorExtensionMode = () => false;
+            m_StopsEditor.getEditorExtensionMode = () => EditorExtensionAuthoring.IsEnabledFor(m_VarContextElement);
             RefreshStopsEditor();
             m_StopsEditor.stopsChanged += OnStopsEdited;
 
@@ -225,7 +227,7 @@ namespace Unity.UIToolkit.Editor
             // ShowAsDropDown pins minSize == maxSize at creation, and the native side strips
             // the resize border (WS_THICKFRAME) when they're equal — never adds it back.
             // Set position and min/max BEFORE ShowAuxWindow so the aux window is born resizable.
-            var anchor = GUIUtility.GUIToScreenRect(valueField.gradientColorsField.worldBound);
+            var anchor = EditorMenuExtensions.GUIToScreenRect(valueField.gradientColorsField, valueField.gradientColorsField.worldBound);
             popup.position = new Rect(anchor.x, anchor.yMax, 400, 200);
             popup.minSize = new Vector2(280, 200);
             popup.maxSize = new Vector2(4000, 4000);

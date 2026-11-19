@@ -49,6 +49,7 @@ namespace Unity.U2D.Physics
             m_PhysicsWheelJointDefinition = new PhysicsWheelJointDefinition(useSettings: false);
 
             m_RenderingMode = PhysicsWorld.RenderingMode.EditorOnly;
+            m_SceneLoadMode = PhysicsWorld.SceneLoadMode.Automatic;
             m_TransformChangeMode = PhysicsWorld.TransformChangeMode.FixedUpdate;
             m_ContactFilterMode = PhysicsShape.ContactFilterMode.Both;
             m_ContactFilterGroupMode = PhysicsShape.ContactFilterGroupMode.Group;
@@ -210,6 +211,15 @@ namespace Unity.U2D.Physics
         public PhysicsWorld.RenderingMode renderingMode { get => m_RenderingMode; set => m_RenderingMode = value; }
 
         /// <summary>
+        /// The bodies and worlds destroyed when a scene loads in Single mode, or when you open a scene in the Editor.
+        /// </summary>
+        /// <remarks>
+        /// A body or world owned by a GameObject that the load keeps, or by a component on one, is never destroyed.
+        /// See <see cref="PhysicsWorld.SceneLoadMode"/> for what each value does and which GameObjects the load keeps.
+        /// </remarks>
+        public PhysicsWorld.SceneLoadMode sceneLoadMode { get => m_SceneLoadMode; set => m_SceneLoadMode = value; }
+
+        /// <summary>
         /// Controls the simulation of any <see cref="PhysicsWorld"/> temporarily removing simulation overhead.
         /// When true, no automatic simulation will occur.
         /// When false, normal operation occurs with automatic simulation.
@@ -246,6 +256,7 @@ namespace Unity.U2D.Physics
         [SerializeField][Range(1, PhysicsConstants.MaxWorkers)] internal int m_ConcurrentSimulations;
         [SerializeField][Range(0.00001f, 10000.0f)] internal float m_LengthUnitsPerMeter;
         [SerializeField] internal PhysicsWorld.RenderingMode m_RenderingMode;
+        [SerializeField] internal PhysicsWorld.SceneLoadMode m_SceneLoadMode;
         [SerializeField] internal bool m_DisableSimulation;
         [SerializeField] internal bool m_AlwaysDrawWorlds;
 
@@ -320,6 +331,10 @@ namespace Unity.U2D.Physics
         /// <undoc/>
         [RequiredByNativeCode]
         PhysicsWorld.RenderingMode GetRenderingMode() => m_RenderingMode;
+
+        /// <undoc/>
+        [RequiredByNativeCode]
+        PhysicsWorld.SceneLoadMode GetSceneLoadMode() => m_SceneLoadMode;
 
         /// <undoc/>
         [RequiredByNativeCode]

@@ -81,6 +81,71 @@ namespace UnityEditor.SceneManagement
             return true;
         }
 
+        class DataComponentChanges
+        {
+            public List<DataComponentOverride> overrides;
+            public List<AddedDataComponent> added;
+            public List<RemovedDataComponent> removed;
+        }
+
+        // Data components are not returned by GetComponents, so they are collected separately, in one walk.
+        // A null list is not collected.
+        internal static void GetDataComponentChanges(GameObject prefabInstance, List<DataComponentOverride> overrides, List<AddedDataComponent> added, List<RemovedDataComponent> removed)
+        {
+            ThrowExceptionIfNullOrNotPartOfPrefabInstance(prefabInstance);
+
+            var prefabInstanceRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(prefabInstance);
+
+            var changes = new DataComponentChanges() { overrides = overrides, added = added, removed = removed };
+            new TransformVisitor().VisitPrefabInstanceTransforms(prefabInstanceRoot.transform, CheckForDataComponentChanges, changes);
+        }
+
+        internal static List<DataComponentOverride> GetDataComponentOverrides(GameObject prefabInstance)
+        {
+            var overrides = new List<DataComponentOverride>();
+            GetDataComponentChanges(prefabInstance, overrides, null, null);
+            return overrides;
+        }
+
+        internal static List<AddedDataComponent> GetAddedDataComponents(GameObject prefabInstance)
+        {
+            var added = new List<AddedDataComponent>();
+            GetDataComponentChanges(prefabInstance, null, added, null);
+            return added;
+        }
+
+        internal static List<RemovedDataComponent> GetRemovedDataComponents(GameObject prefabInstance)
+        {
+            var removed = new List<RemovedDataComponent>();
+            GetDataComponentChanges(prefabInstance, null, null, removed);
+            return removed;
+        }
+
+        static bool CheckForDataComponentChanges(Transform transform, object userData)
+        {
+            var changes = (DataComponentChanges)userData;
+            var gameObject = transform.gameObject;
+
+            if (changes.overrides != null || changes.added != null)
+            {
+                foreach (var dataComponent in PrefabUtility.GetDataComponents(gameObject.GetEntityId()))
+                {
+                    if (changes.added != null && PrefabUtility.IsAddedDataComponentOverride(dataComponent))
+                        changes.added.Add(new AddedDataComponent() { instanceDataComponent = dataComponent });
+                    if (changes.overrides != null && PrefabUtility.HasDataComponentOverride(dataComponent))
+                        changes.overrides.Add(new DataComponentOverride() { instanceDataComponent = dataComponent });
+                }
+            }
+
+            if (changes.removed != null)
+            {
+                foreach (var assetDataComponent in PrefabUtility.GetRemovedDataComponents(gameObject))
+                    changes.removed.Add(new RemovedDataComponent() { containingInstanceGameObject = gameObject, assetDataComponent = assetDataComponent });
+            }
+
+            return true;
+        }
+
         public static List<AddedComponent> GetAddedComponents(GameObject prefabInstance)
         {
             ThrowExceptionIfNullOrNotPartOfPrefabInstance(prefabInstance);

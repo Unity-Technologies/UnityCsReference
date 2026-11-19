@@ -79,6 +79,12 @@ namespace Unity.Entities
 
         public void Playback(ref CompanionDeferredCommands companionDeferredCommands)
         {
+            PlaybackCommands(ref companionDeferredCommands);
+            DestroyPendingCompanionGameObjects(ref companionDeferredCommands);
+        }
+
+        public void PlaybackCommands(ref CompanionDeferredCommands companionDeferredCommands)
+        {
             var reader = new UnsafeAppendBuffer.Reader(ref companionDeferredCommands.CommandBuffer);
             while (!reader.EndOfBuffer)
             {
@@ -99,13 +105,26 @@ namespace Unity.Entities
                     case (CompanionDeferredCommands.Command.DestroyCompanionGameObjects):
                     {
                         var companionLinkIds = (UnityEngine.EntityId*)reader.ReadNextArray<UnityEngine.EntityId>(out var count);
-                        DestroyCompanionGameObjects(companionLinkIds, count);
+                        GameObjectComponentStoreBridge.DetachGameObjectEntitiesDuringStructuralChange(companionLinkIds, count, m_EntityComponentStore);
+                        companionDeferredCommands.PendingDestroyIds.AddRange(companionLinkIds, count);
                     }
                     break;
                 }
             }
 
             companionDeferredCommands.Reset();
+        }
+
+        public void DestroyPendingCompanionGameObjects(ref CompanionDeferredCommands companionDeferredCommands)
+        {
+            if (companionDeferredCommands.PendingDestroyIds.IsEmpty)
+                return;
+
+            var ids = new UnsafeList<UnityEngine.EntityId>(companionDeferredCommands.PendingDestroyIds.Length, Allocator.Temp);
+            ids.AddRange(companionDeferredCommands.PendingDestroyIds);
+            companionDeferredCommands.PendingDestroyIds.Clear();
+            DestroyCompanionGameObjects(ids.Ptr, ids.Length);
+            ids.Dispose();
         }
     }
 }

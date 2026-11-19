@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.Pool;
 using Unity.Collections;
 using Unity.Scripting.LifecycleManagement;
 
@@ -349,17 +350,10 @@ namespace UnityEditor.Search.Providers
 
         static void IndexTypes(Type objType, HashSet<string> types, bool isPrefabDocument)
         {
-            Utils.EnumerateIndexedTypesAndInterfaces(objType, isPrefabDocument, (typeName, _) =>
+            SearchProviderUtils.EnumerateTypeNames(objType, isPrefabDocument, (typeName, _) =>
             {
                 types.Add(typeName.ToLowerInvariant());
             });
-
-            if (typeof(MonoBehaviour).IsAssignableFrom(objType) || typeof(Behaviour).IsAssignableFrom(objType))
-            {
-                types.Add("script");
-                types.Add("monobehaviour");
-                types.Add("behaviour");
-            }
         }
 
         bool OnTypeFilter(T obj, QueryFilterOperator op, string value)
@@ -379,7 +373,7 @@ namespace UnityEditor.Search.Providers
                     for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
                     {
                         var c = gocs[componentIndex];
-                        if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                        if (SearchProviderUtils.IsSkippedObject(c, SearchProviderUtils.sceneSkippedComponentFlags))
                             continue;
 
                         var componentType = c.GetType();
@@ -427,7 +421,7 @@ namespace UnityEditor.Search.Providers
                         continue;
                     }
 
-                    if ((c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                    if (SearchProviderUtils.IsSkippedObject(c, SearchProviderUtils.sceneSkippedComponentFlags))
                         continue;
                     BuildReferences(c, ref god, refs);
                 }
@@ -443,14 +437,30 @@ namespace UnityEditor.Search.Providers
             {
                 using (var so = new SerializedObject(obj))
                 {
+                    var includeHiddenProperties = obj is MonoBehaviour && SearchProviderUtils.HasHiddenOrSerializeReferenceFields(obj.GetType());
+                    using var _ = HashSetPool<long>.Get(out var walkedManagedReferences);
                     var p = so.GetIterator();
-                    var next = p.NextVisible(true);
+                    var next = includeHiddenProperties ? p.Next(true) : p.NextVisible(true);
                     while (next)
                     {
-                        AddPropertyReferences(obj, p, ref god, refs);
+                        // Skip leaf values before reading propertyType: on scripts, numeric fields make it reflect over the class to tell ints from enums, and leaves never hold references.
+                        if (!p.hasChildren)
+                        {
+                            next = includeHiddenProperties ? p.Next(false) : p.NextVisible(false);
+                            continue;
+                        }
 
-                        // NOTE: Property iteration on managedReference does not handle cycle (ObjectReference does). Do not dig in managedReference for now.
-                        next = p.NextVisible(p.propertyType != SerializedPropertyType.ManagedReference && p.hasVisibleChildren);
+                        var propertyType = p.propertyType;
+                        var isHiddenEngineLink = includeHiddenProperties && p.depth == 0 && propertyType == SerializedPropertyType.ObjectReference && SearchProviderUtils.IsHiddenEngineLinkProperty(p.propertyPath);
+                        if (!isHiddenEngineLink)
+                            AddPropertyReferences(obj, p, propertyType, ref god, refs);
+
+                        // SerializedProperty iteration stops at cyclic SerializeReference graphs (UUM-144349), so managed references can be walked.
+                        var isSingleValue = propertyType == SerializedPropertyType.String || propertyType == SerializedPropertyType.ObjectReference;
+                        var enterChildren = includeHiddenProperties ? p.hasChildren && !isSingleValue : p.hasVisibleChildren;
+                        if (enterChildren && propertyType == SerializedPropertyType.ManagedReference)
+                            enterChildren = walkedManagedReferences.Add(p.managedReferenceId);
+                        next = includeHiddenProperties ? p.Next(enterChildren) : p.NextVisible(enterChildren);
                     }
                 }
             }
@@ -460,9 +470,9 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        private void AddPropertyReferences(UnityEngine.Object obj, SerializedProperty p, ref GOD god, ICollection<ulong> refs)
+        private void AddPropertyReferences(UnityEngine.Object obj, SerializedProperty p, SerializedPropertyType propertyType, ref GOD god, ICollection<ulong> refs)
         {
-            if (p.propertyType != SerializedPropertyType.ObjectReference)
+            if (propertyType != SerializedPropertyType.ObjectReference)
                 return;
 
             if (p.objectReferenceValue == null)
@@ -490,6 +500,7 @@ namespace UnityEditor.Search.Providers
             if (p.objectReferenceValue is Material material && material.shader)
             {
                 AddReference(material.shader, material.shader.name, refs);
+                refs.Add(EntityId.ToULong(material.shader.GetEntityId()));
             }
         }
 

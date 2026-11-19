@@ -301,7 +301,7 @@ namespace Unity.Collections
                 }
             }
 
-            private unsafe void ConsumeStripes(ulong* acc, ref int nbStripesSoFar, byte* input, long totalStripes,
+            private readonly unsafe void ConsumeStripes(ulong* acc, ref int nbStripesSoFar, byte* input, long totalStripes,
                 byte* secret, int isHash64)
             {
                 if (NB_STRIPES_PER_BLOCK - nbStripesSoFar <= totalStripes)
@@ -338,7 +338,7 @@ namespace Unity.Collections
             }
 
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-            void CheckKeySize(int isHash64)
+            readonly void CheckKeySize(int isHash64)
             {
                 if (State.IsHash64 != isHash64)
                 {

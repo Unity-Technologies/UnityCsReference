@@ -1134,9 +1134,14 @@ namespace UnityEngine.UIElements
                 Debug.Assert(e.button != -1, "PointerEvent of type ButtonReleased is expected to have button != -1.");
                 PointerDeviceState.ReleaseButton(e.pointerId, e.button);
             }
-            else if (pointerEvent.type != PointerEvent.Type.TouchCanceled)
+            else if (pointerEvent.type == PointerEvent.Type.Canceled)
             {
-                Debug.Assert(e.button == -1, "PointerEvent of type other than ButtonPressed, ButtonReleased, or TouchCanceled is expected to have button set to none.");
+                Debug.Assert(e.button != -1, "PointerEvent of type Canceled is expected to have button != -1.");
+                PointerDeviceState.ReleaseButton(e.pointerId, e.button);
+            }
+            else
+            {
+                Debug.Assert(e.button == -1, "PointerEvent of type other than ButtonPressed, ButtonReleased, or Canceled is expected to have button set to none.");
             }
 
             e.pressedButtons = PointerDeviceState.GetPressedButtons(e.pointerId);

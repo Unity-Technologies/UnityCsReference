@@ -78,6 +78,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }).ToArray();
         }
 
+        // The AssetDatabase also reads Library/Bee/bee_backend.info: in artifact-service mode it only skips the startup
+        // script compilation when UnityVersion here matches the running Editor
+        // (ArtifactService::WasLastScriptBuildByThisUnityVersion, Modules/AssetDatabase/Editor/V2/ArtifactService/ArtifactServiceMode.cpp).
+        // Keep the file name and the UnityVersion field, or update that code too.
         private static void RecreateDagDirectoryIfNeeded(NPath dagDirectory)
         {
             var beeBackendInfoPath = dagDirectory.Combine("bee_backend.info");
@@ -104,7 +108,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     EditorJsonUtility.FromJsonOverwrite(contents, diskInfo);
 
                     // Note: We're clearing dag directory only when bee backend hash has changed, it's fine for Unity version to be different.
-                    //       Unity version is used here for informational purposes, so we can clearly see from which Unity version the user was upgrading
+                    //       Unity version is used here for informational purposes, so we can clearly see from which Unity version the user was upgrading,
+                    //       and by the AssetDatabase's artifact-service mode (see above).
                     if (string.IsNullOrEmpty(diskInfo.BeeBackendHash) ||
                         !diskInfo.BeeBackendHash.Equals(currentInfo.BeeBackendHash))
                     {

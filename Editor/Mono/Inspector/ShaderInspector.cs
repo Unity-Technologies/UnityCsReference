@@ -54,7 +54,6 @@ namespace UnityEditor
 
             public static readonly GUIContent togglePreprocess = L10n.TextContent("Preprocess only", "Show preprocessor output instead of compiled shader code", null, null);
             public static readonly GUIContent toggleStripLineDirective = L10n.TextContent("Strip #line directives", "Strip #line directives from preprocessor output", null, null);
-            public static readonly GUIContent showSurface = L10n.TextContent("Show generated code", "Show generated code of a surface shader", null, null);
             public static readonly GUIContent showFF = L10n.TextContent("Show generated code", "Show generated code of a fixed function shader", null, null);
             public static readonly GUIContent showCurrent = L10n.TextContent("Compile and show code \u007C \u25BE", null, null, null);  // vertical bar & dropdow arrow - due to lacking editor style of "mini button with a dropdown"
             public static readonly GUIContent overridableKeywords = L10n.TextContent("Overridable", "Shader keywords overridable by global shader keyword state", null, null);
@@ -219,7 +218,6 @@ namespace UnityEditor
 
         private void ShowShaderCodeArea(Shader s)
         {
-            ShowSurfaceShaderButton(s);
             ShowFixedFunctionShaderButton(s);
             ShaderApiReflection.ShaderInspectorExtensions.DoShowSplicedCodeButton(s);
             ShowCompiledCodeButton(s);
@@ -414,7 +412,7 @@ namespace UnityEditor
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel("Compiled code", EditorStyles.miniButton);
 
-            var hasCode = ShaderUtil.HasShaderSnippets(s) || ShaderUtil.HasSurfaceShaders(s) || ShaderUtil.HasFixedFunctionShaders(s);
+            var hasCode = ShaderUtil.HasShaderSnippets(s) || ShaderUtil.HasFixedFunctionShaders(s);
             if (hasCode)
             {
                 // button with a drop-down part on the right
@@ -443,41 +441,6 @@ namespace UnityEditor
 
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
-        }
-
-        // "show surface shader" button
-        private static void ShowSurfaceShaderButton(Shader s)
-        {
-            var hasSurface = ShaderUtil.HasSurfaceShaders(s);
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PrefixLabel("Surface shader", EditorStyles.miniButton);
-            if (hasSurface)
-            {
-                // check if this is a built-in shader (has no importer);
-                // we can't show generated code in that case
-                var builtinShader = (AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(s)) == null);
-                if (!builtinShader)
-                {
-                    if (GUILayout.Button(Styles.showSurface, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-                    {
-                        ShaderUtil.OpenParsedSurfaceShader(s);
-                        GUIUtility.ExitGUI();
-                    }
-                }
-                else
-                {
-                    // See comment below why this is a button.
-                    GUILayout.Button(Styles.builtinShader, GUI.skin.label);
-                }
-            }
-            else
-            {
-                // Note: PrefixLabel is sometimes buggy if followed by a non-control (like Label).
-                // We just want to show a label here, but have to pretend it's a button so it is treated like
-                // a control.
-                GUILayout.Button(Styles.no, GUI.skin.label);
-            }
-            EditorGUILayout.EndHorizontal();
         }
 
         // "show fixed function shader" button

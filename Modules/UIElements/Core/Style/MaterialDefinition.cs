@@ -11,7 +11,7 @@ using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     enum MaterialPropertyValueType
     {
         Float,
@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
         Texture
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     struct MaterialPropertyValue : IEquatable<MaterialPropertyValue>
     {
         public string name;
@@ -108,6 +108,10 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a <see cref="VisualElement"/> material.
     /// </summary>
+    /// <remarks>
+    /// A MaterialDefinition read from <see cref="IResolvedStyle.unityMaterial"/> or <see cref="IStyle.unityMaterial"/> is a copy.
+    /// To change a material property of an element, read the value, call a method such as <see cref="SetFloat"/>, and assign the value back to <see cref="IStyle.unityMaterial"/>.
+    /// </remarks>
     [Serializable]
     public partial struct MaterialDefinition : IEquatable<MaterialDefinition>
     {
@@ -123,7 +127,7 @@ namespace UnityEngine.UIElements
             set { m_Material = value; }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal List<MaterialPropertyValue> propertyValues = null;
 
         /// <summary>
@@ -135,7 +139,7 @@ namespace UnityEngine.UIElements
             m_Material = m;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal MaterialDefinition(Material m, List<MaterialPropertyValue> propertyValues)
         {
             ValidateMaterial(m);
@@ -143,7 +147,7 @@ namespace UnityEngine.UIElements
             this.propertyValues = propertyValues;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal MaterialDefinition(MaterialDefinition other)
         {
             m_Material = other.m_Material;
@@ -278,7 +282,7 @@ namespace UnityEngine.UIElements
             });
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool IsMaterialValid(Material material)
         {
             if (material == null || material.shader == null) return true;

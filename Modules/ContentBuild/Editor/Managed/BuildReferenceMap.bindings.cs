@@ -29,12 +29,12 @@ namespace UnityEditor.Build.Content
             m_Ptr = Internal_Create();
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Releases the native handle; Internal_Destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
         ~BuildReferenceMap()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         ///<summary>Dispose the BuildReferenceMap destroying all internal state.</summary>
         ///<remarks>Internal use only. See <see cref="BuildReferenceMap" />.</remarks>

@@ -80,7 +80,6 @@ using System.Runtime.CompilerServices;
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
 
-[assembly: InternalsVisibleTo("Unity.Motion.Editor.AnimationWindow")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.SpriteAPI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.SpriteDeform.Tests.Editor")]
@@ -241,6 +240,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Logging")]
 [assembly: InternalsVisibleTo("Unity.Entities")]
 [assembly: InternalsVisibleTo("Unity.Entities.Hybrid")]
+[assembly: InternalsVisibleTo("Unity.Scenes")]
 [assembly: InternalsVisibleTo("Unity.Scenes.Editor")]
 [assembly: InternalsVisibleTo("Unity.Entities.Tests")]
 [assembly: InternalsVisibleTo("Unity.Collections")]
@@ -300,6 +300,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.GI.BakedGI.ShaderCompilation.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.BakedGI.EnterPlaymodeOptions.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.API.EditorBakeWithAdditiveScene.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.LightBaker.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.RealTimeGI.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.EnvironmentLighting.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.LightingWindow.Tests.Editor")]

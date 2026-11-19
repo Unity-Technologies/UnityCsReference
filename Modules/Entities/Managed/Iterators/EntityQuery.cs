@@ -495,6 +495,10 @@ namespace Unity.Entities
         internal EntityQueryData* _QueryData;
         internal EntityQueryFilter          _Filter;
         internal ulong _SeqNo;
+        internal QueryDescription** _Descriptions;
+        internal int _DescriptionCount;
+        // One world query cache entry per description, then the combined entry when there are several descriptions.
+        internal int* _CacheEntries;
 
         internal byte                    _DisallowDisposing;
 
@@ -502,12 +506,15 @@ namespace Unity.Entities
 
         internal ComponentSafetyHandles* SafetyHandles => &_Access->DependencyManager->Safety;
 
-        internal void Construct(EntityQueryData* queryData, EntityDataAccess* access, ulong seqno)
+        internal void Construct(EntityQueryData* queryData, EntityDataAccess* access, ulong seqno, QueryDescription** descriptions, int descriptionCount, int* cacheEntries)
         {
             _Access = access;
             _QueryData = queryData;
             _Filter = default(EntityQueryFilter);
             _SeqNo = seqno;
+            _Descriptions = descriptions;
+            _DescriptionCount = descriptionCount;
+            _CacheEntries = cacheEntries;
             fixed(EntityQueryImpl* self = &this)
             {
                 access->AliveEntityQueries.Add((ulong)self, default);
@@ -555,7 +562,17 @@ namespace Unity.Entities
             }
         }
 
-        public bool IsEmptyIgnoreFilter => GetMatchingChunkCache().Length == 0;
+        public bool IsEmptyIgnoreFilter
+        {
+            get
+            {
+                var isEmpty = true;
+                var records = GetRecords();
+                for (int i = 0; i < records.Length && isEmpty; ++i)
+                    isEmpty = records.Ptr[i]->Archetype->EntityCount == 0;
+                return isEmpty;
+            }
+        }
 
         [ExcludeFromBurstCompatTesting("Returns managed array")]
         internal ComponentType[] GetQueryTypes()
@@ -652,8 +669,15 @@ namespace Unity.Entities
                 if (_QueryData != null)
                     ResetFilter();
 
+                if (_Descriptions != null)
+                    QueryDescription.Free(_Descriptions);
+                _Access->EntityQueryManager->ReleaseCacheEntries(_CacheEntries, _DescriptionCount);
+
                 _Access = null;
                 _QueryData = null;
+                _Descriptions = null;
+                _DescriptionCount = 0;
+                _CacheEntries = null;
             }
         }
 
@@ -667,30 +691,26 @@ namespace Unity.Entities
         public int CalculateEntityCount()
         {
             SyncFilterTypes();
-            return ChunkIterationUtility.CalculateEntityCount(GetMatchingChunkCache(),
-                ref _QueryData->MatchingArchetypes, ref _Filter, _QueryData->HasEnableableComponents);
+            return ChunkIterationUtility.CalculateEntityCount(GetQueryChunks(), ref _Filter, _QueryData->HasEnableableComponents);
         }
 
         public int CalculateEntityCountWithoutFiltering()
         {
             var dummyFilter = default(EntityQueryFilter);
-            return ChunkIterationUtility.CalculateEntityCount(GetMatchingChunkCache(),
-                ref _QueryData->MatchingArchetypes, ref dummyFilter, 0);
+            return ChunkIterationUtility.CalculateEntityCount(GetQueryChunks(), ref dummyFilter, 0);
         }
 
         public int CalculateChunkCount()
         {
             SyncChangeFilterTypes();
             SyncEnableableTypes();
-            return ChunkIterationUtility.CalculateChunkCount(GetMatchingChunkCache(),
-                ref _QueryData->MatchingArchetypes, ref _Filter, _QueryData->HasEnableableComponents);
+            return ChunkIterationUtility.CalculateChunkCount(GetQueryChunks(), ref _Filter, _QueryData->HasEnableableComponents);
         }
 
         public int CalculateChunkCountWithoutFiltering()
         {
             var dummyFilter = default(EntityQueryFilter);
-            return ChunkIterationUtility.CalculateChunkCount(GetMatchingChunkCache(),
-                ref _QueryData->MatchingArchetypes, ref dummyFilter, 0);
+            return ChunkIterationUtility.CalculateChunkCount(GetQueryChunks(), ref dummyFilter, 0);
         }
 
         public NativeArray<int> CalculateFilteredChunkIndexArray(AllocatorManager.AllocatorHandle allocator)
@@ -703,8 +723,7 @@ namespace Unity.Entities
             var outputArray =
                 CollectionHelper.CreateNativeArray<int>(unfilteredChunkCount, allocator, NativeArrayOptions.UninitializedMemory);
 
-            ChunkIterationUtility.CalculateFilteredChunkIndexArray(GetMatchingChunkCache(),
-                _QueryData->MatchingArchetypes, ref _Filter, _QueryData->HasEnableableComponents, ref outputArray);
+            ChunkIterationUtility.CalculateFilteredChunkIndexArray(GetQueryChunks(), ref _Filter, _QueryData->HasEnableableComponents, ref outputArray);
 
             return outputArray;
         }
@@ -741,9 +760,9 @@ namespace Unity.Entities
 
             var job = new FilteredChunkIndexJob
             {
-                CachedChunkList = GetMatchingChunkCache(),
+                Safety = GetJobSafetyHandles(),
+                Chunks = GetQueryChunks(),
                 Filter = _Filter,
-                MatchingArchetypes = _QueryData->MatchingArchetypes,
                 OutFilteredChunkIndices = outputArray,
                 QueryIncludesEnableableComponents = _QueryData->HasEnableableComponents,
             };
@@ -764,8 +783,7 @@ namespace Unity.Entities
             var outputArray =
                 CollectionHelper.CreateNativeArray<int>(chunkCount, allocator, NativeArrayOptions.UninitializedMemory);
 
-            ChunkIterationUtility.CalculateBaseEntityIndexArray(GetMatchingChunkCache(),
-                _QueryData->MatchingArchetypes, ref _Filter, _QueryData->HasEnableableComponents, ref outputArray);
+            ChunkIterationUtility.CalculateBaseEntityIndexArray(GetQueryChunks(), ref _Filter, _QueryData->HasEnableableComponents, ref outputArray);
 
             return outputArray;
         }
@@ -802,9 +820,9 @@ namespace Unity.Entities
 
             var job = new ChunkBaseEntityIndexJob
             {
-                CachedChunkList = GetMatchingChunkCache(),
+                Safety = GetJobSafetyHandles(),
+                Chunks = GetQueryChunks(),
                 Filter = _Filter,
-                MatchingArchetypes = _QueryData->MatchingArchetypes,
                 OutChunkBaseEntityIndices = outputArray,
                 QueryIncludesEnableableComponents = _QueryData->HasEnableableComponents,
             };
@@ -821,25 +839,6 @@ namespace Unity.Entities
             if (componentIndex >= _QueryData->RequiredComponentsCount || _QueryData->RequiredComponents[componentIndex].AccessModeType == ComponentType.AccessMode.Exclude)
                 throw new InvalidOperationException($"Trying to get iterator for {TypeManager.GetType(componentType)} but the required component type was not declared in the EntityQuery.");
             return componentIndex;
-        }
-
-        [Obsolete("Remove with CreateArchetypeChunkArrayAsync. (RemovedAfter Entities 1.0)")]
-        public NativeArray<ArchetypeChunk> CreateArchetypeChunkArrayAsync(AllocatorManager.AllocatorHandle allocator, out JobHandle jobhandle)
-        {
-            JobHandle dependency = default;
-
-            var filterCount = _Filter.Changed.Count;
-            if (filterCount > 0)
-            {
-                var readerTypes = stackalloc TypeIndex[filterCount];
-                for (int i = 0; i < filterCount; ++i)
-                    readerTypes[i] = _QueryData->RequiredComponents[_Filter.Changed.IndexInEntityQuery[i]].TypeIndex;
-
-                dependency = _Access->DependencyManager->GetDependency(readerTypes, filterCount,
-                    null, 0, clearReadFencesAfterCombining:false);
-            }
-
-            return ChunkIterationUtility.CreateArchetypeChunkArrayAsync(_QueryData->MatchingArchetypes, allocator, out jobhandle, ref _Filter, dependency);
         }
 
         public NativeList<ArchetypeChunk> ToArchetypeChunkListAsync(AllocatorManager.AllocatorHandle allocator, JobHandle additionalInputDep, out JobHandle outJobHandle)
@@ -874,9 +873,9 @@ namespace Unity.Entities
 
             var job = new GatherChunksJob
             {
-                ChunkCache = GetMatchingChunkCache(),
+                Safety = GetJobSafetyHandles(),
+                Chunks = GetQueryChunks(),
                 Filter = _Filter,
-                MatchingArchetypes = _QueryData->MatchingArchetypes,
                 QueryContainsEnableableComponents = _QueryData->HasEnableableComponents,
                 OutFilteredChunksList = new TypelessUnsafeList{
                     Ptr = (byte*)outputList.m_ListData->Ptr,
@@ -908,8 +907,7 @@ namespace Unity.Entities
             }
 
             var outputList = new NativeList<ArchetypeChunk>(unfilteredChunkCount, allocator);
-            ChunkIterationUtility.ToArchetypeChunkList(GetMatchingChunkCache(),
-                _QueryData->MatchingArchetypes, ref _Filter, _QueryData->HasEnableableComponents, ref outputList);
+            ChunkIterationUtility.ToArchetypeChunkList(GetQueryChunks(), ref _Filter, _QueryData->HasEnableableComponents, ref outputList);
 
             // A NativeList contains two memory allocations: one for the actual list contents, and one for the
             // fixed-size UnsafeList struct. This sequence frees the UnsafeList while passing ownership of the contents
@@ -934,7 +932,7 @@ namespace Unity.Entities
                 return;
 
             archetypeChunkList.SetCapacity(unfilteredChunkCount);
-            ChunkIterationUtility.ToArchetypeChunkList(GetMatchingChunkCache(), _QueryData->MatchingArchetypes, ref _Filter, _QueryData->HasEnableableComponents, ref archetypeChunkList);
+            ChunkIterationUtility.ToArchetypeChunkList(GetQueryChunks(), ref _Filter, _QueryData->HasEnableableComponents, ref archetypeChunkList);
         }
 
         [GenerateTestsForBurstCompatibility(RequiredUnityDefine = "ENABLE_UNITY_COLLECTIONS_CHECKS", CompileTarget = GenerateTestsForBurstCompatibilityAttribute.BurstCompatibleCompileTarget.Editor)]
@@ -952,7 +950,7 @@ namespace Unity.Entities
 
             var entityType = new EntityTypeHandle(SafetyHandles->GetSafetyHandleForEntityTypeHandle());
 
-            return ChunkIterationUtility.CreateEntityArrayAsync(_QueryData->MatchingArchetypes, allocator, entityType,
+            return ChunkIterationUtility.CreateEntityArrayAsync(GetRecords(), allocator, entityType,
                 outer,CalculateEntityCount(), out jobhandle, GetDependency());
         }
 
@@ -1007,7 +1005,7 @@ namespace Unity.Entities
             AtomicSafetyHandle.CheckReadAndThrow(entityType.m_Safety);
 
             return ChunkIterationUtility.CreateEntityArray(
-                    _QueryData->MatchingArchetypes, allocator, entityType, outer, entityCount);
+                    GetRecords(), allocator, entityType, outer, entityCount);
         }
 
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) },
@@ -1161,7 +1159,7 @@ namespace Unity.Entities
             if (indexInEntityQuery == -1)
                 throw new InvalidOperationException($"Trying CopyFromComponentDataArrayAsync of {TypeManager.GetType(typeIndex)} but the required component type was not declared in the EntityQuery.");
 
-            ChunkIterationUtility.CopyFromComponentDataArrayAsync(_QueryData->MatchingArchetypes, componentDataArray, ref componentType, outer, ref _Filter, out jobhandle, GetDependency());
+            ChunkIterationUtility.CopyFromComponentDataArrayAsync(GetRecords(), componentDataArray, ref componentType, outer, ref _Filter, out jobhandle, GetDependency());
         }
 
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) }, RequiredUnityDefine = "ENABLE_UNITY_COLLECTIONS_CHECKS", CompileTarget = GenerateTestsForBurstCompatibilityAttribute.BurstCompatibleCompileTarget.Editor)]
@@ -1228,20 +1226,20 @@ namespace Unity.Entities
                 _QueryData->RequiredComponentsCount <= 2 && _QueryData->RequiredComponents[1].TypeIndex == typeIndex)
             {
                 // Fast path with no filtering
-                var matchingChunkCache = GetMatchingChunkCache();
-                if (matchingChunkCache.Length != 1 || matchingChunkCache.ChunkIndices[0].Count != 1)
+                var matchingChunks = GetQueryChunks();
+                var firstChunk = matchingChunks.GetCursor();
+                firstChunk.MoveNext();
+                if (matchingChunks.CalculateLength() != 1 || firstChunk.Chunk.Count != 1)
                 {
-                    _QueryData->CheckChunkListCacheConsistency(false);
                     var typeName = typeIndex.ToFixedString();
-                    if (matchingChunkCache.Length == 0 || matchingChunkCache.ChunkIndices[0].Count == 0)
+                    if (matchingChunks.CalculateLength() == 0 || firstChunk.Chunk.Count == 0)
                         throw new InvalidOperationException($"GetSingleton<{typeName}>() requires that exactly one entity exists that match this query, but there are none. Are you missing a call to RequireForUpdate<T>()? You could also use TryGetSingleton<T>()");
                     else
-                        throw new InvalidOperationException(@$"GetSingleton<{typeName}>() requires that exactly one entity exists that match this query, but there are {CalculateEntityCountWithoutFiltering()} entities in {matchingChunkCache.Length} chunks.
-First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={_Access->EntityComponentStore->GetArchetype(matchingChunkCache.ChunkIndices[0])->ToString()}.");
+                        throw new InvalidOperationException(@$"GetSingleton<{typeName}>() requires that exactly one entity exists that match this query, but there are {CalculateEntityCountWithoutFiltering()} entities in {matchingChunks.CalculateLength()} chunks.
+First chunk: entityCount={firstChunk.Chunk.Count}, archetype={_Access->EntityComponentStore->GetArchetype(firstChunk.Chunk)->ToString()}.");
                 }
-                outChunk = matchingChunkCache.ChunkIndices[0]; // only one matching chunk
-                var matchIndex = matchingChunkCache.PerChunkMatchingArchetypeIndex->Ptr[0];
-                var match = _QueryData->MatchingArchetypes.Ptr[matchIndex];
+                outChunk = firstChunk.Chunk; // only one matching chunk
+                var match = firstChunk.Record;
                 outIndexInArchetype = match->IndexInArchetype[1];
                 outEntityIndexInChunk = 0;
             }
@@ -1249,12 +1247,10 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
             {
                 // Slow path with filtering, can't just use first matching archetype/chunk
                 SyncFilterTypes();
-                int queryEntityCount = ChunkIterationUtility.CalculateEntityCountAndSingleton(GetMatchingChunkCache(),
-                    ref _QueryData->MatchingArchetypes, ref _Filter, _QueryData->HasEnableableComponents,
+                int queryEntityCount = ChunkIterationUtility.CalculateEntityCountAndSingleton(GetQueryChunks(), ref _Filter, _QueryData->HasEnableableComponents,
                     out MatchingArchetype* firstMatchArchetype, out outChunk, out outEntityIndexInChunk);
                 if (queryEntityCount != 1)
                 {
-                    _QueryData->CheckChunkListCacheConsistency(false);
                     throw new InvalidOperationException(
                         $"GetSingleton() requires that exactly one entity exists that matches this query, but there are {queryEntityCount}.");
                 }
@@ -1310,20 +1306,20 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
             // (All other singleton implementations simply use GetSingletonChunk which has the same early out)
             if (!_Filter.RequiresMatchesFilter && _QueryData->RequiredComponentsCount <= 2 && _QueryData->RequiredComponents[1].TypeIndex == typeIndex)
             {
-                var matchingChunkCache = GetMatchingChunkCache();
-                if (matchingChunkCache.Length != 1 || matchingChunkCache.ChunkIndices[0].Count != 1)
+                var matchingChunks = GetQueryChunks();
+                var firstChunk = matchingChunks.GetCursor();
+                firstChunk.MoveNext();
+                if (matchingChunks.CalculateLength() != 1 || firstChunk.Chunk.Count != 1)
                 {
-                    _QueryData->CheckChunkListCacheConsistency(false);
                     var typeName = typeIndex.ToFixedString();
-                    if (matchingChunkCache.Length == 0 || matchingChunkCache.ChunkIndices[0].Count == 0)
+                    if (matchingChunks.CalculateLength() == 0 || firstChunk.Chunk.Count == 0)
                         throw new InvalidOperationException($"GetSingleton<{typeName}>() requires that exactly one entity exists that match this query, but there are none. Are you missing a call to RequireForUpdate<T>()? You could also use TryGetSingleton<T>()");
                     else
-                        throw new InvalidOperationException(@$"GetSingleton<{typeName}>() requires that exactly one entity exists that match this query, but there are {CalculateEntityCountWithoutFiltering()} entities in {matchingChunkCache.Length} chunks.
-First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={_Access->EntityComponentStore->GetArchetype(matchingChunkCache.ChunkIndices[0])->ToString()}.");
+                        throw new InvalidOperationException(@$"GetSingleton<{typeName}>() requires that exactly one entity exists that match this query, but there are {CalculateEntityCountWithoutFiltering()} entities in {matchingChunks.CalculateLength()} chunks.
+First chunk: entityCount={firstChunk.Chunk.Count}, archetype={_Access->EntityComponentStore->GetArchetype(firstChunk.Chunk)->ToString()}.");
                 }
-                var chunk = matchingChunkCache.ChunkIndices[0]; // only one matching chunk
-                var matchIndex = matchingChunkCache.PerChunkMatchingArchetypeIndex->Ptr[0];
-                var match = _QueryData->MatchingArchetypes.Ptr[matchIndex];
+                var chunk = firstChunk.Chunk; // only one matching chunk
+                var match = firstChunk.Record;
                 var archetype = _Access->EntityComponentStore->GetArchetype(chunk);
                 return UnsafeUtility.AsRef<T>(ChunkIterationUtility.GetChunkComponentDataROPtr(archetype, chunk, match->IndexInArchetype[1]));
             }
@@ -1557,6 +1553,16 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
                 _QueryData->WriterTypes, _QueryData->WriterTypesCount, clearReadFencesAfterCombining:false);
         }
 
+        // The handles a job reading the query's records holds, so that a structural change reports the job while it
+        // still runs instead of freeing the records under it
+        internal EntityQuerySafetyHandles GetJobSafetyHandles()
+        {
+            fixed (EntityQueryImpl* self = &this)
+            {
+                return new EntityQuerySafetyHandles(self);
+            }
+        }
+
         public JobHandle AddDependency(JobHandle job)
         {
             return _Access->DependencyManager->AddDependency(_QueryData->ReaderTypes, _QueryData->ReaderTypesCount,
@@ -1614,13 +1620,14 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
             if (_QueryData == null)
                 return false;
 
-            var matchingArchetypesLength = _QueryData->MatchingArchetypes.Length;
+            var records = GetRecords();
+            var matchingArchetypesLength = records.Length;
             if (matchingArchetypesLength > kSanityArraySizes)
                 return false;
 
-            for (int matchingArchetypeIndex = 0; matchingArchetypeIndex < _QueryData->MatchingArchetypes.Length; ++matchingArchetypeIndex)
+            for (int matchingArchetypeIndex = 0; matchingArchetypeIndex < records.Length; ++matchingArchetypeIndex)
             {
-                var matchingArchetype = _QueryData->MatchingArchetypes.Ptr[matchingArchetypeIndex];
+                var matchingArchetype = records.Ptr[matchingArchetypeIndex];
                 var archetype = matchingArchetype->Archetype;
                 if (archetype->EntityCount == 0)
                     continue;
@@ -1668,20 +1675,25 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         public EntityQueryMask GetEntityQueryMask()
         {
             var ecs = _Access->EntityComponentStore;
-            var mask = _Access->EntityQueryManager->GetEntityQueryMask(_QueryData, ecs);
-            return mask;
+            return _Access->EntityQueryManager->GetEntityQueryMask(_CacheEntries, _DescriptionCount, ecs);
+        }
+
+        // The entity's record in this query, or null if the entity isn't in one of the query's archetypes.
+        MatchingArchetype* FindRecord(Entity e)
+        {
+            var ecs = _Access->EntityComponentStore;
+            if (!ecs->ExistsInThisWorld(e))
+                return null;
+            var records = GetRecords();
+            var index = EntityQueryManager.FindRecordIndex(records, ecs->GetArchetype(e));
+            return index < 0 ? null : records.Ptr[index];
         }
 
         public bool Matches(Entity e)
         {
-            // An EntityQueryMask gives us an early out if the entity isn't even in a matching archetype
             var ecs = _Access->EntityComponentStore;
-            var mask = _QueryData->EntityQueryMask;
-            if (Hint.Unlikely(!mask.IsCreated()))
-            {
-                mask = _Access->EntityQueryManager->GetEntityQueryMask(_QueryData, ecs);
-            }
-            if (!mask.MatchesIgnoreFilter(e))
+            var matchingArchetype = FindRecord(e);
+            if (matchingArchetype == null)
                 return false;
 
             bool hasFilter = HasFilter();
@@ -1689,10 +1701,6 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
             if (hasFilter || hasEnableableComponents)
             {
                 var chunk = ecs->GetChunk(e);
-                var archetype = ecs->GetArchetype(chunk);
-                // TODO(DOTS-6802): most of this work could be amortized, if we knew Matches() was being called on entities in the same chunk.
-                var matchingArchetype = _QueryData->MatchingArchetypes.Ptr[
-                    EntityQueryManager.FindMatchingArchetypeIndexForArchetype(ref _QueryData->MatchingArchetypes, archetype)];
                 // Is the chunk filtered out?
                 if (hasFilter)
                 {
@@ -1724,13 +1732,7 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
 
         public bool MatchesIgnoreFilter(Entity e)
         {
-            var ecs = _Access->EntityComponentStore;
-            var mask = _QueryData->EntityQueryMask;
-            if (Hint.Unlikely(!mask.IsCreated()))
-            {
-                mask = _Access->EntityQueryManager->GetEntityQueryMask(_QueryData, ecs);
-            }
-            return mask.MatchesIgnoreFilter(e);
+            return FindRecord(e) != null;
         }
 
         internal EntityQueryDesc[] GetEntityQueryDescs()
@@ -1818,21 +1820,23 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
             return GetEntityQueryDescs()[0];
         }
 
-        internal UnsafeCachedChunkList GetMatchingChunkCache()
+        // The query's records, from the world query cache.
+        internal UnsafeMatchingArchetypePtrList GetRecords()
         {
-            // TODO(DOTS-8574): This debug check is currently too slow to enable by default.
-            if (Hint.Unlikely(!_QueryData->IsChunkCacheValid()))
-            {
-                UpdateMatchingChunkCache();
-            }
-            return _QueryData->UnsafeGetMatchingChunkCache();
+            if (_DescriptionCount == 1)
+                return _Access->EntityQueryManager->GetCacheEntry(_CacheEntries[0])->Records;
+            return _Access->EntityQueryManager->GetCombinedEntry(_CacheEntries[_DescriptionCount])->Records;
         }
 
-        internal void UpdateMatchingChunkCache()
+        internal QueryChunks GetQueryChunks() => new QueryChunks(GetRecords());
+
+        // The chunks for a parallel job, whose workers start at arbitrary flat numbers.
+        internal QueryChunks GetQueryChunksForParallelJob()
         {
-            // This method is intended for tests of the chunk cache itself. Under normal operation,
-            // GetMatchingChunkCache() will check if the cache is valid, and rebuild it if not.
-            _QueryData->RebuildMatchingChunkCache();
+            var runningTotals = _DescriptionCount == 1
+                ? &_Access->EntityQueryManager->GetCacheEntry(_CacheEntries[0])->RunningTotals
+                : &_Access->EntityQueryManager->GetCombinedEntry(_CacheEntries[_DescriptionCount])->RunningTotals;
+            return new QueryChunks(GetRecords(), runningTotals);
         }
 
         internal static EntityQueryImpl* Allocate()
@@ -2012,12 +2016,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
             return unchecked((int)(long)__impl);
         }
 
-        static internal unsafe EntityQuery Construct(EntityQueryData* queryData, EntityDataAccess* access)
+        static internal unsafe EntityQuery Construct(EntityQueryData* queryData, EntityDataAccess* access, QueryDescription** descriptions, int descriptionCount, int* cacheEntries)
         {
             EntityQuery _result = default;
             var _ptr = EntityQueryImpl.Allocate();
             _result.__seqno = WorldUnmanaged.NextSequenceNumber.Data++;
-            _ptr->Construct(queryData, access, _result.__seqno);
+            _ptr->Construct(queryData, access, _result.__seqno, descriptions, descriptionCount, cacheEntries);
             _result.__impl = _ptr;
             // NOTE: The safety handle has to always be created and shouldn't be stripped using burst conditional code stripping,
             // so that creation of an EntityQuery always constructs the safety handle even when created from fully bursted code with safety turned off in the editor.
@@ -2030,7 +2034,15 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// Reports whether this query would currently select zero entities.
         /// </summary>
         /// <returns>True, if this EntityQuery matches zero existing entities. False, if it matches one or more entities.</returns>
-        public bool IsEmpty => _GetImpl()->IsEmpty;
+        public bool IsEmpty
+        {
+            get
+            {
+                var impl = _GetImpl();
+                using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.IsEmpty, impl);
+                return impl->IsEmpty;
+            }
+        }
 
         /// <summary>
         /// Reports whether this query would currently select zero entities. This will ignore any filters set on the EntityQuery.
@@ -2106,7 +2118,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// The EntityQuery must execute and apply any filters to calculate the entity count. If you are checking for whether the entity count equals zero, consider the more efficient IsEmpty property.
         /// </remarks>
         /// <returns>The number of entities based on the current EntityQuery properties.</returns>
-        public int CalculateEntityCount() => _GetImpl()->CalculateEntityCount();
+        public int CalculateEntityCount()
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CalculateEntityCount, impl);
+            return impl->CalculateEntityCount();
+        }
         /// <summary>
         /// Calculates the number of entities selected by this EntityQuery, ignoring any set filters.
         /// </summary>
@@ -2114,7 +2131,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// The EntityQuery must execute to calculate the entity count. If you are checking for whether the entity count equals zero, consider the more efficient IsEmptyIgnoreFilter property.
         /// </remarks>
         /// <returns>The number of entities based on the current EntityQuery properties.</returns>
-        public int CalculateEntityCountWithoutFiltering() => _GetImpl()->CalculateEntityCountWithoutFiltering();
+        public int CalculateEntityCountWithoutFiltering()
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CalculateEntityCountWithoutFiltering, impl);
+            return impl->CalculateEntityCountWithoutFiltering();
+        }
         /// <summary>
         /// Calculates the number of chunks that match this EntityQuery, taking into account all active query filters and enabled components.
         /// </summary>
@@ -2124,7 +2146,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// the required components enabled.
         /// </remarks>
         /// <returns>The number of chunks based on the current EntityQuery properties.</returns>
-        public int CalculateChunkCount() => _GetImpl()->CalculateChunkCount();
+        public int CalculateChunkCount()
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CalculateChunkCount, impl);
+            return impl->CalculateChunkCount();
+        }
         /// <summary>
         /// Calculates the number of chunks that match this EntityQuery, ignoring any set filters.
         /// </summary>
@@ -2132,7 +2159,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// The EntityQuery must execute to calculate the chunk count.
         /// </remarks>
         /// <returns>The number of chunks based on the current EntityQuery properties.</returns>
-        public int CalculateChunkCountWithoutFiltering() => _GetImpl()->CalculateChunkCountWithoutFiltering();
+        public int CalculateChunkCountWithoutFiltering()
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CalculateChunkCountWithoutFiltering, impl);
+            return impl->CalculateChunkCountWithoutFiltering();
+        }
         /// <summary>
         /// Generates an array which gives the index of each chunk relative to the set of chunks that currently match
         /// the query, after taking all active filtering into account.
@@ -2151,8 +2183,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// This function will automatically block until any running jobs which could affect its output have completed.
         /// For a non-blocking implementation, use <see cref="CalculateFilteredChunkIndexArrayAsync"/>.
         /// </remarks>
-        public NativeArray<int> CalculateFilteredChunkIndexArray(AllocatorManager.AllocatorHandle allocator) =>
-            _GetImpl()->CalculateFilteredChunkIndexArray(allocator);
+        public NativeArray<int> CalculateFilteredChunkIndexArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CalculateFilteredChunkIndexArray, impl);
+            return impl->CalculateFilteredChunkIndexArray(allocator);
+        }
         /// <summary>
         /// Asynchronously generates an array which gives the index of each chunk relative to the set of chunks that
         /// currently match the query, after taking all active filtering into account.
@@ -2176,8 +2212,13 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// This function will automatically insert dependencies any running jobs which could affect its output.
         /// For a blocking implementation, use <see cref="CalculateFilteredChunkIndexArray"/>.
         /// </remarks>
-        public NativeArray<int> CalculateFilteredChunkIndexArrayAsync(AllocatorManager.AllocatorHandle allocator, JobHandle additionalInputDep, out JobHandle outJobHandle) =>
-            _GetImpl()->CalculateFilteredChunkIndexArrayAsync(allocator, additionalInputDep, out outJobHandle); /// <summary>
+        public NativeArray<int> CalculateFilteredChunkIndexArrayAsync(AllocatorManager.AllocatorHandle allocator, JobHandle additionalInputDep, out JobHandle outJobHandle)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CalculateFilteredChunkIndexArrayAsync, impl);
+            return impl->CalculateFilteredChunkIndexArrayAsync(allocator, additionalInputDep, out outJobHandle);
+        }
+        /// <summary>
         /// Generates an array containing the index of the first entity within each chunk, relative to the list of
         /// entities that match this query.
         /// </summary>
@@ -2193,8 +2234,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// This function will automatically block until any running jobs which could affect its output have completed.
         /// For a non-blocking implementation, use <see cref="CalculateBaseEntityIndexArrayAsync"/>.
         /// </remarks>
-        public NativeArray<int> CalculateBaseEntityIndexArray(AllocatorManager.AllocatorHandle allocator) =>
-            _GetImpl()->CalculateBaseEntityIndexArray(allocator);
+        public NativeArray<int> CalculateBaseEntityIndexArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CalculateBaseEntityIndexArray, impl);
+            return impl->CalculateBaseEntityIndexArray(allocator);
+        }
         /// <summary>
         /// Asynchronously generates an array containing the index of the first entity within each chunk, relative to the
         /// list of entities that match this query.
@@ -2216,8 +2261,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// This function will automatically insert dependencies any running jobs which could affect its output.
         /// For a blocking implementation, use <see cref="CalculateBaseEntityIndexArray"/>.
         /// </remarks>
-        public NativeArray<int> CalculateBaseEntityIndexArrayAsync(AllocatorManager.AllocatorHandle allocator, JobHandle additionalInputDep, out JobHandle outJobHandle) =>
-            _GetImpl()->CalculateBaseEntityIndexArrayAsync(allocator, additionalInputDep, out outJobHandle);
+        public NativeArray<int> CalculateBaseEntityIndexArrayAsync(AllocatorManager.AllocatorHandle allocator, JobHandle additionalInputDep, out JobHandle outJobHandle)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CalculateBaseEntityIndexArrayAsync, impl);
+            return impl->CalculateBaseEntityIndexArrayAsync(allocator, additionalInputDep, out outJobHandle);
+        }
         /// <summary>
         ///     Index of a ComponentType in this EntityQuery's RequiredComponents list.
         ///     For example, you have a EntityQuery that requires these ComponentTypes: ObjectPosition, ObjectVelocity, and Color.
@@ -2245,8 +2294,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// that gathers the chunks matching this EntityQuery.
         /// </param>
         /// <returns>NativeArray of all the chunks containing entities matching this query.</returns>
-        [Obsolete("This method is not actually asynchronous. Use ToArchetypeChunkListAsync() instead. (RemovedAfter Entities 1.0)")]
-        public NativeArray<ArchetypeChunk> CreateArchetypeChunkArrayAsync(AllocatorManager.AllocatorHandle allocator, out JobHandle outJobHandle) => _GetImpl()->CreateArchetypeChunkArrayAsync(allocator, out outJobHandle);
+        [Obsolete("This method is not actually asynchronous. Use ToArchetypeChunkListAsync() instead. (RemovedAfter Entities 1.0)", true)]
+        public NativeArray<ArchetypeChunk> CreateArchetypeChunkArrayAsync(AllocatorManager.AllocatorHandle allocator, out JobHandle outJobHandle)
+        {
+            throw new NotSupportedException("CreateArchetypeChunkArrayAsync is no longer supported. Use ToArchetypeChunkListAsync() instead.");
+        }
 
         /// <summary>
         /// Asynchronously creates a list of the chunks containing entities matching this EntityQuery.
@@ -2261,7 +2313,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// the list's `Length` property) must not be accessed before <paramref name="outJobHandle"/> has been completed. To pass this list to a job
         /// that expects a <see cref="NativeArray{T}"/>, use <see cref="NativeList{T}.AsDeferredJobArray"/>.</returns>
         /// <seealso cref="IJobParallelForDefer"/>
-        public NativeList<ArchetypeChunk> ToArchetypeChunkListAsync(AllocatorManager.AllocatorHandle allocator, out JobHandle outJobHandle) => _GetImpl()->ToArchetypeChunkListAsync(allocator, default(JobHandle), out outJobHandle);
+        public NativeList<ArchetypeChunk> ToArchetypeChunkListAsync(AllocatorManager.AllocatorHandle allocator, out JobHandle outJobHandle)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToArchetypeChunkListAsync, impl);
+            return impl->ToArchetypeChunkListAsync(allocator, default(JobHandle), out outJobHandle);
+        }
 
         /// <summary>
         /// Asynchronously creates a list of the chunks containing entities matching this EntityQuery.
@@ -2280,7 +2337,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// the list's `Length` property) must not be accessed before <paramref name="outJobHandle"/> has been completed. To pass this list to a job
         /// that expects a <see cref="NativeArray{T}"/>, use <see cref="NativeList{T}.AsDeferredJobArray"/>.</returns>
         /// <seealso cref="IJobParallelForDefer"/>
-        public NativeList<ArchetypeChunk> ToArchetypeChunkListAsync(AllocatorManager.AllocatorHandle allocator, JobHandle additionalInputDep, out JobHandle outJobHandle) => _GetImpl()->ToArchetypeChunkListAsync(allocator, additionalInputDep, out outJobHandle);
+        public NativeList<ArchetypeChunk> ToArchetypeChunkListAsync(AllocatorManager.AllocatorHandle allocator, JobHandle additionalInputDep, out JobHandle outJobHandle)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToArchetypeChunkListAsync, impl);
+            return impl->ToArchetypeChunkListAsync(allocator, additionalInputDep, out outJobHandle);
+        }
 
         /// <summary>
         /// Synchronously creates an array of the chunks containing entities matching this EntityQuery.
@@ -2290,12 +2352,22 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// in the output list.</remarks>
         /// <param name="allocator">Allocator to use for the array.</param>
         /// <returns>A NativeArray of all the chunks in this matched by this query.</returns>
-        public NativeArray<ArchetypeChunk> ToArchetypeChunkArray(AllocatorManager.AllocatorHandle allocator) => _GetImpl()->ToArchetypeChunkArray(allocator);
+        public NativeArray<ArchetypeChunk> ToArchetypeChunkArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToArchetypeChunkArray, impl);
+            return impl->ToArchetypeChunkArray(allocator);
+        }
         /// <summary> Obsolete. Use <see cref="ToArchetypeChunkArray"/> instead.</summary>
         /// <param name="allocator">Allocator to use for the array.</param>
         /// <returns>A NativeArray of all the chunks in this matched by this query.</returns>
         [Obsolete("This method has been renamed to ToArchetypeChunkArray. (RemovedAfter Entities 1.0) (UnityUpgradable) -> ToArchetypeChunkArray(*)")]
-        public NativeArray<ArchetypeChunk> CreateArchetypeChunkArray(AllocatorManager.AllocatorHandle allocator) => _GetImpl()->ToArchetypeChunkArray(allocator);
+        public NativeArray<ArchetypeChunk> CreateArchetypeChunkArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToArchetypeChunkArray, impl);
+            return impl->ToArchetypeChunkArray(allocator);
+        }
 
         /// <summary>
         /// Synchronously fills a list with the chunks containing entities matching this EntityQuery.
@@ -2304,7 +2376,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// components, chunks that contain zero entities with all relevant components enabled will not be included
         /// in the output list.</remarks>
         /// <param name="archetypeChunkList">The destination list to be filled.</param>
-        public void ToArchetypeChunkList(NativeList<ArchetypeChunk> archetypeChunkList) => _GetImpl()->ToArchetypeChunkList(archetypeChunkList);
+        public void ToArchetypeChunkList(NativeList<ArchetypeChunk> archetypeChunkList)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToArchetypeChunkList, impl);
+            impl->ToArchetypeChunkList(archetypeChunkList);
+        }
 
         /// <summary>
         /// Obsolete. Use <see cref="ToEntityListAsync"/> instead.
@@ -2319,7 +2396,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// accessed before <paramref name="jobhandle"/> has been completed.</returns>
         /// <exception cref="InvalidOperationException">Thrown in the query contains any enableable components.</exception>
         [Obsolete("This method does not correctly support enableable components, and is generally unsafe. Use ToEntityListAsync() instead. (RemovedAfter Entities 1.0)")]
-        public NativeArray<Entity> ToEntityArrayAsync(AllocatorManager.AllocatorHandle allocator, out JobHandle jobhandle) => _GetImpl()->ToEntityArrayAsync(allocator, out jobhandle, this);
+        public NativeArray<Entity> ToEntityArrayAsync(AllocatorManager.AllocatorHandle allocator, out JobHandle jobhandle)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToEntityListAsync, impl);
+            return impl->ToEntityArrayAsync(allocator, out jobhandle, this);
+        }
 
         /// <summary>
         /// Creates (and asynchronously populates) a NativeList containing the selected entities. Since the exact number of entities matching
@@ -2341,7 +2423,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <returns>A list containing all the entities selected by the query. The contents of this list (including
         /// the list's `Length` property) must not be accessed before <paramref name="outJobHandle"/> has been completed. To pass this list to a job
         /// that expects a <see cref="NativeArray{T}"/>, use <see cref="NativeList{T}.AsDeferredJobArray"/>.</returns>
-        public NativeList<Entity> ToEntityListAsync(AllocatorManager.AllocatorHandle allocator, out JobHandle outJobHandle) => _GetImpl()->ToEntityListAsync(allocator, this, default(JobHandle), out outJobHandle);
+        public NativeList<Entity> ToEntityListAsync(AllocatorManager.AllocatorHandle allocator, out JobHandle outJobHandle)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToEntityListAsync, impl);
+            return impl->ToEntityListAsync(allocator, this, default(JobHandle), out outJobHandle);
+        }
 
         /// <summary>
         /// Creates (and asynchronously populates) a NativeList containing the selected entities. Since the exact number of entities matching
@@ -2361,7 +2448,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <returns>A list containing all the entities selected by the query. The contents of this list (including
         /// the list's `Length` property) must not be accessed before <paramref name="outJobHandle"/> has been completed. To pass this list to a job
         /// that expects a <see cref="NativeArray{T}"/>, use <see cref="NativeList{T}.AsDeferredJobArray"/>.</returns>
-        public NativeList<Entity> ToEntityListAsync(AllocatorManager.AllocatorHandle allocator, JobHandle additionalInputDep, out JobHandle outJobHandle) => _GetImpl()->ToEntityListAsync(allocator, this, additionalInputDep, out outJobHandle);
+        public NativeList<Entity> ToEntityListAsync(AllocatorManager.AllocatorHandle allocator, JobHandle additionalInputDep, out JobHandle outJobHandle)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToEntityListAsync, impl);
+            return impl->ToEntityListAsync(allocator, this, additionalInputDep, out outJobHandle);
+        }
 
         /// <summary>
         /// Creates a NativeArray containing the selected entities.
@@ -2377,7 +2469,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// </remarks>
         /// <param name="allocator">The type of memory to allocate.</param>
         /// <returns>An array containing all the entities selected by the EntityQuery.</returns>
-        public NativeArray<Entity> ToEntityArray(AllocatorManager.AllocatorHandle allocator) => _GetImpl()->ToEntityArray(allocator, this);
+        public NativeArray<Entity> ToEntityArray(AllocatorManager.AllocatorHandle allocator)
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToEntityArray, impl);
+            return impl->ToEntityArray(allocator, this);
+        }
 
         /// <summary>
         /// Obsolete. Use <see cref="ToComponentDataListAsync"/> instead.
@@ -2396,8 +2493,13 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <exception cref="InvalidOperationException">Thrown if <typeparamref name="T"/> is not part of the query.</exception>
         [Obsolete("This method does not correctly support enableable components, and is generally unsafe. Use ToComponentDataListAsync() instead. (RemovedAfter Entities 1.0)")]
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
-        public NativeArray<T> ToComponentDataArrayAsync<T>(AllocatorManager.AllocatorHandle allocator, out JobHandle jobhandle)            where T : unmanaged, IComponentData
-            => _GetImpl()->ToComponentDataArrayAsync<T>(allocator, out jobhandle, this);
+        public NativeArray<T> ToComponentDataArrayAsync<T>(AllocatorManager.AllocatorHandle allocator, out JobHandle jobhandle)
+            where T : unmanaged, IComponentData
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToComponentDataListAsync, impl);
+            return impl->ToComponentDataArrayAsync<T>(allocator, out jobhandle, this);
+        }
 
         /// <summary>
         /// Creates (and asynchronously populates) a NativeList containing the value of component <typeparamref name="T"/>
@@ -2418,7 +2520,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public NativeList<T> ToComponentDataListAsync<T>(AllocatorManager.AllocatorHandle allocator, out JobHandle outJobHandle)
             where T : unmanaged, IComponentData
-            => _GetImpl()->ToComponentDataListAsync<T>(allocator, this, default(JobHandle), out outJobHandle);
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToComponentDataListAsync, impl);
+            return impl->ToComponentDataListAsync<T>(allocator, this, default(JobHandle), out outJobHandle);
+        }
 
         /// <summary>
         /// Creates (and asynchronously populates) a NativeList containing the value of component <typeparamref name="T"/>
@@ -2438,7 +2544,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public NativeList<T> ToComponentDataListAsync<T>(AllocatorManager.AllocatorHandle allocator, JobHandle additionalInputDep, out JobHandle outJobHandle)
             where T : unmanaged, IComponentData
-            => _GetImpl()->ToComponentDataListAsync<T>(allocator, this, additionalInputDep, out outJobHandle);
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToComponentDataListAsync, impl);
+            return impl->ToComponentDataListAsync<T>(allocator, this, additionalInputDep, out outJobHandle);
+        }
 
         /// <summary>
         /// Creates a NativeArray containing the components of type T for the selected entities.
@@ -2453,8 +2563,13 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// For a non-blocking variant, see <see cref="ToComponentDataListAsync{T}"/></remarks>
         /// <exception cref="InvalidOperationException">Thrown if <typeparamref name="T"/> is not part of the query.</exception>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
-        public NativeArray<T> ToComponentDataArray<T>(AllocatorManager.AllocatorHandle allocator)            where T : unmanaged, IComponentData
-            => _GetImpl()->ToComponentDataArray<T>(allocator, this);
+        public NativeArray<T> ToComponentDataArray<T>(AllocatorManager.AllocatorHandle allocator)
+            where T : unmanaged, IComponentData
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ToComponentDataArray, impl);
+            return impl->ToComponentDataArray<T>(allocator, this);
+        }
 
         /// <summary>
         /// Copies the values of component type <typeparamref name="T"/> in a NativeArray into the entities matched by this query.
@@ -2465,8 +2580,13 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// For a non-blocking variant, see <see cref="CopyFromComponentDataListAsync{T}(Unity.Collections.NativeList{T},out Unity.Jobs.JobHandle)"/></remarks>
         /// <exception cref="InvalidOperationException">Thrown if <typeparamref name="T"/> is not part of the query.</exception>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
-        public void CopyFromComponentDataArray<T>(NativeArray<T> componentDataArray)            where T : unmanaged, IComponentData
-            => _GetImpl()->CopyFromComponentDataArray<T>(componentDataArray, this);
+        public void CopyFromComponentDataArray<T>(NativeArray<T> componentDataArray)
+            where T : unmanaged, IComponentData
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CopyFromComponentDataArray, impl);
+            impl->CopyFromComponentDataArray<T>(componentDataArray, this);
+        }
 
         /// <summary>
         /// Obsolete. Use <see cref="CopyFromComponentDataListAsync"/> instead. </summary>
@@ -2486,7 +2606,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public void CopyFromComponentDataArrayAsync<T>(NativeArray<T> componentDataArray, out JobHandle jobHandle)
             where T : unmanaged, IComponentData
-            => _GetImpl()->CopyFromComponentDataArrayAsync<T>(componentDataArray, out jobHandle, this);
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CopyFromComponentDataListAsync, impl);
+            impl->CopyFromComponentDataArrayAsync<T>(componentDataArray, out jobHandle, this);
+        }
 
         /// <summary>
         /// Asynchronously copies the values of component type <typeparamref name="T"/> in a NativeList into the entities
@@ -2504,7 +2628,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public void CopyFromComponentDataListAsync<T>(NativeList<T> componentDataList, out JobHandle outJobHandle)
             where T : unmanaged, IComponentData
-            => _GetImpl()->CopyFromComponentDataListAsync<T>(componentDataList, this, default(JobHandle), out outJobHandle);
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CopyFromComponentDataListAsync, impl);
+            impl->CopyFromComponentDataListAsync<T>(componentDataList, this, default(JobHandle), out outJobHandle);
+        }
 
         /// <summary>
         /// Asynchronously copies the values of component type <typeparamref name="T"/> in a NativeList into the entities
@@ -2521,7 +2649,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public void CopyFromComponentDataListAsync<T>(NativeList<T> componentDataList, JobHandle additionalInputDep, out JobHandle outJobHandle)
             where T : unmanaged, IComponentData
-            => _GetImpl()->CopyFromComponentDataListAsync<T>(componentDataList, this, additionalInputDep, out outJobHandle);
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.CopyFromComponentDataListAsync, impl);
+            impl->CopyFromComponentDataListAsync<T>(componentDataList, this, additionalInputDep, out outJobHandle);
+        }
 
         /// <summary>
         /// Attempts to retrieve the single entity that this query matches.
@@ -2529,7 +2661,12 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <returns>The only entity matching this query.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the number of entities that match this query is not exactly one.</exception>
         /// <exception cref="InvalidOperationException">Thrown the query references any enableable components.</exception>
-        public Entity GetSingletonEntity() => _GetImpl()->GetSingletonEntity();
+        public Entity GetSingletonEntity()
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.GetSingletonEntity, impl);
+            return impl->GetSingletonEntity();
+        }
 
         /// <summary>
         /// Gets the value of a singleton component. Note that if querying a singleton component from a system-associated entity,
@@ -2544,8 +2681,13 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <seealso cref="GetSingletonBuffer"/>
         /// <seealso cref="ComponentSystemBase.GetSingleton{T}"/>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
-        public T GetSingleton<T>() where T : unmanaged, IComponentData
-            => _GetImpl()->GetSingleton<T>();
+        public T GetSingleton<T>()
+            where T : unmanaged, IComponentData
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.GetSingleton, impl);
+            return impl->GetSingleton<T>();
+        }
 
         /// <summary>
         /// Gets a reference to a singleton component, for read/write access. Note that if querying a singleton component from a
@@ -2576,8 +2718,13 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <seealso cref="GetSingletonBuffer{T}"/>
         /// <seealso cref="ComponentSystemBase.GetSingleton{T}"/>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
-        public RefRW<T> GetSingletonRW<T>() where T : unmanaged, IComponentData
-            => _GetImpl()->GetSingletonRW<T>();
+        public RefRW<T> GetSingletonRW<T>()
+            where T : unmanaged, IComponentData
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.GetSingletonRW, impl);
+            return impl->GetSingletonRW<T>();
+        }
 
         /// <summary>
         /// Gets the value of a singleton component, and returns whether or not a singleton component of the specified type matches inside the <see cref="EntityQuery"/>.
@@ -2591,7 +2738,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public bool TryGetSingleton<T>(out T value)
             where T : unmanaged, IComponentData
-            => _GetImpl()->TryGetSingleton(out value);
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.TryGetSingleton, impl);
+            return impl->TryGetSingleton(out value);
+        }
 
         /// <summary>
         /// Gets a reference to the value of a singleton component, and returns whether or not a singleton component of the specified type matches inside the <see cref="EntityQuery"/>.
@@ -2608,8 +2759,13 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <seealso cref="GetSingletonBuffer{T}"/>
         /// <seealso cref="ComponentSystemBase.GetSingleton{T}"/>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
-        public bool TryGetSingletonRW<T>(out RefRW<T> value) where T : unmanaged, IComponentData
-            => _GetImpl()->TryGetSingletonRW<T>(out value);
+        public bool TryGetSingletonRW<T>(out RefRW<T> value)
+            where T : unmanaged, IComponentData
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.TryGetSingletonRW, impl);
+            return impl->TryGetSingletonRW<T>(out value);
+        }
 
         /// <summary>
         /// Checks whether a singleton component of the specified type exists. Note that if querying a singleton component from a system-associated entity,
@@ -2629,7 +2785,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <exception cref="InvalidOperationException">Thrown if the number of entities that match this query is greater than one.</exception>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public bool HasSingleton<T>()
-            => _GetImpl()->HasSingleton<T>();
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.HasSingleton, impl);
+            return impl->HasSingleton<T>();
+        }
 
         /// <summary>
         /// Gets the value of a singleton buffer component, and returns whether or not a singleton buffer component of the specified type exists in the <see cref="World"/>.
@@ -2644,7 +2804,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleBufferElement) })]
         public bool TryGetSingletonBuffer<T>(out DynamicBuffer<T> value, bool isReadOnly = false)
             where T : unmanaged, IBufferElementData
-            => _GetImpl()->TryGetSingletonBuffer(out value, isReadOnly);
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.TryGetSingletonBuffer, impl);
+            return impl->TryGetSingletonBuffer(out value, isReadOnly);
+        }
 
         /// <summary>
         /// Gets the singleton Entity, and returns whether or not a singleton <see cref="Entity"/> of the specified type exists in the <see cref="World"/>.
@@ -2658,7 +2822,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <exception cref="InvalidOperationException">Thrown the query references any enableable components.</exception>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
         public bool TryGetSingletonEntity<T>(out Entity value)
-            => _GetImpl()->TryGetSingletonEntity<T>(out value);
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.TryGetSingletonEntity, impl);
+            return impl->TryGetSingletonEntity<T>(out value);
+        }
 
         /// <summary>
         /// Gets the value of a singleton buffer component. Note that if querying a singleton buffer component from a system-associated entity,
@@ -2675,7 +2843,11 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <seealso cref="ComponentSystemBase.GetSingleton{T}"/>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleBufferElement) })]
         public DynamicBuffer<T> GetSingletonBuffer <T>(bool isReadOnly = false) where T : unmanaged, IBufferElementData
-            => _GetImpl()->GetSingletonBuffer<T>(isReadOnly);
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.GetSingletonBuffer, impl);
+            return impl->GetSingletonBuffer<T>(isReadOnly);
+        }
 
         /// <summary>
         /// Sets the value of a singleton component. Note that if querying a singleton component from a system-associated entity,
@@ -2720,8 +2892,13 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// <seealso cref="GetSingleton{T}"/>
         /// <seealso cref="GetSingletonEntity"/>
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleComponentData) })]
-        public void SetSingleton<T>(T value) where T : unmanaged, IComponentData
-            => _GetImpl()->SetSingleton<T>(value);
+        public void SetSingleton<T>(T value)
+            where T : unmanaged, IComponentData
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.SetSingleton, impl);
+            impl->SetSingleton<T>(value);
+        }
 
         /// <summary>
         /// Obsolete. Use <see cref="EntityManager.SetComponentEnabled{T}(Unity.Entities.EntityQuery,bool)"/> instead.
@@ -2739,8 +2916,13 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         /// before performing the requested operation.</remarks>
         [Obsolete("This method has been deprecated. Use EntityManager.SetComponentEnabled<T>(Unity.Entities.EntityQuery, bool) instead. (RemovedAfter Entities 1.0)")]
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(BurstCompatibleEnableableComponent) })]
-        public void SetEnabledBitsOnAllChunks<T>(bool value) where T : struct, IEnableableComponent
-            => _GetImpl()->SetEnabledBitsOnAllChunks(TypeManager.GetTypeIndex<T>(), value);
+        public void SetEnabledBitsOnAllChunks<T>(bool value)
+            where T : struct, IEnableableComponent
+        {
+            var impl = _GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.SetEnabledBitsOnAllChunks, impl);
+            impl->SetEnabledBitsOnAllChunks(TypeManager.GetTypeIndex<T>(), value);
+        }
 
         /// <summary>
         /// Obsolete. Use <see cref="CompareQuery"/> instead.
@@ -2992,14 +3174,6 @@ First chunk: entityCount={matchingChunkCache.ChunkIndices[0].Count}, archetype={
         [ExcludeFromBurstCompatTesting("Returns class")]
         [Obsolete("A query can have multiple descriptions; this method only returns the first one. Use GetEntityQueryDescs() to return them all. (RemovedAfter Entities 2.0)", false)]
         public EntityQueryDesc GetEntityQueryDesc() => _GetImpl()->GetEntityQueryDesc();
-
-        // These methods are intended for chunk-cache self-test code.
-        // Under normal operation, most code should use EntityQueryImpl.GetMatchingChunkCache() to access the cached chunk list.
-        // This method will automatically update the cache if it is stale.
-        internal void InvalidateCache() => _GetImpl()->_QueryData->InvalidateChunkCache();
-        internal void ForceUpdateCache() => _GetImpl()->UpdateMatchingChunkCache();
-        internal void CheckChunkListCacheConsistency(bool forceCheckInvalidCache = false) => _GetImpl()->_QueryData->CheckChunkListCacheConsistency(forceCheckInvalidCache);
-        internal bool IsCacheValid => _GetImpl()->_QueryData->IsChunkCacheValid();
 
         unsafe internal EntityQueryImpl* _Debugger_GetImpl()
         {

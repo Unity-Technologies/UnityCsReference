@@ -17,7 +17,6 @@ namespace UnityEditor.UIElements.StyleSheets
         Internal
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     enum StyleSheetImportErrorCode
     {
         None,

@@ -125,7 +125,6 @@ interface IFieldSearchCompleter
 /// The data source, filtering and matching logic can be customized through callbacks.
 /// </summary>
 /// <typeparam name="TData">The data type of the result of the completion</typeparam>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 class FieldSearchCompleter<TData> : IFieldSearchCompleter
 {
     const int k_ItemHeight = 20;
@@ -608,8 +607,7 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
         if (window == null)
             return;
 
-        UpdateAnchoredControlScreenPosition();
-        m_PreviousWindowPosition ??= GetHostScreenPosition(window);
+        m_PreviousWindowPosition = GetHostScreenPosition(window);
         window.OnWindowGeometryChanged += OnWindowGeometryChanged;
     }
 
@@ -630,8 +628,6 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
 
         if (window == null || window.rootVisualElement == null)
             return;
-
-        UpdateAnchoredControlScreenPosition();
 
         // If the window is moved, we need to hide the popup
         var windowPosition = GetHostScreenPosition(window);
@@ -716,17 +712,6 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
         }
     }
 
-    // This has to be called during an event to ensure that GUIUtility.GUIToScreenRect() uses the window containing the attached text field.
-    void UpdateAnchoredControlScreenPosition()
-    {
-        var field = m_FieldAdapter?.VisualInput;
-
-        if (field != null)
-        {
-            field.SetProperty(Unity.UIToolkit.Editor.Popup.k_AnchoredElementCachedScreenRectVEPropertyName, GUIUtility.GUIToScreenRect(field.worldBound));
-        }
-    }
-
     protected virtual FieldSearchCompleterPopup CreatePopup() => new FieldSearchCompleterPopup();
 
     static bool DefaultMatcher(string filter, TData data)
@@ -779,7 +764,12 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
             return;
         }
 
+        OnFilterTextChanged(text);
         SetFilter(GetFilterFromText(text));
+    }
+
+    protected virtual void OnFilterTextChanged(string text)
+    {
     }
 
     private string GetFilterFromText(string text)
@@ -861,7 +851,6 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
         {
             if (m_FieldAdapter.IsReadOnly)
                 return;
-            UpdateAnchoredControlScreenPosition();
             OnTextChanged();
         }
     }
@@ -983,7 +972,6 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
             return;
 
         EnsurePopupIsCreated();
-        UpdateAnchoredControlScreenPosition();
 
         // If the users presses DownArrow key but the popup is not visible then search using the current text
         if (e.keyCode == KeyCode.KeypadEnter || e.keyCode == KeyCode.Return || e.character == 3 || e.character == '\n')

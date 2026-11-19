@@ -81,7 +81,7 @@ namespace Unity.Collections
         /// <value>The value stored in this reference.</value>
         public T Value
         {
-            get
+            readonly get
             {
                 AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
                 return *(T*)m_Data;
@@ -178,7 +178,7 @@ namespace Unity.Collections
         /// Copy the value of this reference to another reference.
         /// </summary>
         /// <param name="reference">The reference to copy to.</param>
-        public void CopyTo(NativeReference<T> reference)
+        public readonly void CopyTo(NativeReference<T> reference)
         {
             Copy(reference, this);
         }
@@ -189,7 +189,7 @@ namespace Unity.Collections
         /// <param name="other">A reference to compare with.</param>
         /// <returns>True if the value stored in this reference is equal to the value stored in another reference.</returns>
         [ExcludeFromBurstCompatTesting("Equals boxes because Value does not implement IEquatable<T>")]
-        public bool Equals(NativeReference<T> other)
+        public readonly bool Equals(NativeReference<T> other)
         {
             return Value.Equals(other.Value);
         }
@@ -201,7 +201,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare with.</param>
         /// <returns>True if the value stored in this reference is equal to the object.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj))
             {
@@ -214,7 +214,7 @@ namespace Unity.Collections
         /// Returns the hash code of this reference.
         /// </summary>
         /// <returns>The hash code of this reference.</returns>
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             return Value.GetHashCode();
         }
@@ -258,9 +258,9 @@ namespace Unity.Collections
         /// Returns a read-only reference aliasing the value of this reference.
         /// </summary>
         /// <returns>A read-only reference aliasing the value of this reference.</returns>
-        public ReadOnly AsReadOnly()
+        public readonly ReadOnly AsReadOnly()
         {
-            return new ReadOnly(m_Data, ref m_Safety);
+            return new ReadOnly(m_Data, m_Safety);
         }
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace Unity.Collections
             internal static readonly SharedStatic<int> s_staticSafetyId = SharedStatic<int>.GetOrCreate<ReadOnly>();
 
             [GenerateTestsForBurstCompatibility(CompileTarget = GenerateTestsForBurstCompatibilityAttribute.BurstCompatibleCompileTarget.Editor)]
-            internal ReadOnly(void* data, ref AtomicSafetyHandle safety)
+            internal ReadOnly(void* data, in AtomicSafetyHandle safety)
             {
                 m_Data = data;
                 m_Safety = safety;

@@ -10,7 +10,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static class VisualElementAssetExtensions
 {
     public static UxmlObjectAsset FindUxmlBinding(this VisualElementAsset element, string property)

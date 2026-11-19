@@ -262,12 +262,12 @@ namespace Unity.Jobs
         internal static extern bool CompleteManualJobFence(ref JobHandle handle);
 
         ///<exclude />
-        public bool Equals(JobHandle other)
+        public readonly bool Equals(JobHandle other)
         {
             return jobGroup == other.jobGroup;
         }
 
-        public override bool Equals(Object obj)
+        public readonly override bool Equals(Object obj)
         {
             return obj is JobHandle && this == (JobHandle)obj;
         }
@@ -284,12 +284,12 @@ namespace Unity.Jobs
             return !(a == b);
         }
 
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             return jobGroup.GetHashCode();
         }
 
-        public override string ToString() => jobGroup.ToString();
+        public readonly override string ToString() => jobGroup.ToString();
     }
 }
 

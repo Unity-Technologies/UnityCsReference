@@ -39,6 +39,9 @@ namespace UnityEditor.ShaderVariantAnalyser
                         System.IO.Directory.Delete(dir, true);
                 }
             }
+
+            if (EditorWindow.HasOpenInstances<ShaderVariantAnalyser>())
+                EditorWindow.GetWindow<ShaderVariantAnalyser>().RefreshBuildList();
         }
     }
 }

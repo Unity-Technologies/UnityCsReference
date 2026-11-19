@@ -79,6 +79,7 @@ internal readonly record struct VisualTreeAssetEditingContext
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static bool ValidateSubDocumentIsPartOrMainAssetHierarchy(VisualTreeAsset visualTreeAsset, Span<TemplateAsset> subDocumentPath)
     {
         if (subDocumentPath == null || subDocumentPath.Length == 0)

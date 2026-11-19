@@ -69,7 +69,7 @@ namespace Unity.Collections
         /// The key.
         /// </summary>
         /// <value>The key. If this KeyValue is Null, returns the default of TKey.</value>
-        public TKey Key
+        public readonly TKey Key
         {
             get
             {
@@ -85,7 +85,7 @@ namespace Unity.Collections
         /// <summary>
         /// Value of key/value pair.
         /// </summary>
-        public ref TValue Value
+        public readonly ref TValue Value
         {
             get
             {
@@ -102,7 +102,7 @@ namespace Unity.Collections
         /// <param name="key">Outputs the key. If this KeyValue is Null, outputs the default of TKey.</param>
         /// <param name="value">Outputs the value. If this KeyValue is Null, outputs the default of TValue.</param>
         /// <returns>True if the key-value pair is valid.</returns>
-        public bool GetKeyValue(out TKey key, out TValue value)
+        public readonly bool GetKeyValue(out TKey key, out TValue value)
         {
             if (m_Index != -1)
             {
@@ -348,7 +348,7 @@ namespace Unity.Collections
         /// <param name="key">The key to look up.</param>
         /// <param name="item">Outputs the value associated with the key. Outputs default if the key was not present.</param>
         /// <returns>True if the key was present.</returns>
-        public bool TryGetValue(TKey key, out TValue item)
+        public readonly bool TryGetValue(TKey key, out TValue item)
         {
             CheckRead();
             return m_Data->TryGetValue(key, out item);
@@ -359,7 +359,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="key">The key to look up.</param>
         /// <returns>True if the key was present.</returns>
-        public bool ContainsKey(TKey key)
+        public readonly bool ContainsKey(TKey key)
         {
             CheckRead();
             return -1 != m_Data->Find(key);
@@ -383,7 +383,7 @@ namespace Unity.Collections
         /// <exception cref="ArgumentException">For getting, thrown if the key was not present.</exception>
         public TValue this[TKey key]
         {
-            get
+            readonly get
             {
                 CheckRead();
 
@@ -416,7 +416,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array with a copy of all this hash map's keys (in no particular order).</returns>
-        public NativeArray<TKey> GetKeyArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<TKey> GetKeyArray(AllocatorManager.AllocatorHandle allocator)
         {
             CheckRead();
             return m_Data->GetKeyArray(allocator);
@@ -427,7 +427,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array with a copy of all this hash map's values (in no particular order).</returns>
-        public NativeArray<TValue> GetValueArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<TValue> GetValueArray(AllocatorManager.AllocatorHandle allocator)
         {
             CheckRead();
             return m_Data->GetValueArray<TValue>(allocator);
@@ -439,7 +439,7 @@ namespace Unity.Collections
         /// <remarks>The key-value pairs are copied in no particular order. For all `i`, `Values[i]` will be the value associated with `Keys[i]`.</remarks>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>A NativeKeyValueArrays with a copy of all this hash map's keys and values.</returns>
-        public NativeKeyValueArrays<TKey, TValue> GetKeyValueArrays(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeKeyValueArrays<TKey, TValue> GetKeyValueArrays(AllocatorManager.AllocatorHandle allocator)
         {
             CheckRead();
             return m_Data->GetKeyValueArrays<TValue>(allocator);
@@ -449,7 +449,7 @@ namespace Unity.Collections
         /// Returns an enumerator over the key-value pairs of this hash map.
         /// </summary>
         /// <returns>An enumerator over the key-value pairs of this hash map.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             AtomicSafetyHandle.CheckGetSecondaryDataPointerAndThrow(m_Safety);
             var ash = m_Safety;
@@ -466,7 +466,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<KVPair<TKey, TValue>> IEnumerable<KVPair<TKey, TValue>>.GetEnumerator()
+        readonly IEnumerator<KVPair<TKey, TValue>> IEnumerable<KVPair<TKey, TValue>>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -476,7 +476,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -499,7 +499,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next key-value pair.
@@ -525,7 +525,7 @@ namespace Unity.Collections
             /// The current key-value pair.
             /// </summary>
             /// <value>The current key-value pair.</value>
-            public KVPair<TKey, TValue> Current
+            public readonly KVPair<TKey, TValue> Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_Enumerator.GetCurrent<TValue>();
@@ -534,7 +534,7 @@ namespace Unity.Collections
             /// <summary>
             /// Gets the element at the current position of the enumerator in the container.
             /// </summary>
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -542,9 +542,9 @@ namespace Unity.Collections
         /// </summary>
         /// <remarks>ReadOnly containers point to the same underlying data as the NativeHashMap it is made from.</remarks>
         /// <returns>ReadOnly instance for this.</returns>
-        public ReadOnly AsReadOnly()
+        public readonly ReadOnly AsReadOnly()
         {
-            return new ReadOnly(ref this);
+            return new ReadOnly(this);
         }
 
         /// <summary>
@@ -562,7 +562,7 @@ namespace Unity.Collections
             AtomicSafetyHandle m_Safety;
             internal static readonly SharedStatic<int> s_staticSafetyId = SharedStatic<int>.GetOrCreate<ReadOnly>();
 
-            internal ReadOnly(ref NativeHashMap<TKey, TValue> data)
+            internal ReadOnly(in NativeHashMap<TKey, TValue> data)
             {
                 m_Data = data.m_Data;
                 m_Safety = data.m_Safety;
@@ -727,7 +727,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator<KVPair<TKey, TValue>> IEnumerable<KVPair<TKey, TValue>>.GetEnumerator()
+            readonly IEnumerator<KVPair<TKey, TValue>> IEnumerable<KVPair<TKey, TValue>>.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -737,7 +737,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -771,19 +771,19 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void ThrowKeyNotPresent(TKey key)
+        readonly void ThrowKeyNotPresent(TKey key)
         {
             throw new ArgumentException($"Key: {key} is not present.");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void ThrowKeyAlreadyAdded(TKey key)
+        readonly void ThrowKeyAlreadyAdded(TKey key)
         {
             throw new ArgumentException($"An item with the same key has already been added: {key}");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void ThrowAtMaxCapacity()
+        readonly void ThrowAtMaxCapacity()
         {
             throw new InvalidOperationException($"Capacity is insufficient, and resize would fail (Capacity {Capacity} / {MaxCapacity}, Count {Count})!");
         }

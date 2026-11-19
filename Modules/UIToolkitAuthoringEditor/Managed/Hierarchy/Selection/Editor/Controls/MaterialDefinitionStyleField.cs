@@ -17,7 +17,6 @@ namespace Unity.UIToolkit.Editor
 {
     [UxmlElement]
     [UsedImplicitly]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     partial class MaterialDefinitionStyleField : BaseField<MaterialDefinition>
     {
         internal const string k_MaterialPropertiesListViewName = "material-properties-list-view";
@@ -121,13 +120,11 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SetValueWithoutRefresh(MaterialDefinition newValue)
         {
             base.SetValueWithoutNotify(newValue);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static string SanitizePropertyName(string name)
         {
             if (name.StartsWith("_"))

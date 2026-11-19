@@ -160,9 +160,9 @@ namespace UnityEditor.UIElements
         void Init(Editor[] editors)
         {
             PopulateCache(editors);
-            m_EditorTarget = editor.targets[0];
+            m_EditorTarget = editor.target;
             m_EditorTargetEntityId = editor.targetEntityId;
-            var editorTitle = editor.GetInspectorTitle(editor.targets.Length > 1);
+            var editorTitle = editor.GetInspectorTitle(editor.targetCount > 1);
 
             m_Header = BuildHeaderElement(editorTitle, out m_HeaderIMGUIContainer);
             m_Footer = BuildFooterElement(editorTitle);
@@ -239,7 +239,7 @@ namespace UnityEditor.UIElements
             }
 
             PopulateCache(editors);
-            Object editorTarget = editor.targets[0];
+            Object editorTarget = editor.target;
             name = GetNameFromEditor(editor);
             string editorTitle = editor.GetInspectorTitle(multiEditing: false);
 
@@ -289,7 +289,8 @@ namespace UnityEditor.UIElements
             ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
 
             // Need to update the cache for multi-object edit detection.
-            if (editor.targets.Length != Selection.objects.Length)
+            // Selection.count only counts Objects, so it can only be compared for editors with Object targets.
+            if (editor.hasUnityObjectTargets && editor.targetCount != Selection.count)
             {
                 // Cannot force rebuild if locked, otherwise we get an infinite update loop.
                 var tracker = inspectorWindow.tracker;
@@ -302,7 +303,7 @@ namespace UnityEditor.UIElements
             var updateInspectorVisibility = false;
 
             // If the editor targets contain many targets and multi editing is not supported, we should not add this inspector.
-            if (null != editor && (editor.targets.Length <= 1 || PropertyEditor.IsMultiEditingSupported(editor, editor.targetType, inspectorWindow.inspectorMode)))
+            if (null != editor && (editor.targetCount <= 1 || PropertyEditor.IsMultiEditingSupported(editor, editor.targetType, inspectorWindow.inspectorMode)))
             {
                 m_InspectorElement = BuildInspectorElement();
                 Insert(IndexOf(m_Header) + 1, m_InspectorElement);
@@ -685,7 +686,7 @@ namespace UnityEditor.UIElements
             var target = ed.target;
             var comp = target as Component;
 
-            if (EditorGUI.ShouldDrawOverrideBackground(ed.targets, Event.current, comp))
+            if (EditorGUI.ShouldDrawOverrideBackground(ed.targets, Event.current, comp) || EditorGUI.ShouldDrawDataComponentOverrideBackground(ed, Event.current))
             {
                 var rect = GUILayoutUtility.kDummyRect;
                 bool wasVisible = inspectorWindow.WasEditorVisible(editors, m_EditorIndex);
@@ -797,7 +798,7 @@ namespace UnityEditor.UIElements
         {
             if (s_EditorDecoratorCollection.Count != 0 && TryGetDecorators(editor, s_Decorators))
             {
-                editorTitle ??= editor.GetInspectorTitle(editor.targets.Length > 1);
+                editorTitle ??= editor.GetInspectorTitle(editor.targetCount > 1);
                 CreateDecoratorsElement(editorTitle, s_Decorators);
                 SetElementVisible(m_DecoratorsElement, m_WasVisible);
             }

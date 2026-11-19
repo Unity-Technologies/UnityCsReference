@@ -49,7 +49,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         public static readonly string k_MppmPackageJson = "Library/VP/MPPMVersion.json";
 
-        internal const string k_ReactivateAfterPackageChangeKey = "vp_ReactivatePlayersAfterPackageChange";
+        // Indices of the players to reopen once a package change has been applied.
+        [NoAutoStaticsCleanup] // Modules are never unloaded, so this survives code reloads; it holds no user code.
+        internal static string s_ReactivateAfterPackageChange;
 
         [AutoStaticsCleanupOnCodeReload] // version info read from file; must re-read after reload
         // Every read path goes through HasVersionChanged, which calls ReadVersionInfo first, so the
@@ -126,7 +128,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 MppmLog.Debug($"Closing {player.Name} for a package change; it will be reopened afterwards");
             }
 
-            SessionState.SetString(k_ReactivateAfterPackageChangeKey, string.Join(",", reactivate));
+            s_ReactivateAfterPackageChange = string.Join(",", reactivate);
         }
 
         internal static void ReactivateClonesAfterPackageChange()
@@ -134,11 +136,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (VirtualProjectsEditor.IsClone || MultiplayerPlaymode.Players == null)
                 return;
 
-            var reactivate = SessionState.GetString(k_ReactivateAfterPackageChangeKey, string.Empty);
+            var reactivate = s_ReactivateAfterPackageChange;
             if (string.IsNullOrEmpty(reactivate))
                 return;
 
-            SessionState.EraseString(k_ReactivateAfterPackageChangeKey);
+            s_ReactivateAfterPackageChange = null;
 
             // If MPPM package removed, then leave the clones closed then
             if (MigrationUtility.ShouldDisableMultiplayerPlayMode())

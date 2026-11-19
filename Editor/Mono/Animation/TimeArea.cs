@@ -433,37 +433,47 @@ namespace UnityEditor
                     {
                         GUI.changed = true;
 
-                        // Make sure that comma & period are interchangable.
-                        str = str.Replace(',', '.');
-
-                        // format is time:frame
-                        int index = str.IndexOf(':');
-                        if (index >= 0)
-                        {
-                            string timeStr = str.Substring(0, index);
-                            string frameStr = str.Substring(index + 1);
-
-                            int timeValue, frameValue;
-                            if (int.TryParse(timeStr, out timeValue) && int.TryParse(frameStr, out frameValue))
-                            {
-                                float newTime = (float)timeValue + (float)frameValue / frameRate;
-                                return newTime;
-                            }
-                        }
-                        // format is floating time value.
-                        else
-                        {
-                            float newTime;
-                            if (float.TryParse(str, out newTime))
-                            {
-                                return SnapTimeToWholeFPS(newTime, frameRate);
-                            }
-                        }
+                        if (TryParseTimeFrame(str, frameRate, out float newTime))
+                            return newTime;
                     }
                 }
             }
 
             return time;
+        }
+
+        internal bool TryParseTimeFrame(string str, float frameRate, out float time)
+        {
+            // Make sure that comma & period are interchangable.
+            str = str.Replace(',', '.');
+
+            // format is time:frame
+            int index = str.IndexOf(':');
+            if (index >= 0)
+            {
+                string timeStr = str.Substring(0, index);
+                string frameStr = str.Substring(index + 1);
+
+                int timeValue, frameValue;
+                if (int.TryParse(timeStr, out timeValue) && int.TryParse(frameStr, out frameValue))
+                {
+                    time = (float)timeValue + (float)frameValue / frameRate;
+                    return true;
+                }
+            }
+            // format is floating time value.
+            else
+            {
+                float newTime;
+                if (float.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out newTime))
+                {
+                    time = SnapTimeToWholeFPS(newTime, frameRate);
+                    return true;
+                }
+            }
+
+            time = 0f;
+            return false;
         }
 
         public float ValueField(Rect rect, int id, float value)

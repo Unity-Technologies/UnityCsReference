@@ -11271,7 +11271,7 @@ namespace UnityEngine
             ///    void Start()
             ///    {
             ///        // A simple particle material with no texture.
-            ///        Material particleMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+            ///        Material particleMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///
             ///        // Create a green Particle System.
             ///        var rootSystemGO = new GameObject("Particle System");
@@ -11295,7 +11295,7 @@ namespace UnityEngine
             ///        subMainModule.startSize = 0.25f;
             ///        subMainModule.startLifetime = 0.5f; // very short life particles.
             ///        var emissionModule = subParticleSystem.emission;
-            ///        emissionModule.rate = 2; // 1 particle will emit every 0.5 sec.
+            ///        emissionModule.rateOverTime = 2; // 1 particle will emit every 0.5 sec.
             ///        emissionModule.SetBursts(new ParticleSystem.Burst[] // A burst will emit at 1 and 3 secs.
             ///        {
             ///            new ParticleSystem.Burst(1.0f, 10),
@@ -11335,7 +11335,7 @@ namespace UnityEngine
             ///        cube.transform.localScale = new Vector3(10, 10, 10);
             ///
             ///        // A simple particle material with no texture.
-            ///        Material particleMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+            ///        Material particleMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///
             ///        // Create a green Particle System.
             ///        var rootSystemGO = new GameObject("Particle System");
@@ -11380,7 +11380,7 @@ namespace UnityEngine
             ///    void Start()
             ///    {
             ///        // A simple particle material with no texture.
-            ///        Material particleMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+            ///        Material particleMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///
             ///        // Create a green Particle System.
             ///        var rootSystemGO = new GameObject("Particle System");
@@ -11424,7 +11424,7 @@ namespace UnityEngine
             ///    void Start()
             ///    {
             ///        // A simple particle material with no texture.
-            ///        Material particleMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+            ///        Material particleMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///
             ///        // Create a green Particle System.
             ///        var rootSystemGO = new GameObject("Particle System");
@@ -11481,7 +11481,7 @@ namespace UnityEngine
             ///    void Start()
             ///    {
             ///        // A simple particle material with no texture.
-            ///        Material particleMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+            ///        Material particleMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///
             ///        // Create a green Particle System.
             ///        var rootSystemGO = new GameObject("Particle System");
@@ -11505,7 +11505,7 @@ namespace UnityEngine
             ///        subMainModule.startSize = 0.25f;
             ///        subMainModule.startLifetime = 0.5f; // very short life particles.
             ///        var emissionModule = subParticleSystem.emission;
-            ///        emissionModule.rate = 2; // 1 particle will emit every 0.5 sec.
+            ///        emissionModule.rateOverTime = 2; // 1 particle will emit every 0.5 sec.
             ///        emissionModule.SetBursts(new ParticleSystem.Burst[] // A burst will emit at 1 and 3 secs.
             ///        {
             ///            new ParticleSystem.Burst(1.0f, 10),
@@ -11545,7 +11545,7 @@ namespace UnityEngine
             ///        cube.transform.localScale = new Vector3(10, 10, 10);
             ///
             ///        // A simple particle material with no texture.
-            ///        Material particleMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+            ///        Material particleMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///
             ///        // Create a green Particle System.
             ///        var rootSystemGO = new GameObject("Particle System");
@@ -11590,7 +11590,7 @@ namespace UnityEngine
             ///    void Start()
             ///    {
             ///        // A simple particle material with no texture.
-            ///        Material particleMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+            ///        Material particleMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///
             ///        // Create a green Particle System.
             ///        var rootSystemGO = new GameObject("Particle System");
@@ -11634,7 +11634,7 @@ namespace UnityEngine
             ///    void Start()
             ///    {
             ///        // A simple particle material with no texture.
-            ///        Material particleMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+            ///        Material particleMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///
             ///        // Create a green Particle System.
             ///        var rootSystemGO = new GameObject("Particle System");
@@ -11715,7 +11715,7 @@ namespace UnityEngine
             ///    void Start()
             ///    {
             ///        // A simple particle material with no texture.
-            ///        var particleMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+            ///        var particleMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///
             ///        // Emit 1 particle per second.
             ///        var particleSystemGameObject = new GameObject("Particle System");
@@ -11774,7 +11774,7 @@ namespace UnityEngine
             ///    void Start()
             ///    {
             ///        // A simple particle material with no texture.
-            ///        var particleMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+            ///        var particleMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///
             ///        // Emit 1 particle per second.
             ///        var particleSystemGameObject = new GameObject("Particle System");
@@ -12442,7 +12442,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -12498,7 +12498,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -12561,7 +12561,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -12622,7 +12622,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -12682,7 +12682,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -12751,7 +12751,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -12813,7 +12813,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -12875,7 +12875,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -12938,7 +12938,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -12999,7 +12999,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -13062,7 +13062,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -13122,7 +13122,7 @@ namespace UnityEngine
             ///        plane.transform.localScale = new Vector3(20.0f, 20.0f, 20.0f);
             ///        plane.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             ///
-            ///        var material = new Material(Shader.Find("Standard"));
+            ///        var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             ///        material.color = new Color(0.1f, 0.1f, 0.1f, 1.0f);
             ///        plane.GetComponent<MeshRenderer>().material = material;
             ///    }
@@ -13915,7 +13915,7 @@ namespace UnityEngine
             ///        trails.generateLightingData = true;
             ///
             ///        var psr = GetComponent<ParticleSystemRenderer>();
-            ///        psr.trailMaterial = new Material(Shader.Find("Standard"));
+            ///        psr.trailMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
             ///    }
             ///}
             ///]]></code>

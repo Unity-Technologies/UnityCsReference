@@ -232,12 +232,17 @@ namespace UnityEngine.Analytics
             if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
             CustomEventData customEvent = new CustomEventData(customEventName);
-            customEvent.AddDouble("x", (double)System.Convert.ToDecimal(position.x));
-            customEvent.AddDouble("y", (double)System.Convert.ToDecimal(position.y));
-            customEvent.AddDouble("z", (double)System.Convert.ToDecimal(position.z));
-            var result = SendCustomEvent(customEvent);
-            customEvent.Dispose();
-            return result;
+            try
+            {
+                customEvent.AddDouble("x", (double)System.Convert.ToDecimal(position.x));
+                customEvent.AddDouble("y", (double)System.Convert.ToDecimal(position.y));
+                customEvent.AddDouble("z", (double)System.Convert.ToDecimal(position.z));
+                return SendCustomEvent(customEvent);
+            }
+            finally
+            {
+                customEvent.Dispose();
+            }
         }
 
         ///<exclude />

@@ -79,6 +79,8 @@ namespace Unity.Entities
 
         public ComponentSafetyHandles Safety;
         public ForEachDisallowStructuralChangeSupport ForEachStructuralChange;
+        // The entity store whose query recorder times waits for jobs that happen inside query calls.
+        internal EntityComponentStore* QueryProfilerStore;
 
         ushort GetTypeArrayIndex(TypeIndex typeIndex)
         {
@@ -103,21 +105,29 @@ namespace Unity.Entities
             m_DependencyHandlesCount = 0;
         }
 
-        // Native transform code reads this struct's memory, so it checks that both sides agree on its layout.
+        // Native code reads this struct's memory, and the safety handles' with collection checks, so it checks that both
+        // sides agree on their layout.
         internal static void CheckNativeTransformDependencyLayout()
         {
             DependencyHandle handle = default;
             var start = (byte*)&handle;
+            var atomicSafetyHandleSize = sizeof(AtomicSafetyHandle);
+            ComponentSafetyHandles.GetComponentSafetyHandleLayout(out var safetyHandleSize, out var safetyHandleOffset,
+                out var bufferHandleOffset, out var safetyTypeIndexOffset);
             EntitiesTransformDependencyBindings.CheckManagedLayout(sizeof(JobHandle), sizeof(DependencyHandle),
                 (int)((byte*)&handle.WriteFence - start), (int)((byte*)&handle.NumReadFences - start), (int)((byte*)&handle.TypeIndex - start),
-                kMaxReadJobHandles, NullTypeIndex);
+                kMaxReadJobHandles, NullTypeIndex, atomicSafetyHandleSize, safetyHandleSize, safetyHandleOffset, bufferHandleOffset,
+                safetyTypeIndexOffset);
         }
 
-        internal static void RegisterWithNativeTransformDependencies(ComponentDependencyManager* manager, ulong owner)
+        internal static void RegisterWithNativeTransformDependencies(ComponentDependencyManager* manager, WorldUnmanaged owner)
         {
+            var safetyTypeArrayIndices = manager->Safety.TypeArrayIndices;
+            var componentSafetyHandles = manager->Safety.ComponentSafetyHandlesPtr;
             manager->m_NativeTransformPendingAccess = EntitiesTransformDependencyBindings.RegisterWorld(owner, manager->m_TypeArrayIndices,
                 manager->m_DependencyHandles, &manager->m_DependencyHandlesCount, manager->m_ReadJobFences, &manager->_IsInTransaction,
-                &manager->m_ExclusiveTransactionDependency, &manager->m_RunningTransformSystemJobHandle);
+                &manager->m_ExclusiveTransactionDependency, &manager->m_RunningTransformSystemJobHandle, safetyTypeArrayIndices,
+                componentSafetyHandles);
         }
 
         // Call whenever a job, transaction or system update starts that native transform code may have to wait for.
@@ -201,6 +211,7 @@ namespace Unity.Entities
 
         public void CompleteAllJobs()
         {
+            using var jobWaitScope = new EntityQueryProfiler.JobWaitScope(ref this);
             var executingSystem = m_World.ExecutingSystem;
             if (executingSystem != default)
             {
@@ -257,6 +268,7 @@ namespace Unity.Entities
 
         public void CompleteDependenciesNoChecks(TypeIndex* readerTypes, int readerTypesCount, TypeIndex* writerTypes, int writerTypesCount)
         {
+            using var jobWaitScope = new EntityQueryProfiler.JobWaitScope(ref this);
             var combinedJobHandle = GetDependency(readerTypes, readerTypesCount, writerTypes, writerTypesCount,
                 clearReadFencesAfterCombining:true);
             combinedJobHandle.Complete();
@@ -394,6 +406,7 @@ namespace Unity.Entities
 
         internal void CompleteWriteDependencyNoChecks(TypeIndex typeIndex)
         {
+            using var jobWaitScope = new EntityQueryProfiler.JobWaitScope(ref this);
             var arrayIndex = m_TypeArrayIndices[typeIndex.Index];
             if (arrayIndex != NullTypeIndex)
                 m_DependencyHandles[arrayIndex].WriteFence.Complete();
@@ -401,6 +414,7 @@ namespace Unity.Entities
 
         internal void CompleteReadAndWriteDependencyNoChecks(TypeIndex typeIndex)
         {
+            using var jobWaitScope = new EntityQueryProfiler.JobWaitScope(ref this);
             var arrayIndex = m_TypeArrayIndices[typeIndex.Index];
             if (arrayIndex != NullTypeIndex)
             {
@@ -545,22 +559,22 @@ namespace Unity.Entities
 
         internal int      Depth;
 
-        EntityQueryMask*  _forEachQueryMasks;
+        // The queries being iterated, null for those the check skips
+        EntityQueryImpl** _forEachQueries;
 
         public void Init()
         {
             Depth = 0;
             var memoryLabel = Memory.CreateLabel("Entities", "Safety.StructuralChange", Allocator.Persistent);
-            _forEachQueryMasks = (EntityQueryMask*)Memory.Unmanaged.Allocate(sizeof(EntityQueryMask) * kMaxNestedForEachDisallowStructuralChange, 16, memoryLabel);
+            _forEachQueries = (EntityQueryImpl**)Memory.Unmanaged.Allocate(sizeof(EntityQueryImpl*) * kMaxNestedForEachDisallowStructuralChange, 16, memoryLabel);
         }
 
+        // Keeps the query itself, which stays valid for the whole foreach: idiomatic foreach runs over queries owned by
+        // a system, and those can't be disposed.
         internal void BeginIsInForEach(EntityQueryImpl* query)
         {
             CheckIsWithinMaxAllowedNestedForEach(Depth);
-            if (query->_QueryData->HasEnableableComponents != 0)
-                _forEachQueryMasks[Depth++] = new EntityQueryMask();
-            else
-                _forEachQueryMasks[Depth++] = query->GetEntityQueryMask();
+            _forEachQueries[Depth++] = query->_QueryData->HasEnableableComponents != 0 ? null : query;
         }
 
         void CheckIsWithinMaxAllowedNestedForEach(int value)
@@ -583,9 +597,7 @@ namespace Unity.Entities
 
         void ClearEntityQueryCacheFrom(int index)
         {
-            UnsafeUtility.MemClear(
-                _forEachQueryMasks + index * sizeof(EntityQueryMask),
-                sizeof(EntityQueryMask) * (kMaxNestedForEachDisallowStructuralChange - Depth));
+            UnsafeUtility.MemClear(_forEachQueries + index, sizeof(EntityQueryImpl*) * (kMaxNestedForEachDisallowStructuralChange - index));
         }
 
         internal void EndIsInForEach()
@@ -597,7 +609,8 @@ namespace Unity.Entities
         {
             for (var i = 0; i < Depth; i++)
             {
-                if (_forEachQueryMasks[i].IsCreated() && _forEachQueryMasks[i].Matches(archetype))
+                var query = _forEachQueries[i];
+                if (query != null && EntityQueryManager.FindRecordIndex(query->GetRecords(), archetype) >= 0)
                     return false;
             }
 
@@ -607,7 +620,7 @@ namespace Unity.Entities
         public void Dispose()
         {
             var memoryLabel = Memory.CreateLabel("Entities", "Safety.StructuralChange", Allocator.Persistent);
-            Memory.Unmanaged.Free(_forEachQueryMasks, memoryLabel);
+            Memory.Unmanaged.Free(_forEachQueries, memoryLabel);
         }
     }
 }

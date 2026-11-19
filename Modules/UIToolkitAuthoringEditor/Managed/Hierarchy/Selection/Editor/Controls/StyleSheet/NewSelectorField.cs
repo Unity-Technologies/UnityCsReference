@@ -13,7 +13,6 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class NewSelectorSubmitEvent : EventBase<NewSelectorSubmitEvent>
     {
         public NewSelectorSubmitEvent()
@@ -38,8 +37,8 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UxmlElement]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class NewSelectorField : VisualElement, INotifyValueChanged<string>
     {
         [NoAutoStaticsCleanup] // immutable binding id, safe to persist

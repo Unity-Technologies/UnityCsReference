@@ -15,7 +15,7 @@ namespace Unity.UIToolkit.Editor;
 /// Holds the set of longhand style property IDs that can be recorded for the current inspector target.
 /// Null on <see cref="StyleInspectorElement.AuthoringContext.AnimationController"/> when animation recording is
 /// not active; non-null while the inspector should apply recordability (field enabled state and recording routing).
-/// Created exclusively by <see cref="VisualElementSelectionEditor"/> (or test helpers).
+/// Created exclusively by <see cref="UISelectionInspectorContent"/> (or test helpers).
 /// </summary>
 internal sealed class StyleInspectorAnimationRecordingContext
 {

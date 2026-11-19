@@ -266,7 +266,6 @@ namespace UnityEngine.UIElements
 
         internal bool needsVertical
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
                 return mode != ScrollViewMode.Horizontal &&

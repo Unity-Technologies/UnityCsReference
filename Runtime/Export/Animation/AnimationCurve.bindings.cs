@@ -165,13 +165,13 @@ namespace UnityEngine
         [FreeFunction("AnimationCurveBindings::Internal_CopyFrom", HasExplicitThis = true, IsThreadSafe = true)]
         extern private void Internal_CopyFrom(IntPtr other);
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Frees the native curve; Internal_Destroy is thread-safe and the public type has no Dispose API.
         ~AnimationCurve()
         {
             if (m_RequiresNativeCleanup)
                 Internal_Destroy(m_Ptr);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         // Evaluate the curve at /time/.
         [NativeMethod(IsThreadSafe = true)]

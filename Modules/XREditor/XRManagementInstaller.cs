@@ -5,25 +5,28 @@
 using System;
 using System.IO;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.XR
 {
     [UnityEngine.Internal.ExcludeFromDocs]
     class XRManagementInstaller : SettingsProvider
     {
-        const string s_ManagementPackageId = "com.unity.xr.management";
+        const string s_ManagementPackageId = "com.unity.xr.foundation";
         static readonly string s_ManagementPackagePath = $"Packages/{s_ManagementPackageId}/package.json";
-
 
         private PackageManager.Requests.AddRequest m_AddManagementRequest = null;
 
         static class Content
         {
-            internal const string s_InstallationHelpText = "In order to use the new XR Plugin system you need to install the XR Plugin Management package. Clicking the button below will install the latest XR Plugin Management package and allow you to configure your project for XR.";
-            internal const string s_SettingsRootTitle = "Project/XR Plugin Management";
-            internal static readonly GUIContent s_AddXrManagement = L10n.TextContent("Install XR Plugin Management", null, null, null);
-            internal static readonly GUIContent s_DownloadingText = new GUIContent("Downloading XR Management system...");
-            internal static readonly GUIContent s_InstallingText = new GUIContent("Installing XR Management system...");
+            internal const string s_InstallationHelpText =
+                "Install the XR Foundation package to enable Unity to build your app for XR devices.\n"
+                + "Refer to <a href=\"https://docs.unity.com/en-us/engine/latest/manual/xr/support/support-packages\">XR packages</a> (Unity Engine documentation) for a full list of supported XR plug-ins.";
+
+            internal const string s_SettingsRootTitle = "Project/XR Plug-in Management";
+            internal static readonly string s_AddXrManagement = L10n.Tr("Install XR Foundation", null);
+            internal static readonly string s_DownloadingText = L10n.Tr("Downloading XR Foundation...", null);
+            internal static readonly string s_InstallingText = L10n.Tr("Installing XR Foundation...", null);
         }
 
         [UnityEngine.Internal.ExcludeFromDocs]
@@ -32,27 +35,42 @@ namespace UnityEditor.XR
         }
 
         [UnityEngine.Internal.ExcludeFromDocs]
-        public override void OnGUI(string searchContext)
+        public override void OnActivate(string searchContext, VisualElement rootElement)
         {
-            if (m_AddManagementRequest != null)
+            var container = new VisualElement();
+            container.style.paddingLeft = 10;
+            container.style.paddingRight = 10;
+            container.style.paddingTop = 10;
+
+            var helpBox = new HelpBox(Content.s_InstallationHelpText, HelpBoxMessageType.Info);
+
+            var installButton = new Button { text = Content.s_AddXrManagement };
+            var statusLabel = new Label();
+
+            void UpdateState()
             {
-                if (m_AddManagementRequest.IsCompleted)
-                {
-                    EditorGUILayout.LabelField(Content.s_DownloadingText);
-                }
-                else
-                {
-                    EditorGUILayout.LabelField(Content.s_InstallingText);
-                }
+                var requested = m_AddManagementRequest != null;
+                helpBox.style.display = requested ? DisplayStyle.None : DisplayStyle.Flex;
+                installButton.style.display = requested ? DisplayStyle.None : DisplayStyle.Flex;
+                statusLabel.style.display = requested ? DisplayStyle.Flex : DisplayStyle.None;
+                if (requested)
+                    statusLabel.text = m_AddManagementRequest.IsCompleted ? Content.s_InstallingText : Content.s_DownloadingText;
             }
-            else
+
+            installButton.clicked += () =>
             {
-                EditorGUILayout.HelpBox(Content.s_InstallationHelpText, MessageType.Info);
-                if (GUILayout.Button(Content.s_AddXrManagement))
-                {
-                    m_AddManagementRequest = PackageManager.Client.Add(s_ManagementPackageId);
-                }
-            }
+                m_AddManagementRequest = PackageManager.Client.Add(s_ManagementPackageId);
+                UpdateState();
+            };
+
+            // Unlike OnGUI, the panel does not redraw on its own, so poll the request for status changes.
+            container.schedule.Execute(UpdateState).Every(100);
+            UpdateState();
+
+            container.Add(helpBox);
+            container.Add(installButton);
+            container.Add(statusLabel);
+            rootElement.Add(container);
         }
 
         [SettingsProvider]

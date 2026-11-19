@@ -120,10 +120,10 @@ namespace UnityEngine.UIElements.UIR
             // Collect the chain of curved ancestors (innermost first): the affine map into each one's flat box plus
             // its extent/angles, and the map back to element-local. Empty when no ancestor curves, or when the
             // nearest declared curvature is an explicit 0deg flat barrier (its subtree opts out of outer curves).
-            // BuildConformChain also excludes this element's OWN out-of-plane translate (translate.z) from the
-            // conform, so the mesh carries only the surface (arc + sag); the GPU transform re-applies translate.z
-            // via its m23 as an off-surface lift (m22 is forced to 1 in GetTransformIDTransformInfo, so Vertex.z is
-            // never scaled; only m23 lifts). A single-element chain is the per-surface conform; longer chains compose.
+            // The bent Vertex.z carries only the sag (see UIRCurvatureGeometry.Bend); any translate.z reaches the
+            // vertex through the GPU transform's m23 as an off-surface lift (m22 is forced to 1 in
+            // GetTransformIDTransformInfo, so Vertex.z is never scaled; only m23 lifts). A single-element chain is the
+            // per-surface conform; longer chains compose.
             int count = UIRCurvatureGeometry.CountChain(ve);
             if (count == 0)
                 return;
@@ -140,7 +140,7 @@ namespace UnityEngine.UIElements.UIR
                 // OUTPUT and bends it AGAIN. That double bend is invisible in the math (each pass is locally
                 // correct) but doubles the rendered arc + sag relative to the declared -unity-curvature, and it
                 // desynchronizes rendering from picking (which reconstructs a single bend). UITK mesh generation
-                // never writes Vertex.z for regular content (the conform also excludes translate.z), so a non-zero
+                // never writes Vertex.z for regular content (and the bend writes only the sag), so a non-zero
                 // Z is a reliable "already bent" marker: skip the draw instead of stacking another bend. The real
                 // fix is pipeline-level (regenerate entries for modifier-bearing elements before re-running
                 // modifiers); this guard keeps the modifier correct until then.

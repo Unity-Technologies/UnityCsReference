@@ -25,6 +25,8 @@ sealed class UICanvasZoomManipulator : PointerManipulator
     List<float> m_ZoomScaleValues;
     const float DefaultScale = 1;
     const float ZoomStepDistance = 10;
+    // Absorbs float error in fractional-scale pointer positions so a full step is not lost.
+    const float ZoomStepTolerance = 0.01f;
     const float MovementThreshold = 3f;
 
     // Full zoom scale list available with the Zoomer manipulator
@@ -166,7 +168,7 @@ sealed class UICanvasZoomManipulator : PointerManipulator
         // Below the threshold the gesture is still a click, which UIViewport turns into a context menu.
         m_Zooming |= Vector2.Distance(evt.localPosition, m_PressPos) >= MovementThreshold;
 
-        if (Mathf.Abs(evt.localPosition.y - m_LastZoomPos.y) < ZoomStepDistance)
+        if (Mathf.Abs(evt.localPosition.y - m_LastZoomPos.y) < ZoomStepDistance - ZoomStepTolerance)
             return;
 
         Zoom(evt.deltaPosition.y, m_PressPos);

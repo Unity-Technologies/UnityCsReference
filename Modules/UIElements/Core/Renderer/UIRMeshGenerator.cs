@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements.UIR
         public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes, bool usesPerGlyphTextCoreSettings = false);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font, bool useAdvanced = true);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams, DrawPhase phase = DrawPhase.Content);
-        public void DrawGradientRectangle(MeshGenerator.RectangleParams rectParams, VectorImage gradientVI, BackgroundGradient gradient, Rect gradientRect, DrawPhase phase = DrawPhase.Content);
+        public void DrawGradientRectangle(MeshGenerator.RectangleParams rectParams, VectorImage gradientVI, BackgroundGradient gradient, Rect gradientRect, float uvScale, DrawPhase phase = DrawPhase.Content);
         public void DrawBorder(MeshGenerator.BorderParams borderParams, DrawPhase phase = DrawPhase.Content);
         public void DrawBoxShadow(MeshBuilderNative.NativeBoxShadowParams boxShadowParams, Texture profile, DrawPhase phase = DrawPhase.Content);
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale, int userData = 0);
@@ -861,6 +861,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 bool isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
+                float regularWeight = isSprite ? 0.0f : fa.regularStyleWeight;
                 Span<NativeTextElementInfo> textElementInfosSpan = nativeMeshInfo.textElementInfos;
 
                 while (remainingVertexCount > 0)
@@ -896,10 +897,10 @@ namespace UnityEngine.UIElements.UIR
                     for (int vDst = 0, vSrc = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 1, j += 6)
                     {
                         ref var tei = ref textElementInfosSpan[vSrc];
-                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 0], ref tei.bottomLeft, pos, inverseScale, isColorGlyph: isColorFont);
-                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 1], ref tei.topLeft, pos, inverseScale, isColorGlyph: isColorFont);
-                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 2], ref tei.topRight, pos, inverseScale, isColorGlyph: isColorFont);
-                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 3], ref tei.bottomRight, pos, inverseScale, isColorGlyph: isColorFont);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 0], ref tei.bottomLeft, pos, inverseScale, isColorGlyph: isColorFont, regularWeight: regularWeight);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 1], ref tei.topLeft, pos, inverseScale, isColorGlyph: isColorFont, regularWeight: regularWeight);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 2], ref tei.topRight, pos, inverseScale, isColorGlyph: isColorFont, regularWeight: regularWeight);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 3], ref tei.bottomRight, pos, inverseScale, isColorGlyph: isColorFont, regularWeight: regularWeight);
 
                         indexSpan[j + 0] = (ushort)(vDst + 0);
                         indexSpan[j + 1] = (ushort)(vDst + 1);
@@ -997,9 +998,11 @@ namespace UnityEngine.UIElements.UIR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ConvertTextVertexToUIRVertex(out Vertex dst, ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false, bool isTextCore = false)
+        internal static void ConvertTextVertexToUIRVertex(out Vertex dst, ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false, bool isTextCore = false, float regularWeight = 0.0f)
         {
             float x = vertex.uv2.y;
+            if (!isTextCore && x == 0.0f)
+                x = regularWeight;
 
             // vertex.uv2.y can be between -3 and 3, but we want negative to be less impactful than positive.
             // -3 = -1, -1 = -0.33, 0 = 0, 1 = 1...
@@ -1080,7 +1083,7 @@ namespace UnityEngine.UIElements.UIR
         // rectParams.texture must be the gradient's color atlas (from the baked VI);
         // per-vertex UVs are rewritten inside the job so barycentric interpolation
         // feeds the SVG-gradient shader's linear/radial math correctly.
-        public void DrawGradientRectangle(RectangleParams rectParams, VectorImage gradientVI, BackgroundGradient gradient, Rect gradientRect, DrawPhase phase = DrawPhase.Content)
+        public void DrawGradientRectangle(RectangleParams rectParams, VectorImage gradientVI, BackgroundGradient gradient, Rect gradientRect, float uvScale, DrawPhase phase = DrawPhase.Content)
         {
             if (rectParams.rect.width < UIRUtility.k_Epsilon || rectParams.rect.height < UIRUtility.k_Epsilon)
                 return;
@@ -1096,15 +1099,7 @@ namespace UnityEngine.UIElements.UIR
                 rectParams.ToNativeParams(out jobParameters.rectParams);
                 jobParameters.rectParams.texture = m_GCHandlePool.GetIntPtr(rectParams.texture);
                 jobParameters.gradientVI = m_GCHandlePool.GetIntPtr(gradientVI);
-                jobParameters.gradientUVs = new GradientUVParams
-                {
-                    type = gradient.type,
-                    angle = gradient.angle,
-                    position = gradient.position,
-                    shape = gradient.shape,
-                    size = gradient.size,
-                    rect = gradientRect,
-                };
+                jobParameters.gradientUVs = new GradientUVParams(gradient, gradientRect, uvScale);
 
                 m_MeshGenerationContext.InsertUnsafeMeshGenerationNode(out var unsafeNode);
                 jobParameters.node = unsafeNode;
@@ -1860,6 +1855,31 @@ namespace UnityEngine.UIElements.UIR
             public BackgroundGradientShape shape;
             public BackgroundGradientSize size;
             public Rect rect; // source rect for element-fraction computation
+            public float uvScale;
+
+            public GradientUVParams(in BackgroundGradient gradient, Rect rect, float uvScale)
+            {
+                type = gradient.type;
+                angle = gradient.angle;
+                position = gradient.position;
+                shape = gradient.shape;
+                size = gradient.size;
+                this.rect = rect;
+                this.uvScale = uvScale;
+            }
+
+            public Vector2 UVAt(Vector2 frac)
+            {
+                if (type == GradientType.Radial)
+                {
+                    var center = new Vector2(0.5f, 0.5f);
+                    return center + (BackgroundGradientBaker.RadialUV(frac, position, size, shape, rect.size) - center) * uvScale;
+                }
+
+                var uv = BackgroundGradientBaker.LinearUV(frac, angle);
+                uv.x *= uvScale;
+                return uv;
+            }
         }
 
         internal struct TessellationJobParameters
@@ -2109,7 +2129,6 @@ namespace UnityEngine.UIElements.UIR
 
                 float invW = uvp.rect.width > 1e-6f ? 1f / uvp.rect.width : 0f;
                 float invH = uvp.rect.height > 1e-6f ? 1f / uvp.rect.height : 0f;
-                bool radial = uvp.type == GradientType.Radial;
 
                 for (int i = 0; i < nativeVertices.Length; ++i)
                 {
@@ -2118,9 +2137,7 @@ namespace UnityEngine.UIElements.UIR
                     var frac = new Vector2(
                         (v.position.x - uvp.rect.xMin) * invW,
                         (v.position.y - uvp.rect.yMin) * invH);
-                    v.uv = radial
-                        ? BackgroundGradientBaker.RadialUV(frac, uvp.position, uvp.size, uvp.shape, uvp.rect.size)
-                        : BackgroundGradientBaker.LinearUV(frac, uvp.angle);
+                    v.uv = uvp.UVAt(frac);
                     vertices[i] = v;
                 }
 

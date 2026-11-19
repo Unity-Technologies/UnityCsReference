@@ -21,10 +21,10 @@ class HighlightCommand : Command<HighlightCommand>
         return pooled;
     }
 
-    public static void Execute(object source, HashSet<VisualElement> elementsToHighlight, HashSet<StyleRule> rulesToHighlight)
+    public static void Execute(AuthoringContext context, object source, HashSet<VisualElement> elementsToHighlight, HashSet<StyleRule> rulesToHighlight)
     {
         using var command = GetPooled(source, elementsToHighlight, rulesToHighlight);
-        UICommandQueue.Execute(command);
+        context.Messages.Execute(command);
     }
 
     /// <summary>

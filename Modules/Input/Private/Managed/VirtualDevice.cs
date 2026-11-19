@@ -13,7 +13,8 @@ namespace UnityEngineInternal.Input
     /// <remarks>
     /// Create builds the device disconnected, so consumers can't see it. <see cref="Connect"/> registers it
     /// with the input module under a fresh <see cref="deviceId"/>, and <see cref="Disconnect"/> deregisters it,
-    /// as plugging and unplugging a real device would. <see cref="Dispose"/> destroys it. Available when
+    /// as plugging and unplugging a real device would. A <see cref="VirtualDeviceDelivery.Deferred"/> device holds
+    /// both with its input, so the module sees them at <see cref="VirtualDeviceBackend.ReleaseDeferred"/>. <see cref="Dispose"/> destroys it. Available when
     /// <see cref="VirtualDeviceBackend.IsSupported"/> returns true. Every command returns an
     /// <see cref="InputCommandResult"/>.
     /// </remarks>
@@ -80,7 +81,7 @@ namespace UnityEngineInternal.Input
         /// <see cref="InputCommandResult.invalidPayload"/> when the descriptor is null or empty, the initial
         /// state is empty or larger than the maximum state size, the delivery or flags hold a value this build
         /// doesn't define, or <see cref="VirtualDeviceFlags.PublishThroughPipeline"/> is set with
-        /// <see cref="VirtualDeviceDelivery.Deferred"/> or a reserved state FourCC;
+        /// a reserved state FourCC;
         /// <see cref="InputCommandResult.invalidSize"/> when the descriptor and state don't fit one payload;
         /// <see cref="InputCommandResult.failure"/> when no device ids are left;
         /// <see cref="InputCommandResult.notSupported"/> when this build has no virtual devices, or no input pipeline for <see cref="VirtualDeviceFlags.PublishThroughPipeline"/>.
@@ -143,7 +144,8 @@ namespace UnityEngineInternal.Input
         }
 
         /// <summary>
-        /// Makes the device visible to input consumers under a fresh <see cref="deviceId"/>.
+        /// Makes the device visible to input consumers under a fresh <see cref="deviceId"/>, from the next release on
+        /// for a deferred device, whose full or merging hold answers <see cref="InputCommandResult.busy"/>.
         /// </summary>
         public long Connect()
         {
@@ -179,11 +181,18 @@ namespace UnityEngineInternal.Input
         }
 
         /// <summary>
-        /// Tells consumers to re-query what they cached about the device. Requires a connected device.
+        /// Tells consumers which parts of the device's configuration changed. Requires a connected device.
         /// </summary>
-        public long Reconfigure()
+        /// <param name="changed">The parts that changed. At least one, and only parts that Reconfiguration defines.</param>
+        /// <returns>
+        /// <see cref="InputCommandResult.success"/>, or on failure:
+        /// <see cref="InputCommandResult.invalidPayload"/> when <paramref name="changed"/> names no part or an unknown one;
+        /// <see cref="InputCommandResult.invalidState"/> when the device isn't connected.
+        /// </returns>
+        public long Reconfigure(Reconfiguration changed)
         {
-            return DispatchHandleOnly(NativeInputVirtualDevices.reconfigure);
+            var payload = new VirtualDeviceReconfigurePayload { handle = handle, changed = changed };
+            return VirtualDeviceBackend.Dispatch(NativeInputVirtualDevices.reconfigure, &payload, sizeof(VirtualDeviceReconfigurePayload));
         }
 
         /// <summary>
@@ -321,7 +330,7 @@ namespace UnityEngineInternal.Input
         /// <see cref="InputCommandResult.invalidPayload"/> when the descriptor is null or empty, the initial
         /// state is empty or larger than the maximum state size, the delivery or flags hold a value this build
         /// doesn't define, or <see cref="VirtualDeviceFlags.PublishThroughPipeline"/> is set with
-        /// <see cref="VirtualDeviceDelivery.Deferred"/> or a reserved state FourCC;
+        /// a reserved state FourCC;
         /// <see cref="InputCommandResult.invalidSize"/> when the descriptor and state don't fit one payload;
         /// <see cref="InputCommandResult.failure"/> when no device ids are left;
         /// <see cref="InputCommandResult.notSupported"/> when this build has no virtual devices, or no input pipeline for <see cref="VirtualDeviceFlags.PublishThroughPipeline"/>.

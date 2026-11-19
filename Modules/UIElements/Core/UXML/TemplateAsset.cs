@@ -211,10 +211,8 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private List<VisualTreeAsset.SlotUsageEntry> m_SlotUsages;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal List<VisualTreeAsset.SlotUsageEntry> slotUsages
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get { return m_SlotUsages; }
             set { m_SlotUsages = value; }
         }

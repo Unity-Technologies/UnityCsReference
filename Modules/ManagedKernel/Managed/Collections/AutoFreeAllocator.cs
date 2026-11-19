@@ -22,12 +22,12 @@ namespace Unity.Collections
         int m_blocks;
         IntPtr* m_block;
 
-        int BlockSizeInElements => 1 << m_log2BlockSizeInElements;
-        int BlockSizeInBytes => BlockSizeInElements * sizeof(T);
-        int BlockMask => BlockSizeInElements - 1;
+        readonly int BlockSizeInElements => 1 << m_log2BlockSizeInElements;
+        readonly int BlockSizeInBytes => BlockSizeInElements * sizeof(T);
+        readonly int BlockMask => BlockSizeInElements - 1;
 
-        public int Length => m_lengthInElements;
-        public int Capacity => m_capacityInElements;
+        public readonly int Length => m_lengthInElements;
+        public readonly int Capacity => m_capacityInElements;
 
         public ArrayOfArrays(int capacityInElements, AllocatorManager.AllocatorHandle backingAllocatorHandle, int log2BlockSizeInElements = 12)
         {
@@ -59,7 +59,7 @@ namespace Unity.Collections
             this[elementIndex] = t;
         }
 
-        public ref T this[int elementIndex]
+        public readonly ref T this[int elementIndex]
         {
             get
             {
@@ -97,21 +97,21 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckElementIndex(int elementIndex)
+        readonly void CheckElementIndex(int elementIndex)
         {
             if (elementIndex >= m_lengthInElements)
                 throw new ArgumentException($"Element index {elementIndex} must be less than length in elements {m_lengthInElements}.");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckBlockIndex(int blockIndex)
+        readonly void CheckBlockIndex(int blockIndex)
         {
             if (blockIndex >= m_blocks)
                 throw new ArgumentException($"Block index {blockIndex} must be less than number of blocks {m_blocks}.");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckBlockIsNotNull(int blockIndex)
+        readonly void CheckBlockIsNotNull(int blockIndex)
         {
             if(m_block[blockIndex] == IntPtr.Zero)
                 throw new ArgumentException($"Block index {blockIndex} is a null pointer.");
@@ -123,7 +123,7 @@ namespace Unity.Collections
             --m_lengthInElements;
         }
 
-        int BlockIndexOfElement(int elementIndex)
+        readonly int BlockIndexOfElement(int elementIndex)
         {
             return elementIndex >> m_log2BlockSizeInElements;
         }
@@ -196,7 +196,7 @@ namespace Unity.Collections
         /// <summary>
         /// The allocator function. It can allocate, deallocate, or reallocate.
         /// </summary>
-        public AllocatorManager.TryFunction Function => Try;
+        public readonly AllocatorManager.TryFunction Function => Try;
 
         /// <summary>
         /// Invoke the allocator function.
@@ -248,23 +248,23 @@ namespace Unity.Collections
         /// This allocator.
         /// </summary>
         /// <value>This allocator.</value>
-        public AllocatorManager.AllocatorHandle Handle { get { return m_handle; } set { m_handle = value; } }
+        public AllocatorManager.AllocatorHandle Handle { readonly get { return m_handle; } set { m_handle = value; } }
 
         /// <summary>
         /// Cast the Allocator index into Allocator
         /// </summary>
-        public Allocator ToAllocator { get { return m_handle.ToAllocator; } }
+        public readonly Allocator ToAllocator { get { return m_handle.ToAllocator; } }
 
         /// <summary>
         /// Check whether an allocator is a custom allocator
         /// </summary>
-        public bool IsCustomAllocator { get { return m_handle.IsCustomAllocator; } }
+        public readonly bool IsCustomAllocator { get { return m_handle.IsCustomAllocator; } }
 
         /// <summary>
         /// Check whether this allocator will automatically dispose allocations.
         /// </summary>
         /// <remarks>Allocations made by Auto free allocator are automatically disposed.</remarks>
         /// <value>Always true</value>
-        public bool IsAutoDispose { get { return true; } }
+        public readonly bool IsAutoDispose { get { return true; } }
     }
 }

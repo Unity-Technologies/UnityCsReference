@@ -14,7 +14,6 @@ using Unity.Scripting.LifecycleManagement;
 namespace Unity.UIToolkit.Editor
 {
     [UxmlElement]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class OverrideRow : VisualElement
     {
         internal static readonly string ussClassName = "unity-override-row";

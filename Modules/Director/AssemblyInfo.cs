@@ -6,5 +6,3 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.Timeline")]
 [assembly: InternalsVisibleTo("Unity.Animation.Timeline")]
-[assembly: InternalsVisibleTo("Unity.Motion.Hybrid")]
-[assembly: InternalsVisibleTo("Unity.Motion.Timeline")]

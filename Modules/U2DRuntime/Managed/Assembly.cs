@@ -6,3 +6,4 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridge.001")]
 [assembly: InternalsVisibleTo("Unity.Modules.U2DEditor.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.2D.Sprite.MeshEditing.Editor")]

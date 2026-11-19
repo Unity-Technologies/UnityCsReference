@@ -10,31 +10,10 @@ namespace UnityEngine
 {
     internal struct TransformHierarchy
     {
-        [FreeFunction("TransformHierarchyBindings::AssignTransformHierarchyToGameObjectEntity", HasExplicitThis = false)]
-        internal static extern void AssignTransformHierarchyToGameObjectEntity(EntityId gameObjectId);
-
-        [FreeFunction("TransformHierarchyBindings::CreateNewHierarchy", HasExplicitThis = false)]
-        internal static extern UnsafeTransformAccess CreateHierarchy(IntPtr entityComponentStore,
-            Vector3 worldPosition, Quaternion rotation, Vector3 scale, UInt64 entity, uint capacity, UInt64 ecsOwner);
-
-        [FreeFunction("TransformHierarchyBindings::SetParent_Internal_WithoutHierarchy", HasExplicitThis = false)]
-        internal static extern UnsafeTransformAccess SetParent_Internal_WithoutHierarchy(IntPtr entityComponentStore,
-            UnsafeTransformAccess unsafeTransformAccess,
-            Vector3 worldPosition, Quaternion rotation, Vector3 scale, UInt64 childEntity, UInt64 ecsOwner);
-
         [FreeFunction("TransformHierarchyBindings::SetParent_Internal_WithHierarchy", HasExplicitThis = false)]
         internal static extern UnsafeTransformAccess SetParent_Internal_WithHierarchy(IntPtr entityComponentStore,
             UnsafeTransformAccess parentTransformAccess,
             UnsafeTransformAccess childTransformAccess);
-
-        internal static UnsafeTransformAccess SetParent(IntPtr entityComponentStore,
-            UnsafeTransformAccess unsafeTransformAccess,
-            Vector3 worldPosition, Quaternion rotation, Vector3 scale, UInt64 childEntity, UInt64 ecsOwner)
-        {
-            return SetParent_Internal_WithoutHierarchy(entityComponentStore,
-                unsafeTransformAccess,
-                worldPosition, rotation, scale, childEntity, ecsOwner);
-        }
 
         internal static UnsafeTransformAccess SetParent(IntPtr entityComponentStore,
             UnsafeTransformAccess parentTransformAccess,

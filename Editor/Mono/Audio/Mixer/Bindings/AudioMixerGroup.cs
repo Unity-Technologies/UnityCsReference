@@ -61,7 +61,7 @@ namespace UnityEditor.Audio
 
         public string GetDisplayString()
         {
-            return name; // AudioMixerController.FixNameForPopupMenu(name);
+            return name;
         }
 
         public override string ToString()

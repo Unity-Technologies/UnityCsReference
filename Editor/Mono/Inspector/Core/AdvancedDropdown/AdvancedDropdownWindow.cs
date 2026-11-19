@@ -199,7 +199,12 @@ namespace UnityEditor.IMGUI.Controls
 
         public void Init(Rect buttonRect)
         {
-            m_ButtonRectScreenPos = EditorGUIUtility.GUIToScreenRect(buttonRect);
+            InitWithScreenRect(GUIUtility.GUIToScreenRect(buttonRect));
+        }
+
+        internal void InitWithScreenRect(Rect buttonRect)
+        {
+            m_ButtonRectScreenPos = buttonRect;
             if (m_State == null)
                 m_State = new AdvancedDropdownState();
             if (m_DataSource == null)
@@ -208,8 +213,6 @@ namespace UnityEditor.IMGUI.Controls
                 m_Gui = new AdvancedDropdownGUI(m_DataSource);
             m_Gui.state = m_State;
 
-            // Has to be done before calling Show / ShowWithMode
-            buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
             OnDirtyList();
 
             // Apply saved state before calculating size, so if it points to a child level, calculate size for it

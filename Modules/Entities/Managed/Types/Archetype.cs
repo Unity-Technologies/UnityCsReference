@@ -32,23 +32,29 @@ namespace Unity.Entities
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct Archetype
     {
+        // The native EntityQuery reads Chunks, Types, Offsets, SizeOfs and TypesCount through a copy of the start of this
+        // struct (EntityQueryInternal::Archetype in Modules/Entities/Source/EntityQuery.cpp), so they stay first, in this order.
         public ArchetypeChunkData Chunks;
+        public ComponentTypeInArchetype* Types; // Array with TypeCount elements, sorted by TypeIndex during CreateArchetype().
+
+        // These arrays each have TypeCount elements, ordered by IndexInArchetype (the same order as the Types array)
+        public int*    Offsets; // Byte offset of each component type's data within this archetype's chunk buffer.
+        public ushort* SizeOfs; // Size in bytes of each component type
+        public int TypesCount;
+
+        // The store of the world that owns this archetype. An archetype never changes world, so this is how an
+        // entity finds its world: entity -> chunk -> archetype -> store. Kept beside Offsets and SizeOfs, which
+        // every per-entity component access already reads.
+        public EntityComponentStore* EntityComponentStore;
+
         public UnsafeList<ChunkIndex> ChunksWithEmptySlots;
 
         public ChunkListMap FreeChunksBySharedComponents;
-        public ComponentTypeInArchetype* Types; // Array with TypeCount elements, sorted by TypeIndex during CreateArchetype().
         public int* EnableableTypeIndexInArchetype; // Array with EnableableTypesCount elements
-
-        // back pointer to EntityQueryData(s), used for chunk list caching
-        public UnsafeList<IntPtr> MatchingQueryData;
-
-        // single-linked list used for invalidating chunk list caches
-        public Archetype* NextChangedArchetype;
 
         public int EntityCount;
         public int ChunkCapacity;
 
-        public int TypesCount;
         public int EnableableTypesCount;
         public int InstanceSize;
         public int InstanceSizeWithOverhead;
@@ -68,14 +74,8 @@ namespace Unity.Entities
         public int* TypeMemoryOrderIndexToIndexInArchetype; // The Nth element is the IndexInArchetype of the type with MemoryOrderIndex=N
         public int* TypeIndexInArchetypeToMemoryOrderIndex; // The Nth element is the MemoryOrderIndex of the type with IndexInArchetype=N
 
-        // These arrays each have TypeCount elements, ordered by IndexInArchetype (the same order as the Types array)
-        public int*    Offsets; // Byte offset of each component type's data within this archetype's chunk buffer.
-        public ushort* SizeOfs; // Size in bytes of each component type
-
-        // The store of the world that owns this archetype. An archetype never changes world, so this is how an
-        // entity finds its world: entity -> chunk -> archetype -> store. Kept beside Offsets and SizeOfs, which
-        // every per-entity component access already reads.
-        public EntityComponentStore* EntityComponentStore;
+        public int Slot; // index in EntityComponentStore.m_Archetypes
+        public uint Version; // creation number in this world, never reused
         public EntityDataAccess* EntityDataAccess => Entities.EntityDataAccess.FromEntityComponentStore(EntityComponentStore);
         public int*    BufferCapacities; // For IBufferElementData components, the buffer capacity of each component. Not meaningful for non-buffer components.
 
@@ -143,7 +143,7 @@ namespace Unity.Entities
             return info;
         }
 
-        public void AddToChunkList(ChunkIndex chunk, SharedComponentValues sharedComponentIndices, uint changeVersion, ref EntityComponentStore.ChunkListChanges changes)
+        public void AddToChunkList(ChunkIndex chunk, SharedComponentValues sharedComponentIndices, uint changeVersion)
         {
             chunk.ListIndex = Chunks.Count;
             if (Chunks.Count == Chunks.Capacity)
@@ -164,24 +164,14 @@ namespace Unity.Entities
             }
 
             Chunks.Add(chunk, sharedComponentIndices, changeVersion);
-
-            fixed(Archetype* archetype = &this)
-            {
-                changes.TrackArchetype(archetype);
-            }
         }
 
-        public void RemoveFromChunkList(ChunkIndex chunk, ref EntityComponentStore.ChunkListChanges changes)
+        public void RemoveFromChunkList(ChunkIndex chunk)
         {
             var chunkListIndex = chunk.ListIndex;
             Chunks.RemoveAtSwapBack(chunkListIndex);
             var chunkThatMoved = Chunks[chunkListIndex];
             chunkThatMoved.ListIndex = chunkListIndex;
-
-            fixed(Archetype* archetype = &this)
-            {
-                changes.TrackArchetype(archetype);
-            }
         }
 
         void AddToChunkListWithEmptySlots(ChunkIndex chunk)

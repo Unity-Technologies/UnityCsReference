@@ -305,7 +305,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
        internal bool FindTrustIssuePackagesAndShowPopUp(PackageCollection requestResult)
        {
-            if (m_SettingsProxy.isSignatureValidationDisabled)
+            if (m_SettingsProxy.isSignatureDisabled)
                 return true;
 
             var viewData = TrustWindow.CreateActiveViewData(m_UpmCache, requestResult, addAndRemoveOperation.operationType, m_Application.shortUnityVersion, m_SettingsProxy.trustPolicyLevel, m_SettingsProxy.hasBypassPackageTrustEntitlement);

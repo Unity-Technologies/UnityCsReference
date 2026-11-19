@@ -22,6 +22,9 @@ unsafe partial struct LayoutNodeData
         // Input suggesting the layout may have changed and should be recomputed.
         IsDirty = 1 << 0,
 
+        // Set when the layout writes an unrounded position, cleared once it is rounded to the pixel grid.
+        PositionIsRaw = 1 << 1,
+
         // Output of the layout telling the node has a new layout that needs to be taken into account.
         // (generate GCO, dirty visuals)
         HasNewLayout = 1 << 2,

@@ -35,9 +35,10 @@ internal sealed class WrapElementsCommand : Command<WrapElementsCommand>
     }
 
     public static CommandExecutionStatus Execute(object source, VisualElementAsset[] elements, Type wrapperType,
-        string variantName = null)
+        string variantName = null, AuthoringContext requestingContext = null)
     {
         using var command = GetPooled(source, elements, wrapperType, variantName);
+        command.RequestingContext = requestingContext;
         return UICommandQueue.Execute(command).Status;
     }
 
@@ -136,7 +137,7 @@ internal sealed class WrapElementsCommand : Command<WrapElementsCommand>
 
         using var toSelectHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);
         toSelectAssets.Add(wrapper);
-        UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(RequestingContext, toSelectAssets);
 
         return CommandExecutionStatus.Success;
     }

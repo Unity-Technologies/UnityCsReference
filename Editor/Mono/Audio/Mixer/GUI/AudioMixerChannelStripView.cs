@@ -27,7 +27,7 @@ namespace UnityEditor
         public const float kEffectScaleMouseDrag = 0.3f; // higher precision for effect slot editing
 
         private static readonly Color kMoveColorHighlight = new Color(0.3f, 0.6f, 1.0f, 0.4f);
-        private static readonly Color kMoveSlotColHiAllowed = new Color(1f, 1f, 1f, 0.7f); //new Color(59 / 255f, 162 / 255f, 216 / 255f, 0.7f);
+        private static readonly Color kMoveSlotColHiAllowed = new Color(1f, 1f, 1f, 0.7f);
         private static readonly Color kMoveSlotColLoAllowed = new Color(1f, 1f, 1f, 0.0f);
         private static readonly Color kMoveSlotColBorderAllowed = new Color(1f, 1f, 1f, 1.0f);
         private static readonly Color kMoveSlotColHiDisallowed = new Color(1.0f, 0.0f, 0.0f, 0.7f);
@@ -423,13 +423,8 @@ namespace UnityEditor
                     }
                     else
                     {
-                        //GUI.DrawTexture(r, showLevel ? style.focused.background : style.hover.background, ScaleMode.StretchToFill);
                         style.Draw(r, !showLevel, false, false, showLevel);
                     }
-
-                    // Cursor icon needs to proper work with dragging: TODO use hotcontrol
-                    //if (showLevel)
-                    //  EditorGUIUtility.AddCursorRect(r, MouseCursor.SlideArrow);
                 }
                 else
                 {
@@ -486,7 +481,7 @@ namespace UnityEditor
                 if (effect.sendTarget != null)
                 {
                     string sendTarget = effect.GetSendTargetDisplayString(p.effectMap);
-                    return "Send to: " + sendTarget; // We add the tooltip here because we rarely
+                    return "Send to: " + sendTarget;
                 }
                 else
                 {
@@ -743,7 +738,7 @@ namespace UnityEditor
                         }
                     }
 
-                    if (m_MovingEffectDstIndex != -1 && m_MovingDstRect.y >= 0.0f)// && m_MovingEffectDstIndex != m_MovingEffectSrcIndex && m_MovingEffectDstIndex != m_MovingEffectSrcIndex +1)
+                    if (m_MovingEffectDstIndex != -1 && m_MovingDstRect.y >= 0.0f)
                     {
                         float kMoveRange = 2;
                         Color moveSlotColLo = (m_MovingEffectAllowed) ? kMoveSlotColLoAllowed : kMoveSlotColLoDisallowed;
@@ -1100,7 +1095,6 @@ namespace UnityEditor
             public float[] vuinfo_level = new float[AudioMixerController.kMaxMeteringChannels + 1];
             public float[] vuinfo_peak = new float[AudioMixerController.kMaxMeteringChannels + 1];
 
-            //public int highlightEffectIndex;
             public Dictionary<AudioMixerEffectController, AudioMixerGroupController> effectMap;
 
             const float kAddEffectButtonHeight = 16f;
@@ -1115,7 +1109,6 @@ namespace UnityEditor
             public void Init(AudioMixerController controller, Rect channelStripRect, int maxNumEffects)
             {
                 numChannels = controller.GetGroupVUInfo(group.groupID, false, vuinfo_level, vuinfo_peak);
-                //numChannels = 8; // debugging
 
                 maxEffects = maxNumEffects;
                 bgRects = GetBackgroundRects(channelStripRect, group, maxEffects);
@@ -1171,12 +1164,6 @@ namespace UnityEditor
                 lineRect.y -= 1;
                 lineRect.height = 1;
                 EditorGUI.DrawRect(lineRect, lineColor);
-
-                // Optimize by rendering vu numbers and lines in one texture
-                //Rect vuNumbersRect = p.bgRects[1];
-                //vuNumbersRect.x = p.stripRect.xMax - 90f;
-                //vuNumbersRect.x = vuNumbersRect.xMax - AudioMixerDrawUtils.styles.channelStripVUMeterBg.normal.background.width; // right align
-                //AudioMixerDrawUtils.styles.channelStripVUMeterBg.Draw(vuNumbersRect, false, false, false, false); // 0 -80 dB numbers overlay
             }
 
             // User color
@@ -1657,7 +1644,6 @@ namespace UnityEditor
 
                 GUIUtility.hotControl = 0;
                 Event.current.Use();
-                //InspectorWindow.RepaintAllInspectors();
             }
 
             if (evt.type == EventType.Repaint)
@@ -1698,7 +1684,6 @@ namespace UnityEditor
                     (numBypassEffects + (numBypassEffects > 1 ? " effects" : " effect") + " currently bypassed")
                 );
 
-                //bool verticalScrollbar = contentRect.height > rect.height;
                 bool horizontalScrollbar = contentRect.width > rect.width;
                 const float margin = 5f;
                 float textwidth = styles.warningOverlay.CalcSize(GUIContent.Temp(warningStr)).x;

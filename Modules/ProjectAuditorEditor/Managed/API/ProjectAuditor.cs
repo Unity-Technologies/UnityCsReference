@@ -1,0 +1,502 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using Unity.ProjectAuditor.Editor.Core;
+using Unity.ProjectAuditor.Editor.Utils;
+using UnityEditor;
+using Debug = UnityEngine.Debug;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+using Unity.ProjectAuditor.Editor.Modules;
+using Unity.Scripting.LifecycleManagement;
+using Unity.Collections;
+
+namespace Unity.ProjectAuditor.Editor
+{
+    /// <summary>
+    /// The ProjectAuditor class is responsible for auditing the Unity project.
+    /// </summary>
+    public sealed partial class ProjectAuditor : IPostprocessBuildWithReport
+    {
+        /// <summary>
+        /// Returns the relative callback order for callbacks. Callbacks with lower values are called before ones with higher values.
+        /// </summary>
+        public int callbackOrder => 1;  // We want LastBuildReportProvider to update its cached report before we run analysis.
+
+        /// <summary>
+        /// Returns a list of Unity versions that is known to Project Auditor. It is based on the content in the Obsolete API Database.
+        /// </summary>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
+        public static IReadOnlyList<string> KnownUnityVersions { get { return ObsoleteLibrary.UnityVersions; } }
+
+        internal static string s_DataPath => "ProjectAuditor"; // on disk: EditorResourcesPackage/Editor Default Resources/ProjectAuditor
+        internal static string s_RulesDataPath => ProjectAuditorRulesPackage.Path + "/Rules";
+        internal static string s_RoslynAnalyzersDataPath => ProjectAuditorRulesPackage.Path + "/RoslynAnalyzers";
+
+        internal const string DisplayName = "Project Auditor";
+
+        const string k_PendingPostBuildAuditKey = "ProjectAuditor.PendingPostBuildAudit";
+
+        const string k_PreferencesRoot = "Edit > Preferences";
+        internal const string k_PreferencesPath = k_PreferencesRoot + " > Analysis > " + DisplayName;
+        internal const string k_ProjectSettingsPath = "Edit > Project Settings > " + DisplayName;
+        internal const string k_ProjectSettingsProviderPath = "Project/ProjectAuditor";
+
+        [NoAutoStaticsCleanup] // Project path never changes within a session
+        internal static readonly string ProjectPath = PathUtils.GetDirectoryName(UnityEngine.Application.dataPath);
+
+        [AutoStaticsCleanupOnCodeReload] // Category registry: accumulates custom categories, must be reset on code reload
+        static Dictionary<string, IssueCategory> s_CustomCategories = new Dictionary<string, IssueCategory>();
+
+        readonly List<Module> m_Modules = new List<Module>();
+
+        /// <summary>
+        /// ProjectAuditor default constructor
+        /// </summary>
+        public ProjectAuditor()
+        {
+            InitModules();
+        }
+
+        /// <summary>
+        /// Performs static analysis of the project, using default parameters.
+        /// </summary>
+        /// <param name="progress"> Progress bar, if applicable </param>
+        /// <returns> Generated report </returns>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
+        public Report Audit(IProgress progress = null)
+        {
+            return Audit(new AnalysisParams(), progress);
+        }
+
+        /// <summary>
+        /// Performs static analysis of the project, using the supplied analysis parameters.
+        /// </summary>
+        /// <param name="analysisParams"> Parameters to control the audit process </param>
+        /// <param name="progress"> Progress bar, if applicable </param>
+        /// <returns> Generated report </returns>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
+        /// <exception cref="System.ArgumentException">Thrown if analysisParams.Categories contains a summary category, such as IssueCategory.OptimizationSummary.</exception>
+        public Report Audit(AnalysisParams analysisParams, IProgress progress = null)
+        {
+            Report report = null;
+
+            // Prepended, so a throwing handler added by the caller can't stop the report being captured and leave the loop below spinning
+            Action<Report> captureReport = result => { report = result; };
+            analysisParams.OnCompleted = captureReport + analysisParams.OnCompleted;
+
+            var wasBlocking = analysisParams.Blocking;
+            analysisParams.Blocking = true;
+            try
+            {
+                AuditAsync(analysisParams, progress);
+
+                while (report == null)
+                {
+                    AnalysisCoroutine.ForceMoveNext();
+                    Thread.Yield();
+                }
+            }
+            finally
+            {
+                analysisParams.Blocking = wasBlocking;
+            }
+
+            return report;
+        }
+
+        /// <summary>
+        /// Performs asynchronous static analysis of the project, using the supplied analysis parameters.
+        /// Provide a callback to the `OnCompleted` Action in analysisParams to obtain the <see cref="Report"/> when analysis is completed.
+        /// </summary>
+        /// <param name="analysisParams"> Parameters to control the audit process </param>
+        /// <param name="progress"> Progress bar, if applicable </param>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
+        /// <exception cref="System.ArgumentException">Thrown if analysisParams.Categories contains a summary category, such as IssueCategory.OptimizationSummary.</exception>
+        public void AuditAsync(AnalysisParams analysisParams, IProgress progress = null)
+        {
+            if (!ProjectAuditorRulesPackage.IsInstalled)
+                throw new InvalidOperationException(ProjectAuditorRulesPackage.NotInstalledMessage);
+
+            var summaryIndex = analysisParams.Categories == null ? -1 : Array.FindIndex(analysisParams.Categories, c => c.Value.IsSummary());
+            if (summaryIndex >= 0)
+                throw new ArgumentException($"{analysisParams.Categories[summaryIndex].Value} is a summary category: summary categories are UI-only views and can't be requested for analysis. Request the categories it summarizes instead.", nameof(analysisParams));
+
+            if (analysisParams.Platform == BuildTarget.NoTarget)
+                analysisParams.Platform = EditorUserBuildSettings.activeBuildTarget;
+
+            var categories = analysisParams.Categories != null
+                ? analysisParams.Categories.ToValuesArray()
+#pragma warning disable UAC2001 // Avoid Linq
+                : m_Modules
+                    .SelectMany(m => m.Categories)
+                    .ToArray();
+#pragma warning restore UAC2001
+            var report = analysisParams.ExistingReport;
+            if (report == null)
+            {
+                report = new Report(analysisParams);
+            }
+            else
+            {
+                // incremental analysis
+                var reportCategories = report.SessionInfo.Categories.ToValuesList();
+                reportCategories.AddRange(categories);
+
+#pragma warning disable UAC2001 // Avoid Linq
+                report.SessionInfo.Categories = reportCategories.Distinct().ToSerializableArray();
+#pragma warning restore UAC2001
+
+                if (categories.Contains(IssueCategory.Code))
+                {
+                    report.SessionInfo.CodeAnalysisFlags = analysisParams.CodeAnalysisFlags;
+                    report.SessionInfo.OwnerFlags = analysisParams.OwnerFlags;
+                }
+
+                foreach (var category in categories)
+                {
+                    report.ClearIssues(category);
+                }
+            }
+
+            var platform = analysisParams.Platform;
+            if (!analysisParams.SupportedBuildTarget(BuildPipeline.GetBuildTargetGroup(platform), platform))
+            {
+                // Error and early out if the user has request analysis of a platform which the Unity Editor doesn't have installed support for
+                Debug.LogError($"[{DisplayName}] Build target {platform} is not supported in this Unity Editor");
+                analysisParams.OnStarted?.Invoke(report, Array.Empty<string>(), Array.Empty<IssueCategory>());
+                analysisParams.OnCompleted?.Invoke(report);
+                return;
+            }
+
+#pragma warning disable UAC2001 // Avoid Linq
+            var requestedModules = categories.SelectMany(GetModules).Distinct().ToArray();
+            var supportedModules = requestedModules.Where(m => m != null).ToArray();
+
+            analysisParams.OnStarted?.Invoke(
+                report,
+                supportedModules.Select(m => m.Name).ToArray(),
+                analysisParams.Categories.ToValuesArray());
+#pragma warning restore UAC2001
+
+            var numModules = supportedModules.Length;
+            if (numModules == 0)
+            {
+                // early out if, for any reason, there are no registered Modules
+                analysisParams.OnCompleted(report);
+                Debug.LogWarning($"[{DisplayName}] Could not find any registered modules.");
+                return;
+            }
+
+            analysisParams.DependencyCrawler = new DependencyCrawler();
+
+            var analyzedModuleNames = new HashSet<string>(supportedModules.Length);
+            foreach (var module in supportedModules)
+            {
+                analyzedModuleNames.Add(module.Name);
+            }
+
+            analysisParams.IssueOverrides = new IssueOverrides(report.IssueOverrides, analyzedModuleNames);
+
+            Action<Report> onCompletedInternal = null;
+            onCompletedInternal = (report) =>
+            {
+                analysisParams.DependencyCrawler.BuildHierarchies(report.GetAllIssues());
+                analysisParams.DependencyCrawler = null;
+
+                foreach (var d in report.UnfixedIssues)
+                {
+                    // Percolate perf critical issues down stacks
+                    int index = (int)CodeProperty.PerformanceCritical;
+                    if (d.Dependencies != null && d.Dependencies.PerfCriticalContext && d.CustomProperties != null && d.CustomProperties.Length > index)
+                        d.CustomProperties[index] = bool.TrueString;
+                }
+
+                analysisParams.OnCompleted -= onCompletedInternal;
+            };
+
+            analysisParams.OnCompleted += onCompletedInternal;
+
+            AsyncProgressState progressState = progress?.StartRoot("Project Auditor", "Analyzing", numModules);
+
+            var categoriesSet = new HashSet<IssueCategory>(categories);
+            var suppressedDiagnostics = UserPreferences.BuildSuppressedDiagnosticsSet();
+            UserPreferences.WarnOnInvalidSuppressedDiagnostics(suppressedDiagnostics);
+
+            var logTimingsInfo = UserPreferences.LogTimingsInfo;
+            var stopwatch = Stopwatch.StartNew();
+            var isCancelled = false;
+            foreach (var module in supportedModules)
+            {
+                long moduleAnalysisTimeMs = 0;
+
+                var moduleParams = new AnalysisParams(analysisParams)
+                {
+                    // Without progress, AuditAsync runs the whole analysis before it returns
+                    Blocking = analysisParams.Blocking || progress == null,
+                    OnIncomingIssues = results =>
+                    {
+                        if (analysisParams.ExistingReport != null)
+                        {
+                            // During incremental analysis, modules may emit items for categories that were not
+                            // requested (e.g. TextureModule runs because it also handles AssetIssue, but also
+                            // emits Texture items that were never cleared from the report). Filter to only the
+                            // categories that were explicitly cleared and re-analyzed to prevent duplication.
+                            #pragma warning disable UAC2001
+                            results = results.Where(i => categoriesSet.Contains(i.Category));
+                            #pragma warning restore UAC2001
+                        }
+
+                        var resultsList = new List<ReportItem>();
+
+                        // Suppressed issues are discarded.
+                        if (suppressedDiagnostics.Count > 0)
+                        {
+                            foreach (var item in results)
+                            {
+                                var id = item.DescriptorIdAsString;
+                                if (id == null || !suppressedDiagnostics.Contains(id))
+                                    resultsList.Add(item);
+                            }
+                        }
+                        else
+                        {
+                            resultsList.AddRange(results);
+                        }
+
+                        if (resultsList.Count > 0)
+                        {
+                            report.AddIssues(resultsList);
+                            analysisParams.OnIncomingIssues?.Invoke(resultsList);
+                        }
+                    },
+                    OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
+                    {
+                        moduleAnalysisTimeMs += extraAnalysisTimeMs;
+
+                        if (progress != null)
+                        {
+                            progress.AdvanceRoot(progressState);
+                            if (progress.IsCancelled)
+                                analysisResult = AnalysisResult.Cancelled;
+                        }
+
+                        var moduleEndTime = DateTime.Now;
+                        if (analysisResult == AnalysisResult.Cancelled)
+                            isCancelled = true;
+                        else if (analysisResult == AnalysisResult.Failure)
+                            Debug.Log($"[{DisplayName}] Module {module.Name} failed.");
+                        if (logTimingsInfo)
+                            Debug.Log($"[{DisplayName}] Module {module.Name} analysis took: " +
+                                moduleAnalysisTimeMs / 1000.0 + " seconds.");
+
+                        report.RecordModuleInfo(module, moduleAnalysisTimeMs, analysisResult);
+
+                        analysisParams.OnModuleCompleted?.Invoke(moduleName, analysisResult, extraAnalysisTimeMs);
+
+                        var finished = --numModules == 0;
+                        if (finished)
+                        {
+                            stopwatch.Stop();
+                            if (isCancelled)
+                                Debug.Log((progress?.IsCancelled ?? false)
+                                    ? $"[{DisplayName}] Analysis was cancelled by the user."
+                                    : $"[{DisplayName}] Analysis was cancelled.");
+                            if (logTimingsInfo)
+                                Debug.Log($"[{DisplayName}] Analysis took: " + stopwatch.ElapsedMilliseconds / 1000.0f +
+                                    " seconds.");
+
+                            if (!isCancelled)
+                            {
+                                report.SetIssueOverrides(analysisParams.IssueOverrides.ToList());
+                                var removedIssues = report.RemoveOverriddenIssues(analysisParams.IssueOverrides);
+                                if (removedIssues.Count > 0)
+                                    analysisParams.OnIssuesRemoved?.Invoke(report, removedIssues);
+                            }
+
+                            // finally, call the user's OnCompleted callback
+                            analysisParams.OnCompleted?.Invoke(report);
+
+                            progress?.ClearRoot(progressState);
+                        }
+                    }
+                };
+
+                var startTime = DateTime.UtcNow;
+
+                try
+                {
+                    // The first call should set up the progress bar, do a small amount of work (do not cause a frame hitch) and then yield.
+                    // Then everything after the first `yield return null` uses a coroutine.
+                    var enumerator = module.Audit(moduleParams, progress);
+                    var coroutine = module.QueueAnalysisCoroutine(enumerator, module, (timeMs) => moduleAnalysisTimeMs += timeMs);
+                    coroutine.MoveNext(); // This runs the first step of the coroutine
+
+                    // If we are not tracking progress, we are synchronous, just run the entire analysis
+                    if (progress == null)
+                        while (AnalysisCoroutine.ForceMoveNext()) {}
+
+                    moduleAnalysisTimeMs += (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[{DisplayName}] Module {module.Name} failed: " + e.Message + " " + e.StackTrace);
+                    long extraAnalysisTime = (long)(DateTime.UtcNow - startTime).TotalMilliseconds;
+                    moduleParams.OnModuleCompleted(module.Name, AnalysisResult.Failure, extraAnalysisTime);
+                }
+            }
+
+            if (logTimingsInfo)
+                Debug.Log($"[{DisplayName}] Time to interactive: " + stopwatch.ElapsedMilliseconds / 1000.0f + " seconds.");
+        }
+
+        /// <summary>
+        /// Callback function which is called after a build is completed.
+        /// If UserPreferences.AnalyzeAfterBuild is true, performs a full audit and logs the number of issues found.
+        /// </summary>
+        /// <param name="report">A report containing information about the build, such as its target platform and output path.</param>
+        public void OnPostprocessBuild(BuildReport report)
+        {
+            if (UserPreferences.AnalyzeAfterBuild)
+            {
+                // Library/LastBuild.buildreport is only created AFTER OnPostprocessBuild so we need to defer analysis until the file is copied.
+                SessionState.SetBool(k_PendingPostBuildAuditKey, true);
+                EditorApplication.update += DelayedPostBuildAudit;
+            }
+        }
+
+        // A build that changes scripting defines ends in a domain reload, which drops the update subscription.
+        [InitializeOnLoadMethod]
+        static void ResumePendingPostBuildAudit()
+        {
+            if (SessionState.GetBool(k_PendingPostBuildAuditKey, false))
+                EditorApplication.delayCall += () => EditorApplication.update += new ProjectAuditor().DelayedPostBuildAudit;
+        }
+
+        internal void DelayedPostBuildAudit()
+        {
+            // The synchronous audit blocks the main thread, which assembly compilation needs to finish.
+            if (EditorApplication.isCompiling)
+                return;
+
+            // Unsubscribe before auditing in case an exception is thrown.
+            EditorApplication.update -= DelayedPostBuildAudit;
+
+            if (!SessionState.GetBool(k_PendingPostBuildAuditKey, false))
+                return;
+            SessionState.EraseBool(k_PendingPostBuildAuditKey);
+
+            if (!ProjectAuditorRulesPackage.IsInstalled)
+                return;
+
+            var report = Audit();
+
+            var numIssues = report.NumTotalIssues;
+            if (numIssues > 0)
+            {
+                if (UserPreferences.FailBuildOnIssues)
+                    Debug.LogError($"[{DisplayName}] Analysis found " + numIssues + " issues");
+                else
+                    Debug.Log($"[{DisplayName}] Analysis found " + numIssues + " issues");
+            }
+        }
+
+        /// <summary>
+        /// Registers an IssueCategory by name, and returns its value.
+        /// </summary>
+        /// <remarks>
+        /// It's possible to extend Project Auditor's analysis capabilities without modifying the package, by adding new custom Modules and Analyzers to your project code.
+        /// Custom analyzers may wish to report entirely new issue categories. This method is how those new categories are declared for use.
+        /// </remarks>
+        /// <param name="name">A custom category name.</param>
+        /// <returns>A value representing the custom category.</returns>
+        internal static IssueCategory GetOrRegisterCategory(string name)
+        {
+            if (!s_CustomCategories.ContainsKey(name))
+                s_CustomCategories.Add(name, IssueCategoryExtensions.FirstCustomCategory + s_CustomCategories.Count);
+            return s_CustomCategories[name];
+        }
+
+        internal Module[] GetModules(IssueCategory category)
+        {
+            #pragma warning disable UAC2001 // Avoid Linq
+            return m_Modules.Where(a => a.SupportedLayouts.FirstOrDefault(l => l.Category == category) != null).ToArray();
+#pragma warning restore UAC2001
+        }
+
+        internal List<Module> GetModules()
+        {
+            return m_Modules;
+        }
+
+        /// <summary>
+        /// Get the name of a category
+        /// </summary>
+        /// <param name="category">The category to get the name of</param>
+        /// <returns>The category name, or "Unknown" for an unregistered custom category</returns>
+        internal static string GetCategoryName(IssueCategory category)
+        {
+            if (category < IssueCategoryExtensions.FirstCustomCategory)
+                return category.ToString();
+
+            foreach (var pair in s_CustomCategories)
+            {
+                if (pair.Value == category)
+                    return pair.Key;
+            }
+
+            return "Unknown";
+        }
+
+        void InitModules()
+        {
+            if (ProjectAuditorRulesPackage.IsInstalled == false)
+                return;
+
+            foreach (var type in TypeCache.GetTypesDerivedFrom(typeof(Module)))
+            {
+                if (type.IsAbstract)
+                    continue;
+                var instance = Activator.CreateInstance(type) as Module;
+                try
+                {
+                    instance.Initialize();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"{DisplayName} [{instance.Name}]: {e.Message} {e.StackTrace}");
+                    continue;
+                }
+                m_Modules.Add(instance);
+            }
+        }
+
+        // Only used for testing
+        internal DescriptorId[] GetDescriptorIDs()
+        {
+            #pragma warning disable UAC2001 // Avoid Linq
+            return m_Modules.SelectMany(m => m.SupportedDescriptorIds).ToArray();
+#pragma warning restore UAC2001
+        }
+
+        // Only used for testing
+        internal bool IsModuleSupported(IssueCategory category)
+        {
+            #pragma warning disable UAC2001 // Avoid Linq
+            return m_Modules.Exists(a => a.SupportedLayouts.FirstOrDefault(l => l.Category == category) != null);
+#pragma warning restore UAC2001
+        }
+
+        // Only used for testing
+        internal static int NumCategories()
+        {
+            return (int)IssueCategoryExtensions.FirstCustomCategory + s_CustomCategories.Count;
+        }
+    }
+}

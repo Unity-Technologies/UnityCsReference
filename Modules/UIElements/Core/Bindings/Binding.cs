@@ -95,11 +95,10 @@ namespace UnityEngine.UIElements
         private bool m_Dirty;
         private BindingUpdateTrigger m_UpdateTrigger;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [UxmlAttribute, HideInInspector, UxmlInternalField]
         internal string property
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get;
             set;
         }

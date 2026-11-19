@@ -1,0 +1,1021 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Collections.Generic;
+using UnityEditor.Build.Profile.Elements;
+using UnityEditor.Build.Profile.Handlers;
+using UnityEditor.Modules;
+using UnityEditor.PackageManager.UI;
+using UnityEditor.UIElements;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.UIElements;
+using Application = UnityEngine.Device.Application;
+using Button = UnityEngine.UIElements.Button;
+
+namespace UnityEditor.Build.Profile
+{
+    /// <summary>
+    /// Platform Discovery Window used for creating new Build Profile assets from installed platform modules.
+    /// </summary>
+    internal class PlatformDiscoveryWindow : EditorWindow
+    {
+        const string k_Uxml = "BuildProfile/UXML/PlatformDiscoveryWindow.uxml";
+
+        // Asset database says max file name length = 250.
+        // Then, the longest variation we have now is " - Desktop - Development" = 24 bytes long.
+        // We also need to account for the `.asset` extension (6 bytes)
+        // and potentially ` 1`(2,3..) unique name suffix (3 bytes ought to be enough for everyone TM)
+        // if suddenly a build profile with such a long name already exists.
+        // This makes for 33 bytes worth of overhead, but to be even more safe let's limit the name to 200 during creation.
+        // There are checks at a lower level too.
+        const int k_MaxBuildProfileNameLength = 200;
+
+        Action m_OnCloseContinuation = null;
+
+        BuildProfileCard[] m_Cards;
+        BuildProfileCard m_SelectedCard;
+        Image m_SelectedCardImage;
+        Label m_SelectedDisplayNameLabel;
+        VisualElement m_SelectedDescription;
+        VisualElement m_PlatformBrowserHeaderBG;
+        Button m_AddBuildProfileButton;
+        BuildProfilePlatformBrowserClosed m_CloseEvent;
+
+        VisualElement m_RhsDetailsPanel;
+
+        VisualElement m_PackageContainer;
+        HelpBox m_SignInRequiredHelpBox;
+        VisualElement m_PackageListsAndActionsContainer;
+        ListView m_InternalPackageListView;
+        ListView m_PartnerPackageListView;
+        Button m_PackageSelectAll;
+        Button m_PackageDeselectAll;
+        Toggle m_PackageBrowseSampleCheckbox;
+        VisualElement m_LicenseContainer;
+        VisualElement m_LicenseLines;
+        VisualElement m_LicenseAgreement;
+        Toggle m_LicenseAgreementToggle;
+        VisualElement m_LicenseAgreementText;
+
+        // The licenses the agreement currently lists, joined; empty when there is nothing to agree to.
+        string m_ListedLicenses = string.Empty;
+
+        VisualElement m_KeyFeaturesContainer;
+        Label m_KeyFeaturesContentLabel;
+        VisualElement m_ResourcesContainer;
+        Label m_ResourcesContentLabel;
+        VisualElement m_PlatformConfigs;
+        VisualElement m_NameLinks;
+        HelpBox m_VariantSelectionWarning;
+
+        VisualElement m_SupportedPlatformStatusContainer;
+
+        Label m_SelectedDescriptionLabel;
+        Label m_ConfigLabel;
+        VisualElement m_ConfigPanel;
+        VisualElement m_ConfigHelpBox;
+        Label m_AddtionalInfoLabel;
+
+        TextField m_BuildProfileNameTextField;
+        BuildProfilePlatformElement m_SelectedElement;
+
+        /// <summary>
+        /// Warning message displayed when the selected card's platform
+        /// is not supported.
+        /// </summary>
+        HelpBox m_CardWarningHelpBox;
+        VisualElement m_PlatformDeprecationBanner;
+        HelpBox m_PlatformDeprecationHelpBox;
+        VisualElement m_HelpBoxWrapper;
+        private BuildProfileRenameOverlay m_RenameOverlay;
+
+        public static void ShowWindow()
+        {
+            ShowWindowAndSelectPlatform();
+        }
+
+        public static void ShowWindow(Action onCloseContinuation)
+        {
+            ShowWindowAndSelectPlatform(null, onCloseContinuation);
+        }
+
+        public static void ShowWindowAndSelectPlatform(GUID? platformGuid = null, Action onCloseContinuation = null)
+        {
+            var window = GetWindow<PlatformDiscoveryWindow>(true, TrText.platformDiscoveryTitle, true);
+            window.minSize = new Vector2(900, 500);
+            window.m_OnCloseContinuation = onCloseContinuation;
+
+            if (platformGuid != null)
+                window.SelectPlatform(platformGuid.Value);
+        }
+
+        static void AddSelectedBuildProfiles(
+            BuildProfileCard card, string customProfileName,
+            BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd, UnityAction<BuildProfile> onCreate)
+        {
+            bool wasCallbackRegistered = false;
+            bool noneSelected = true;
+
+            for (var ii = 0; ii < card.preconfiguredSettingsVariants.Length; ii++)
+            {
+                var variant = card.preconfiguredSettingsVariants[ii];
+                if (!variant.Selected)
+                    continue;
+
+                noneSelected = false;
+                var selectedPlatformGuid = GetValidatedVariantPlatformGuid(variant, card);
+
+                if (wasCallbackRegistered)
+                {
+                    AddSingleBuildProfile(card, customProfileName, variant.Name, ii, packagesToAdd, null, selectedPlatformGuid);
+                }
+                else
+                {
+                    AddSingleBuildProfile(card, customProfileName, variant.Name, ii, packagesToAdd, onCreate, selectedPlatformGuid);
+                    wasCallbackRegistered = true;
+                }
+            }
+
+            if (noneSelected)
+            {
+                AddSingleBuildProfile(card, customProfileName, null,
+                    -1, packagesToAdd, onCreate);
+            }
+        }
+
+        static GUID GetValidatedVariantPlatformGuid(PreconfiguredSettingsVariant variant, BuildProfileCard card)
+        {
+            bool isMultiTarget = card.supportedPlatformGuids.Length > 0;
+            var guid = variant.PlatformGuid;
+            if (guid.Empty() || !isMultiTarget)
+                return default;
+
+            foreach (var g in card.supportedPlatformGuids)
+            {
+                if (g == guid)
+                    return guid;
+            }
+
+            Debug.LogWarning(
+                $"Variant '{variant.Name}' has platformGuid '{guid}' " +
+                $"which is not a supported platform for '{card.displayName}'. Ignoring platformGuid.");
+            return default;
+        }
+
+        static void AddSingleBuildProfile(
+            BuildProfileCard card,
+            string customProfileName,
+            string preconfiguredSettingsVariantName,
+            int preconfiguredSettingsVariant,
+            BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd,
+            UnityAction<BuildProfile> onCreate,
+            GUID selectedPlatformGuid = default)
+        {
+            BuildProfileModuleUtil.CreateNewAssetWithName(
+                card.platformId,
+                customProfileName.Trim(),
+                preconfiguredSettingsVariantName,
+                preconfiguredSettingsVariant,
+                packagesToAdd,
+                onCreate,
+                selectedPlatformGuid);
+            EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
+            {
+                creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
+                platformId = card.platformId.ToString(),
+                platformDisplayName = card.displayName,
+            }));
+        }
+
+        /// <summary>
+        /// Open package manager samples window filtering for any platform packages.
+        /// </summary>
+        static void AfterBuildProfileCreatedShowSamples(BuildProfile profile)
+        {
+            var platformId = profile.platformGuid;
+            var internalPackages = BuildProfileModuleUtil.BuildPlatformInternalPackages(platformId);
+            var partnerPackages = BuildProfileModuleUtil.BuildPlatformPartnerPackages(platformId);
+
+            var packageNames = new List<string>();
+            foreach (var pkg in internalPackages.requiredPackages)
+            {
+                if (PackageManager.PackageInfo.IsPackageRegistered(pkg.qualifiedName))
+                    packageNames.Add(pkg.qualifiedName);
+            }
+            foreach (var pkg in internalPackages.recommendedPackages)
+            {
+                if (PackageManager.PackageInfo.IsPackageRegistered(pkg.qualifiedName))
+                    packageNames.Add(pkg.qualifiedName);
+            }
+            foreach (var pkg in partnerPackages.requiredPackages)
+            {
+                if (PackageManager.PackageInfo.IsPackageRegistered(pkg.qualifiedName))
+                    packageNames.Add(pkg.qualifiedName);
+            }
+            foreach (var pkg in partnerPackages.recommendedPackages)
+            {
+                if (PackageManager.PackageInfo.IsPackageRegistered(pkg.qualifiedName))
+                    packageNames.Add(pkg.qualifiedName);
+            }
+            PackageManagerWindow.OpenSamplesPage(packageNames);
+        }
+
+        static BuildProfileCard[] FindAllVisiblePlatforms(GUID[] platforms)
+        {
+            var cards = new List<BuildProfileCard>();
+            foreach (var platformId in platforms)
+            {
+                if (!BuildProfileModuleUtil.IsPlatformAvailableOnHostPlatform(platformId, SystemInfo.operatingSystemFamily))
+                    continue;
+
+                var internalPackages = BuildProfileModuleUtil.BuildPlatformInternalPackages(platformId);
+                var partnerPackages = BuildProfileModuleUtil.BuildPlatformPartnerPackages(platformId);
+
+                var preconfiguredSettingsVariants = BuildProfileModuleUtil.BuildPlatformPreconfiguredSettingsVariants(platformId);
+                if (preconfiguredSettingsVariants.Length <= 0)
+                {
+                    preconfiguredSettingsVariants = BuildProfileModuleUtil.GetBuildProfileExtension(platformId)?.GetPreconfiguredSettingsVariants()
+                        ?? Array.Empty<PreconfiguredSettingsVariant>();
+                }
+
+                cards.Add(new BuildProfileCard()
+                {
+                    displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
+                    platformId = platformId,
+                    description = BuildProfileModuleUtil.BuildPlatformDescription(platformId),
+                    keyFeatures = BuildProfileModuleUtil.BuildPlatformKeyFeatures(platformId),
+                    resources = BuildProfileModuleUtil.BuildPlatformResources(platformId),
+                    platformBannerBgColorHex = BuildProfileModuleUtil.GetPlatformColorString(platformId),
+                    internalPackages = internalPackages,
+                    partnerPackages = partnerPackages,
+                    preconfiguredSettingsVariants = preconfiguredSettingsVariants,
+                    supportedPlatformGuids = BuildProfileModuleUtil.GetSupportedPlatformGuids(platformId),
+                });
+            }
+            return cards.ToArray();
+        }
+
+        public void OnDisable()
+        {
+            m_OnCloseContinuation?.Invoke();
+            BuildProfileContext.packageServiceInfoProvider.OnPackageInfoUpdated -= OnPackageInfoUpdated;
+            BuildProfileContext.packageServiceInfoProvider.OnUserLoginStateChanged -= OnUserLoginStateChanged;
+            EditorAnalytics.SendAnalytic(m_CloseEvent);
+        }
+
+        public void CreateGUI()
+        {
+            var windowUxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
+            var windowUss = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
+            rootVisualElement.styleSheets.Add(windowUss);
+            rootVisualElement.AddToClassList(EditorGUIUtility.isProSkin ? Util.k_UssClassDark : Util.k_UssClassLight);
+            windowUxml.CloneTree(rootVisualElement);
+            m_CloseEvent = new BuildProfilePlatformBrowserClosed();
+
+            // Capture static visual element reference.
+            m_RhsDetailsPanel = rootVisualElement.Q<VisualElement>("platform-details-panel");
+            m_AddBuildProfileButton = rootVisualElement.Q<Button>("add-build-profile-button");
+            m_SelectedDisplayNameLabel = rootVisualElement.Q<Label>("selected-card-name");
+            m_SelectedCardImage = rootVisualElement.Q<Image>("selected-card-icon");
+            m_PlatformBrowserHeaderBG = rootVisualElement.Q<VisualElement>("platform-header-bg");
+            m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>(BuildProfileModuleUtil.platformRequirementWarningHelpboxName);
+            m_PlatformDeprecationBanner = rootVisualElement.Q<VisualElement>("platform-deprecation-banner");
+            m_PlatformDeprecationHelpBox = rootVisualElement.Q<HelpBox>("platform-deprecation-helpbox");
+            m_SelectedDescription = rootVisualElement.Q<VisualElement>("platform-description");
+            m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
+            m_HelpBoxWrapper = rootVisualElement.Q<VisualElement>("helpbox-wrapper");
+            m_PackageContainer = rootVisualElement.Q<VisualElement>("package-container");
+            m_InternalPackageListView = rootVisualElement.Q<ListView>("internal-package-list");
+            m_PartnerPackageListView = rootVisualElement.Q<ListView>("partner-package-list");
+            m_ConfigHelpBox = rootVisualElement.Q<VisualElement>("platform-config-help-box");
+            m_AddtionalInfoLabel = rootVisualElement.Q<Label>("additional-info");
+            m_AddtionalInfoLabel.text = "";
+
+            m_NameLinks = rootVisualElement.Q<VisualElement>("name-link-btn-container");
+
+            m_ConfigPanel = rootVisualElement.Q<VisualElement>("platform-config-panel");
+            m_ConfigLabel = rootVisualElement.Q<Label>("config-container-title");
+            m_ConfigLabel.text = TrText.buildProfileConfigurationLabel;
+            m_VariantSelectionWarning = rootVisualElement.Q<HelpBox>("multi-target-platform-variant-selection-warning");
+            m_VariantSelectionWarning.text = TrText.noVariantSelectionWarning;
+            m_PlatformConfigs = rootVisualElement.Q<VisualElement>("platform-configs");
+
+            m_BuildProfileNameTextField = rootVisualElement.Q<TextField>("build-profile-name");
+
+            m_SupportedPlatformStatusContainer = rootVisualElement.Q<VisualElement>("supported-platform-status-container");
+
+            m_KeyFeaturesContainer = rootVisualElement.Q<VisualElement>("platform-key-features-container");
+            m_KeyFeaturesContentLabel = rootVisualElement.Q<Label>("platform-key-features-content");
+            var keyFeaturesTitle =  m_KeyFeaturesContainer.Q<Label>("platform-key-features-title");
+            keyFeaturesTitle.text = TrText.keyFeaturesTitle;
+
+            m_ResourcesContainer = rootVisualElement.Q<VisualElement>("platform-resources-container");
+            m_ResourcesContentLabel = rootVisualElement.Q<Label>("platform-resources-content");
+            var resourcesTitle =  m_ResourcesContainer.Q<Label>("platform-resources-title");
+            resourcesTitle.text = TrText.resourcesTitle;
+
+            m_RenameOverlay = new BuildProfileRenameOverlay(m_BuildProfileNameTextField);
+
+            m_BuildProfileNameTextField.RegisterValueChangedCallback(changeEvent =>
+            {
+                if (string.IsNullOrEmpty(changeEvent.newValue))
+                    return;
+                m_RenameOverlay.OnNameChanged(changeEvent.previousValue, changeEvent.newValue);
+            });
+            m_BuildProfileNameTextField.RegisterCallback<FocusOutEvent>(evt =>
+            {
+                // truncate the name, just in case UI restrictions don't apply.
+                var newProfileName = m_BuildProfileNameTextField.value;
+                if (!string.IsNullOrEmpty(newProfileName) &&
+                    System.Text.Encoding.UTF8.GetByteCount(newProfileName) > k_MaxBuildProfileNameLength)
+                    m_BuildProfileNameTextField.value = BuildProfileModuleUtil.TruncateUtf8StringByBytes(newProfileName, k_MaxBuildProfileNameLength);
+                m_RenameOverlay.OnRenameEnd();
+            });
+            m_BuildProfileNameTextField.maxLength = k_MaxBuildProfileNameLength;
+
+            var packageContainerTitle = m_PackageContainer.Q<Label>("package-container-title");
+            packageContainerTitle.text = TrText.packageContainerTitle;
+
+            m_SignInRequiredHelpBox = m_PackageContainer.Q<HelpBox>("package-sign-in-helpbox");
+            m_SignInRequiredHelpBox.buttonText = TrText.signInButton;
+            m_SignInRequiredHelpBox.onButtonClicked += () => BuildProfileContext.packageServiceInfoProvider.ShowLogin();
+
+            m_PackageListsAndActionsContainer = m_PackageContainer.Q<VisualElement>("package-lists-and-actions-container");
+
+            SetUpPackageListView(m_InternalPackageListView, null);
+            SetUpPackageListView(m_PartnerPackageListView, () =>
+            {
+                var header = new Label();
+                header.text = TrText.partnerPackageListTitle;
+                header.AddToClassList("partner-package-list-header");
+                return header;
+            });
+
+            m_PackageSelectAll = m_PackageContainer.Q<Button>("package-select-all");
+            m_PackageSelectAll.text = TrText.selectAll;
+            m_PackageSelectAll.clicked += () => SetAllPackagesShouldInstallToggle(true);
+            m_PackageDeselectAll = m_PackageContainer.Q<Button>("package-deselect-all");
+            m_PackageDeselectAll.text = TrText.deselectAll;
+            m_PackageDeselectAll.clicked += () => SetAllPackagesShouldInstallToggle(false);
+            m_PackageBrowseSampleCheckbox = m_PackageContainer.Q<Toggle>("package-browse-samples-checkbox");
+            m_PackageBrowseSampleCheckbox.text = TrText.browseSamplesCheckboxLabel;
+
+            m_LicenseContainer = rootVisualElement.Q<VisualElement>("license-container");
+            m_LicenseContainer.Q<Label>("license-container-title").text = TrText.licenseContainerTitle;
+            m_LicenseLines = m_LicenseContainer.Q<VisualElement>("license-lines");
+            m_LicenseAgreement = rootVisualElement.Q<VisualElement>("license-agreement");
+            m_LicenseAgreementText = m_LicenseAgreement.Q<VisualElement>("license-agreement-text");
+            m_LicenseAgreementToggle = m_LicenseAgreement.Q<Toggle>("license-agreement-toggle");
+            m_LicenseAgreementToggle.tooltip = TrText.licenseAgreementTooltip;
+            m_LicenseAgreementToggle.RegisterValueChangedCallback(_ => UpdateAddBuildProfileButton());
+
+            // Apply localized text to static elements.
+            rootVisualElement.Q<ToolbarButton>("toolbar-filter-all").text = TrText.all;
+            m_AddBuildProfileButton.text = TrText.addBuildProfile;
+
+            // Build dynamic visual elements.
+            m_Cards = FindAllVisiblePlatforms(BuildProfileModuleUtil.FindAllViewablePlatforms().ToArray());
+            CreatePlatformView();
+
+            var isLoggedIn = BuildProfileContext.packageServiceInfoProvider.isUserLoggedIn;
+            if (isLoggedIn && BuildProfileContext.packageServiceInfoProvider.FetchInfo())
+                BuildProfileContext.packageServiceInfoProvider.OnPackageInfoUpdated += OnPackageInfoUpdated;
+
+            BuildProfileContext.packageServiceInfoProvider.OnUserLoginStateChanged += OnUserLoginStateChanged;
+
+            // Register event handlers.
+            m_AddBuildProfileButton.SetEnabled(true);
+            m_AddBuildProfileButton.clicked += () =>
+            {
+                OnAddBuildProfileClicked(m_SelectedCard, m_BuildProfileNameTextField.value);
+                m_CloseEvent = new BuildProfilePlatformBrowserClosed(new BuildProfilePlatformBrowserClosed.Payload()
+                {
+                    wasProfileCreated = true,
+                    platformId = m_SelectedCard.platformId.ToString(),
+                    platformDisplayName = m_SelectedCard.displayName,
+                });
+                Close();
+            };
+
+            // First element should match standalone platform.
+            OnCardSelected(m_Cards[0]);
+
+            m_RhsDetailsPanel.focusable = true;
+            m_RhsDetailsPanel.delegatesFocus = true;
+            rootVisualElement.RegisterCallback<NavigationSubmitEvent>(OnFocusToDetailsPanel);
+        }
+
+        void OnPackageInfoUpdated()
+        {
+            UpdatePackageSection(m_SelectedCard);
+        }
+
+        void OnUserLoginStateChanged()
+        {
+            var provider = BuildProfileContext.packageServiceInfoProvider;
+            if (provider.isUserLoggedIn && provider.FetchInfo())
+            {
+                provider.OnPackageInfoUpdated -= OnPackageInfoUpdated;
+                provider.OnPackageInfoUpdated += OnPackageInfoUpdated;
+            }
+
+            UpdatePackageSection(m_SelectedCard);
+            UpdateAddBuildProfileButton();
+        }
+
+        void SetUpPackageListView(ListView listView, Func<VisualElement> customHeader)
+        {
+            listView.itemsSource = Array.Empty<PlatformPackageEntry>();
+            listView.makeItem = PlatformPackageItem.Make;
+            listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+            listView.selectionType = SelectionType.None;
+            listView.bindItem = (element, index) =>
+            {
+                if (element is not PlatformPackageItem packageItem)
+                {
+                    Debug.LogWarning("Unexpected element type in Platform Browser. element=" + element);
+                    return;
+                }
+
+                if (index == 0)
+                    element.Q<VisualElement>("package-list-item").ToggleInClassList("border-top-1-color-10");
+
+                var packageEntry = listView.itemsSource[index] as PlatformPackageEntry;
+                packageItem.Set(packageEntry, UpdateLicenseAgreement);
+            };
+
+            if (customHeader != null)
+                listView.makeHeader = customHeader.Invoke;
+        }
+
+        /// <summary>
+        /// Set the state of the install toggle for all packages in the internal and partner package lists.
+        /// </summary>
+        void SetAllPackagesShouldInstallToggle(bool selection)
+        {
+            SetShouldInstall(m_InternalPackageListView);
+            SetShouldInstall(m_PartnerPackageListView);
+            m_InternalPackageListView.RefreshItems();
+            m_PartnerPackageListView.RefreshItems();
+            UpdateLicenseAgreement();
+
+            void SetShouldInstall(ListView listView)
+            {
+                foreach (PlatformPackageEntry entry in listView.itemsSource)
+                {
+                    // Required and already-installed entries are always selected.
+                    if (entry.required || entry.isInstalled)
+                        continue;
+
+                    entry.shouldInstalled = selection;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sets the enabled state of the Select All and Deselect All buttons
+        /// based on the current state of the package lists.
+        /// </summary>
+        void SetEnabledPackageSelectionButtons()
+        {
+            var internalPackageList = m_InternalPackageListView.itemsSource as PlatformPackageEntry[];
+            var partnerPackageList = m_PartnerPackageListView.itemsSource as PlatformPackageEntry[];
+            if (internalPackageList == null || partnerPackageList == null)
+            {
+                Debug.LogWarning("Could not parse lists of packages in Platform Browser");
+                return;
+            }
+
+            var allPackagesAreInstalledOrRequired = AreAllPackagesInstalledOrRequired(internalPackageList) &&
+                AreAllPackagesInstalledOrRequired(partnerPackageList);
+
+            m_PackageDeselectAll.SetEnabled(!allPackagesAreInstalledOrRequired);
+            m_PackageSelectAll.SetEnabled(!allPackagesAreInstalledOrRequired);
+
+            bool AreAllPackagesInstalledOrRequired(PlatformPackageEntry[] platformPackageEntries)
+            {
+                foreach (var package in platformPackageEntries)
+                {
+                    if (!package.isInstalled && !package.required)
+                        return false;
+                }
+                return true;
+            }
+        }
+
+        void SelectPlatform(GUID platformGuid)
+        {
+            for (var index = 0; index < m_Cards.Length; index++)
+            {
+                var card = m_Cards[index];
+                if (card.platformId == platformGuid)
+                {
+                    OnCardSelected(card);
+                    break;
+                }
+            }
+        }
+
+        void UpdatePlatformDeprecationBanner(BuildProfileCard card)
+        {
+            if (!BuildProfileModuleUtil.BuildPlatformTryGetDeprecationMessage(card.platformId, out var message))
+            {
+                m_PlatformDeprecationBanner.Hide();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(message))
+                message = string.Format(TrText.platformDeprecatedDefaultWithDisplayName, card.displayName);
+            m_PlatformDeprecationHelpBox.text = message;
+            m_PlatformDeprecationBanner.Show();
+        }
+
+        void ClearWindowData()
+        {
+            m_PlatformConfigs.Clear();
+            m_ConfigHelpBox.Clear();
+            m_NameLinks.Clear();
+            m_AddtionalInfoLabel.Clear();
+            m_LicenseLines.Clear();
+            ClearLicenseAgreement();
+            m_InternalPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
+            m_PartnerPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
+        }
+
+        void OnFocusToDetailsPanel(NavigationSubmitEvent e)
+        {
+            if (e.target is BuildProfilePlatformElement)
+            {
+                m_RhsDetailsPanel.Focus();
+                e.StopPropagation();
+            }
+        }
+
+        /// <summary>
+        /// Verify editor can create build profiles for the currently selected card. Otherwise
+        /// display relevant documentation to the user.
+        /// </summary>
+        internal void OnCardSelected(BuildProfileCard card, BuildProfilePlatformElement element = null)
+        {
+            ClearWindowData();
+            m_BuildProfileNameTextField.value = BuildProfileDataSource.SanitizeFileName(card.displayName);
+            m_SelectedCard = card;
+            SetElementSelected(element ?? FindFirstElement(card.platformId));
+            m_SelectedDisplayNameLabel.text = card.displayName;
+
+            m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformHeroImage(card.platformId);
+            m_AddtionalInfoLabel.text = BuildProfileModuleUtil.GetSubtitle(card.platformId);
+
+            // Only color if not a default color and color can be parsed.
+            if (!card.platformBannerBgColorHex.Equals("#00000000") && ColorUtility.TryParseHtmlString(card.platformBannerBgColorHex, out Color bgColor))
+                m_PlatformBrowserHeaderBG.style.backgroundColor = bgColor;
+            else
+                m_PlatformBrowserHeaderBG.style.backgroundColor = StyleKeyword.Null;
+
+            UpdatePlatformDeprecationBanner(card);
+
+            m_SupportedPlatformStatusContainer.Hide();
+            if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId)
+                && !string.IsNullOrEmpty(m_CardWarningHelpBox.text))
+                m_HelpBoxWrapper.Show();
+            else
+            {
+                m_HelpBoxWrapper.Hide();
+
+                var supportedPlatformHelpBox = m_SupportedPlatformStatusContainer.Q<HelpBox>("supported-platform-status-helpbox");
+                if (Util.UpdateSupportedPlatformStatusHelpBox(supportedPlatformHelpBox, card.platformId))
+                    m_SupportedPlatformStatusContainer.Show();
+            }
+
+            UpdatePackageSection(card);
+
+            if (card.description.Length > 0)
+            {
+                m_SelectedDescriptionLabel.text = card.description;
+                m_SelectedDescription.Show();
+            }
+            else
+                m_SelectedDescription.Hide();
+
+            if (card.keyFeatures.Length > 0)
+            {
+                m_KeyFeaturesContentLabel.text = card.keyFeatures;
+                m_KeyFeaturesContainer.Show();
+            }
+            else
+                m_KeyFeaturesContainer.Hide();
+
+            if (card.resources.Length > 0)
+            {
+                m_ResourcesContentLabel.text = card.resources;
+                m_ResourcesContainer.Show();
+            }
+            else
+                m_ResourcesContainer.Hide();
+
+            if (card.preconfiguredSettingsVariants.Length > 0)
+            {
+                // Display preconfig items with tooltip.
+                for (int i = 0; i < card.preconfiguredSettingsVariants.Length; i++)
+                {
+                    var preconfigItem = new PreconfiguredSettingsItem();
+                    preconfigItem.Set(card.preconfiguredSettingsVariants[i], OnPreconfiguredSettingsVariantChanged, card.preconfiguredSettingsVariants[i].Tooltip);
+                    m_PlatformConfigs.Insert(i, preconfigItem);
+                }
+                m_ConfigLabel.Show();
+                m_ConfigPanel.Show();
+
+                var preconfigDocLink = BuildProfileModuleUtil.GetPlatformSettingsDocsLink(card.platformId);
+                if (preconfigDocLink != null)
+                {
+                    Button btn = new Button();
+                    btn.iconImage = BuildProfileModuleUtil.GetHelpIcon();
+                    string link = preconfigDocLink;
+                    btn.clicked += () => { Application.OpenURL(link); };
+                    btn.AddToClassList("link-button");
+                    m_ConfigHelpBox.Add(btn);
+                }
+            }
+            else
+            {
+                m_ConfigLabel.Hide();
+                m_ConfigPanel.Hide();
+            }
+
+            // Displays the buttons with url.
+            var nameAndLinkList = BuildProfileModuleUtil.GetPlatformNameLinkList(card.platformId);
+            if (nameAndLinkList != null)
+            {
+                for (int i = 0; i < nameAndLinkList.Count; i++)
+                {
+                    Button btn = new Button();
+                    btn.text = nameAndLinkList[i].name;
+                    string linkUrl = nameAndLinkList[i].linkUrl;
+                    btn.clicked += () => { Application.OpenURL(linkUrl); };
+                    btn.AddToClassList("link-button");
+                    btn.AddToClassList("ml-none");
+                    if (i > 0)
+                    {
+                        Label seperator = new Label("|");
+                        seperator.style.marginLeft = 2;
+                        seperator.style.marginRight = 2;
+                        m_NameLinks.Add(seperator);
+                    }
+                    m_NameLinks.Add(btn);
+                }
+            }
+
+            UpdateAddBuildProfileButton();
+        }
+
+        void UpdatePackageSection(BuildProfileCard card)
+        {
+            var hasPackages = card.internalPackages.packageCount > 0 || card.partnerPackages.packageCount > 0;
+            var isLoggedIn = BuildProfileContext.packageServiceInfoProvider.isUserLoggedIn;
+
+            if (hasPackages && isLoggedIn)
+            {
+                m_PackageContainer.Show();
+                m_SignInRequiredHelpBox.Hide();
+                m_PackageListsAndActionsContainer.Show();
+
+                RebuildPackageListView(card.internalPackages, m_InternalPackageListView);
+                RebuildPackageListView(card.partnerPackages, m_PartnerPackageListView);
+                UpdateVariantRequiredPackages();
+                SetEnabledPackageSelectionButtons();
+                UpdateLicenseSection();
+                UpdateLicenseAgreement();
+            }
+            else if (hasPackages && !isLoggedIn)
+            {
+                UpdateSignInRequiredHelpBoxText(card);
+
+                m_PackageContainer.Show();
+                m_SignInRequiredHelpBox.Show();
+                m_PackageListsAndActionsContainer.Hide();
+                m_LicenseContainer.Hide();
+                ClearLicenseAgreement();
+
+                m_InternalPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
+                m_PartnerPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
+            }
+            else
+            {
+                m_PackageContainer.Hide();
+                m_LicenseContainer.Hide();
+                ClearLicenseAgreement();
+            }
+
+            if (!BuildProfileModuleUtil.HasSamplesInPackageManager(card.platformId))
+            {
+                m_PackageBrowseSampleCheckbox.value = false;
+                m_PackageBrowseSampleCheckbox.Hide();
+            }
+            else
+            {
+                m_PackageBrowseSampleCheckbox.value = true;
+                m_PackageBrowseSampleCheckbox.Show();
+            }
+        }
+
+        void OnPreconfiguredSettingsVariantChanged()
+        {
+            UpdateVariantRequiredPackages();
+            SetEnabledPackageSelectionButtons();
+            UpdateSignInRequiredHelpBoxText(m_SelectedCard);
+            UpdateLicenseAgreement();
+        }
+
+        void UpdateVariantRequiredPackages()
+        {
+            var variantRequiredPackages = GetSelectedVariantRequiredPackages(m_SelectedCard);
+            foreach (PlatformPackageEntry entry in m_InternalPackageListView.itemsSource)
+                entry.SetRequiredByVariant(variantRequiredPackages.Contains(entry.qualifiedName));
+            foreach (PlatformPackageEntry entry in m_PartnerPackageListView.itemsSource)
+                entry.SetRequiredByVariant(variantRequiredPackages.Contains(entry.qualifiedName));
+
+            m_InternalPackageListView.RefreshItems();
+            m_PartnerPackageListView.RefreshItems();
+        }
+
+        void UpdateSignInRequiredHelpBoxText(BuildProfileCard card)
+        {
+            var hasRequiredPackages = card.internalPackages.requiredPackages.Length > 0 || card.partnerPackages.requiredPackages.Length > 0
+                || GetSelectedVariantRequiredPackages(card).Count > 0;
+            var prefix = hasRequiredPackages
+                ? AllRequiredPackagesInstalled(card) ? TrText.requiredPackagesInstalled : TrText.requiredPackagesNotInstalled
+                : string.Empty;
+            m_SignInRequiredHelpBox.text = string.Format(TrText.signInRequiredForPackages, prefix);
+        }
+
+        /// <summary>
+        /// Lists which license covers each package offered for the selected platform, one line per distinct
+        /// license. Unlike the footer agreement this covers every package on offer, not just the selected ones,
+        /// so it stays put as the user toggles them.
+        /// </summary>
+        internal void UpdateLicenseSection()
+        {
+            m_LicenseLines.Clear();
+
+            var licenses = CollectLicenses(entry => true);
+            if (licenses.Count == 0)
+            {
+                m_LicenseContainer.Hide();
+                return;
+            }
+
+            foreach (var license in licenses)
+            {
+                var line = new LinkedTextLabel();
+                var format = license.packageNames.Count > 1 ? TrText.licenseLinePlural : TrText.licenseLineSingular;
+                line.text = string.Format(format, JoinForDisplay(license.packageNames), line.Link(license.name, license.url));
+                m_LicenseLines.Add(line);
+            }
+
+            m_LicenseContainer.Show();
+        }
+
+        /// <summary>
+        /// Shows which licenses the user accepts by creating a profile with the currently selected packages,
+        /// and asks them to agree to those licenses before a profile can be created.
+        /// </summary>
+        internal void UpdateLicenseAgreement()
+        {
+            // An installed package is not installed again, so creating the profile accepts nothing new for it.
+            var licenses = CollectLicenses(entry => !entry.isInstalled && entry.shouldInstalled);
+            if (licenses.Count == 0)
+            {
+                ClearLicenseAgreement();
+                UpdateAddBuildProfileButton();
+                return;
+            }
+
+            m_LicenseAgreementText.Clear();
+
+            var label = new LinkedTextLabel();
+            var links = new List<string>(licenses.Count);
+            foreach (var license in licenses)
+                links.Add(label.Link(license.name, license.url));
+
+            // Agreeing covers the licenses listed at the time, so a changed list has to be agreed to again.
+            var listedLicenses = string.Join("\n", label.urls);
+            if (listedLicenses != m_ListedLicenses)
+            {
+                m_ListedLicenses = listedLicenses;
+                m_LicenseAgreementToggle.SetValueWithoutNotify(false);
+            }
+
+            label.text = string.Format(TrText.licenseAgreement, JoinForDisplay(links));
+            m_LicenseAgreementText.Add(label);
+            m_LicenseAgreement.Show();
+            UpdateAddBuildProfileButton();
+        }
+
+        void ClearLicenseAgreement()
+        {
+            m_LicenseAgreementText.Clear();
+            m_ListedLicenses = string.Empty;
+            m_LicenseAgreementToggle.SetValueWithoutNotify(false);
+            m_LicenseAgreement.Hide();
+        }
+
+        /// <summary>
+        /// Groups the packages matching <paramref name="include"/> by the license covering them. Several packages
+        /// commonly share one license document, so grouping is on the license URL.
+        /// </summary>
+        List<(string url, string name, List<string> packageNames)> CollectLicenses(Func<PlatformPackageEntry, bool> include)
+        {
+            var licenses = new List<(string url, string name, List<string> packageNames)>();
+            Collect(m_InternalPackageListView);
+            Collect(m_PartnerPackageListView);
+            return licenses;
+
+            void Collect(ListView listView)
+            {
+                foreach (PlatformPackageEntry entry in listView.itemsSource)
+                {
+                    if (!include(entry) || string.IsNullOrEmpty(entry.licenseUrl))
+                        continue;
+
+                    var displayName = string.IsNullOrEmpty(entry.displayName) ? entry.qualifiedName : entry.displayName;
+                    var index = licenses.FindIndex(existing => existing.url == entry.licenseUrl);
+                    if (index < 0)
+                        licenses.Add((entry.licenseUrl, entry.licenseName, new List<string> { displayName }));
+                    else if (!licenses[index].packageNames.Contains(displayName))
+                        licenses[index].packageNames.Add(displayName);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Joins as an English-style list: "A", "A and B", "A, B and C".
+        /// </summary>
+        static string JoinForDisplay(List<string> parts)
+        {
+            if (parts.Count == 0)
+                return string.Empty;
+            if (parts.Count == 1)
+                return parts[0];
+
+            var head = string.Join(TrText.listSeparator, parts.GetRange(0, parts.Count - 1));
+            return head + TrText.listFinalSeparator + parts[parts.Count - 1];
+        }
+
+        void RebuildPackageListView(BuildTargetDiscovery.PlatformPackageList packageList, ListView listView)
+        {
+            if (packageList.packageCount > 0)
+            {
+                listView.itemsSource = PlatformPackageItem.CreateItemSource(packageList);
+                listView.Show();
+                listView.Rebuild();
+            }
+            else
+                listView.Hide();
+        }
+
+        void CreatePlatformView()
+        {
+            var allGroups = BuildProfileModuleUtil.GetAllPlatformGroups();
+            var platformContainer = rootVisualElement.Q<VisualElement>("platforms-list-container");
+
+            int i = 0;
+            foreach (var platformGroup in allGroups)
+            {
+                BuildProfileCard[] cards = FindAllVisiblePlatforms(platformGroup.platforms);
+
+                if (cards.Length > 0)
+                {
+                    var item = new BuildProfilePlatformGroup(this);
+                    item.Set(platformGroup.groupName, cards);
+                    item.AddToClassList("platform-group");
+                    platformContainer.Insert(i, item);
+                    i++;
+                }
+            }
+        }
+
+        void SetElementSelected(BuildProfilePlatformElement element)
+        {
+            m_SelectedElement?.SetSelected(false);
+            m_SelectedElement = element;
+            m_SelectedElement?.SetSelected(true);
+        }
+
+        BuildProfilePlatformElement FindFirstElement(GUID platformId)
+        {
+            return rootVisualElement.Q<VisualElement>("platforms-list-container")
+                .Query<BuildProfilePlatformElement>()
+                .Where(e => e.GetBuildProfileCard().platformId == platformId)
+                .First();
+        }
+
+        void UpdateAddBuildProfileButton()
+        {
+            var card = m_SelectedCard;
+            var count = 0;
+            for (var ii = 0; ii < card.preconfiguredSettingsVariants.Length; ii++)
+            {
+                var variant = card.preconfiguredSettingsVariants[ii];
+                if (variant.Selected)
+                {
+                    count++;
+                }
+            }
+            m_AddBuildProfileButton.text = (count < 2) ? TrText.addBuildProfile : string.Format(TrText.addBuildProfiles, count);
+
+            var allRequiredPackagesInstalled = AllRequiredPackagesInstalled(card);
+            var isLoggedIn = BuildProfileContext.packageServiceInfoProvider.isUserLoggedIn;
+            var isMultiTarget = card.supportedPlatformGuids.Length > 0;
+            var licensesAgreed = m_ListedLicenses.Length == 0 || m_LicenseAgreementToggle.value;
+            m_AddBuildProfileButton.SetEnabled(
+                (allRequiredPackagesInstalled || isLoggedIn) && (!isMultiTarget || count > 0) && licensesAgreed);
+
+            // Nothing else on the button says why it is held back, and a disabled element still shows its tooltip.
+            m_AddBuildProfileButton.tooltip = licensesAgreed ? string.Empty : TrText.licenseAgreementRequiredTooltip;
+
+            if (isMultiTarget && count == 0)
+                m_VariantSelectionWarning.Show();
+            else
+                m_VariantSelectionWarning.Hide();
+        }
+
+        static bool AllRequiredPackagesInstalled(BuildProfileCard card)
+        {
+            foreach (var package in card.internalPackages.requiredPackages)
+            {
+                if (!PackageManager.PackageInfo.IsPackageRegistered(package.qualifiedName))
+                    return false;
+            }
+
+            foreach (var package in card.partnerPackages.requiredPackages)
+            {
+                if (!PackageManager.PackageInfo.IsPackageRegistered(package.qualifiedName))
+                    return false;
+            }
+
+            foreach (var packageName in GetSelectedVariantRequiredPackages(card))
+            {
+                if (!PackageManager.PackageInfo.IsPackageRegistered(packageName))
+                    return false;
+            }
+
+            return true;
+        }
+
+        internal static HashSet<string> GetSelectedVariantRequiredPackages(BuildProfileCard card)
+        {
+            var packageNames = new HashSet<string>();
+            foreach (var variant in card.preconfiguredSettingsVariants)
+            {
+                if (variant.Selected)
+                    packageNames.UnionWith(variant.RequiredPackages);
+            }
+
+            // A variant-required package can only be listed in the recommended packages.
+            var recommendedPackages = new HashSet<string>();
+            foreach (var package in card.internalPackages.recommendedPackages)
+                recommendedPackages.Add(package.qualifiedName);
+            foreach (var package in card.partnerPackages.recommendedPackages)
+                recommendedPackages.Add(package.qualifiedName);
+
+            packageNames.IntersectWith(recommendedPackages);
+            return packageNames;
+        }
+
+        /// <summary>
+        /// Creates a build profile assets based on the selected card.
+        /// </summary>
+        void OnAddBuildProfileClicked(BuildProfileCard card, string customProfileName)
+        {
+            var packagesToAdd = DeterminePackagesToAdd();
+            bool shouldOpenSample = m_PackageBrowseSampleCheckbox.value;
+            if (shouldOpenSample)
+                AddSelectedBuildProfiles(card, customProfileName, packagesToAdd, AfterBuildProfileCreatedShowSamples);
+            else
+                AddSelectedBuildProfiles(card, customProfileName, packagesToAdd, null);
+        }
+
+        BuildTargetDiscovery.PlatformPackageIdentifier[] DeterminePackagesToAdd()
+        {
+            List<BuildTargetDiscovery.PlatformPackageIdentifier> packagesToAdd = new();
+            SetPackagesToAdd(m_InternalPackageListView);
+            SetPackagesToAdd(m_PartnerPackageListView);
+
+            return packagesToAdd.ToArray();
+
+            void SetPackagesToAdd(ListView listView)
+            {
+                foreach (PlatformPackageEntry item in listView.itemsSource)
+                {
+                    if (!item.isInstalled && item.shouldInstalled)
+                        packagesToAdd.Add(item.GetPackageIdentifier());
+                    else if (item.isInstalled && item.required)
+                        BuildTargetDiscovery.WarnIfPinnedVersionNotInstalled(item.GetPackageIdentifier());
+                }
+            }
+        }
+    }
+}

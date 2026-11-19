@@ -29,9 +29,9 @@ class VisualElementReferenceProvider : IDisposable
         get => m_ReferenceTable;
     }
 
-#pragma warning disable UA5000 // Frees weak GCHandles; PanelRenderer disposes it on cleanup, but the provider can be assigned externally.
+#pragma warning disable UAC0045 // Frees weak GCHandles; PanelRenderer disposes it on cleanup, but the provider can be assigned externally.
     ~VisualElementReferenceProvider() => Dispose(false);
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
     /// <summary>
     /// Adds a reference handler to the list.

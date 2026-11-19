@@ -46,7 +46,7 @@ namespace Unity.Collections
         /// The number of key-value pairs.
         /// </summary>
         /// <value>The number of key-value pairs.</value>
-        public int Length => Keys.Length;
+        public readonly int Length => Keys.Length;
 
         /// <summary>
         /// Initializes and returns an instance of NativeKeyValueArrays.
@@ -142,7 +142,7 @@ namespace Unity.Collections
         /// The current number of key-value pairs in this hash map.
         /// </summary>
         /// <returns>The current number of key-value pairs in this hash map.</returns>
-        public int Count()
+        public readonly int Count()
         {
             CheckRead();
             return m_HashMapData.Count();
@@ -241,7 +241,7 @@ namespace Unity.Collections
         /// <param name="key">The key to look up.</param>
         /// <param name="item">Outputs the value associated with the key. Outputs default if the key was not present.</param>
         /// <returns>True if the key was present.</returns>
-        public bool TryGetValue(TKey key, out TValue item)
+        public readonly bool TryGetValue(TKey key, out TValue item)
         {
             CheckRead();
             return m_HashMapData.TryGetValue(key, out item);
@@ -252,7 +252,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="key">The key to look up.</param>
         /// <returns>True if the key was present.</returns>
-        public bool ContainsKey(TKey key)
+        public readonly bool ContainsKey(TKey key)
         {
             CheckRead();
             return m_HashMapData.ContainsKey(key);
@@ -267,7 +267,7 @@ namespace Unity.Collections
         /// <exception cref="ArgumentException">For getting, thrown if the key was not present.</exception>
         public TValue this[TKey key]
         {
-            get
+            readonly get
             {
                 CheckRead();
 
@@ -376,7 +376,7 @@ namespace Unity.Collections
         /// Returns a parallel writer for this hash map.
         /// </summary>
         /// <returns>A parallel writer for this hash map.</returns>
-        public ParallelWriter AsParallelWriter()
+        public readonly ParallelWriter AsParallelWriter()
         {
             ParallelWriter writer;
             writer.m_Writer = m_HashMapData.AsParallelWriter();
@@ -589,7 +589,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
+            readonly IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -599,7 +599,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -628,11 +628,11 @@ namespace Unity.Collections
             /// <remarks>In a job, each thread gets its own copy of the ParallelWriter struct, and the job system assigns
             /// each copy the index of its thread.</remarks>
             /// <value>The index of the current thread.</value>
-            public int ThreadIndex => m_Writer.m_ThreadIndex;
+            public readonly int ThreadIndex => m_Writer.m_ThreadIndex;
 
             /// <summary> **Obsolete. Use <see cref="ThreadIndex"/> instead.</summary>
             [Obsolete("'m_ThreadIndex' has been deprecated; use 'ThreadIndex' instead. (UnityUpgradable) -> ThreadIndex")]
-            public int m_ThreadIndex => m_Writer.m_ThreadIndex;
+            public readonly int m_ThreadIndex => m_Writer.m_ThreadIndex;
 
             /// <summary>
             /// The number of key-value pairs that fit in the current allocation.
@@ -728,7 +728,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
+        readonly IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -738,7 +738,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -760,7 +760,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next key-value pair.
@@ -786,13 +786,13 @@ namespace Unity.Collections
             /// The current key-value pair.
             /// </summary>
             /// <value>The current key-value pair.</value>
-            public KeyValue<TKey, TValue> Current
+            public readonly KeyValue<TKey, TValue> Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_Enumerator.GetCurrent<TKey, TValue>();
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
@@ -810,7 +810,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void ThrowKeyNotPresent(TKey key)
+        readonly void ThrowKeyNotPresent(TKey key)
         {
             throw new ArgumentException($"Key: {key} is not present in the NativeParallelHashMap.");
         }
@@ -822,7 +822,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void ThrowAtMaxCapacity()
+        readonly void ThrowAtMaxCapacity()
         {
             throw new InvalidOperationException($"Capacity is insufficient, and resize would fail (Capacity {Capacity} / {MaxCapacity}, Count {Count()})!");
         }

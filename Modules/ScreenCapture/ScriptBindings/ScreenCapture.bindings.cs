@@ -241,7 +241,7 @@ namespace UnityEngine
         ///            }
         ///            else
         ///            {
-        ///                Camera.onPostRender += OnPostRenderCallback;
+        ///                RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
         ///            }
         ///        }
         ///        else
@@ -250,7 +250,7 @@ namespace UnityEngine
         ///        }
         ///    }
         ///
-        ///    void OnPostRenderCallback(Camera cam)
+        ///    void OnEndCameraRendering(ScriptableRenderContext context, Camera cam)
         ///    {
         ///        if (cameraToCapture != null && (cam == cameraToCapture))
         ///        {
@@ -271,7 +271,7 @@ namespace UnityEngine
         ///                    displayLayout[cameraToCapture.targetDisplay].height);
         ///            }
         ///
-        ///            Camera.onPostRender -= OnPostRenderCallback;
+        ///            RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
         ///        }
         ///    }
         ///

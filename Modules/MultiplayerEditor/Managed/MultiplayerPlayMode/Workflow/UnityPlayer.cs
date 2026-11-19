@@ -259,6 +259,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         public string Name => m_PlayerStateJson.Name;
         public PlayerType Type => m_PlayerStateJson.Type;
+        // The persisted flag, so it is still set when the player's editor is not running at the moment.
+        internal bool IsActive => m_PlayerStateJson.Active;
         public PlayerIdentifier PlayerIdentifier => m_PlayerStateJson.PlayerIdentifier;
         public TypeDependentPlayerInfo TypeDependentPlayerInfo => m_PlayerStateJson.TypeDependentPlayerInfo;
 

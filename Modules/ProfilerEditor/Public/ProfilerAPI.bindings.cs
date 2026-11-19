@@ -96,6 +96,7 @@ namespace UnityEditorInternal
         NotSupportedByGraphicsAPI = 1 << 7,
         //GLES only
         NotSupportedDueToFrameTimingStatsAndDisjointTimerQuery = 1 << 8,
+        // No longer set by the player; kept for older captures.
         NotSupportedWithVulkan = 1 << 9,
         NotSupportedWithMetal = 1 << 10,
         NotSupportedWithOpenGLGPURecorders = 1 << 11,
@@ -371,12 +372,23 @@ namespace UnityEditorInternal
 
         static public HierarchyFrameDataView GetHierarchyFrameDataView(int frameIndex, int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int sortColumn, bool sortAscending)
         {
+            // The GPU thread is not part of the public thread enumeration.
+            using (var iter = new ProfilerFrameDataIterator())
+            {
+                if (threadIndex >= 0 && threadIndex == iter.GetGpuThreadIndex(frameIndex))
+                    threadIndex = FrameDataView.invalidThreadIndex;
+            }
+            return new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);
+        }
+
+        internal static HierarchyFrameDataView GetHierarchyFrameDataViewIncludingGpuThread(int frameIndex, int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int sortColumn, bool sortAscending)
+        {
             return new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);
         }
 
         static public RawFrameDataView GetRawFrameDataView(int frameIndex, int threadIndex)
         {
-            return new RawFrameDataView(frameIndex, threadIndex);
+            return RawFrameDataView.CreateForCpuThread(frameIndex, threadIndex);
         }
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
@@ -515,6 +527,10 @@ namespace UnityEditorInternal
         [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
 
         static public extern bool SaveProfile(string filename);
+
+        [NativeMethod("SaveToFile")]
+        [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
+        static internal extern bool SaveProfileWithCompression(string filename, bool compress);
 
         [NativeMethod("LoadFromFile")]
         [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]

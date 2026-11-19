@@ -34,7 +34,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (quad != Rect.zero)
             {
-                var color = Color.white;
+                var color = new Color32(255, 255, 255, 255);
 
                 mgc.AllocateTempMesh(4, 6, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices);
 
@@ -401,7 +401,7 @@ namespace UnityEngine.UIElements.UIR
             // baked gradient's color atlas as the "texture".
             if (background.vectorImage == null && !background.gradient.IsEmpty())
             {
-                var gradientVI = m_RenderTreeManager.backgroundGradientBaker.Bake(background.gradient);
+                var gradientVI = m_RenderTreeManager.backgroundGradientBaker.Bake(background.gradient, veRect.size, out float uvScale);
                 if (gradientVI != null)
                 {
                     var gRect = MeshGenerator.RectangleParams.MakeTextured(
@@ -412,7 +412,7 @@ namespace UnityEngine.UIElements.UIR
                     gRect.topRightRadius = radiusParams.topRightRadius;
                     gRect.bottomRightRadius = radiusParams.bottomRightRadius;
                     MeshGenerator.AdjustBackgroundSizeForBorders(ve, ref gRect);
-                    mgc.meshGenerator.DrawGradientRectangle(gRect, gradientVI, background.gradient, gRect.rect, phase);
+                    mgc.meshGenerator.DrawGradientRectangle(gRect, gradientVI, background.gradient, gRect.rect, uvScale, phase);
                 }
                 return;
             }

@@ -8,7 +8,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class VisualElementAssetExtensions
     {
         public static List<string> GetStyleSheetPaths(this VisualElementAsset vea)

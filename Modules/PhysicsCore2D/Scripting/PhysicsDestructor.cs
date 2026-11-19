@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly record struct PhysicsDestructor
+    public readonly struct PhysicsDestructor
     {
         /// <summary>
         /// The polygon geometry used when fragmenting.

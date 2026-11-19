@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -9,7 +10,7 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     // How ContainerWindows are visualized. Used with ContainerWindow.Show
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal enum ShowMode
     {
         // Show as a normal window with max, min & close buttons.
@@ -77,6 +78,13 @@ namespace UnityEditor
             get;
         }
 
+        public extern bool minimized
+        {
+            [FreeFunction(k_ScriptingPrefix + "IsWindowMinimized", HasExplicitThis = true)]
+            [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
+            get;
+        }
+
         // Used by invisible "under the mouse" window of the eye dropper.
         [FreeFunction(k_ScriptingPrefix + "SetInvisible", HasExplicitThis = true)]
         [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
@@ -127,12 +135,19 @@ namespace UnityEditor
         [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
         private extern void SetBackgroundColor(Color color);
 
+        [FreeFunction(k_ScriptingPrefix + "SetNativeThemeColors", HasExplicitThis = true)]
+        [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
+        private extern void SetNativeThemeColors(Color background, Color text, Color highlight);
+
         [FreeFunction(k_ScriptingPrefix + "Internal_GetTopleftScreenPosition", HasExplicitThis = true)]
         [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
         private extern Vector2 Internal_GetTopleftScreenPosition();
 
         [FreeFunction(k_ScriptingPrefix + "GetOrderedWindowList")]
         internal static extern void GetOrderedWindowList();
+
+        [FreeFunction(k_ScriptingPrefix + "GetWindowEntityIds")]
+        internal static extern int GetWindowEntityIds(Span<EntityId> ids);
 
         [FreeFunction(k_ScriptingPrefix + "FitRectToMouseScreen")]
         internal static extern Rect FitRectToMouseScreen(

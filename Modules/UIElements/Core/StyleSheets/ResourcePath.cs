@@ -24,7 +24,6 @@ namespace UnityEngine.UIElements.StyleSheets
         public override string ToString() => $"ResourcePathIndex: {pathIndex}, SubAssetNameIndex: {subAssetNameIndex}";
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     struct ResolvedResourcePath : IEquatable<ResolvedResourcePath>
     {
         public string path { get; }

@@ -111,6 +111,21 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(true))
                     EditorGUILayout.ObjectField("Icon", m_Instruction.usedGUIContent.image, typeof(Texture2D), false);
             }
+
+            if (!string.IsNullOrEmpty(m_Instruction.usedGUIContent.text))
+            {
+                var (_, fontAsset, _) = IMGUITextHandle.GetTextSettingsFontAssetAndFontSize(m_Instruction.usedGUIStyle, m_Instruction.pixelsPerPoint);
+                if (fontAsset != null && fontAsset.canDebugCheckerboard)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    bool checkerboardDebugEnabled = EditorGUILayout.ToggleLeft("Debug: Checkerboard Pattern",fontAsset.isCheckerboardDebugEnabled);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        fontAsset.SetCheckerboardDebugEnabled(checkerboardDebugEnabled);
+                        InternalEditorUtility.RepaintAllViews();
+                    }
+                }
+            }
         }
 
         internal override string GetInstructionListName(int index)

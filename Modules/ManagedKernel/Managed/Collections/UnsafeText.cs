@@ -120,7 +120,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         public byte this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
+            readonly get
             {
                 CheckIndexInRange(index);
                 return UnsafeUtility.ReadArrayElement<byte>(m_UntypedListData.Ptr, index);
@@ -142,7 +142,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <param name="index">A byte index.</param>
         /// <returns>A reference to the byte at the index.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown if the index is out of bounds.</exception>
-        public ref byte ElementAt(int index)
+        public readonly ref byte ElementAt(int index)
         {
             CheckIndexInRange(index);
             return ref UnsafeUtility.ArrayElementAsRef<byte>(m_UntypedListData.Ptr, index);
@@ -163,7 +163,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// The pointer is made invalid by operations that reallocate the character buffer, such as setting <see cref="Capacity"/>.
         /// </remarks>
         /// <returns>A pointer to this string's character buffer.</returns>
-        public byte* GetUnsafePtr()
+        public readonly byte* GetUnsafePtr()
         {
             return (byte*)m_UntypedListData.Ptr;
         }
@@ -237,7 +237,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckIndexInRange(int index)
+        readonly void CheckIndexInRange(int index)
         {
             if (index < 0)
                 throw new IndexOutOfRangeException($"Index {index} must be positive.");
@@ -246,7 +246,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void ThrowCopyError(CopyError error, string source)
+        readonly void ThrowCopyError(CopyError error, string source)
         {
             throw new ArgumentException($"UnsafeText: {error} while copying \"{source}\"");
         }

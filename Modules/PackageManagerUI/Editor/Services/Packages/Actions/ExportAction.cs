@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.Connect;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class ExportAction : PackageAction
@@ -11,20 +9,15 @@ internal class ExportAction : PackageAction
     private const string k_ExportActionId = "export";
 
     private readonly IModalManager m_ModalManager;
-    private readonly IUnityConnectProxy m_UnityConnect;
-    public ExportAction(IModalManager modalManager, IUnityConnectProxy unityConnect)
+    public ExportAction(IModalManager modalManager)
     {
         m_ModalManager = modalManager;
-        m_UnityConnect = unityConnect;
     }
 
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
-        m_UnityConnect.ParseOrganizationInfosAsync((organizationInfo) =>
-        {
-            m_ModalManager.ShowExportModal(version, organizationInfo);
-            PackageManagerWindowAnalytics.SendEvent(k_ExportActionId, version);
-        });
+        PackageManagerWindowAnalytics.SendEvent(k_ExportActionId, version);
+        m_ModalManager.ShowExportModal(version);
         return true;
     }
 

@@ -11,13 +11,11 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor.Utilities;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static class UIAnimationClipFactory
 {
     const string k_CreateAssetUndoName = "Create UI Animation Clip";
 
     // Asset creation isn't undoable (matches Unity's "Create > X" menus); only the field assignment reverts.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     public static UIAnimationClip CreateAssetAndAssignToField(string path, Action<UIAnimationClip> assignToField)
     {
         if (assignToField == null)

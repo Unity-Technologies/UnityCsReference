@@ -23,6 +23,7 @@ namespace UnityEditor.Profiling
             public static readonly GUIContent k_TargetFps = L10n.TextContent("Target Frames Per Second (Highlights Module)", "The target frames per second used by the Highlights module.", null, null);
             public static readonly GUIContent k_ShouldOverrideScreenshotIntervalText = L10n.TextContent("Override default screenshot frame interval", "Enable to set a non-default interval on the Editor/connected player. See Profiler.SetScreenshotCaptureFrameInterval docs for more info.", null, null);
             public static readonly GUIContent k_ScreenshotFrameInterval = L10n.TextContent("Rate at which Profiler captures screenshots", "Can also be controlled via script. See Profiler.SetScreenshotCaptureFrameInterval docs.", null, null);
+            public static readonly GUIContent k_CompressCapturesText = L10n.TextContent("Compress saved captures", "Compress Profiler capture data when saving. Compressed captures are much smaller, but earlier versions of Unity can't open them.", null, null);
             public static readonly string OnlyRelativePaths = L10n.Tr("Only relative paths are allowed", null);
             public static readonly string OKButton = L10n.Tr("OK", null);
             public static readonly string InvalidPathWindow = L10n.Tr("Invalid Path", null);
@@ -112,6 +113,8 @@ namespace UnityEditor.Profiling
 
             var defaultModeIndexIndex = EditorGUILayout.Popup(Content.k_DefaultTargetMode, (int)ProfilerUserSettings.defaultTargetMode, Content.k_TargetModes);
             ProfilerUserSettings.defaultTargetMode = (ProfilerEditorTargetMode)defaultModeIndexIndex;
+
+            ProfilerUserSettings.compressSavedCaptures = EditorGUILayout.Toggle(Content.k_CompressCapturesText, ProfilerUserSettings.compressSavedCaptures);
 
             GUI.SetNextControlName("connectionID");
             connectionID = EditorGUILayout.TextField("Custom connection ID", connectionID);

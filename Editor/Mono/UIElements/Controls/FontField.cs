@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
     /// Makes a field for entering Font.
     /// </summary>
     [UxmlElement]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class FontField : BaseField<Font>
     {
         /// <summary>

@@ -3,11 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.Search;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -15,7 +17,6 @@ namespace Unity.UIToolkit.Editor;
 /// <summary>
 /// Provides completion to the text field used to edit the binding path property of a VisualElement or a Binding.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 class DataSourcePathCompleter : FieldSearchCompleter<PropertyPathInfo>
 {
     private const string k_PopupStyleSheet = "UIToolkitAuthoring/Inspector/Binding/DataSourcePathCompleterPopup.uss";
@@ -27,6 +28,9 @@ class DataSourcePathCompleter : FieldSearchCompleter<PropertyPathInfo>
     private List<PropertyPathInfo> m_CompatibleProperties = new();
     private bool m_ShowForDataSource = true;
     private List<PropertyPathInfo> m_AllProperties = new();
+    private string m_Prefix = string.Empty;
+    const int k_MaxPaths = 10000;
+    const int k_MaxDepth = 64;
     private DataBinding m_Binding;
 
     private ShowOnlyCompatibleResultsToggle m_ShowOnlyCompatibleResultsToggle;
@@ -179,6 +183,128 @@ class DataSourcePathCompleter : FieldSearchCompleter<PropertyPathInfo>
     void UpdatePropertyList(bool showForDataSource)
     {
         m_ShowForDataSource = showForDataSource;
+        m_Prefix = string.Empty;
+        RebuildPropertyList();
+    }
+
+    protected override void OnFilterTextChanged(string text) => UpdateForText(text);
+
+    internal void UpdateForText(string text)
+    {
+        if (!Enabled)
+            return;
+
+        var prefix = GetPrefix(text);
+        if (prefix == m_Prefix)
+            return;
+
+        m_Prefix = prefix;
+        RebuildPropertyList();
+    }
+
+    static string GetPrefix(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return string.Empty;
+
+        var index = text.LastIndexOf('.');
+        return index > 0 ? text.Substring(0, index) : string.Empty;
+    }
+
+    bool TryNarrowToPrefix(ref object source, ref Type type, out PropertyPath prefixPath)
+    {
+        prefixPath = default;
+
+        try
+        {
+            var result = source != null ? DataBindingUtility.IsPathValid(source, m_Prefix) : DataBindingUtility.IsPathValid(type, m_Prefix);
+            if (result.returnCode != VisitReturnCode.Ok || result.type == null)
+                return false;
+
+            var path = new PropertyPath(m_Prefix);
+            object value = null;
+            if (source != null)
+            {
+                var container = source;
+                PropertyContainer.TryGetValue(ref container, path, out value);
+            }
+
+            if (typeof(IList).IsAssignableFrom(value?.GetType() ?? result.type))
+                return false;
+
+            source = value;
+            type = value == null ? result.type : null;
+            prefixPath = path;
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    void CollectPaths()
+    {
+        object source = null;
+        Type type = null;
+
+        if (m_ShowForDataSource)
+        {
+            source = BindingDataSourceObject;
+            if (source is AnyObjectField.NonUnityObjectValue nonUnityObject)
+                source = nonUnityObject.data;
+            if (source == null)
+                return;
+        }
+        else
+        {
+            type = BindingDataSourceType;
+        }
+
+        var prefixPath = default(PropertyPath);
+        if (m_Prefix.Length > 0)
+            TryNarrowToPrefix(ref source, ref type, out prefixPath);
+
+        using var pooled = ListPool<PropertyPathInfo>.Get(out var level);
+        var previousCount = -1;
+        for (var depth = 1; depth <= k_MaxDepth; depth++)
+        {
+            level.Clear();
+            if (source != null)
+                DataBindingUtility.GetPropertyPaths(source, depth, k_MaxPaths + 1, level);
+            else
+                DataBindingUtility.GetPropertyPaths(type, depth, k_MaxPaths + 1, level);
+
+            if (level.Count > k_MaxPaths && depth > 1)
+                break;
+
+            m_AllProperties.Clear();
+            m_AllProperties.AddRange(level);
+
+            if (level.Count > k_MaxPaths)
+            {
+                m_AllProperties.RemoveRange(k_MaxPaths, m_AllProperties.Count - k_MaxPaths);
+                break;
+            }
+
+            if (level.Count == previousCount)
+                break;
+
+            previousCount = level.Count;
+        }
+
+        if (!prefixPath.IsEmpty)
+        {
+            for (var i = 0; i < m_AllProperties.Count; i++)
+            {
+                var info = m_AllProperties[i];
+                m_AllProperties[i] = new PropertyPathInfo(PropertyPath.Combine(prefixPath, info.propertyPath), info.type);
+            }
+        }
+    }
+
+    void RebuildPropertyList()
+    {
         m_AllProperties.Clear();
         m_CompatibleProperties.Clear();
         m_ToUICompatibleTypes?.Clear();
@@ -186,22 +312,7 @@ class DataSourcePathCompleter : FieldSearchCompleter<PropertyPathInfo>
 
         if (Enabled)
         {
-            // If the binding data source is specified then ignore the binding data source type.
-            if (m_ShowForDataSource)
-            {
-                if (BindingDataSourceObject != null)
-                {
-                    var source = BindingDataSourceObject;
-
-                    if (source is AnyObjectField.NonUnityObjectValue nonUnityObject)
-                        source = nonUnityObject.data;
-                    DataBindingUtility.GetPropertyPaths(source, int.MaxValue, m_AllProperties);
-                }
-            }
-            else
-            {
-                DataBindingUtility.GetPropertyPaths(BindingDataSourceType, int.MaxValue, m_AllProperties);
-            }
+            CollectPaths();
 
             // If it is the binding path property of a binding then filter out the compatible properties
             if (Binding != null)

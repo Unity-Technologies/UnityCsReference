@@ -10,7 +10,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class StyleSheetExternalEditor
     {
         [AutoStaticsCleanupOnCodeReload]
@@ -24,13 +24,13 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Whether the stylesheet asset at the given path has a file the external script editor could open.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool CanOpen(string assetPath) => TryGetFullPath(assetPath, out _);
 
         /// <summary>
         /// Opens a stylesheet asset in the external script editor, at the given line when it has a real one.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool TryOpen(string assetPath, int line)
         {
             if (!TryGetFullPath(assetPath, out var fullPath))

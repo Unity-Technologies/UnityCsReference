@@ -13,6 +13,10 @@ namespace UnityEngine.Serialization;
 // struct so conflictIndex disambiguates the id, with null or unregistered
 // names persisting as the empty string. The native-test-resources image, like
 // the player, writes the id as a framed decimal string.
+//
+// The command is header-framed: the length (or the out-of-line handle) ends the
+// staged region, and the payload helpers write the body inline or into its own
+// allocation.
 internal static unsafe partial class SerializationBackendManagedCommands
 {
     private static unsafe void V2WritePropertyName(ref byte field, NativeBufferContext* ctx, ulong userData, ulong userData2)
@@ -23,13 +27,13 @@ internal static unsafe partial class SerializationBackendManagedCommands
         if (userData != 0)
         {
             int id = Unsafe.ReadUnaligned<int>(ref field);
-            V2WriteFramedDecimalInt32(ctx, id);
+            V2WriteDecimalPayload(ctx, id);
         }
         else
         {
             PropertyName pn = Unsafe.ReadUnaligned<PropertyName>(ref field);
             string s = PropertyNameUtils.StringFromPropertyName(pn);
-            V2WriteFramedString(ctx, (s ?? string.Empty).AsSpan());
+            V2WriteStringPayload(ctx, (s ?? string.Empty).AsSpan());
         }
     }
 
@@ -42,13 +46,13 @@ internal static unsafe partial class SerializationBackendManagedCommands
         if (cmd->readUserData != 0)
         {
             // Game-release read signature: the field persisted its decimal id.
-            PropertyName pnId = new PropertyName(V2ReadFramedDecimalInt32(ctx));
+            PropertyName pnId = new PropertyName(V2ReadDecimalPayload(ctx));
             Unsafe.WriteUnaligned(ref field, pnId);
         }
         else
         {
             // The ctor resolves conflictIndex from the name, matching the native read.
-            PropertyName pn = new PropertyName(V2ReadFramedStringGuarded(ctx));
+            PropertyName pn = new PropertyName(V2ReadStringPayload(ctx));
             Unsafe.WriteUnaligned(ref field, pn);
         }
     }

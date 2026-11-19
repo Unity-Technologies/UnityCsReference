@@ -480,7 +480,7 @@ namespace UnityEngine.UIElements
         public void OnVisualElementChange(VisualElement element, VersionChangeType changeType);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.VectorGraphicsModule", "UnityEditor.GraphToolkitModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.VectorGraphicsModule", "UnityEditor.GraphToolkitModule")]
     abstract partial class BaseVisualElementPanel : IPanel, IGroupBox
     {
     	// TODO: Make sure we do not use new native layout before we fix android 32bit (arm v7) failing test.
@@ -808,7 +808,7 @@ namespace UnityEngine.UIElements
         }
 
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal abstract IStylePropertyAnimationSystem styleAnimationSystem
         {
             [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -886,7 +886,6 @@ namespace UnityEngine.UIElements
 
         internal bool disposed { get; private set; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
         internal abstract IVisualTreeUpdater GetEditorUpdater(VisualTreeEditorUpdatePhase phase);
@@ -1247,7 +1246,7 @@ namespace UnityEngine.UIElements
     internal delegate void SavePersistentViewData();
 
     // Default panel implementation
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.GraphToolkitModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.GraphToolkitModule")]
     internal partial class Panel : BaseVisualElementPanel
     {
         internal const int k_DefaultPixelsPerUnit = 100;
@@ -1406,7 +1405,7 @@ namespace UnityEngine.UIElements
         internal override IStylePropertyAnimationSystem styleAnimationSystem
         {
             get => m_StylePropertyAnimationSystem;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             set
             {
                 if (m_StylePropertyAnimationSystem == value)
@@ -1474,7 +1473,7 @@ namespace UnityEngine.UIElements
         [NoAutoStaticsCleanup]
         internal static Func<Object, string> getAssetPathFunc { private get; set; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static Object LoadResource(string pathName, Type type, float dpiScaling)
         {
             // TODO make the LoadResource function non-static.
@@ -1721,7 +1720,7 @@ namespace UnityEngine.UIElements
         }
 
         // For tests only.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "Assembly-CSharp-testable")]
+        [VisibleToOtherModules("Assembly-CSharp-testable")]
         internal static VisualElement PickAllWithoutValidatingLayout(VisualElement root, Vector2 point)
         {
             return PickAll(root, point);
@@ -1783,9 +1782,8 @@ namespace UnityEngine.UIElements
             if ((uint)pointerId >= (uint)m_LastPicks.Length)
                 return PickAll(visualTree, point);
 
-            var pixel = Vector2Int.FloorToInt(point);
             ref var memo = ref m_LastPicks[pointerId];
-            if (memo.valid && memo.pixel == pixel && memo.version == m_Version)
+            if (memo.valid && memo.point.Equals(point) && memo.version == m_Version)
                 return memo.result;
 
             var versionBeforePick = m_Version;
@@ -1794,7 +1792,7 @@ namespace UnityEngine.UIElements
                 return result;
 
             memo.result = result;
-            memo.pixel = pixel;
+            memo.point = point;
             memo.version = versionBeforePick;
             memo.valid = true;
             return result;
@@ -1803,7 +1801,7 @@ namespace UnityEngine.UIElements
         struct PickMemo
         {
             public bool valid;
-            public Vector2Int pixel;
+            public Vector2 point;
             public uint version;
             public VisualElement result;
         }
@@ -1973,8 +1971,9 @@ namespace UnityEngine.UIElements
         internal static event Action<Panel> beforeTickingAnyScheduledPanel;
 
         [AutoStaticsCleanupOnCodeReload]
-        // The editor monitor is the only subscriber and it subscribes from its constructor, which cleanup
-        // re-runs on every code load, so the subscription is back before the next repaint.
+        // The editor monitor subscribes from its constructor, which cleanup re-runs on every code load, so the
+        // subscription is back before the next repaint. Editor authoring panels subscribe when created, and a code
+        // load recreates them.
         [IgnoreForUAL0015("Repaint hook re-subscribed by the EditorMonitor instance recreated on each code load")]
         internal static event Action<Panel> beforeAnyRepaint;
 

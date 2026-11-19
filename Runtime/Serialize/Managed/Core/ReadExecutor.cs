@@ -39,22 +39,34 @@ internal static unsafe partial class SerializationBackendManagedCommands
         // Every published stream leads with its header command; the dispatch
         // loop starts past it and runs until the End terminator.
         var streamHeader = (V2CmdStreamHeader*)streamStart;
+        var ctx = (NativeReadBufferContext*)readContext;
         int maxFrameDepth = streamHeader->maxFrameDepth;
         V2ObjectFrame[] frames = TakeV2Frames(maxFrameDepth);
+        int storedAreaSlots = (int)streamHeader->storedAreaSlots;
+        ulong[] storedPositions = storedAreaSlots > 0 ? TakeV2StoredPositions(storedAreaSlots) : null;
         frames[0].Instance = host;
         frames[0].Offset = 0;
         int openDictFrames = 0;
         try
         {
-            // The wrapper owns the host kind: it seeds frame 0 and hands the
-            // dispatch loop the host's field base. The unmanaged wrapper passes
-            // an empty frame span and a ref into unmanaged memory instead.
-            ExecuteV2ReadStream((byte*)(streamHeader + 1),
-                (NativeReadBufferContext*)readContext, frames,
-                ref V2RebaseTo(in frames[0]), ref openDictFrames);
+            fixed (ulong* positions = storedPositions)
+            {
+                ctx->storedPositions = positions;
+                ctx->storedPositionCapacity = storedAreaSlots;
+
+                // The wrapper owns the host kind: it seeds frame 0 and hands the
+                // dispatch loop the host's field base. The unmanaged wrapper passes
+                // an empty frame span and a ref into unmanaged memory instead.
+                ExecuteV2ReadStream((byte*)(streamHeader + 1), ctx, frames,
+                    ref V2RebaseTo(in frames[0]), ref openDictFrames);
+            }
         }
         finally
         {
+            ctx->storedPositions = null;
+            ctx->storedPositionCapacity = 0;
+            if (storedPositions != null)
+                ReturnV2StoredPositions(storedPositions);
             Array.Clear(frames, 0, maxFrameDepth);
             ReturnV2Frames(frames);
             // Rebalance the thread-local FUID dict-frame stack if a transfer
@@ -98,6 +110,8 @@ internal static unsafe partial class SerializationBackendManagedCommands
     {
         byte* pathSegments = ctx->pathSegments;
         byte* pathNames = ctx->pathNames;
+        // kMappedAssignReference's input, allocated once rather than per command.
+        ulong* referenceInput = stackalloc ulong[2];
         // Open element-source loops whose FUID frame push succeeded, one bit
         // per frame depth of the staging frame; consulted at the loop's exit.
         ulong pushedDictFrames = 0;
@@ -125,6 +139,10 @@ internal static unsafe partial class SerializationBackendManagedCommands
             // ensureReadable, and every entry of the block executes before that.
             byte* input = null;
 
+            // The root region is staged like any other (doc §12); see the write executor.
+            input = ctx->readerPtr;
+            ctx->readerPtr += ((V2CmdStreamHeader*)streamStart - 1)->rootEnsureSum;
+
             byte* pos = streamStart;
             while (true)
             {
@@ -143,25 +161,15 @@ internal static unsafe partial class SerializationBackendManagedCommands
                 object instance;
                 switch ((V2OpCode)pos[0])
                 {
-                    case V2OpCode.FixedBlock:
-                    {
-                        var cmd = (V2CmdFixedBlock*)pos;
-                        // Unchecked capture (doc §12): the preceding replenish
-                        // guaranteed this block's bytes.
-                        input = ctx->readerPtr;
-                        ctx->readerPtr += (int)cmd->wireBytes;
-                        break;
-                    }
-
                     case V2OpCode.FixedBlockGuarded:
                     {
-                        // The self-guaranteeing block form (doc §12): ensures
-                        // its own window plus the trailing static sum.
+                        // The self-guaranteeing block form (doc §12): ensures and
+                        // stages its own region, the block plus any trailing header.
                         var cmd = (V2CmdFixedBlockGuarded*)pos;
                         if (ctx->readerEnd - ctx->readerPtr < (int)cmd->ensureSum)
                             InvokeEnsureReadable(ctx, (int)cmd->ensureSum);
                         input = ctx->readerPtr;
-                        ctx->readerPtr += (int)cmd->wireBytes;
+                        ctx->readerPtr += (int)cmd->ensureSum;
                         break;
                     }
 
@@ -422,14 +430,110 @@ internal static unsafe partial class SerializationBackendManagedCommands
                         baseAddr = ref parentBase;
                         break;
 
+                    case V2OpCode.MappedSkipSubtree:
+                    {
+                        var cmd = (V2CmdMappedSkipSubtree*)pos;
+                        if (cmd->elementZeroBytes != 0)
+                            Unsafe.InitBlockUnaligned(ref baseAddr, 0, cmd->elementZeroBytes);
+                        uint* program = V2ProgramAfterCommand((byte*)(cmd + 1), cmd->programWords, out int programWords);
+                        V2SkipStoredSubtree(ctx, program, programWords);
+                        ensureSpace = cmd->ensureSum;
+                        goto EnsureAndAdvance;
+                    }
+
+                    case V2OpCode.MappedNativeRead:
+                    {
+                        var cmd = (V2CmdMappedNativeRead*)pos;
+                        V2ReadMappedNativeType(ref Unsafe.AddByteOffset(ref baseAddr, (nint)cmd->fieldOffset), cmd, ctx);
+                        ensureSpace = cmd->ensureSum;
+                        goto EnsureAndAdvance;
+                    }
+
+                    case V2OpCode.MappedAssignEmpty:
+                    {
+                        var cmd = (V2CmdMappedAssignEmpty*)pos;
+                        V2AssignEmptyValue(ref baseAddr, cmd);
+                        ensureSpace = cmd->ensureSum;
+                        goto EnsureAndAdvance;
+                    }
+
+                    case V2OpCode.MappedEnterStoredArea:
+                    {
+                        var cmd = (V2CmdMappedEnterStoredArea*)pos;
+                        V2EnterStoredArea(ctx, cmd);
+                        ensureSpace = cmd->ensureSum;
+                        goto EnsureAndAdvance;
+                    }
+
+                    // The seek takes the guarantee itself, then stages it like any ensure point (doc §12).
+                    case V2OpCode.MappedSeekArea:
+                    {
+                        var cmd = (V2CmdMappedStoredArea*)pos;
+                        V2SeekReader(ctx, ctx->storedPositions[ctx->storedAreaBase + cmd->slot], cmd->ensureSum);
+                        ensureSpace = cmd->ensureSum;
+                        goto StageAndAdvance;
+                    }
+
+                    case V2OpCode.MappedExitStoredArea:
+                    {
+                        var cmd = (V2CmdMappedStoredArea*)pos;
+                        V2ExitStoredArea(ctx, cmd);
+                        ensureSpace = cmd->ensureSum;
+                        goto StageAndAdvance;
+                    }
+
+                    // The ExternalFixed arm's call on a group of one, reading the command's zero reference or the stored
+                    // legacy id. The template is shared, so the id is widened into a local rather than the command.
+                    case V2OpCode.MappedAssignReference:
+                    {
+                        var cmd = (V2CmdMappedAssignReference*)pos;
+                        referenceInput[0] = cmd->input0;
+                        referenceInput[1] = cmd->input1;
+                        if ((cmd->flags & kV2AssignReferenceFlagLegacyId) != 0)
+                        {
+                            if (ctx->readerEnd - ctx->readerPtr < sizeof(int))
+                                InvokeEnsureReadable(ctx, sizeof(int));
+                            referenceInput[0] = (ulong)(long)Unsafe.ReadUnaligned<int>(ctx->readerPtr);
+                            ctx->readerPtr += sizeof(int);
+                        }
+                        ((delegate*<object, nint, ref byte, byte*, byte*, byte*, int, byte*, NativeReadBufferContext*, ulong, void>)(void*)cmd->readGroupHandler)(
+                            top.Instance, top.Offset, ref baseAddr, (byte*)&cmd->entry, (byte*)&cmd->readEntry, (byte*)&cmd->field, 1,
+                            (byte*)referenceInput, ctx, cmd->userData);
+                        if (cmd->segment != kV2NoPathSegment && ctx->registerSrReferenceField != IntPtr.Zero)
+                            V2RegisterSrReadReferenceFields((byte*)&cmd->entry, (byte*)&cmd->segment, 1, (byte*)referenceInput, ctx,
+                                pathSegments, pathNames, frames);
+                        ensureSpace = cmd->ensureSum;
+                        goto EnsureAndAdvance;
+                    }
+
+                    case V2OpCode.MappedConvertPrimitive:
+                    {
+                        var cmd = (V2CmdMappedConvertPrimitive*)pos;
+                        V2ReadConvertedPrimitive(ctx, ref V2FieldRef<byte>(ref baseAddr, (nint)cmd->fieldOffset), cmd);
+                        if ((cmd->flags & kV2ConvertFlagCollectionTail) != 0 && cursorEnd - cursorOffset <= (nint)cmd->elementStride)
+                            V2SkipConvertedCollectionPad(ctx, cmd, cursorEnd);
+                        ensureSpace = cmd->ensureSum;
+                        goto EnsureAndAdvance;
+                    }
+
                     case V2OpCode.String:
                     {
                         var cmd = (V2CmdString*)pos;
-                        // The trailing guarantee folds into the read's body
-                        // ensure (doc §12): one branch for in-window strings.
+                        if (V2IsOutOfLine(ctx))
+                        {
+                            // The handle ends the staged region; the body comes from its allocation.
+                            V2FieldRef<string>(ref baseAddr, (nint)cmd->fieldOffset) = V2ReadOutOfLineString(ctx, ctx->readerPtr - 4);
+                            ensureSpace = cmd->ensureSum;
+                            goto EnsureAndAdvance;
+                        }
+                        // The staged region ends with the length slot, where the framed reader
+                        // starts. The trailing guarantee folds into the read's body ensure
+                        // (doc §12): one branch for in-window strings.
+                        ctx->readerPtr -= 4;
                         V2FieldRef<string>(ref baseAddr, (nint)cmd->fieldOffset) =
                             V2ReadFramedString(ctx, cmd->ensureSum);
-                        break;
+                        ensureSpace = cmd->ensureSum;
+                        goto StageAndAdvance;
                     }
 
                     // Each collection family is a plain/factory case pair
@@ -442,10 +546,18 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     case V2OpCode.LinearCollectionMemCpy:
                     {
                         var cmd = (V2CmdLinearCollectionMemCpy*)pos;
+                        if (V2IsOutOfLine(ctx))
+                        {
+                            int count = V2LookupOutOfLineCollection(ctx, cmd->elementStride, out byte* allocation);
+                            byte[] heapData = V2ReuseOrAllocateCollection(
+                                ref baseAddr, cmd->fieldOffset, cmd->kind, cmd->elementTypeHandle, count);
+                            V2CopyOutOfLineElements(heapData, allocation, count, cmd->elementStride);
+                            ensureSpace = cmd->ensureSum;
+                            goto EnsureAndAdvance;
+                        }
 
-                        // Unchecked count (doc §12).
-                        collectionCount = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
-                        ctx->readerPtr += 4;
+                        // The count is the tail of the staged region (doc §12).
+                        collectionCount = Unsafe.ReadUnaligned<int>(ctx->readerPtr - 4);
 
                         instance = V2ReuseOrAllocateCollection(
                             ref baseAddr, cmd->fieldOffset, cmd->kind, cmd->elementTypeHandle, collectionCount);
@@ -455,10 +567,19 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     case V2OpCode.LinearCollectionMemCpyFactory:
                     {
                         var cmd = (V2CmdLinearCollectionMemCpyFactory*)pos;
+                        if (V2IsOutOfLine(ctx))
+                        {
+                            int count = V2LookupOutOfLineCollection(ctx, cmd->elementStride, out byte* allocation);
+                            object backing = ((delegate*<ref object, int, object>)cmd->sizedFactoryPtr)(
+                                ref V2FieldRef<object>(ref baseAddr, (nint)cmd->fieldOffset),
+                                count);
+                            V2CopyOutOfLineElements(Unsafe.As<byte[]>(backing), allocation, count, cmd->elementStride);
+                            ensureSpace = cmd->ensureSum;
+                            goto EnsureAndAdvance;
+                        }
 
-                        // Unchecked count (doc §12).
-                        collectionCount = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
-                        ctx->readerPtr += 4;
+                        // The count is the tail of the staged region (doc §12).
+                        collectionCount = Unsafe.ReadUnaligned<int>(ctx->readerPtr - 4);
 
                         instance = ((delegate*<ref object, int, object>)cmd->sizedFactoryPtr)(
                             ref V2FieldRef<object>(ref baseAddr, (nint)cmd->fieldOffset),
@@ -486,7 +607,40 @@ internal static unsafe partial class SerializationBackendManagedCommands
                             // guarantee at the 4-aligned post-pad position.
                             fixed (byte* dataPtr = Unsafe.As<byte[]>(instance))
                                 InvokeReadBytesDirect(ctx, dataPtr, totalBytes, padBytes, cmd->ensureSum);
-                            break;
+                            ensureSpace = cmd->ensureSum;
+                            goto StageAndAdvance;
+                        }
+
+                        ensureSpace = cmd->ensureSum;
+                        goto EnsureAndAdvance;
+                    }
+
+                    // LinearCollectionMemCpy into an unmanaged span. A null
+                    // destination from the host's resize leaves the elements unread.
+                    case V2OpCode.SpanMemCpy:
+                    {
+                        var cmd = (V2CmdLinearCollectionMemCpy*)pos;
+                        var span = (V2SpanHost*)Unsafe.AsPointer(ref Unsafe.AddByteOffset(ref baseAddr, (nint)cmd->fieldOffset));
+
+                        // The count is the tail of the staged region (doc §12).
+                        collectionCount = Unsafe.ReadUnaligned<int>(ctx->readerPtr - 4);
+
+                        byte* elements = V2ResizeSpan(span, collectionCount, ctx);
+                        if (elements != null && collectionCount > 0)
+                        {
+                            int totalBytes = checked((int)((long)collectionCount * cmd->elementStride));
+                            int padBytes = (4 - (totalBytes & 3)) & 3;
+                            if (ctx->readerEnd - ctx->readerPtr >= (long)totalBytes + padBytes)
+                            {
+                                Buffer.MemoryCopy(ctx->readerPtr, elements, totalBytes, totalBytes);
+                                ctx->readerPtr += totalBytes + padBytes;
+                                ensureSpace = cmd->ensureSum;
+                                goto EnsureAndAdvance;
+                            }
+
+                            InvokeReadBytesDirect(ctx, elements, totalBytes, padBytes, cmd->ensureSum);
+                            ensureSpace = cmd->ensureSum;
+                            goto StageAndAdvance;
                         }
 
                         ensureSpace = cmd->ensureSum;
@@ -497,14 +651,12 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     // in three positions (see the opcode comment). Entering a
                     // body rebases without advancing, so the cursor points at
                     // the element the body runs on; the latches advance first.
+                    // The managed side only: the header helper reads the count (or the out-of-line handle,
+                    // opening the body window), and CollectionEnterTail frames the body.
                     case V2OpCode.CollectionEnterOrSkip:
                     {
                         var cmd = (V2CmdCollectionEnterOrSkip*)pos;
-
-                        // Unchecked count (doc §12).
-                        collectionCount = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
-                        ctx->readerPtr += 4;
-
+                        collectionCount = V2ReadCollectionHeader(ctx, cmd->wireStride);
                         instance = V2ReuseOrAllocateCollection(
                             ref baseAddr, cmd->fieldOffset, cmd->kind, cmd->elementTypeHandle, collectionCount);
                         goto CollectionEnterTail;
@@ -513,11 +665,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     case V2OpCode.CollectionEnterOrSkipFactory:
                     {
                         var cmd = (V2CmdCollectionEnterOrSkipFactory*)pos;
-
-                        // Unchecked count (doc §12).
-                        collectionCount = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
-                        ctx->readerPtr += 4;
-
+                        collectionCount = V2ReadCollectionHeader(ctx, cmd->wireStride);
                         instance = ((delegate*<ref object, int, object>)cmd->sizedFactoryPtr)(
                             ref V2FieldRef<object>(ref baseAddr, (nint)cmd->fieldOffset),
                             collectionCount);
@@ -533,7 +681,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
                             // ours" and restores instead of popping.
                             cursorEnd = 0;
                             next += cmd->delta;
-                            ensureSpace = cmd->exitEnsureSum;
+                            ensureSpace = 0;  // the next test ensures
                             goto EnsureAndAdvance;
                         }
 
@@ -546,8 +694,8 @@ internal static unsafe partial class SerializationBackendManagedCommands
                         }
                         else
                         {
-                            next += cmd->delta;  // skip the body
-                            ensureSpace = cmd->exitEnsureSum;
+                            next += cmd->delta;  // skip the body; the bulk tail ensures
+                            ensureSpace = 0;
                         }
                         goto PushCollectionFrame;
                     }
@@ -619,6 +767,81 @@ internal static unsafe partial class SerializationBackendManagedCommands
                         goto EnsureAndAdvance;
                     }
 
+                    // Span loop; see the write executor. A null destination
+                    // from the host's resize runs as an empty span.
+                    case V2OpCode.SpanEnterOrSkip:
+                    {
+                        var cmd = (V2CmdCollectionEnterOrSkip*)pos;
+                        var span = (V2SpanHost*)Unsafe.AsPointer(ref Unsafe.AddByteOffset(ref baseAddr, (nint)cmd->fieldOffset));
+
+                        // The count is the tail of the staged region (doc §12).
+                        collectionCount = Unsafe.ReadUnaligned<int>(ctx->readerPtr - 4);
+
+                        byte* elements = V2ResizeSpan(span, collectionCount, ctx);
+                        if (elements == null)
+                            collectionCount = 0;
+                        parentBase = ref baseAddr;
+                        cursorOffset = (nint)elements;
+                        cursorEnd = cursorOffset + (nint)((long)collectionCount * cmd->elementStride);
+                        if (cursorEnd - cursorOffset >= (nint)cmd->stride)
+                        {
+                            baseAddr = ref Unsafe.AsRef<byte>((void*)cursorOffset);
+                            ensureSpace = cmd->bodyEnsureSum;
+                        }
+                        else
+                        {
+                            next += cmd->delta;  // skip the body; the latch or bulk tail ensures
+                            ensureSpace = 0;
+                        }
+                        goto EnsureAndAdvance;
+                    }
+
+                    case V2OpCode.SpanBulkTail:
+                    {
+                        var cmd = (V2CmdCollectionBulkTail*)pos;
+                        if (cursorEnd - cursorOffset >= (nint)cmd->stride)
+                        {
+                            baseAddr = ref Unsafe.AsRef<byte>((void*)cursorOffset);
+                            ensureSpace = cmd->bodyEnsureSum;
+                        }
+                        else
+                        {
+                            next += cmd->delta;
+                            ensureSpace = cmd->exitEnsureSum;
+                        }
+                        goto EnsureAndAdvance;
+                    }
+
+                    case V2OpCode.SpanRepeatOrFallthrough:
+                    {
+                        var cmd = (V2CmdCollectionRepeat*)pos;
+                        cursorOffset += (nint)cmd->stride;
+                        if (cursorEnd - cursorOffset >= (nint)cmd->stride)
+                        {
+                            baseAddr = ref Unsafe.AsRef<byte>((void*)cursorOffset);
+                            next -= cmd->delta;
+                            ensureSpace = cmd->bodyEnsureSum;
+                            goto EnsureAndAdvance;
+                        }
+                        break;
+                    }
+
+                    case V2OpCode.SpanRepeatOrExit:
+                    {
+                        var cmd = (V2CmdCollectionRepeat*)pos;
+                        cursorOffset += (nint)cmd->stride;
+                        if (cursorEnd - cursorOffset >= (nint)cmd->stride)
+                        {
+                            baseAddr = ref Unsafe.AsRef<byte>((void*)cursorOffset);
+                            next -= cmd->delta;
+                            ensureSpace = cmd->bodyEnsureSum;
+                            goto EnsureAndAdvance;
+                        }
+                        baseAddr = ref parentBase;
+                        ensureSpace = cmd->exitEnsureSum;
+                        goto EnsureAndAdvance;
+                    }
+
                     case V2OpCode.ExitElementSourceExec:
                     {
                         var cmd = (V2CmdExitElementSourceExec*)pos;
@@ -673,12 +896,9 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     {
                         var cmd = (V2CmdEnterElementSource*)pos;
 
-                        // Unchecked count (doc §12).
-                        int count = Unsafe.ReadUnaligned<int>(ctx->readerPtr);
-                        ctx->readerPtr += 4;
-
-                        Type elementType = UnmarshalSystemType((nint)cmd->elementTypeHandle);
-                        Array elements = Array.CreateInstance(elementType, count);
+                        // An unreadable out-of-line allocation reads as empty: default-valued entries
+                        // must not reach insertion.
+                        int count = V2ReadCollectionHeader(ctx, cmd->wireStride);
 
                         bool pushedFuidFrame = false;
                         if ((cmd->pad0 & kV2Pad0FlagPushFuidFrame) != 0)
@@ -687,6 +907,24 @@ internal static unsafe partial class SerializationBackendManagedCommands
                             if (pushedFuidFrame)
                                 ++openDictFrames;
                         }
+
+                        // v1 reads into the entries of the field's dictionary when their count matches, as it reads
+                        // into a list's elements, so an existing value object is kept and read into. The entries are
+                        // the live pairs plus, only with a hosting entity, the Editor's ignored rows, so a dictionary
+                        // that cannot reach the stored count is not staged.
+                        Array elements = null;
+                        object existing = V2FieldRef<object>(ref baseAddr, (nint)cmd->fieldOffset);
+                        int liveCount = existing is System.Collections.ICollection live ? live.Count : -1;
+                        if (count > 0 && cmd->sourceHandler != 0
+                            && (liveCount == count || (liveCount >= 0 && liveCount < count && ctx->hostingEntityId != EntityId.None)))
+                        {
+                            var sourceFuid = new V2FuidBuilder(pathSegments, pathNames, cmd->segmentIndex, frames);
+                            Array current = ((delegate*<object, ref V2FuidBuilder, EntityId, ulong, Array>)(void*)cmd->sourceHandler)(
+                                existing, ref sourceFuid, ctx->hostingEntityId, cmd->sourceUserData);
+                            if (current != null && current.Length == count)
+                                elements = current;
+                        }
+                        elements ??= Array.CreateInstance(UnmarshalSystemType((nint)cmd->elementTypeHandle), count);
 
                         if (count == 0)
                         {
@@ -734,6 +972,8 @@ internal static unsafe partial class SerializationBackendManagedCommands
                         var cmd = (V2CmdInvokeCallback*)pos;
                         if ((cmd->flavor & kV2Pad0FlagCallbackRead) == 0)
                             break;  // OnBeforeSerialize bracket, write side only
+                        if (ctx->skipReadCallbacks != 0)
+                            break;
                         if ((cmd->flavor & kV2CallbackFlavorMask) == kV2CallbackFlavorStruct)
                         {
                             // In-place calli on the struct's data (a host field
@@ -795,8 +1035,10 @@ internal static unsafe partial class SerializationBackendManagedCommands
                         // distinguishes the frame kind for the SR crossing:
                         // 0 = object frame, non-zero = struct
                         // collection-element frame (interior addressing).
+                        // The unmanaged entry passes no frames; its groups only address baseAddr.
+                        bool hasFrame = !frames.IsEmpty;
                         ((delegate*<object, nint, ref byte, byte*, byte*, byte*, int, byte*, NativeReadBufferContext*, ulong, void>)(void*)cmd->readGroupHandler)(
-                            top.Instance, top.Offset, ref baseAddr, entries, readEntries, fieldTable, count, input, ctx, cmd->userData);
+                            hasFrame ? top.Instance : null, hasFrame ? top.Offset : 0, ref baseAddr, entries, readEntries, fieldTable, count, input, ctx, cmd->userData);
 
                         // SerializeReference missing-type pass. The ctx crossing
                         // is stamped only when the persistent registry holds
@@ -809,7 +1051,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
 
                     // Dynamic extension field: the read handler owns its input.
                     // The native read dispatchers consume the CachedReader
-                    // directly after a syncReader rewind (SimpleNativeType,
+                    // through the dispatchNative crossing (SimpleNativeType,
                     // NativeValueStruct) or parse framed payloads through the
                     // window contract (PropertyName, FixedBuffer).
                     case V2OpCode.ExternalDynamic:
@@ -893,6 +1135,11 @@ internal static unsafe partial class SerializationBackendManagedCommands
             EnsureAndAdvance:
                 if (ctx->readerEnd - ctx->readerPtr < ensureSpace)
                     InvokeEnsureReadable(ctx, ensureSpace);
+            StageAndAdvance:
+                // Stage the region the sum covers: the next block, then the header of the
+                // command that ends the region, which that command addresses from readerPtr.
+                input = ctx->readerPtr;
+                ctx->readerPtr += ensureSpace;
                 pos = next;
             }
         }

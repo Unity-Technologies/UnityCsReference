@@ -11,7 +11,7 @@ namespace UnityEngine
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = true)]
     [RequiredByNativeCode]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     sealed class ExtensionOfNativeClassAttribute : Attribute
     {
     }

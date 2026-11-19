@@ -44,6 +44,10 @@ namespace UnityEngine.Rendering
                 Debug.LogErrorFormat("Local keyword {0} doesn't exist in the shader.", name);
         }
 
+        // Unlike LocalKeywordSpace.FindKeyword, doesn't allocate a copy of the name
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static bool IsDeclared(Shader shader, string name) => GetShaderKeywordIndex(shader, name) < GetShaderKeywordCount(shader);
+
         public LocalKeyword(ComputeShader shader, string name)
         {
             if (shader == null)

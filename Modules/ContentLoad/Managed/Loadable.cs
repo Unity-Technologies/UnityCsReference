@@ -16,6 +16,8 @@ namespace Unity.Loading
     /// <remarks>
     /// Query <see cref="Loadable{T}.Status"/> to drive UI or to assert that a load finished before reading
     /// <see cref="Loadable{T}.Target"/>. <see cref="LoadableStatus.Failed"/> indicates the asynchronous load completed without a usable object. This often occurs due to missing built content.
+    ///
+    /// <see cref="LoadedContentFileInfo.Status"/> and <see cref="LoadedSceneInfo.Status"/> use the same values for a content file and a scene.
     /// </remarks>
     /// <example>
     /// <code source="../../ContentBuild/Tests/local.test.build-examples/Editor/ContentLoad/LoadableStatus_Example.cs"/>

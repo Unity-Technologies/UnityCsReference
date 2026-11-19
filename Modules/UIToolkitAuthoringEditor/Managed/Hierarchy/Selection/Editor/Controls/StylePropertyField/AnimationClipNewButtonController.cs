@@ -14,10 +14,9 @@ namespace Unity.UIToolkit.Editor;
 
 // Wires the "New..." / "Edit..." button next to a UI animation clip field: with no clip assigned it
 // creates a new clip asset, with one assigned it opens the Animation window.
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static class AnimationClipNewButtonController
 {
-    // Single source of truth; must match the UXML and is re-exported from BuilderConstants.
+    // Single source of truth; must match the UXML.
     internal const string AnimationClipFieldName = "animation-clip-field";
     internal const string AnimationClipNewButtonName = "animation-clip-new-button";
 
@@ -97,7 +96,6 @@ internal static class AnimationClipNewButtonController
         button.SetEnabled(field.enabledSelf);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static void UpdateButtonMode(Button button, bool hasClip)
     {
         button.text = hasClip ? k_EditButtonText : k_NewButtonText;
@@ -141,7 +139,6 @@ internal static class AnimationClipNewButtonController
 
     // Shared entry point for the save-dialog + factory + custom-assignment flow; used by the
     // inspector "New..." button and the Animation Window staging "Create" call-to-action.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static UIAnimationClip CreateNewUIAnimationClipFromDialog(string subjectName, Action<UIAnimationClip> assignToOwner)
     {
         if (assignToOwner == null)
@@ -171,7 +168,6 @@ internal static class AnimationClipNewButtonController
     // Overloads for the multi-property animation row, whose clip field is a raw UIAnimationClipField (the
     // single-clip inspector above uses the StyleUIAnimationClipField wrapper). Assigning the field value routes
     // the created clip through the row's change handler, so each host writes it back through its own path.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static UIAnimationClip CreateAndAssignNewUIAnimationClip(BaseField<UIAnimationClip> field, string path)
     {
         return UIAnimationClipFactory.CreateAssetAndAssignToField(path, loaded => field.value = loaded);
@@ -189,7 +185,6 @@ internal static class AnimationClipNewButtonController
     // UI Builder's animation clip row uses a plain ObjectField and its own undo/USS write-back flow, passed
     // in as createNew. It reports no clip because the Animation window follows the global selection, which
     // the Builder does not drive, so the button stays in create mode.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static void ConnectObjectFieldButton(Button button, ObjectField field, Action createNew)
     {
         ConnectButtonToField(button, field, _ => null, createNew);

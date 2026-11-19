@@ -149,16 +149,10 @@ namespace UnityEditor
         }
 
         [ExcludeFromDocs]
-        public bool lowResolutionForAspectRatios
+        public int pixelSize
         {
-            get { return true; }
+            get { return 1; }
             set {}
-        }
-
-        [ExcludeFromDocs]
-        public bool forceLowResolutionAspectRatios
-        {
-            get { return false; }
         }
 
         [ExcludeFromDocs]

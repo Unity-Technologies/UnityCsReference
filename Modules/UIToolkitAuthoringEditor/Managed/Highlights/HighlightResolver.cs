@@ -33,21 +33,50 @@ static partial class HighlightResolver
     [AutoStaticsCleanupOnCodeReload]
     static MatchedRulesExtractor s_RulesExtractor;
 
+    [AutoStaticsCleanupOnCodeReload]
+    [IgnoreForUAL0015("Handlers registered per live authoring context; cleared on code reload and re-registered as the contexts are rebuilt")]
+    static readonly Dictionary<AuthoringContext, CommandSystem.CommandHandler> s_LocalHandlers = new();
+
     [OnCodeInitializing]
     static void Bootstrap()
     {
         s_RulesExtractor = new MatchedRulesExtractor(AssetDatabase.GetAssetPath);
-        UICommandQueue.RegisterHandler<RequestHighlightsCommand>(OnHighlightsRequested);
+        UICommandQueue.RegisterHandler<RequestHighlightsCommand>(OnGlobalHighlightsRequested);
     }
 
     [OnCodeUnloading]
     static void Teardown()
     {
-        UICommandQueue.UnregisterHandler<RequestHighlightsCommand>(OnHighlightsRequested);
+        UICommandQueue.UnregisterHandler<RequestHighlightsCommand>(OnGlobalHighlightsRequested);
         s_RulesExtractor = null;
     }
 
-    static void OnHighlightsRequested(in CommandContext context)
+    /// <summary>
+    /// Answers the highlight requests sent on a local context, from the panels that context owns.
+    /// </summary>
+    public static void Register(AuthoringContext context)
+    {
+        if (context.IsGlobal || s_LocalHandlers.ContainsKey(context))
+            return;
+
+        CommandSystem.CommandHandler handler = (in CommandContext commandContext) =>
+            OnHighlightsRequested(context, in commandContext);
+        s_LocalHandlers.Add(context, handler);
+        context.Messages.RegisterHandler<RequestHighlightsCommand>(handler);
+    }
+
+    public static void Unregister(AuthoringContext context)
+    {
+        if (!s_LocalHandlers.Remove(context, out var handler))
+            return;
+
+        context.Messages.UnregisterHandler<RequestHighlightsCommand>(handler);
+    }
+
+    static void OnGlobalHighlightsRequested(in CommandContext context)
+        => OnHighlightsRequested(AuthoringContext.Global, in context);
+
+    static void OnHighlightsRequested(AuthoringContext authoringContext, in CommandContext context)
     {
         if (context.Status != CommandExecutionStatus.Success)
             return;
@@ -61,6 +90,13 @@ static partial class HighlightResolver
 
         using var panelsHandle = ListPool<Panel>.Get(out var panels);
         registry.CollectTrackedPanels(panels);
+
+        // Each context lights up only what its own views show.
+        for (var i = panels.Count - 1; i >= 0; i--)
+        {
+            if (AuthoringContext.For(panels[i]) != authoringContext)
+                panels.RemoveAt(i);
+        }
         if (panels.Count == 0)
             return;
 
@@ -124,7 +160,7 @@ static partial class HighlightResolver
         if (elementSet.Count == 0 && ruleSet.Count == 0)
             return;
 
-        HighlightCommand.Execute(command.Source, elementSet, ruleSet);
+        HighlightCommand.Execute(authoringContext, command.Source, elementSet, ruleSet);
     }
 
     // Whether any document this panel renders references the sheet the rule lives in.

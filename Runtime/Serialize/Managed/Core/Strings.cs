@@ -117,6 +117,25 @@ internal static unsafe partial class SerializationBackendManagedCommands
         }
     }
 
+    // Writes the handle at slot and the '\0'-truncated UTF-8 body into an out-of-line allocation whose
+    // count is the byte count. An empty string owns no allocation.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void V2WriteOutOfLineString(NativeBufferContext* ctx, ReadOnlySpan<char> chars, byte* slot)
+    {
+        int nullIdx = chars.IndexOf('\0');
+        if (nullIdx >= 0)
+            chars = chars.Slice(0, nullIdx);
+        int byteCount = chars.IsEmpty ? 0 : Encoding.UTF8.GetByteCount(chars);
+
+        uint handle = kV2OutOfLineInvalidHandle;
+        if (byteCount > 0)
+        {
+            handle = V2AllocateOutOfLine(ctx, byteCount, byteCount, out byte* allocation);
+            Encoding.UTF8.GetBytes(chars, new Span<byte>(allocation, byteCount));
+        }
+        *(uint*)slot = handle;
+    }
+
     // Fused UTF-16 to UTF-8 transcode: ASCII narrowing, the non-ASCII test,
     // and '\0' truncation share one pass over the input. SWAR blocks of 4
     // chars use portable ulong ops with little-endian lane packing. The first
@@ -255,14 +274,14 @@ internal static unsafe partial class SerializationBackendManagedCommands
         return result;
     }
 
-    // Guarded form for opt-out call sites (PropertyName's dynamic handler,
-    // whose commands report a zero minimum): checks its own length header;
-    // the trailing guarantee is the caller's arm's responsibility.
-    private static string V2ReadFramedStringGuarded(NativeReadBufferContext* ctx)
+    // Decodes the body behind the handle at slot. An unreadable allocation reads as the empty string.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string V2ReadOutOfLineString(NativeReadBufferContext* ctx, byte* slot)
     {
-        if (ctx->readerEnd - ctx->readerPtr < 4)
-            InvokeEnsureReadable(ctx, 4);
-        return V2ReadFramedString(ctx, 0);
+        int length = V2LookupOutOfLine(ctx, Unsafe.ReadUnaligned<uint>(slot), 1, out byte* allocation);
+        if (length > 0)
+            return V2DecodeStringBody(allocation, length);
+        return string.Empty;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -312,6 +331,63 @@ internal static unsafe partial class SerializationBackendManagedCommands
             Unsafe.InitBlockUnaligned(dst + 4 + length, 0, (uint)padBytes);
     }
 
+    // Out-of-line twin of V2WriteFramedDecimalInt32: the decimal ASCII goes into its own allocation and
+    // the handle lands at slot. The digits are never empty.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void V2WriteOutOfLineDecimalInt32(NativeBufferContext* ctx, int value, byte* slot)
+    {
+        bool negative = value < 0;
+        ulong magnitude = negative ? (ulong)-(long)value : (ulong)value;
+        int length = negative ? 1 : 0;
+        for (ulong m = magnitude; ; m /= 10)
+        {
+            ++length;
+            if (m < 10)
+                break;
+        }
+
+        uint handle = V2AllocateOutOfLine(ctx, length, length, out byte* allocation);
+        byte* cursor = allocation + length;
+        do
+        {
+            *--cursor = (byte)('0' + (int)(magnitude % 10));
+            magnitude /= 10;
+        }
+        while (magnitude > 0);
+        if (negative)
+            *--cursor = (byte)'-';
+
+        *(uint*)slot = handle;
+    }
+
+    // Out-of-line twin of V2ReadFramedDecimalInt32. An empty or unreadable allocation parses as 0, as the
+    // native StringToInt("") does.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int V2ReadOutOfLineDecimalInt32(NativeReadBufferContext* ctx, byte* slot)
+    {
+        int length = V2LookupOutOfLine(ctx, Unsafe.ReadUnaligned<uint>(slot), 1, out byte* p);
+
+        // An Int32 decimal is at most 11 bytes ("-2147483648").
+        if (length > 11)
+            throw new InvalidOperationException(
+                $"Managed PropertyName deserialization read an invalid decimal length ({length}). The serialized data is corrupted.");
+
+        long magnitude = 0;
+        bool negative = false;
+        if (length > 0)
+        {
+            int i = 0;
+            if (p[0] == (byte)'-')
+            {
+                negative = true;
+                i = 1;
+            }
+            for (; i < length; i++)
+                magnitude = magnitude * 10 + (p[i] - (byte)'0');
+        }
+        return negative ? (int)(-magnitude) : (int)magnitude;
+    }
+
     // Parses the decimal directly off the wire. The long accumulator lets
     // Int32.MinValue round-trip.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -349,5 +425,46 @@ internal static unsafe partial class SerializationBackendManagedCommands
             ctx->readerPtr += length + padBytes;
         }
         return negative ? (int)(-magnitude) : (int)magnitude;
+    }
+
+    // Payload helpers for header-framed dynamics (PropertyName, fixed buffers) and anything else
+    // whose header ends the staged region: the 4-byte header at writerPtr - 4 is the length, or the
+    // out-of-line handle, and the payload goes inline or to an allocation.
+    private static void V2WriteStringPayload(NativeBufferContext* ctx, ReadOnlySpan<char> chars)
+    {
+        if (V2IsOutOfLine(ctx))
+        {
+            V2WriteOutOfLineString(ctx, chars, ctx->writerPtr - 4);
+            return;
+        }
+        ctx->writerPtr -= 4;
+        V2WriteFramedString(ctx, chars);
+    }
+
+    private static void V2WriteDecimalPayload(NativeBufferContext* ctx, int value)
+    {
+        if (V2IsOutOfLine(ctx))
+        {
+            V2WriteOutOfLineDecimalInt32(ctx, value, ctx->writerPtr - 4);
+            return;
+        }
+        ctx->writerPtr -= 4;
+        V2WriteFramedDecimalInt32(ctx, value);
+    }
+
+    private static string V2ReadStringPayload(NativeReadBufferContext* ctx)
+    {
+        if (V2IsOutOfLine(ctx))
+            return V2ReadOutOfLineString(ctx, ctx->readerPtr - 4);
+        ctx->readerPtr -= 4;
+        return V2ReadFramedString(ctx, 0);
+    }
+
+    private static int V2ReadDecimalPayload(NativeReadBufferContext* ctx)
+    {
+        if (V2IsOutOfLine(ctx))
+            return V2ReadOutOfLineDecimalInt32(ctx, ctx->readerPtr - 4);
+        ctx->readerPtr -= 4;
+        return V2ReadFramedDecimalInt32(ctx);
     }
 }

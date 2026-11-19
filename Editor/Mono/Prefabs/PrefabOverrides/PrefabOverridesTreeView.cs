@@ -74,12 +74,18 @@ namespace UnityEditor
         class PrefabOverrides
         {
             List<ObjectOverride> m_ObjectOverrides = new List<ObjectOverride>();
+            List<DataComponentOverride> m_DataComponentOverrides = new List<DataComponentOverride>();
+            List<AddedDataComponent> m_AddedDataComponents = new List<AddedDataComponent>();
+            List<RemovedDataComponent> m_RemovedDataComponents = new List<RemovedDataComponent>();
             List<AddedComponent> m_AddedComponents = new List<AddedComponent>();
             List<RemovedComponent> m_RemovedComponents = new List<RemovedComponent>();
             List<AddedGameObject> m_AddedGameObjects = new List<AddedGameObject>();
             List<RemovedGameObject> m_RemovedGameObjects = new List<RemovedGameObject>();
 
             public List<ObjectOverride> objectOverrides { get { return m_ObjectOverrides; } set { m_ObjectOverrides = value; } }
+            public List<DataComponentOverride> dataComponentOverrides { get { return m_DataComponentOverrides; } set { m_DataComponentOverrides = value; } }
+            public List<AddedDataComponent> addedDataComponents { get { return m_AddedDataComponents; } set { m_AddedDataComponents = value; } }
+            public List<RemovedDataComponent> removedDataComponents { get { return m_RemovedDataComponents; } set { m_RemovedDataComponents = value; } }
             public List<AddedComponent> addedComponents { get { return m_AddedComponents; } set { m_AddedComponents = value; } }
             public List<RemovedComponent> removedComponents { get { return m_RemovedComponents; } set { m_RemovedComponents = value; } }
             public List<AddedGameObject> addedGameObjects { get { return m_AddedGameObjects; } set { m_AddedGameObjects = value; } }
@@ -96,6 +102,10 @@ namespace UnityEditor
 
             var mods = new PrefabOverrides();
             mods.objectOverrides = PrefabOverridesUtility.GetObjectOverrides(prefabInstance, includeDefaultOverrides);
+            mods.dataComponentOverrides = new List<DataComponentOverride>();
+            mods.addedDataComponents = new List<AddedDataComponent>();
+            mods.removedDataComponents = new List<RemovedDataComponent>();
+            PrefabOverridesUtility.GetDataComponentChanges(prefabInstance, mods.dataComponentOverrides, mods.addedDataComponents, mods.removedDataComponents);
             mods.addedComponents = PrefabOverridesUtility.GetAddedComponents(prefabInstance);
             mods.removedComponents = PrefabOverridesUtility.GetRemovedComponents(prefabInstance);
             mods.addedGameObjects = PrefabOverridesUtility.GetAddedGameObjects(prefabInstance);
@@ -162,6 +172,27 @@ namespace UnityEditor
                     PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(entityId, entityIdToPrefabOverridesMap);
                     modificationsForObject.objectOverrides.Add(modifiedObject);
                 }
+            }
+
+            foreach (var dataComponentOverride in m_AllModifications.dataComponentOverrides)
+            {
+                EntityId entityId = DataComponentEntityId.GetOwner(dataComponentOverride.instanceDataComponent);
+                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(entityId, entityIdToPrefabOverridesMap);
+                modificationsForObject.dataComponentOverrides.Add(dataComponentOverride);
+            }
+
+            foreach (var addedDataComponent in m_AllModifications.addedDataComponents)
+            {
+                EntityId entityId = DataComponentEntityId.GetOwner(addedDataComponent.instanceDataComponent);
+                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(entityId, entityIdToPrefabOverridesMap);
+                modificationsForObject.addedDataComponents.Add(addedDataComponent);
+            }
+
+            foreach (var removedDataComponent in m_AllModifications.removedDataComponents)
+            {
+                EntityId entityId = removedDataComponent.containingInstanceGameObject.GetEntityId();
+                PrefabOverrides modificationsForObject = GetPrefabOverridesForObject(entityId, entityIdToPrefabOverridesMap);
+                modificationsForObject.removedDataComponents.Add(removedDataComponent);
             }
 
             foreach (var addedGameObject in m_AllModifications.addedGameObjects)
@@ -253,8 +284,14 @@ namespace UnityEditor
             {
                 bool CanAnyPropertiesBeApplied()
                 {
-                    if (m_AllModifications.addedComponents.Count != 0 || m_AllModifications.removedComponents.Count != 0 || m_AllModifications.addedGameObjects.Count != 0 || m_AllModifications.removedGameObjects.Count != 0)
+                    if (m_AllModifications.addedComponents.Count != 0 || m_AllModifications.addedDataComponents.Count != 0 || m_AllModifications.removedDataComponents.Count != 0 || m_AllModifications.removedComponents.Count != 0 || m_AllModifications.addedGameObjects.Count != 0 || m_AllModifications.removedGameObjects.Count != 0)
                         return true;
+
+                    foreach (var dataComponentOverride in m_AllModifications.dataComponentOverrides)
+                    {
+                        if (PrefabUtility.HasApplicableDataComponentOverrides(dataComponentOverride.instanceDataComponent, false))
+                            return true;
+                    }
 
                     foreach (var objectOverride in m_AllModifications.objectOverrides)
                     {
@@ -367,6 +404,54 @@ namespace UnityEditor
                     }
                 }
 
+                // Data component modifications
+                foreach (var dataComponentOverride in objectModifications.dataComponentOverrides)
+                {
+                    var dataComponentItem = new PrefabOverridesTreeViewItem
+                        (
+                        dataComponentOverride.instanceDataComponent,
+                        gameObjectItem.depth + 1,
+                        GetDataComponentTitle(dataComponentOverride.instanceDataComponent)
+                        );
+                    dataComponentItem.icon = EditorGUIUtility.LoadIcon("DataComponent Icon");
+                    dataComponentItem.singleModification = dataComponentOverride;
+                    dataComponentItem.type = ItemType.PREFAB_OBJECT;
+                    gameObjectItem.AddChild(dataComponentItem);
+                    shouldAddGameObjectItemToParent = true;
+                }
+
+                // Added data components
+                foreach (var addedDataComponent in objectModifications.addedDataComponents)
+                {
+                    var dataComponentItem = new PrefabOverridesTreeViewItem
+                        (
+                        addedDataComponent.instanceDataComponent,
+                        gameObjectItem.depth + 1,
+                        GetDataComponentTitle(addedDataComponent.instanceDataComponent)
+                        );
+                    dataComponentItem.icon = EditorGUIUtility.LoadIcon("DataComponent Icon");
+                    dataComponentItem.singleModification = addedDataComponent;
+                    dataComponentItem.type = ItemType.ADDED_OBJECT;
+                    gameObjectItem.AddChild(dataComponentItem);
+                    shouldAddGameObjectItemToParent = true;
+                }
+
+                // Removed data components. The item has the asset data component's id, as a removed component's item has the asset component's.
+                foreach (var removedDataComponent in objectModifications.removedDataComponents)
+                {
+                    var dataComponentItem = new PrefabOverridesTreeViewItem
+                        (
+                        removedDataComponent.assetDataComponent,
+                        gameObjectItem.depth + 1,
+                        GetDataComponentTitle(removedDataComponent.assetDataComponent)
+                        );
+                    dataComponentItem.icon = EditorGUIUtility.LoadIcon("DataComponent Icon");
+                    dataComponentItem.singleModification = removedDataComponent;
+                    dataComponentItem.type = ItemType.REMOVED_OBJECT;
+                    gameObjectItem.AddChild(dataComponentItem);
+                    shouldAddGameObjectItemToParent = true;
+                }
+
                 // Removed components
                 foreach (var removedComponent in objectModifications.removedComponents)
                 {
@@ -435,6 +520,12 @@ namespace UnityEditor
             }
 
             return false;
+        }
+
+        static string GetDataComponentTitle(EntityId dataComponent)
+        {
+            Type type = PrefabUtility.GetDataComponentType(dataComponent);
+            return type != null ? ObjectNames.GetInspectorTitle(type) : "Component";
         }
 
         static PrefabOverrides GetPrefabOverridesForObject(EntityId entityId, Dictionary<EntityId, PrefabOverrides> map)
@@ -529,7 +620,9 @@ namespace UnityEditor
 
             var item = FindItem(state.selectedIDs[0], rootItem) as PrefabOverridesTreeViewItem;
 
-            if (item == null || item.obj == null)
+            var dataComponentOverride = item?.singleModification as DataComponentPrefabOverride;
+            var removedDataComponent = item?.singleModification as RemovedDataComponent;
+            if (item == null || (item.obj == null && dataComponentOverride == null && removedDataComponent == null))
                 return;
 
             if (PopupWindowWithoutFocus.IsVisible())
@@ -544,6 +637,27 @@ namespace UnityEditor
 
             Rect buttonRect = GetRowRect(row);
             buttonRect.width = EditorGUIUtility.currentViewWidth;
+            m_LastShownPreviewWindowRowID = item.id;
+
+            if (dataComponentOverride != null)
+            {
+                EntityId instanceDataComponent = dataComponentOverride.instanceDataComponent;
+                PopupWindowWithoutFocus.Show(
+                    buttonRect,
+                    new ComparisonViewPopup(PrefabUtility.GetCorrespondingDataComponentFromSource(instanceDataComponent), instanceDataComponent, dataComponentOverride, this),
+                    new[] { PopupLocation.Right, PopupLocation.Left, PopupLocation.Below });
+                return;
+            }
+
+            if (removedDataComponent != null)
+            {
+                PopupWindowWithoutFocus.Show(
+                    buttonRect,
+                    new ComparisonViewPopup(removedDataComponent.assetDataComponent, EntityId.None, removedDataComponent, this),
+                    new[] { PopupLocation.Right, PopupLocation.Left, PopupLocation.Below });
+                return;
+            }
+
             Object rowObject = item.obj;
 
             Object instance, source;
@@ -563,7 +677,6 @@ namespace UnityEditor
                 source = PrefabUtility.GetCorrespondingObjectFromSource(rowObject);
             }
 
-            m_LastShownPreviewWindowRowID = item.id;
             PopupWindowWithoutFocus.Show(
                 buttonRect,
                 new ComparisonViewPopup(source, instance, item.singleModification, this),
@@ -608,7 +721,14 @@ namespace UnityEditor
             readonly PrefabOverride m_Modification;
             readonly Object m_Source;
             readonly Object m_Instance;
+            // A data component has no Object, so it is shown through an Editor made from its EntityId.
+            readonly EntityId m_SourceDataComponent;
+            readonly EntityId m_InstanceDataComponent;
+            readonly List<Editor> m_DataComponentEditors = new List<Editor>();
             readonly bool m_Unappliable;
+
+            bool hasSource => m_Source != null || m_SourceDataComponent != EntityId.None;
+            bool hasInstance => m_Instance != null || m_InstanceDataComponent != EntityId.None;
 
             bool m_OwnerNeedsRefresh;
 
@@ -649,22 +769,32 @@ namespace UnityEditor
                 else
                     m_Unappliable = false;
 
-                if (modification is ObjectOverride)
+                if (modification is ObjectOverride || modification is DataComponentOverride)
                     #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                     Undo.postprocessModifications += RecheckOverrideStatus;
                     #pragma warning restore UAL0015
             }
 
+            public ComparisonViewPopup(EntityId sourceDataComponent, EntityId instanceDataComponent, PrefabOverride modification, PrefabOverridesTreeView owner)
+                : this(null, null, modification, owner)
+            {
+                m_SourceDataComponent = sourceDataComponent;
+                m_InstanceDataComponent = instanceDataComponent;
+            }
+
             public override void OnClose()
             {
                 Undo.postprocessModifications -= RecheckOverrideStatus;
+                foreach (var editor in m_DataComponentEditors)
+                    Object.DestroyImmediate(editor);
+                m_DataComponentEditors.Clear();
                 m_Owner.ComparisonPopupClosed(m_Instance, m_OwnerNeedsRefresh);
                 base.OnClose();
             }
 
             UndoPropertyModification[] RecheckOverrideStatus(UndoPropertyModification[] modifications)
             {
-                if (m_Instance == null || !PrefabUtility.HasObjectOverride(m_Instance))
+                if (!InstanceHasOverride())
                 {
                     // Delay update and close since if there's multiple undo events, RecheckOverrideStatus
                     // gets called for each, and we only want to recheck after the last one.
@@ -674,6 +804,13 @@ namespace UnityEditor
                     EditorApplication.tick += UpdateAndCloseOnNextTick;
                 }
                 return modifications;
+            }
+
+            bool InstanceHasOverride()
+            {
+                if (m_InstanceDataComponent != EntityId.None)
+                    return PrefabUtility.HasDataComponentOverride(m_InstanceDataComponent);
+                return m_Instance != null && PrefabUtility.HasObjectOverride(m_Instance);
             }
 
             void UpdateAndCloseOnNextTick()
@@ -687,7 +824,7 @@ namespace UnityEditor
                 var root = new VisualElement();
                 root.AddStyleSheetPath(Styles.ussPath);
                 root.AddToClassList(Styles.rootClass);
-                if (m_Modification != null && m_Source != null && m_Instance != null)
+                if (m_Modification != null && hasSource && hasInstance)
                     root.AddToClassList(Styles.dualViewClass);
 
                 var header = CreateHeader();
@@ -717,7 +854,7 @@ namespace UnityEditor
                     return container;
                 }
 
-                if (m_Source != null && m_Instance != null)
+                if (hasSource && hasInstance)
                 {
                     var sourceHeader = CreateHeaderCell(Styles.sourceContent.text);
                     var instanceHeader = CreateHeaderCell(Styles.instanceContent.text);
@@ -729,7 +866,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    string headerContentText = m_Source != null ? Styles.removedContent.text : Styles.addedContent.text;
+                    string headerContentText = hasSource ? Styles.removedContent.text : Styles.addedContent.text;
                     var header = CreateHeaderCell(headerContentText);
                     header.Add(CreateHeaderButtons());
                     container.Add(header);
@@ -754,7 +891,7 @@ namespace UnityEditor
                 };
                 comparisonView.RegisterCallback<SerializedObjectChangeEvent>(OnObjectChanged);
 
-                if (m_Source != null && m_Instance != null)
+                if (hasSource && hasInstance)
                     comparisonView.Add(CreateDualObjectView());
                 else
                     comparisonView.Add(CreateSingleObjectView());
@@ -769,15 +906,15 @@ namespace UnityEditor
 
             VisualElement CreateSingleObjectView()
             {
-                if (m_Source != null)
+                if (hasSource)
                 {
-                    var inspector = CreateObjectInspector(m_Source, EditorGUIUtility.ComparisonViewMode.Original);
+                    var inspector = CreateSourceInspector(EditorGUIUtility.ComparisonViewMode.Original);
                     inspector.enabledSelf = false;
                     return inspector;
                 }
                 else
                 {
-                    var inspector = CreateObjectInspector(m_Instance, EditorGUIUtility.ComparisonViewMode.Original);
+                    var inspector = CreateInstanceInspector(EditorGUIUtility.ComparisonViewMode.Original);
                     inspector.enabledSelf = true;
                     return inspector;
                 }
@@ -785,8 +922,8 @@ namespace UnityEditor
 
             VisualElement CreateDualObjectView()
             {
-                var sourceInspector = CreateObjectInspector(m_Source, EditorGUIUtility.ComparisonViewMode.Original);
-                var instanceInspector = CreateObjectInspector(m_Instance, EditorGUIUtility.ComparisonViewMode.Modified);
+                var sourceInspector = CreateSourceInspector(EditorGUIUtility.ComparisonViewMode.Original);
+                var instanceInspector = CreateInstanceInspector(EditorGUIUtility.ComparisonViewMode.Modified);
 
                 sourceInspector.enabledSelf = false;
                 sourceInspector.AddToClassList(Styles.cellClass);
@@ -843,10 +980,34 @@ namespace UnityEditor
                 editorWindow?.Close();
             }
 
+            VisualElement CreateSourceInspector(EditorGUIUtility.ComparisonViewMode viewMode)
+            {
+                return m_Source != null ? CreateObjectInspector(m_Source, viewMode) : CreateDataComponentInspector(m_SourceDataComponent, viewMode);
+            }
+
+            VisualElement CreateInstanceInspector(EditorGUIUtility.ComparisonViewMode viewMode)
+            {
+                return m_Instance != null ? CreateObjectInspector(m_Instance, viewMode) : CreateDataComponentInspector(m_InstanceDataComponent, viewMode);
+            }
+
+            VisualElement CreateDataComponentInspector(EntityId dataComponent, EditorGUIUtility.ComparisonViewMode viewMode)
+            {
+                var editor = Editor.CreateEditorForEntityIds(new[] { dataComponent });
+                if (editor == null)
+                    return new VisualElement();
+
+                m_DataComponentEditors.Add(editor);
+                return CreateInspectorContainer(new InspectorElement(editor) { comparisonViewMode = viewMode }, viewMode);
+            }
+
             static VisualElement CreateObjectInspector(Object obj, EditorGUIUtility.ComparisonViewMode viewMode)
             {
+                return CreateInspectorContainer(new InspectorElement(obj) { comparisonViewMode = viewMode }, viewMode);
+            }
+
+            static VisualElement CreateInspectorContainer(InspectorElement inspector, EditorGUIUtility.ComparisonViewMode viewMode)
+            {
                 var container = new VisualElement();
-                var inspector = new InspectorElement(obj) { comparisonViewMode = viewMode };
                 if (inspector.boundObject != null)
                     inspector.TrackSerializedObjectValue(inspector.boundObject);
 

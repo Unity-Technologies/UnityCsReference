@@ -327,6 +327,8 @@ namespace UnityEditor
             if (bindings.Length != curves.Length)
                 throw new InvalidOperationException($"{nameof(bindings)} and {nameof(curves)} must be of equal length");
 
+            EnsureEditorCurvesBuilt(clip);
+
             int length = bindings.Length;
             for (int i = 0; i < length; i++)
             {
@@ -347,6 +349,8 @@ namespace UnityEditor
         extern private static void Internal_SetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve, bool syncEditorCurves);
 
         extern internal static DiscreteBindingResult IsDiscreteIntBinding(EditorCurveBinding binding);
+
+        extern internal static void EnsureEditorCurvesBuilt([NotNull] AnimationClip clip);
 
         extern internal static void SyncEditorCurves([NotNull] AnimationClip clip);
 

@@ -18,7 +18,7 @@ namespace Unity.Collections
     {
         IntPtr m_pointer;
         int m_length;
-        public int Length => m_length;
+        public readonly int Length => m_length;
         AllocatorManager.AllocatorHandle m_allocator;
         public UnmanagedArray(int length, AllocatorManager.AllocatorHandle allocator)
         {
@@ -29,18 +29,18 @@ namespace Unity.Collections
             m_length = length;
             m_allocator = allocator;
         }
-        public void Dispose()
+        public readonly void Dispose()
         {
             unsafe
             {
                 Memory.Unmanaged.Free((T*)m_pointer, Allocator.Persistent);
             }
         }
-        public unsafe T* GetUnsafePointer()
+        public readonly unsafe T* GetUnsafePointer()
         {
             return (T*)m_pointer;
         }
-        public ref T this[int index]
+        public readonly ref T this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { unsafe { return ref ((T*)m_pointer)[index]; } }
@@ -77,7 +77,7 @@ namespace Unity.Collections
             internal long m_current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
+                readonly get
                 {
                     return (m_long >> currentOffset) & currentMask;
                 }
@@ -94,7 +94,7 @@ namespace Unity.Collections
             internal long m_allocCount
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
+                readonly get
                 {
                     return (m_long >> allocCountOffset) & allocCountMask;
                 }
@@ -143,7 +143,7 @@ namespace Unity.Collections
                 m_union = default;
             }
 
-            public bool Contains(IntPtr ptr)
+            public readonly bool Contains(IntPtr ptr)
             {
                 unsafe
                 {
@@ -203,29 +203,29 @@ namespace Unity.Collections
         /// </summary>
         public bool EnableBlockFree
         {
-            get => m_enableBlockFree != 0;
+            readonly get => m_enableBlockFree != 0;
             set => m_enableBlockFree = value ? (byte)1 : (byte)0;
         }
 
         /// <summary>
         /// Retrieves the number of memory blocks that the allocator has requested from the system.
         /// </summary>
-        public int BlocksAllocated => (int)(m_last + 1);
+        public readonly int BlocksAllocated => (int)(m_last + 1);
 
         /// <summary>
         /// Retrieves the size of the initial memory block, as requested in the Initialize function.
         /// </summary>
-        public int InitialSizeInBytes => (int)(m_block[0].m_bytes);
+        public readonly int InitialSizeInBytes => (int)(m_block[0].m_bytes);
 
         /// <summary>
         /// Retrieves the maximum memory block size.
         /// </summary>
-        internal long MaxMemoryBlockSize => kMaxMemoryBlockSize;
+        internal readonly long MaxMemoryBlockSize => kMaxMemoryBlockSize;
 
         /// <summary>
         /// Retrieves the total bytes of the memory blocks allocated by this allocator.
         /// </summary>
-        internal long BytesAllocated
+        internal readonly long BytesAllocated
         {
             get
             {
@@ -272,7 +272,7 @@ namespace Unity.Collections
         /// All allocators must implement this property, in order to be installed in the custom allocator table.
         /// </summary>
         [ExcludeFromBurstCompatTesting("Uses managed delegate")]
-        public AllocatorManager.TryFunction Function => Try;
+        public readonly AllocatorManager.TryFunction Function => Try;
 
         unsafe int TryAllocate(ref AllocatorManager.Block block, int startIndex, int lastIndex, long alignedSize, long alignmentMask)
         {
@@ -434,26 +434,26 @@ namespace Unity.Collections
         /// global table, for times when a reference to the allocator object isn't available.
         /// </summary>
         /// <value>The AllocatorHandle retrieved.</value>
-        public AllocatorManager.AllocatorHandle Handle { get { return m_handle; } set { m_handle = value; } }
+        public AllocatorManager.AllocatorHandle Handle { readonly get { return m_handle; } set { m_handle = value; } }
 
         /// <summary>
         /// Retrieve the Allocator associated with this allocator.
         /// </summary>
         /// <value>The Allocator retrieved.</value>
-        public Allocator ToAllocator { get { return m_handle.ToAllocator; } }
+        public readonly Allocator ToAllocator { get { return m_handle.ToAllocator; } }
 
         /// <summary>
         /// Check whether this AllocatorHandle is a custom allocator.
         /// </summary>
         /// <value>True if this AllocatorHandle is a custom allocator.</value>
-        public bool IsCustomAllocator { get { return m_handle.IsCustomAllocator; } }
+        public readonly bool IsCustomAllocator { get { return m_handle.IsCustomAllocator; } }
 
         /// <summary>
         /// Check whether this allocator will automatically dispose allocations.
         /// </summary>
         /// <remarks>Allocations made by Rewindable allocator are automatically disposed.</remarks>
         /// <value>Always true</value>
-        public bool IsAutoDispose { get { return true; } }
+        public readonly bool IsAutoDispose { get { return true; } }
 
         /// <summary>
         /// Allocate a NativeArray of type T from memory that is guaranteed to remain valid until the end of the

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
@@ -34,6 +35,20 @@ namespace UnityEditor.UIElements
                     cached.priority = UnityEngine.UIElements.StyleSheetPriority.Builtin;
             }
             return cached;
+        }
+
+        // The cached sheets are resolved for the current editor font; see
+        // UIElementsEditorUtility.ReloadCommonStyleSheets, which calls this when the font changes.
+        internal static void ReloadStyleSheets(List<(StyleSheet oldSheet, StyleSheet newSheet)> swaps)
+        {
+            var oldDark = s_ToolbarDarkStyleSheet;
+            var oldLight = s_ToolbarLightStyleSheet;
+            s_ToolbarDarkStyleSheet = null;
+            s_ToolbarLightStyleSheet = null;
+            if (oldDark != null)
+                UIElementsEditorUtility.AddStyleSheetSwap(swaps, oldDark, GetOrLoadToolbarStyleSheet(ref s_ToolbarDarkStyleSheet, s_ToolbarDarkStyleSheetPath));
+            if (oldLight != null)
+                UIElementsEditorUtility.AddStyleSheetSwap(swaps, oldLight, GetOrLoadToolbarStyleSheet(ref s_ToolbarLightStyleSheet, s_ToolbarLightStyleSheetPath));
         }
 
         internal static void SetToolbarStyleSheet(VisualElement ve)

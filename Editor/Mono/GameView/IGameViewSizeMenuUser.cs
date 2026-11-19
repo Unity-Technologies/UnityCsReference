@@ -7,8 +7,7 @@ namespace UnityEditor
     internal interface IGameViewSizeMenuUser
     {
         void SizeSelectionCallback(int indexClicked, object objectSelected);
-        bool lowResolutionForAspectRatios { get; set; }
-        bool forceLowResolutionAspectRatios { get; }
+        int pixelSize { get; set; }
         bool vSyncEnabled { get; set; }
     }
 }

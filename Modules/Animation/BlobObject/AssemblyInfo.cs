@@ -9,4 +9,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Motion.Hybrid")]
 [assembly: InternalsVisibleTo("Unity.Motion.Editor")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")] // make sure tests can access to BlobObject since its internal
-
+[assembly: InternalsVisibleTo("Unity.Modules.Animation.Core.Tests.Playmode")]

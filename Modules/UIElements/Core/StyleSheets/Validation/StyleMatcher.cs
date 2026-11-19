@@ -510,7 +510,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return result;
         }
 
-        static readonly Regex s_NumberRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?$", RegexOptions.Compiled);
+        static readonly Regex s_NumberRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$", RegexOptions.Compiled);
         protected override bool MatchKeyword(string keyword)
         {
             return String.Compare(current, keyword, StringComparison.OrdinalIgnoreCase) == 0;
@@ -537,7 +537,7 @@ namespace UnityEngine.UIElements.StyleSheets
         }
 
         static readonly Regex s_ZeroRegex = new Regex(@"^0(?:\.0+)?$", RegexOptions.Compiled); // Zero is accepted without any unit
-        static readonly Regex s_LengthRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:px)$", RegexOptions.Compiled);
+        static readonly Regex s_LengthRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(?:px)$", RegexOptions.Compiled);
         protected override bool MatchLength()
         {
             var value = current;
@@ -549,7 +549,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return match.Success;
         }
 
-        static readonly Regex s_PercentRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:%)$", RegexOptions.Compiled);
+        static readonly Regex s_PercentRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(?:%)$", RegexOptions.Compiled);
         protected override bool MatchPercentage()
         {
             var value = current;
@@ -563,7 +563,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         // CSS Grid <track-size>: a length/percentage, a fractional (fr) unit, one of the
         // content keywords, or a minmax()/repeat()/fit-content() function.
-        static readonly Regex s_FractionRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?fr$", RegexOptions.Compiled);
+        static readonly Regex s_FractionRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?fr$", RegexOptions.Compiled);
         static readonly Regex s_TrackFunctionRegex = new Regex(@"^(?:minmax|repeat|fit-content)\(.+\)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         protected override bool MatchTrackSize()
         {
@@ -634,7 +634,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return !match.Success;
         }
 
-        static readonly Regex s_TimeRegex = new Regex(@"^[+-]?\.?\d+(?:\.\d+)?(?:s|ms)$", RegexOptions.Compiled);
+        static readonly Regex s_TimeRegex = new Regex(@"^[+-]?\.?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(?:s|ms)$", RegexOptions.Compiled);
         protected override bool MatchTime()
         {
             // Time require a unit even for 0
@@ -675,7 +675,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return match.Success;
         }
 
-        static readonly Regex s_AngleRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:deg|grad|rad|turn)$", RegexOptions.Compiled);
+        static readonly Regex s_AngleRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(?:deg|grad|rad|turn)$", RegexOptions.Compiled);
         protected override bool MatchAngle()
         {
             var value = current;

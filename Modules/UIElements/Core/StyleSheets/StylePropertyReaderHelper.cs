@@ -281,7 +281,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     else
                         parser.AddInvalid();
                 }
-                else if (valueType == StyleValueType.Enum && value.sheet.ReadEnum(value.handle) == "inset")
+                else if (valueType == StyleValueType.Enum && string.Equals(value.sheet.ReadEnum(value.handle), "inset", System.StringComparison.OrdinalIgnoreCase))
                     parser.AddInset();
                 else if (value.sheet.TryReadColor(value.handle, out var color))
                     parser.AddColor(color);
@@ -629,7 +629,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return cursor;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool TryGetImageSourceFromValue(StylePropertyValue propertyValue, float dpiScaling, out ImageSource source)
         {
             source = new ImageSource();

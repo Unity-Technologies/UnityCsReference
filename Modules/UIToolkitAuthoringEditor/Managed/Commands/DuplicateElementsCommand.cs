@@ -63,9 +63,10 @@ internal sealed class DuplicateElementsCommand : Command<DuplicateElementsComman
         return true;
     }
 
-    public static CommandExecutionStatus Execute(object source, VisualElementAsset[] toDuplicate)
+    public static CommandExecutionStatus Execute(object source, VisualElementAsset[] toDuplicate, AuthoringContext requestingContext = null)
     {
         using var command = GetPooled(source, toDuplicate);
+        command.RequestingContext = requestingContext;
         return UICommandQueue.Execute(command).Status;
     }
 
@@ -123,8 +124,8 @@ internal sealed class DuplicateElementsCommand : Command<DuplicateElementsComman
             }
         }
 
-        UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
-        Clipboard.GetClipboardForStage()?.ClearCutElements();
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(RequestingContext, toSelectAssets);
+        Clipboard.For(RequestingContext)?.ClearCutElements();
         return CommandExecutionStatus.Success;
     }
 }

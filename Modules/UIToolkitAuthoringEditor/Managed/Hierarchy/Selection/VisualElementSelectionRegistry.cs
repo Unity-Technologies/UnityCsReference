@@ -42,7 +42,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         public UISelectionObject SelectionObject;
         public VisualElement Instance;
         public Panel Panel;
-        public object Scope;
+        public StableScope Scope;
         public AuthoringIdPath Path;
         public bool IsStable;
         public string NamedFrom;
@@ -50,21 +50,38 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
 
     // Identity scope: the owning panel component for scene documents (so multiple documents hosted in
     // one panel, or two instances of the same UXML, don't collide on the reserved root id / a shared
-    // in-document path), or the panel itself for the editing stage's authoring clone (single document).
+    // in-document path), or the panel itself for a document session's clone (single document).
+    // Keyed by EntityId: entering or exiting Play Mode replaces the component's managed object, not its EntityId.
+    readonly struct StableScope : IEquatable<StableScope>
+    {
+        readonly EntityId m_ComponentId;
+        readonly Panel m_Panel;
+
+        public StableScope(EntityId componentId, Panel panel)
+        {
+            m_ComponentId = componentId;
+            m_Panel = panel;
+        }
+
+        public bool Equals(StableScope other) => m_ComponentId == other.m_ComponentId && ReferenceEquals(m_Panel, other.m_Panel);
+        public override bool Equals(object obj) => obj is StableScope other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(m_ComponentId, RuntimeHelpers.GetHashCode(m_Panel));
+    }
+
     readonly struct StableKey : IEquatable<StableKey>
     {
-        public readonly object Scope;
+        public readonly StableScope Scope;
         public readonly AuthoringIdPath Path;
 
-        public StableKey(object scope, AuthoringIdPath path)
+        public StableKey(StableScope scope, AuthoringIdPath path)
         {
             Scope = scope;
             Path = path;
         }
 
-        public bool Equals(StableKey other) => ReferenceEquals(Scope, other.Scope) && Path.Equals(other.Path);
+        public bool Equals(StableKey other) => Scope.Equals(other.Scope) && Path.Equals(other.Path);
         public override bool Equals(object obj) => obj is StableKey other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(RuntimeHelpers.GetHashCode(Scope), Path.GetHashCode());
+        public override int GetHashCode() => HashCode.Combine(Scope, Path.GetHashCode());
     }
 
     // Reverse lookup for every currently tracked element instance (stable and ephemeral). Required
@@ -84,7 +101,8 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
     readonly List<Panel> m_TrackedScenePanels = new();
     readonly List<int> m_PathBuffer = new();
 
-    readonly HashSet<VisualElementEditingStage> m_StagePanels = new();
+    // The panels of the document sessions: the UI Stage's, and those of views editing a document outside it.
+    readonly HashSet<UIDocumentSession> m_SessionPanels = new();
 
     // The preview clones a UI Viewport shows for a document reached from the Main Stage. Tracked so their
     // elements carry selection objects, but deliberately silent on PanelTracked/PanelUntracked: the Hierarchy
@@ -99,11 +117,20 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
     /// <summary>Raised when a scene panel stops being tracked.</summary>
     public event Action<Panel> PanelUntracked;
 
+    /// <summary>
+    /// Raised once the selection objects of elements removed from a tracked panel are destroyed. A selection that
+    /// holds them must drop them, as the editor selection does with destroyed objects.
+    /// </summary>
+    /// <remarks>
+    /// Not raised when a panel stops being tracked: its owner decides what happens to the selection then.
+    /// </remarks>
+    public event Action SelectionObjectsDestroyed;
+
     public IReadOnlyList<Panel> TrackedScenePanels => m_TrackedScenePanels;
 
     /// <summary>
-    /// Every panel the authoring system knows about: the live scene panels, the authoring panel of the stage
-    /// being edited, and the previews a UI Viewport renders.
+    /// Every panel the authoring system knows about: the live scene panels, the panels of the document sessions
+    /// (the UI Stage and the views editing a document outside it), and the previews a UI Viewport renders.
     /// </summary>
     /// <remarks>
     /// The same document can be behind several of these at once, which is what a caller that has to reach every
@@ -120,9 +147,9 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
                 results.Add(panel);
         }
 
-        foreach (var stage in m_StagePanels)
+        foreach (var session in m_SessionPanels)
         {
-            var panel = stage.GetAuthoringPanel();
+            var panel = session.Panel;
             if (panel != null && !results.Contains(panel))
                 results.Add(panel);
         }
@@ -195,7 +222,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         PanelTracked?.Invoke(panel);
     }
 
-    void UntrackScenePanel(Panel panel)
+    internal void UntrackScenePanel(Panel panel)
     {
         if (!m_TrackedScenePanels.Remove(panel))
             return;
@@ -219,13 +246,13 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
 
     void UntrackAllEditablePanels()
     {
-        if (m_StagePanels.Count == 0)
+        if (m_SessionPanels.Count == 0)
             return;
 
-        using var _ = ListPool<VisualElementEditingStage>.Get(out var panels);
-        panels.AddRange(m_StagePanels);
-        foreach (var panel in panels)
-            UntrackStagePanel(panel);
+        using var _ = ListPool<UIDocumentSession>.Get(out var sessions);
+        sessions.AddRange(m_SessionPanels);
+        foreach (var session in sessions)
+            UntrackSessionPanel(session);
     }
 
     void IVisualElementChangeProcessor.BeginProcessing(BaseVisualElementPanel panel)
@@ -252,8 +279,9 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
                 AddOrUpdate(element, p, remaps);
         }
 
+        var destroyedSelectionObjects = false;
         foreach (var element in changes.removedFromPanel)
-            Remove(element);
+            destroyedSelectionObjects |= Remove(element);
 
         // An element rename raises a styling context change. A document row is named after its file, and renaming
         // the file reimports and re-clones the document, which refreshes the row's selection object.
@@ -262,6 +290,10 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
             if (element is not IPanelComponentRootElement && m_ElementToEntry.TryGetValue(element, out var entry))
                 UpdateSelectionObjectName(entry, element);
         }
+
+        // Raised after the whole batch, so listeners find the selection objects of re-cloned elements reclaimed.
+        if (destroyedSelectionObjects)
+            SelectionObjectsDestroyed?.Invoke();
     }
 
     void IVisualElementChangeProcessor.EndProcessing(BaseVisualElementPanel panel)
@@ -310,35 +342,41 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
     }
 
     public bool IsTracked(Panel panel) => panel != null
-        && (m_TrackedScenePanels.Contains(panel) || ContainsPanel(m_StagePanels, panel) || m_PreviewPanels.Contains(panel));
+        && (m_TrackedScenePanels.Contains(panel) || ContainsPanel(m_SessionPanels, panel) || m_PreviewPanels.Contains(panel));
 
-    static bool ContainsPanel(HashSet<VisualElementEditingStage> set, Panel panel)
+    static bool ContainsPanel(HashSet<UIDocumentSession> set, Panel panel)
     {
-        foreach (var stage in set)
+        foreach (var session in set)
         {
-            if (stage.GetAuthoringPanel() == panel)
+            if (session.Panel == panel)
                 return true;
         }
 
         return false;
     }
 
-    public void TrackStagePanel(VisualElementEditingStage stage)
+    /// <summary>
+    /// Starts tracking the panel of a document session. Like a preview, this raises no
+    /// <see cref="PanelTracked"/>: a hierarchy showing the session registers its panel itself.
+    /// </summary>
+    public void TrackSessionPanel(UIDocumentSession session)
     {
-        if (!stage)
+        if (session?.Panel is not { } panel)
             return;
 
-        var isNew = m_StagePanels.Add(stage);
-        if (isNew)
-            stage.GetAuthoringPanel().RegisterChangeProcessor(this);
+        if (m_SessionPanels.Add(session))
+            panel.RegisterChangeProcessor(this);
     }
 
-    public void UntrackStagePanel(VisualElementEditingStage stage)
+    public void UntrackSessionPanel(UIDocumentSession session)
     {
-        if (stage == null || !m_StagePanels.Remove(stage))
+        if (session == null || !m_SessionPanels.Remove(session))
             return;
 
-        var panel = stage.GetAuthoringPanel();
+        var panel = session.Panel;
+        if (panel == null)
+            return;
+
         panel.UnregisterChangeProcessor(this);
         DestroyEntriesForPanel(panel);
     }
@@ -466,15 +504,16 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         element.SetSelectionObject(selectionObject);
     }
 
-    void Remove(VisualElement element)
+    // Returns whether the selection object of the element was destroyed.
+    bool Remove(VisualElement element)
     {
         if (element == null)
-            return;
+            return false;
 
         if (!m_ElementToEntry.TryGetValue(element, out var entry))
         {
             element.ClearSelectionObject();
-            return;
+            return false;
         }
 
         m_ElementToEntry.Remove(element);
@@ -482,12 +521,13 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
 
         // If the entry was already reclaimed by a newer instance this batch, its Instance no longer
         // points at this element, so we keep the (reused) selection object alive.
-        if (entry.Instance == element)
-        {
-            if (entry.IsStable)
-                m_StableIndex.Remove(new StableKey(entry.Scope, entry.Path));
-            DestroySelectionObject(entry.SelectionObject);
-        }
+        if (entry.Instance != element)
+            return false;
+
+        if (entry.IsStable)
+            m_StableIndex.Remove(new StableKey(entry.Scope, entry.Path));
+        DestroySelectionObject(entry.SelectionObject);
+        return true;
     }
 
     void RekeyEntry(Entry entry, VisualElement element, Panel panel)
@@ -545,8 +585,8 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
     {
         foreach (var panel in m_TrackedScenePanels)
             ResyncStablePaths(panel);
-        foreach (var stage in m_StagePanels)
-            ResyncStablePaths(stage.GetAuthoringPanel());
+        foreach (var session in m_SessionPanels)
+            ResyncStablePaths(session.Panel);
         foreach (var panel in m_PreviewPanels)
             ResyncStablePaths(panel);
     }
@@ -650,13 +690,18 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
 
     VisualElementEditFlags GetEditFlags(VisualElement element, Panel panel)
     {
-        foreach (var kvp in m_StagePanels)
+        foreach (var session in m_SessionPanels)
         {
-            if (kvp.GetAuthoringPanel() == panel)
+            if (session.Panel == panel)
             {
-                return kvp.Context.GetElementEditFlags(element);
+                return session.GetElementEditFlags(element);
             }
         }
+
+        // A panel owned by a local context edits that context's document.
+        var context = AuthoringContext.For(panel);
+        if (!context.IsGlobal)
+            return context.GetEditFlags(element);
 
         // A preview clone is governed by the same setting as the scene tree it stands in for: the viewport must
         // not author into a document the Hierarchy showing it would refuse to edit.
@@ -667,9 +712,11 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
     }
 
     // The identity scope: the owning panel component for scene documents, else the panel itself.
-    object GetScope(VisualElement element, Panel panel)
+    StableScope GetScope(VisualElement element, Panel panel)
     {
-        return (object)GetRootComponent(element) ?? panel;
+        return GetRootComponent(element) is Object component
+            ? new StableScope(component.GetEntityId(), null)
+            : new StableScope(EntityId.None, panel);
     }
 
     static IPanelComponent GetRootComponent(VisualElement element)

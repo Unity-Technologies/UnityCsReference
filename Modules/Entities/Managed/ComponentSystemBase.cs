@@ -12,6 +12,7 @@ using Unity.Burst.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Core;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace Unity.Entities
@@ -34,6 +35,7 @@ namespace Unity.Entities
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal SystemState* m_StatePtr;
 
         // This property exists so that the SystemSate is visible in the .NET Debugger.

@@ -4,15 +4,18 @@
 
 #nullable enable
 using System;
+using System.ComponentModel;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 using Debug = Unity.Scripting.LowLevel.Debug;
 
-namespace UnityEngine
+namespace UnityEngine.Internal
 {
     [NativeHeader("Modules/TypeRegistry/Public/TypeManagerV2.bindings.h")]
-    [MovedFrom(false, sourceAssembly: "UnityEngine.CoreModule")]
+    [MovedFrom(false, sourceNamespace: "UnityEngine", sourceAssembly: "UnityEngine.CoreModule")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    [ExcludeFromDocs]
     public partial class TypeManagerV2
     {
         // Registrations are grouped natively by load context — the code that dies together. On
@@ -118,10 +121,8 @@ namespace UnityEngine
                 (IntPtr)(delegate*<EntityId, object?>)&ReportUnregisteredProxyObjectSlot);
         }
 
-        // typeName and hardcodedPersistentId are legacy arguments the source generator still emits;
         // identity is the type handle alone. typeName only feeds diagnostics.
-        public static void RegisterFactory(RuntimeTypeHandle typeHandle, string typeName, IntPtr factoryPtr,
-                                           int hardcodedPersistentId = 0)
+        public static void RegisterFactory(RuntimeTypeHandle typeHandle, string typeName, IntPtr factoryPtr)
         {
             if (factoryPtr == IntPtr.Zero)
                 Debug.LogError($"TypeManagerV2.RegisterFactory: factoryPtr is null for type '{typeName}'");
@@ -146,16 +147,16 @@ namespace UnityEngine
         // Registers the proxy-object factory (delegate*<EntityId, object>) for a [NativeClass] proxy-object type,
         // keyed by its native runtime type index (resolved from hardcodedPersistentId). Kept separate
         // from RegisterFactory so the common per-type registration call carries no extra arguments -
-        // only proxy-object types emit this second call. Retired with the active scope's context.
-        public static void RegisterProxyObjectFactory(int hardcodedPersistentId, IntPtr proxyObjectFactoryPtr)
+        // only hybrid types emit this second call. Retired with the active scope's context.
+        // typeHandle maps the native runtime type index to the managed half; hybrid value types pass a null factory.
+        public static void RegisterProxyObjectFactory(int hardcodedPersistentId, IntPtr proxyObjectFactoryPtr, RuntimeTypeHandle typeHandle)
         {
-            RegisterManagedProxyObjectFactory(hardcodedPersistentId, proxyObjectFactoryPtr, CurrentRegistrationContext);
+            RegisterManagedProxyObjectFactory(hardcodedPersistentId, proxyObjectFactoryPtr, typeHandle.Value, CurrentRegistrationContext);
         }
 
         // Metadata only, a value-type factory would box. Registered with a null factory so
         // diagnostics can distinguish "registered without a factory" from "never registered".
-        public static void RegisterType(RuntimeTypeHandle typeHandle, string typeName,
-                                        int hardcodedPersistentId = 0)
+        public static void RegisterType(RuntimeTypeHandle typeHandle)
         {
             RegisterManagedFactory(typeHandle.Value, IntPtr.Zero, CurrentRegistrationContext);
         }
@@ -164,7 +165,14 @@ namespace UnityEngine
         // class components never reach RegisterType, and most RegisterType structs are not components.
         public static void RegisterComponentType(RuntimeTypeHandle typeHandle)
         {
-            RegisterComponentTypeClass(typeHandle.Value, CurrentRegistrationContext);
+            RegisterComponentTypeClass(typeHandle.Value, CurrentRegistrationContext, false);
+        }
+
+        // The generator emits this for IBufferElementData types, so native never asks scripting
+        // whether a component is a buffer.
+        public static void RegisterBufferComponentType(RuntimeTypeHandle typeHandle)
+        {
+            RegisterComponentTypeClass(typeHandle.Value, CurrentRegistrationContext, true);
         }
 
 
@@ -197,7 +205,7 @@ namespace UnityEngine
         // then stable while the type stays registered. Native returns zero both when the type
         // registered no component type class and when the 12-bit id space is exhausted.
         [VisibleToOtherModules("UnityEngine.CoreModule")]
-        internal static int GetComponentTypeId(RuntimeTypeHandle typeHandle)
+        internal static int GetComponentTypeId(RuntimeTypeHandle typeHandle, bool isBuffer)
         {
             uint componentTypeId = GetOrMintComponentTypeId(typeHandle.Value);
             if (componentTypeId == 0)
@@ -207,7 +215,7 @@ namespace UnityEngine
                 // and reference types all reach this fallback.
                 using (BeginRegistration(typeHandle))
                 {
-                    RegisterComponentTypeClass(typeHandle.Value, CurrentRegistrationContext);
+                    RegisterComponentTypeClass(typeHandle.Value, CurrentRegistrationContext, isBuffer);
                 }
             }
 
@@ -216,6 +224,18 @@ namespace UnityEngine
                 throw new ArgumentException($"No component type id for '{Type.GetTypeFromHandle(typeHandle)}': it registered no component type class, or the component type id space is exhausted.");
 
             return (int)componentTypeId;
+        }
+
+        // Test-only: native callers use TypeManager directly. Never mints; zero when the index is unmapped or no component-type id is minted yet.
+        internal static int FindComponentTypeIdForRuntimeTypeIndex(int runtimeTypeIndex)
+        {
+            return (int)FindComponentTypeIdForRuntimeTypeIndexNative(runtimeTypeIndex);
+        }
+
+        // Test-only: lets managed tests find a native type's runtime type index. -1 when no native type has this persistent type id.
+        internal static int GetRuntimeTypeIndexForPersistentTypeId(int persistentTypeId)
+        {
+            return GetRuntimeTypeIndexForPersistentTypeIdNative(persistentTypeId);
         }
 
         // Used in testing only
@@ -257,7 +277,7 @@ namespace UnityEngine
         extern static void RegisterSizedFactory(IntPtr backendTypePtr, IntPtr factoryPtr, IntPtr contextHandle);
 
         [NativeMethod(Name = "TypeManagerV2Bindings::RegisterProxyObjectFactory", IsFreeFunction = true, IsThreadSafe = true)]
-        extern static void RegisterManagedProxyObjectFactory(int persistentTypeID, IntPtr proxyObjectFactoryPtr, IntPtr contextHandle);
+        extern static void RegisterManagedProxyObjectFactory(int persistentTypeID, IntPtr proxyObjectFactoryPtr, IntPtr backendTypePtr, IntPtr contextHandle);
 
         [NativeMethod(Name = "TypeManagerV2Bindings::FlushProxyObjectFactoryTable", IsFreeFunction = true, IsThreadSafe = true)]
         extern static void FlushProxyObjectFactoryTable();
@@ -272,10 +292,16 @@ namespace UnityEngine
         // records the type's scripting class for the component transfer path; retired with the
         // context like every other registration.
         [NativeMethod(Name = "TypeManagerV2Bindings::RegisterComponentTypeClass", IsFreeFunction = true, IsThreadSafe = true)]
-        extern static void RegisterComponentTypeClass(IntPtr backendTypePtr, IntPtr contextHandle);
+        extern static void RegisterComponentTypeClass(IntPtr backendTypePtr, IntPtr contextHandle, bool isBuffer);
 
         [NativeMethod(Name = "TypeManagerV2Bindings::GetOrMintComponentTypeId", IsFreeFunction = true, IsThreadSafe = true)]
         extern static uint GetOrMintComponentTypeId(IntPtr backendTypePtr);
+
+        [NativeMethod(Name = "TypeManagerV2Bindings::FindComponentTypeIdForRuntimeTypeIndex", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static uint FindComponentTypeIdForRuntimeTypeIndexNative(int runtimeTypeIndex);
+
+        [NativeMethod(Name = "TypeManagerV2Bindings::GetRuntimeTypeIndexForPersistentTypeId", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static int GetRuntimeTypeIndexForPersistentTypeIdNative(int persistentTypeId);
 
         // Copies up to capacity RuntimeTypeHandle values of the registered Entities component types into handles and
         // returns how many there are; retry with a larger buffer when that exceeds capacity.

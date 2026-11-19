@@ -109,6 +109,7 @@ namespace UnityEngine.UIElements
         public override void SetValueWithoutNotify(T newValue)
         {
             base.SetValueWithoutNotify(newValue);
+            newValue = value;
             var state = m_ToggleButtonGroup.value;
             state.ResetAllOptions();
 

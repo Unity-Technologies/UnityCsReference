@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
-using UnityEditor.SceneManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -50,8 +49,9 @@ static partial class StageCommandHandler
     }
 
     // Pushes what a finished command group changed to the views that only learn of it through a re-clone: the
-    // scene panels, and — for a hierarchy change — the UI Stage's authoring panel, where asset-only edits
-    // (paste, duplicate, template drops, …) would otherwise never appear in the live tree or the hierarchy.
+    // scene panels, and — for a hierarchy change — the panels of the document sessions (the UI Stage's among them),
+    // where asset-only edits (paste, duplicate, template drops, …) would otherwise never appear in the live tree or
+    // the hierarchy.
     static void FlushPendingChanges(IReadOnlyCollection<UnityEngine.Object> changedAssets = null)
     {
         var changes = s_PendingChanges;
@@ -65,7 +65,20 @@ static partial class StageCommandHandler
         if ((changes & CommandCategory.Hierarchy) != CommandCategory.Hierarchy)
             return;
 
-        if (StageUtility.GetCurrentStage() is VisualElementEditingStage uiStage)
-            uiStage.RequestRefresh();
+        // Every session showing a changed document, whichever context made the change: a document can be open in
+        // several. An empty change set means the tool did not name what it touched, so nothing can be ruled out.
+        var sessions = UIDocumentSession.Sessions;
+        for (var i = sessions.Count - 1; i >= 0; --i)
+        {
+            var session = sessions[i];
+            if (!session.IsDocumentShown)
+                continue;
+
+            if (changedAssets is { Count: > 0 } &&
+                !PanelDependencyTracker.DependsOnAny(session.Document.RootVisualTreeAsset, changedAssets))
+                continue;
+
+            session.RequestRefresh();
+        }
     }
 }

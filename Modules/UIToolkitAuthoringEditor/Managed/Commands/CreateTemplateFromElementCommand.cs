@@ -35,9 +35,10 @@ sealed class CreateTemplateFromElementCommand : Command<CreateTemplateFromElemen
         return cmd.Validate();
     }
 
-    public static CommandExecutionStatus Execute(object source, VisualElementAsset elementToTemplatize, VisualElementAsset parentAsset, VisualTreeAsset template)
+    public static CommandExecutionStatus Execute(object source, VisualElementAsset elementToTemplatize, VisualElementAsset parentAsset, VisualTreeAsset template, AuthoringContext requestingContext = null)
     {
         using var cmd = GetPooled(source, elementToTemplatize, parentAsset, template);
+        cmd.RequestingContext = requestingContext;
         return UICommandQueue.Execute(cmd).Status;
     }
 
@@ -91,7 +92,7 @@ sealed class CreateTemplateFromElementCommand : Command<CreateTemplateFromElemen
 
         using var toSelectHandle = ListPool<VisualElementAsset>.Get(out var toSelect);
         toSelect.Add(templateAsset);
-        UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelect);
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(RequestingContext, toSelect);
 
         return CommandExecutionStatus.Success;
     }

@@ -18,6 +18,12 @@ internal abstract class UISelectionObject : ScriptableObject, INotifyBindablePro
 
     private bool m_IsReadOnly;
 
+    /// <summary>
+    /// The context that created this proxy, for proxies whose target does not live in a panel.
+    /// </summary>
+    /// <remarks>Use <see cref="AuthoringContext.For(UISelectionObject)"/> to resolve the context.</remarks>
+    internal AuthoringContext OwnerContext { get; set; }
+
     [CreateProperty]
     public bool IsReadOnly
     {

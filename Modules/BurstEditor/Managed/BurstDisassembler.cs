@@ -53,28 +53,18 @@ namespace Unity.Burst.Editor
         // Notice if instruction name is longer than this no alignment will be done.
         private const int InstructionAlignment = 10;
 
-        [NoAutoStaticsCleanup]
         private static readonly StringSlice CVLocDirective = new StringSlice(".cv_loc");
-        [NoAutoStaticsCleanup]
         private static readonly StringSlice TypeDirective = new StringSlice(".type");
-        [NoAutoStaticsCleanup]
         private static readonly StringSlice DefDirective = new StringSlice(".def");
-        [NoAutoStaticsCleanup]
         private static readonly StringSlice EndefDirective = new StringSlice(".endef");
-        [NoAutoStaticsCleanup]
         private static readonly StringSlice CoffFunctionType = new StringSlice("32");
-        [NoAutoStaticsCleanup]
         private static readonly StringSlice IRDefineKeyword = new StringSlice("define");
 
         // Burst symbol names look like "Ns.T, Asm, Version=..., Culture=..., PublicKeyToken=null.M(...) -> R_<hash> from Asm, ..."
-        [NoAutoStaticsCleanup]
         private static readonly Regex AssemblyQualifierRegex = new Regex(@", [^,()<>\[\]]+, Version=[^,]+, Culture=[^,]+, PublicKeyToken=(?:null|[0-9a-fA-F]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-        [NoAutoStaticsCleanup]
         private static readonly Regex HashSuffixRegex = new Regex(@"_[0-9a-fA-F]{16,32}( from .*)?$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-        [NoAutoStaticsCleanup]
         private static readonly Regex HashOnlyNameRegex = new Regex(@"^[0-9a-fA-F]{16,32}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         // A whole System type name that has a C# keyword, not part of a longer name.
-        [NoAutoStaticsCleanup]
         private static readonly Regex BuiltInTypeNameRegex = new Regex(@"(?<![\w.$])System\.(?:Boolean|Byte|SByte|Char|Int16|UInt16|Int32|UInt32|Int64|UInt64|Single|Double|Void)(?![\w$])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         // Colors used for the tokens
@@ -1111,7 +1101,6 @@ namespace Unity.Burst.Editor
             return builder.ToString();
         }
 
-        [NoAutoStaticsCleanup]
         private static readonly string[] ParameterModifiers = { "ref ", "out ", "in ", "params " };
 
         private static string FormatParameter(string parameter)

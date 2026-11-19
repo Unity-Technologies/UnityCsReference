@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
         [SerializeField]
         StyleProperty[] m_Properties = Array.Empty<StyleProperty>();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [SerializeField]
         internal int line;
 
@@ -28,7 +28,7 @@ namespace UnityEngine.UIElements
         [field: NonSerialized]
         internal StyleSheet styleSheet
         {
-            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get;
             set;
         }
@@ -188,7 +188,6 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [NonSerialized]
         internal int customPropertiesCount;
     }

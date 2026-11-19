@@ -324,6 +324,7 @@ namespace Unity.UIToolkit.Editor
                 { ".gradient.type", typeof(GradientType) },
                 { ".gradient.shape", typeof(BackgroundGradientShape) },
                 { ".gradient.size", typeof(BackgroundGradientSize) },
+                { ".placement", typeof(GridLinePlacement) },
             };
             for (int i = 0; i < UIAnimationBinder.kFilterSlotCount; ++i)
                 map["." + i.ToString() + ".type"] = typeof(FilterFunctionType);

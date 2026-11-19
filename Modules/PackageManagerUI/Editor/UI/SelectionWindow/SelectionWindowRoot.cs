@@ -22,10 +22,13 @@ internal class SelectionWindowRoot : VisualElement
     private readonly SelectionWindowFooter m_Footer;
 
     private readonly IApplicationProxy m_ApplicationProxy;
+    private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
 
-    public SelectionWindowRoot(IResourceLoader resourceLoader, IApplicationProxy applicationProxy)
+    public SelectionWindowRoot(IResourceLoader resourceLoader, IApplicationProxy applicationProxy,
+        IInternalEditorUtilityProxy internalEditorUtilityProxy)
     {
         m_ApplicationProxy = applicationProxy;
+        m_InternalEditorUtilityProxy = internalEditorUtilityProxy;
 
         m_Header = new SelectionWindowHeader();
         Add(m_Header);
@@ -62,7 +65,7 @@ internal class SelectionWindowRoot : VisualElement
 
     private VisualElement MakeItem()
     {
-        var rowElement = new SelectionWindowRow();
+        var rowElement = new SelectionWindowRow(m_InternalEditorUtilityProxy);
         rowElement.toggle.RegisterValueChangedCallback(ToggleChanged);
         return rowElement;
     }

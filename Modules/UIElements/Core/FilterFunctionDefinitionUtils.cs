@@ -33,6 +33,22 @@ namespace UnityEngine.UIElements
         [NoAutoStaticsCleanup]
         private static FilterFunctionDefinition s_DropShadowDef;
 
+        // Passes batch only when they share a material, so the built-in filters share one per shader
+        [NoAutoStaticsCleanup]
+        private static Material s_BlurMaterial;
+        [NoAutoStaticsCleanup]
+        private static Material s_ColorEffectMaterial;
+
+        static Material GetSharedMaterial(ref Material material, string shaderName)
+        {
+            if (material == null)
+            {
+                material = new Material(Shader.Find(shaderName));
+                material.hideFlags = HideFlags.HideAndDontSave;
+            }
+            return material;
+        }
+
         public static string GetBuiltinFilterName(FilterFunctionType type)
         {
             switch (type)
@@ -125,8 +141,7 @@ namespace UnityEngine.UIElements
 
         static FilterFunctionDefinition CreateBlurFilterFunctionDefinition()
         {
-            var blurMaterial = new Material(Shader.Find("Hidden/UIR/GaussianBlur"));
-            blurMaterial.hideFlags = HideFlags.HideAndDontSave;
+            var blurMaterial = GetSharedMaterial(ref s_BlurMaterial, "Hidden/UIR/GaussianBlur");
 
             var filter = ScriptableObject.CreateInstance<FilterFunctionDefinition>();
             filter.hideFlags = HideFlags.HideAndDontSave;
@@ -150,10 +165,6 @@ namespace UnityEngine.UIElements
                 {
                     material = blurMaterial,
                     passIndex = 0,
-                    parameterBindings = new[]
-                    {
-                        new ParameterBinding { index = 0, name = "_Sigma" }
-                    },
                     readMargins = new(), // Margins are set dynamically in computeRequiredReadMarginsCallback
                     writeMargins = new()
                 },
@@ -161,10 +172,6 @@ namespace UnityEngine.UIElements
                 {
                     material = blurMaterial,
                     passIndex = 1,
-                    parameterBindings = new[]
-                    {
-                        new ParameterBinding { index = 0, name = "_Sigma" }
-                    },
                     readMargins = new(), // Margins are set dynamically in computeRequiredReadMarginsCallback
                     writeMargins = new()
                 }
@@ -172,19 +179,18 @@ namespace UnityEngine.UIElements
 
             filter.passes[0].computeRequiredReadMarginsCallback = ComputeHorizontalBlurMargins;
             filter.passes[0].computeRequiredWriteMarginsCallback = ComputeHorizontalBlurMargins;
-            filter.passes[0].applySettingsCallback = ApplyBlurSettings;
+            SetInstancedParameters(ref filter.passes[0], WriteBlurParameters);
 
             filter.passes[1].computeRequiredReadMarginsCallback = ComputeVerticalBlurMargins;
             filter.passes[1].computeRequiredWriteMarginsCallback = ComputeVerticalBlurMargins;
-            filter.passes[1].applySettingsCallback = ApplyBlurSettings;
+            SetInstancedParameters(ref filter.passes[1], WriteBlurParameters);
 
             return filter;
         }
 
         static FilterFunctionDefinition CreateColorEffectFilterFunctionDefinition(FilterFunctionType filterType)
         {
-            var colorEffectMaterial = new Material(Shader.Find("Hidden/UIR/ColorEffect"));
-            colorEffectMaterial.hideFlags = HideFlags.HideAndDontSave;
+            var colorEffectMaterial = GetSharedMaterial(ref s_ColorEffectMaterial, "Hidden/UIR/ColorEffect");
 
             var filter = ScriptableObject.CreateInstance<FilterFunctionDefinition>();
             filter.hideFlags = HideFlags.HideAndDontSave;
@@ -229,23 +235,19 @@ namespace UnityEngine.UIElements
                 {
                     material = colorEffectMaterial,
                     passIndex = 0,
-                    parameterBindings = new[] { // Parameters are set dynamically in prepareMaterialPropertyBlockCallback
-                        new ParameterBinding { index = 0, name = "" },
-                    },
                     readMargins = new PostProcessingMargins { left = 0, top = 0, right = 0, bottom = 0 },
                     writeMargins = new PostProcessingMargins { left = 0, top = 0, right = 0, bottom = 0 }
                 },
             };
 
-            filter.passes[0].applySettingsCallback = ApplySettings;
+            SetInstancedParameters(ref filter.passes[0], WriteColorEffectParameters);
 
             return filter;
         }
 
         static FilterFunctionDefinition CreateDropShadowFilterFunctionDefinition()
         {
-            var blurMaterial = new Material(Shader.Find("Hidden/UIR/GaussianBlur"));
-            blurMaterial.hideFlags = HideFlags.HideAndDontSave;
+            var blurMaterial = GetSharedMaterial(ref s_BlurMaterial, "Hidden/UIR/GaussianBlur");
 
             var compositeMaterial = new Material(Shader.Find("Hidden/UIR/DropShadowComposite"));
             compositeMaterial.hideFlags = HideFlags.HideAndDontSave;
@@ -324,15 +326,15 @@ namespace UnityEngine.UIElements
 
             filter.passes[0].computeRequiredReadMarginsCallback = ComputeDropShadowHorizontalBlurMargins;
             filter.passes[0].computeRequiredWriteMarginsCallback = ComputeDropShadowHorizontalBlurMargins;
-            filter.passes[0].applySettingsCallback = ApplyDropShadowBlurSettings;
+            SetInstancedParameters(ref filter.passes[0], WriteDropShadowBlurParameters);
 
             filter.passes[1].computeRequiredReadMarginsCallback = ComputeDropShadowVerticalBlurMargins;
             filter.passes[1].computeRequiredWriteMarginsCallback = ComputeDropShadowVerticalBlurMargins;
-            filter.passes[1].applySettingsCallback = ApplyDropShadowBlurSettings;
+            SetInstancedParameters(ref filter.passes[1], WriteDropShadowBlurParameters);
 
             filter.passes[2].computeRequiredReadMarginsCallback = ComputeDropShadowCompositeReadMargins;
             filter.passes[2].computeRequiredWriteMarginsCallback = ComputeDropShadowCompositeWriteMargins;
-            filter.passes[2].applySettingsCallback = ApplyDropShadowCompositeSettings;
+            SetInstancedParameters(ref filter.passes[2], WriteDropShadowCompositeParameters);
 
             return filter;
         }
@@ -351,14 +353,30 @@ namespace UnityEngine.UIElements
             return new PostProcessingMargins() { left = 0, top = kernelSize, right = 0, bottom = kernelSize };
         }
 
-        static void ApplyBlurSettings(MaterialPropertyBlock mpb, FilterPassContext context)
+        static readonly int k_SigmaId = Shader.PropertyToID("_Sigma");
+        static readonly int k_ShadowOffsetId = Shader.PropertyToID("_ShadowOffset");
+        static readonly int k_ShadowColorId = Shader.PropertyToID("_ShadowColor");
+        static readonly int k_ColorMatrixId = Shader.PropertyToID("_ColorMatrix");
+        static readonly int k_ColorOffsetInvertId = Shader.PropertyToID("_ColorOffsetInvert");
+
+        static void SetInstancedParameters(ref PostProcessingPass pass, PostProcessingPass.WriteParametersDelegate callback)
         {
-            float sigma = Math.Max(0.0f, context.filterFunction.parameters[0].floatValue);
+            pass.material.enableInstancing = true;
+            pass.writeParametersCallback = callback;
+        }
+
+        static float ComputeBlurSigma(FilterPassContext context, int sigmaParameterIndex)
+        {
+            float sigma = Math.Max(0.0f, context.filterFunction.parameters[sigmaParameterIndex].floatValue);
             // Pass 0 blurs horizontally, pass 1 vertically: each takes its own points-to-pixels axis,
             // so a non-uniform content scale yields the matching elliptical Gaussian.
             var ppp = context.perAxisScaledPixelsPerPoint;
-            float scaledSigma = sigma * (context.filterPassIndex == 0 ? ppp.x : ppp.y);
-            mpb.SetFloat("_Sigma", scaledSigma);
+            return sigma * (context.filterPassIndex == 0 ? ppp.x : ppp.y);
+        }
+
+        static void WriteBlurParameters(FilterParameterWriter writer, FilterPassContext context)
+        {
+            writer.SetFloat(k_SigmaId, ComputeBlurSigma(context, 0));
         }
 
         static PostProcessingMargins ComputeDropShadowHorizontalBlurMargins(FilterFunction func)
@@ -375,13 +393,9 @@ namespace UnityEngine.UIElements
             return new PostProcessingMargins() { left = 0, top = kernelSize, right = 0, bottom = kernelSize };
         }
 
-        static void ApplyDropShadowBlurSettings(MaterialPropertyBlock mpb, FilterPassContext context)
+        static void WriteDropShadowBlurParameters(FilterParameterWriter writer, FilterPassContext context)
         {
-            float sigma = Math.Max(0.0f, context.filterFunction.parameters[2].floatValue);
-            // Pass 0 = horizontal, pass 1 = vertical (see ApplyBlurSettings).
-            var ppp = context.perAxisScaledPixelsPerPoint;
-            float scaledSigma = sigma * (context.filterPassIndex == 0 ? ppp.x : ppp.y);
-            mpb.SetFloat("_Sigma", scaledSigma);
+            writer.SetFloat(k_SigmaId, ComputeBlurSigma(context, 2));
         }
 
         static PostProcessingMargins ComputeDropShadowCompositeReadMargins(FilterFunction func)
@@ -413,29 +427,41 @@ namespace UnityEngine.UIElements
             };
         }
 
-        static void ApplyDropShadowCompositeSettings(MaterialPropertyBlock mpb, FilterPassContext context)
+        static void WriteDropShadowCompositeParameters(FilterParameterWriter writer, FilterPassContext context)
+        {
+            ComputeDropShadowComposite(context, out Vector4 offset, out Color color);
+            writer.SetVector(k_ShadowOffsetId, offset);
+            writer.SetColor(k_ShadowColorId, color);
+        }
+
+        static void ComputeDropShadowComposite(FilterPassContext context, out Vector4 offset, out Color color)
         {
             var func = context.filterFunction;
             float ox = func.parameters[0].floatValue;
             float oy = func.parameters[1].floatValue;
-            Color color = func.parameters[3].colorValue;
+            color = func.parameters[3].colorValue;
 
-            // Offset is in points; the shader expects physical pixels (it converts to UV via
-            // _MainTex_TexelSize). Per-axis: a translation routed through the scalar approximation
+            // Offset is in points; the shader expects physical pixels (it converts to UV with
+            // the source texel size). Per-axis: a translation routed through the scalar approximation
             // would visibly misplace the shadow under a non-uniform content scale.
             var scale = context.perAxisScaledPixelsPerPoint;
-            mpb.SetVector("_ShadowOffset", new Vector4(ox * scale.x, oy * scale.y, 0, 0));
+            offset = new Vector4(ox * scale.x, oy * scale.y, 0, 0);
 
             if (!context.readsGamma)
                 color = color.linear;
-            mpb.SetColor("_ShadowColor", color);
         }
 
-        static void ApplySettings(MaterialPropertyBlock mpb, FilterPassContext context)
+        static void WriteColorEffectParameters(FilterParameterWriter writer, FilterPassContext context)
         {
-            var colorMatrix = Matrix4x4.identity;
-            float colorOffset = 0.0f;
-            float colorInvert = 0.0f;
+            ComputeColorEffect(context, out writer.GetOrAddMatrixRef(k_ColorMatrixId), out float colorOffset, out float colorInvert);
+            writer.SetVector(k_ColorOffsetInvertId, new Vector4(colorOffset, colorInvert, 0, 0));
+        }
+
+        static void ComputeColorEffect(FilterPassContext context, out Matrix4x4 colorMatrix, out float colorOffset, out float colorInvert)
+        {
+            colorMatrix = Matrix4x4.identity;
+            colorOffset = 0.0f;
+            colorInvert = 0.0f;
 
             FilterFunction func = context.filterFunction;
 
@@ -523,10 +549,6 @@ namespace UnityEngine.UIElements
                         new Vector4(0, 0, 0, 1));
                     break;
             }
-
-            mpb.SetMatrix("_ColorMatrix", colorMatrix);
-            mpb.SetFloat("_ColorOffset", colorOffset);
-            mpb.SetFloat("_ColorInvert", colorInvert);
         }
     }
 }

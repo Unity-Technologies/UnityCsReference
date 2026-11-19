@@ -60,7 +60,6 @@ namespace Unity.Hierarchy
     public struct HierarchySearchFilter
     {
         static readonly char[] s_WhiteSpaces = { ' ', '\t', '\n' };
-        [NoAutoStaticsCleanup]
         static readonly HierarchySearchFilter s_Invalid;
 
         /// <summary>

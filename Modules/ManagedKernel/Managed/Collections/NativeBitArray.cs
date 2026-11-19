@@ -259,7 +259,7 @@ namespace Unity.Collections
         /// <param name="numBits">Number of bits to get (must be between 1 and 64).</param>
         /// <exception cref="ArgumentException">Thrown if pos is out of bounds or if numBits is not between 1 and 64.</exception>
         /// <returns>A ulong which has bits copied from this array.</returns>
-        public ulong GetBits(int pos, int numBits = 1)
+        public readonly ulong GetBits(int pos, int numBits = 1)
         {
             CheckRead();
             return m_BitArray->GetBits(pos, numBits);
@@ -271,7 +271,7 @@ namespace Unity.Collections
         /// <param name="pos">Index of the bit to test.</param>
         /// <returns>True if the bit at the index is 1.</returns>
         /// <exception cref="ArgumentException">Thrown if `pos` is out of bounds.</exception>
-        public bool IsSet(int pos)
+        public readonly bool IsSet(int pos)
         {
             CheckRead();
             return m_BitArray->IsSet(pos);
@@ -325,7 +325,7 @@ namespace Unity.Collections
         /// <param name="numBits">Number of contiguous 0 bits to look for.</param>
         /// <returns>The index in this array where the sequence is found. The index will be greater than or equal to `pos`.
         /// Returns -1 if no occurrence is found.</returns>
-        public int Find(int pos, int numBits)
+        public readonly int Find(int pos, int numBits)
         {
             CheckRead();
             return m_BitArray->Find(pos, numBits);
@@ -340,7 +340,7 @@ namespace Unity.Collections
         /// <param name="count">Number of bits to search.</param>
         /// <returns>The index in this array where the sequence is found. The index will be greater than or equal to `pos` but less than `pos + count`.
         /// Returns -1 if no occurrence is found.</returns>
-        public int Find(int pos, int count, int numBits)
+        public readonly int Find(int pos, int count, int numBits)
         {
             CheckRead();
             return m_BitArray->Find(pos, count, numBits);
@@ -403,9 +403,9 @@ namespace Unity.Collections
         /// </summary>
         /// <remarks>ReadOnly containers point to the same underlying data as the NativeBitArray it is made from.</remarks>
         /// <returns>ReadOnly instance for this.</returns>
-        public ReadOnly AsReadOnly()
+        public readonly ReadOnly AsReadOnly()
         {
-            return new ReadOnly(ref this);
+            return new ReadOnly(this);
         }
 
         /// <summary>
@@ -432,7 +432,7 @@ namespace Unity.Collections
             /// <value>True if the container is empty or the container has not been constructed.</value>
             public readonly bool IsEmpty => m_BitArray.IsEmpty;
 
-            internal ReadOnly(ref NativeBitArray data)
+            internal ReadOnly(in NativeBitArray data)
             {
                 m_BitArray = data.m_BitArray->AsReadOnly();
                 m_Safety = data.m_Safety;
@@ -576,7 +576,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckReadBounds<T>() where T : unmanaged
+        readonly void CheckReadBounds<T>() where T : unmanaged
         {
             CheckRead();
 

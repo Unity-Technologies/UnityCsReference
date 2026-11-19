@@ -172,6 +172,11 @@ namespace UnityEditor
             set;
         }
 
+        internal extern static bool isUserActive
+        {
+            get;
+        }
+
         public extern static bool SendAnalyticsEventsImmediately
         {
             get;

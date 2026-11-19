@@ -10,7 +10,6 @@ namespace Unity.UIToolkit.Editor;
 /// <summary>
 /// Utilities for normalizing USS variable names.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static class VariableNameUtilities
 {
     public static readonly string UssVariablePrefix = "--";

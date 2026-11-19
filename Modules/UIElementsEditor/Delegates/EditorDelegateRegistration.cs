@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -33,6 +34,7 @@ namespace UnityEditor.UIElements
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
             PanelSettings.RequestEditorPlayerLoopUpdate = EditorApplication.QueuePlayerLoopUpdate;
             PanelSettings.s_AssignICUData += SetICUDataAsset;
+            PanelSettings.s_GetFilterMaterials = GetFilterMaterials;
 
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
@@ -55,6 +57,78 @@ namespace UnityEditor.UIElements
                 UIElementsRuntimeUtility.OnEnteredPlayMode();
             if (stateChange == PlayModeStateChange.ExitingPlayMode)
                 UIElementsRuntimeUtility.OnExitingPlayMode();
+
+            if (stateChange == PlayModeStateChange.EnteredPlayMode)
+                DetachPrefabStagePanelComponents();
+            else if (stateChange == PlayModeStateChange.EnteredEditMode)
+                ReattachPrefabStagePanelComponents();
+        }
+
+        static void DetachPrefabStagePanelComponents()
+        {
+            foreach (var component in GetTopLevelPrefabStagePanelComponents())
+            {
+                var settings = component.panelSettings;
+                if (settings == null || settings.renderMode == PanelRenderMode.WorldSpace || component.GetRootVisualElement()?.panel == null)
+                    continue;
+
+                component.DetachRootVisualElement();
+            }
+        }
+
+        static void ReattachPrefabStagePanelComponents()
+        {
+            foreach (var component in GetTopLevelPrefabStagePanelComponents())
+            {
+                var root = component.GetRootVisualElement();
+                if (root == null || root.panel != null || !component.GetComponentEnabled())
+                    continue;
+
+                component.ReattachRootVisualElement();
+            }
+        }
+
+        // Prefab stages, including parents of a nested one, outlive play mode transitions without re-enabling their contents
+        static IEnumerable<IPanelComponent> GetTopLevelPrefabStagePanelComponents()
+        {
+            foreach (var prefabStage in PrefabStage.allPrefabStages)
+            {
+                if (!prefabStage.isValid)
+                    continue;
+
+                foreach (var component in prefabStage.prefabContentsRoot.GetComponentsInChildren<IPanelComponent>())
+                {
+                    if (component.parentUI == null)
+                        yield return component;
+                }
+            }
+        }
+
+        static readonly string[] k_FilterMaterialPaths =
+        {
+            "Internal/UIElements/Internal-UIRGaussianBlur.mat",
+            "Internal/UIElements/Internal-UIRColorEffect.mat",
+            "Internal/UIElements/Internal-UIRDropShadowComposite.mat",
+        };
+
+        [NoAutoStaticsCleanup] // built-in assets, valid across reloads
+        static Material[] s_FilterMaterials;
+
+        // Null while the built-in resources are not loaded yet
+        static Material[] GetFilterMaterials()
+        {
+            if (s_FilterMaterials == null)
+            {
+                var materials = new Material[k_FilterMaterialPaths.Length];
+                for (int i = 0; i < materials.Length; ++i)
+                {
+                    materials[i] = AssetDatabase.GetBuiltinExtraResource<Material>(k_FilterMaterialPaths[i]);
+                    if (materials[i] == null)
+                        return null;
+                }
+                s_FilterMaterials = materials;
+            }
+            return s_FilterMaterials;
         }
 
         private static void SetICUDataAsset(PanelSettings target)

@@ -125,7 +125,7 @@ namespace UnityEngine.Windows.Speech
         {
         }
 
-#pragma warning disable UA5000 // Frees the native recognizer; DestroyThreaded is thread-safe, so it is the safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Frees the native recognizer; DestroyThreaded is thread-safe, so it is the safety net when Dispose is missed.
         ~PhraseRecognizer()
         {
             if (m_Recognizer != IntPtr.Zero)
@@ -135,7 +135,7 @@ namespace UnityEngine.Windows.Speech
                 GC.SuppressFinalize(this);
             }
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public void Start()
         {
@@ -324,7 +324,7 @@ namespace UnityEngine.Windows.Speech
             m_Recognizer = Create(this, minimumConfidence, topic);
         }
 
-#pragma warning disable UA5000 // Frees the native recognizer; DestroyThreaded is thread-safe, so it is the safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Frees the native recognizer; DestroyThreaded is thread-safe, so it is the safety net when Dispose is missed.
         ~DictationRecognizer()
         {
             if (m_Recognizer != IntPtr.Zero)
@@ -334,7 +334,7 @@ namespace UnityEngine.Windows.Speech
                 GC.SuppressFinalize(this);
             }
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public void Start()
         {

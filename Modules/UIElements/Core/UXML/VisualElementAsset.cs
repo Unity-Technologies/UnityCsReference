@@ -110,7 +110,6 @@ namespace UnityEngine.UIElements
 
         [SerializeField] private bool m_SkipClone;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool skipClone
         {
             get => m_SkipClone;
@@ -167,7 +166,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual VisualElement Instantiate(CreationContext cc, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode = null)
         {
             var ve = (VisualElement) serializedData.CreateInstance();
@@ -248,7 +247,6 @@ namespace UnityEngine.UIElements
                 : $"({fullTypeName})({id})";
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void AddStyleSheet(StyleSheet styleSheet)
         {
             if (styleSheet == null || stylesheets.Contains(styleSheet))
@@ -257,7 +255,6 @@ namespace UnityEngine.UIElements
             stylesheets.Add(styleSheet);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         public void AddStyleSheets(IEnumerable<StyleSheet> styleSheets)
         {
             foreach (var styleSheet in styleSheets)
@@ -266,13 +263,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void RemoveStyleSheet(StyleSheet styleSheet)
         {
             stylesheets.RemoveAll((s) => s == styleSheet);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void AddStyleClass(string className)
         {
             m_Classes ??= Array.Empty<string>();
@@ -283,7 +279,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void RemoveStyleClass(string className)
         {
             if (m_Classes == null)
@@ -297,13 +293,11 @@ namespace UnityEngine.UIElements
             return m_Classes != null && m_Classes.Contains(className);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         public void ClearStyleSheets()
         {
             stylesheets.Clear();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void AssignClassListToElement(VisualElement ve)
         {
             if (m_Classes != null && m_Classes.Length > 0)

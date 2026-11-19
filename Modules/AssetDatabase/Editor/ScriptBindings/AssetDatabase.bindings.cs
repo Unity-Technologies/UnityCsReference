@@ -121,7 +121,7 @@ namespace UnityEditor
     [NativeHeader("NativeKernel/Core/PreventExecutionInState.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabasePreventExecution.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/V2/AssetDatabaseProfiler.h")]
-    [NativeHeader("Modules/AssetPackageEditor/AssetPackage.h")]
+    [NativeHeader("Editor/Modules/AssetPackageEditor/AssetPackage.h")]
     [NativeHeader("Editor/Src/VersionControl/VC_bindings.h")]
     [NativeHeader("Editor/Src/Application/ApplicationFunctions.h")]
     [StaticAccessor("AssetDatabaseBindings", StaticAccessorType.DoubleColon)]
@@ -153,6 +153,11 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::GetAssetRootFolders")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static string[] GetAssetRootFolders();
+
+        // Constant GUIDs that neither match the reserved pattern nor belong to a root folder; each entry is "<guid> <path>".
+        [FreeFunction("AssetDatabase::GetConstantGUIDsOutsideReservedRules")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]
+        extern internal static string[] GetConstantGUIDsOutsideReservedRules();
 
         // returns true if the folder is known by the asset database
         // rootFolder is true if the path is a registered root folder
@@ -272,12 +277,12 @@ namespace UnityEditor
                 AssetDatabase.StartAssetEditing();
             }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Intentional leak warning: logs when Dispose was not called; StopAssetEditing is deliberately not run from the finalizer.
             ~AssetEditingScope()
             {
                 Dispose(false);
             }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
             public void Dispose()
             {

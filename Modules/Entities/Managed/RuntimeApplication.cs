@@ -4,9 +4,11 @@
 
 using System;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 
 namespace Unity.Entities
 {
+    [VisibleToOtherModules("UnityEngine.CoreModule")]
     internal static partial class RuntimeApplication
     {
         /// <summary>
@@ -21,7 +23,9 @@ namespace Unity.Entities
         [AutoStaticsCleanupOnCodeReload]
         public static event Action PostFrameUpdate;
 
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static void InvokePreFrameUpdate() => PreFrameUpdate?.Invoke();
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static void InvokePostFrameUpdate() => PostFrameUpdate?.Invoke();
     }
 }

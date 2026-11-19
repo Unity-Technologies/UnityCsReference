@@ -19,6 +19,12 @@ namespace UnityEditorInternal
         [FreeFunction("RemoveDataComponentUndoable")]
         internal static extern bool RemoveDataComponent(EntityId componentEntityId);
 
+        [FreeFunction("ResetDataComponentUndoable")]
+        internal static extern bool ResetDataComponent(EntityId componentEntityId);
+
+        [FreeFunction("CanModifyDataComponent")]
+        internal static extern bool CanModifyDataComponent(EntityId componentEntityId);
+
         public static bool MoveComponentUp(Component component)
         {
             return MoveComponentUp_Internal(new[] { component }, false, false);
@@ -88,5 +94,7 @@ namespace UnityEditorInternal
 
         [FreeFunction]
         internal static extern bool WarnCanAddScriptComponent([NotNull] GameObject gameObject, [NotNull] MonoScript script);
+
+        internal static extern bool AddScriptComponents(GameObject[] gameObjects, MonoScript[] scripts, [NotNull][Out] List<Component> outAddedComponents);
     }
 }

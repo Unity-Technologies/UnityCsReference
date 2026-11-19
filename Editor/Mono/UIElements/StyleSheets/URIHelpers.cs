@@ -18,7 +18,7 @@ namespace UnityEditor.UIElements.StyleSheets
         InvalidURIProjectAssetPath
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     static class URIHelpers
     {
         private const string k_ProjectScheme = "project";
@@ -130,6 +130,7 @@ namespace UnityEditor.UIElements.StyleSheets
         }
 
         // These paths map to constant GUIDs the SourceAssetDB never holds, so any path dependency on them fails the import. (UUM-147936)
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         public static bool IsBuiltinResourcePath(string path)
         {
             return string.Equals(path, "Resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||

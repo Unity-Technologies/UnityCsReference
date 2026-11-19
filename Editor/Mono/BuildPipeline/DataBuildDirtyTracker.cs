@@ -8,6 +8,7 @@ using System.Linq;
 using NiceIO;
 using Unity.Collections;
 using UnityEditor.Build;
+using UnityEditor.Build.Profile;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -43,6 +44,7 @@ namespace UnityEditor.Mono.BuildPipeline
             public BuildDataInputFile[] scenes;
             public BuildDataInputFile[] inputFiles;
             public BuildDataInputFile activeBuildProfile;
+            public string activeBuildProfileHashWithoutPlatformSettings;
             public string[] enabledModules;
             public string[] resourcePaths;
             public BuildOptions buildOptions;
@@ -64,6 +66,9 @@ namespace UnityEditor.Mono.BuildPipeline
             public GUID contentSourceBuildSessionGuid;
         }
 
+        const string k_AssetDeletedReason = "deleted";
+        const string k_AssetHashChangedReason = "hash";
+
         private BuildData buildData;
         private string[] scenes;
         private NPath activeBuildProfilePath;
@@ -72,12 +77,24 @@ namespace UnityEditor.Mono.BuildPipeline
 
         bool CheckAssetDirty(BuildDataInputFile file)
         {
+            return CheckAssetDirty(file, GetAssetDirtyReason(file));
+        }
+
+        static bool CheckAssetDirty(BuildDataInputFile file, string dirtyReason)
+        {
+            if (dirtyReason == null)
+                return false;
+
+            Console.WriteLine($"Rebuilding Data files because {file.path.ToNPath()} is dirty ({dirtyReason})");
+            return true;
+        }
+
+        // Returns null when the file hasn't changed
+        static string GetAssetDirtyReason(BuildDataInputFile file)
+        {
             NPath path = file.path;
             if (!path.Exists())
-            {
-                Console.WriteLine($"Rebuilding Data files because {path} is dirty (deleted)");
-                return true;
-            }
+                return k_AssetDeletedReason;
 
             string contentHash = "";
             if (path.Extension == "cs")
@@ -89,13 +106,7 @@ namespace UnityEditor.Mono.BuildPipeline
             else
                 contentHash = AssetDatabase.GetAssetDependencyHash(file.path).ToString();
 
-            if (contentHash != file.contentHash)
-            {
-                Console.WriteLine($"Rebuilding Data files because {path} is dirty (hash)");
-                return true;
-            }
-
-            return false;
+            return contentHash != file.contentHash ? k_AssetHashChangedReason : null;
         }
 
         bool DoCheckDirty()
@@ -163,7 +174,7 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
-            if ((activeBuildProfilePath != buildData.activeBuildProfile.path) || (!string.IsNullOrEmpty(buildData.activeBuildProfile.path) && CheckAssetDirty(buildData.activeBuildProfile)))
+            if ((activeBuildProfilePath != buildData.activeBuildProfile.path) || (!string.IsNullOrEmpty(buildData.activeBuildProfile.path) && CheckActiveBuildProfileDirty()))
             {
                 Console.WriteLine($"Rebuilding Data files because the active build profile have changed");
                 return true;
@@ -186,6 +197,38 @@ namespace UnityEditor.Mono.BuildPipeline
 #pragma warning restore CS0618
             hash.Append(AssetPostprocessingInternal.GetSinglePassBuildSceneProcessorsHashString());
             return hash.ToString();
+        }
+
+        bool CheckActiveBuildProfileDirty()
+        {
+            var profile = buildData.activeBuildProfile;
+            var dirtyReason = GetAssetDirtyReason(profile);
+
+            // A changed file still reuses the data when only its platform settings changed
+            if (dirtyReason == k_AssetHashChangedReason)
+            {
+                var hashWithoutPlatformSettings = ComputeBuildProfileHashWithoutPlatformSettings(profile.path);
+                if (hashWithoutPlatformSettings != null && hashWithoutPlatformSettings == buildData.activeBuildProfileHashWithoutPlatformSettings)
+                    return false;
+            }
+
+            return CheckAssetDirty(profile, dirtyReason);
+        }
+
+        // Returns null when the profile or a subasset has unsaved changes, because the hash must match the saved file
+        static string ComputeBuildProfileHashWithoutPlatformSettings(string buildProfilePath)
+        {
+            if (string.IsNullOrEmpty(buildProfilePath))
+                return null;
+
+            foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(buildProfilePath))
+            {
+                if (obj != null && EditorUtility.IsDirty(obj))
+                    return null;
+            }
+
+            var profile = AssetDatabase.LoadAssetAtPath<BuildProfile>(buildProfilePath);
+            return profile != null ? profile.ComputeHashWithoutPlatformSettings() : null;
         }
 
         [RequiredByNativeCode]
@@ -221,6 +264,7 @@ namespace UnityEditor.Mono.BuildPipeline
                 scenes = inputScenes.ToArray(),
                 inputFiles = inputFiles.ToArray(),
                 activeBuildProfile = new BuildDataInputFile(activeBuildProfilePath),
+                activeBuildProfileHashWithoutPlatformSettings = ComputeBuildProfileHashWithoutPlatformSettings(activeBuildProfilePath),
                 buildOptions = report.summary.options & BuildData.BuildOptionsMask,
                 unityVersion = Application.unityVersion,
                 sceneProcessorsHash = ComputeSceneProcessorsHash(),

@@ -164,7 +164,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <param name="item">The value to check for.</param>
         /// <returns>True if the value was present.</returns>
-        public bool Contains(T item)
+        public readonly bool Contains(T item)
         {
             return -1 != m_Data.Find(item);
         }
@@ -179,7 +179,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array with a copy of the set's values.</returns>
-        public NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
         {
             return m_Data.GetKeyArray(allocator);
         }
@@ -188,7 +188,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// Returns an enumerator over the values of this set.
         /// </summary>
         /// <returns>An enumerator over the values of this set.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             fixed (HashMapHelper<T>* data = &m_Data)
             {
@@ -201,7 +201,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -211,7 +211,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -230,7 +230,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next value.
@@ -248,7 +248,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// The current value.
             /// </summary>
             /// <value>The current value.</value>
-            public T Current
+            public readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_Enumerator.m_Data->Keys[m_Enumerator.m_Index];
@@ -257,7 +257,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// <summary>
             /// Gets the element at the current position of the enumerator in the container.
             /// </summary>
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -265,9 +265,9 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <remarks>ReadOnly containers point to the same underlying data as the UnsafeHashMap it is made from.</remarks>
         /// <returns>ReadOnly instance for this.</returns>
-        public ReadOnly AsReadOnly()
+        public readonly ReadOnly AsReadOnly()
         {
-            return new ReadOnly(ref m_Data);
+            return new ReadOnly(m_Data);
         }
 
         /// <summary>
@@ -279,7 +279,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         {
             internal HashMapHelper<T> m_Data;
 
-            internal ReadOnly(ref HashMapHelper<T> data)
+            internal ReadOnly(in HashMapHelper<T> data)
             {
                 m_Data = data;
             }
@@ -361,7 +361,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -371,7 +371,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 throw new NotImplementedException();
             }

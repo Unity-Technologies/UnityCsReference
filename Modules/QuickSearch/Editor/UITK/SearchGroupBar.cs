@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using Unity.Collections;
 
@@ -81,6 +82,7 @@ namespace UnityEditor.Search
         void IGroup.SetSearchListComparer(ISearchListComparer comparer) => m_Group.SetSearchListComparer(comparer);
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class SearchGroupBar : SearchElement
     {
         internal static class TestHelpers
@@ -132,6 +134,7 @@ namespace UnityEditor.Search
 
         public event Action<ISearchListComparer> SortingChanged;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal SearchGroupBar(string name, ISearchView viewModel)
             : base(name, viewModel, ussClassName)
         {

@@ -6426,14 +6426,14 @@ namespace UnityEngine
                 m_Disposed = true;
             }
 
-#pragma warning disable UA5000 // Intentional leak warning: logs when a GUI scope was not disposed. Public base of many scope types.
+#pragma warning disable UAC0045 // Intentional leak warning: logs when a GUI scope was not disposed. Public base of many scope types.
             ~Scope()
             {
                 if (!m_Disposed && !GUIUtility.guiIsExiting)
                     Console.WriteLine($"{GetType().Name} was not disposed! You should use the 'using' keyword or manually call Dispose.");
                 Dispose(false);
             }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
             ///<exclude />
             public void Dispose()

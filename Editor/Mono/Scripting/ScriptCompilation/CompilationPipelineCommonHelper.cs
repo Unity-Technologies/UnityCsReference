@@ -21,8 +21,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return false;
         }
 
-        // Keep in sync with AsmDefConverter.ConvertedCsProjectFor in
-        // Editor/Tools/AsmDefToCSProj/AsmDefToCSProjLib/AsmDefConverter.cs (used by the MSBuild pipeline).
+        // Keep in sync with the IsILPostProcessor references in Editor/Tools/UnityMSBuildSDK/sdk/Unity.Sdk/Sdk/Sdk.targets
         public static void UpdateScriptAssemblyReference(ref ScriptAssembly scriptAssembly)
         {
             int referencesLength = scriptAssembly.References.Length;

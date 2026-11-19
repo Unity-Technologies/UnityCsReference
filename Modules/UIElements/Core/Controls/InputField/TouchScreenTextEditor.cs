@@ -235,6 +235,9 @@ namespace UnityEngine.UIElements
                 case PointerUpEvent pue:
                     OnPointerUpEvent(pue);
                     break;
+                case PointerCancelEvent:
+                    m_IsClicking = false;
+                    break;
                 case FocusInEvent:
                     OnFocusInEvent();
                     break;

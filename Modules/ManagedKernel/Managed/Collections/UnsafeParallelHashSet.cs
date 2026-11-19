@@ -51,7 +51,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// Returns the current number of values in this set.
         /// </summary>
         /// <returns>The current number of values in this set.</returns>
-        public int Count() => m_Data.Count();
+        public readonly int Count() => m_Data.Count();
 
         /// <summary>
         /// The number of values that fit in the current allocation.
@@ -131,20 +131,20 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <param name="item">The value to check for.</param>
         /// <returns>True if the value was present.</returns>
-        public bool Contains(T item) => m_Data.ContainsKey(item);
+        public readonly bool Contains(T item) => m_Data.ContainsKey(item);
 
         /// <summary>
         /// Returns an array with a copy of this set's values (in no particular order).
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array with a copy of the set's values.</returns>
-        public NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator) => m_Data.GetKeyArray(allocator);
+        public readonly NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator) => m_Data.GetKeyArray(allocator);
 
         /// <summary>
         /// Returns a parallel writer.
         /// </summary>
         /// <returns>A parallel writer.</returns>
-        public ParallelWriter AsParallelWriter()
+        public readonly ParallelWriter AsParallelWriter()
         {
             return new ParallelWriter { m_Data = m_Data.AsParallelWriter() };
         }
@@ -222,7 +222,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// Returns an enumerator over the values of this set.
         /// </summary>
         /// <returns>An enumerator over the values of this set.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             return new Enumerator { m_Enumerator = new UnsafeParallelHashMapDataEnumerator(m_Data.m_Buffer) };
         }
@@ -232,7 +232,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -242,7 +242,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -261,7 +261,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next value.
@@ -279,13 +279,13 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// The current value.
             /// </summary>
             /// <value>The current value.</value>
-            public T Current
+            public readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_Enumerator.GetCurrentKey<T>();
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -293,9 +293,9 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <remarks>ReadOnly containers point to the same underlying data as the UnsafeParallelHashSet it is made from.</remarks>
         /// <returns>ReadOnly instance for this.</returns>
-        public ReadOnly AsReadOnly()
+        public readonly ReadOnly AsReadOnly()
         {
-            return new ReadOnly(ref this);
+            return new ReadOnly(this);
         }
 
         /// <summary>
@@ -307,7 +307,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         {
             internal UnsafeParallelHashMap<T, bool> m_Data;
 
-            internal ReadOnly(ref UnsafeParallelHashSet<T> data)
+            internal ReadOnly(in UnsafeParallelHashSet<T> data)
             {
                 m_Data = data.m_Data;
             }
@@ -385,7 +385,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -395,7 +395,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 throw new NotImplementedException();
             }

@@ -224,7 +224,7 @@ namespace UnityEditor.UIElements.Debugger
 
             // Refresh any data bindings to this component field (${component:<Type>}.<field>).
             var fieldName = attr.serializedField?.Name ?? attr.name;
-            element.NotifyComponentChanged(new BindingId($"${{component:{type.Name}}}.{fieldName}"));
+            element.NotifyComponentChanged(new BindingId($"${{component:{type.FullName}}}.{fieldName}"));
         }
     }
 }

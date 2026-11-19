@@ -13,6 +13,6 @@ namespace UnityEditor.Overlays
             return EditorGUIUtility.Load("UXML/Overlays/main-toolbar-overlay-canvas.uxml") as VisualTreeAsset;
         }
 
-        public override OverlayDockArea GetDockArea(OverlayCanvas canvas, VisualElement parent) => null;
+        public override OverlayDockArea GetDockArea(OverlayCanvas canvas, VisualElement parent) => new MainToolbarDockArea(parent);
     }
 }

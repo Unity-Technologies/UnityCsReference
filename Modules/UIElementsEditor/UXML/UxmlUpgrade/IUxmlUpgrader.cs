@@ -11,7 +11,6 @@ namespace UnityEditor.UIElements
     /// Interface for UXML upgrade operations that you can apply to <see cref="VisualTreeAsset"/>.
     /// Inherit from this interface to create a new UXML upgrader.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     public interface IUxmlUpgrader
     {
         /// <summary>

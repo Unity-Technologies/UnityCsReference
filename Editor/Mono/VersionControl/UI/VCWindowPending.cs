@@ -195,8 +195,7 @@ namespace UnityEditor.VersionControl
         [RequiredByNativeCode]
         static void OnVCTaskCompletedEvent(Task task, CompletionAction completionAction)
         {
-            // inspector should re-calculate which VCS buttons it needs to show
-            InspectorWindow.ClearVersionControlBarState();
+            VersionControlManager.IncrementStatusVersion();
 
             var wins = Resources.FindObjectsOfTypeAll(typeof(WindowPending)) as WindowPending[];
 
@@ -248,8 +247,7 @@ namespace UnityEditor.VersionControl
         [RequiredByNativeCode]
         public static void UpdateAllWindows()
         {
-            // inspector should re-calculate which VCS buttons it needs to show
-            InspectorWindow.ClearVersionControlBarState();
+            VersionControlManager.IncrementStatusVersion();
 
             var wins = Resources.FindObjectsOfTypeAll(typeof(WindowPending)) as WindowPending[];
 

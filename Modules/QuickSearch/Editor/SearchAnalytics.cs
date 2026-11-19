@@ -479,7 +479,9 @@ namespace UnityEditor.Search
 
         private static bool UnityQuit()
         {
-            SendReportUsage();
+            if (Utils.IsMainProcess())
+                SendReportUsage();
+
             return true;
         }
 

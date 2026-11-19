@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Severity of a layout diagnostic.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIElementsModule", "UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIElementsModule")]
     internal enum LayoutDiagnosticSeverity
     {
         Info,
@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a layout authoring problem detected on a visual element.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIElementsModule", "UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIElementsModule")]
     internal readonly struct LayoutDiagnostic
     {
         /// <summary>Stable identifier for the rule that produced this diagnostic.</summary>
@@ -65,7 +65,7 @@ namespace UnityEngine.UIElements
     /// Implementations should be cheap and self-contained so that they can be run on every
     /// element of a panel without significant cost.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIElementsModule", "UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIElementsModule")]
     internal interface ILayoutDiagnosticRule
     {
         string id { get; }
@@ -86,7 +86,7 @@ namespace UnityEngine.UIElements
     /// <see cref="UnregisterRule"/>. The <see cref="SingleFlexChildOptimizationBugRule"/> built-in
     /// rule is always registered on first access.
     /// </remarks>
-    [VisibleToOtherModules("UnityEditor.UIElementsModule", "UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIElementsModule")]
     internal static partial class LayoutDiagnostics
     {
         [AutoStaticsCleanupOnCodeReload] // registered rules may be user code; re-created with the built-in rule
@@ -163,7 +163,7 @@ namespace UnityEngine.UIElements
     /// upgrading from an older Unity version can see exactly which elements may render at a new
     /// size and visually verify them.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIElementsModule", "UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIElementsModule")]
     internal sealed class SingleFlexChildOptimizationBugRule : ILayoutDiagnosticRule
     {
         // Distinct ids per variant so the UI groups them separately and each gets its own

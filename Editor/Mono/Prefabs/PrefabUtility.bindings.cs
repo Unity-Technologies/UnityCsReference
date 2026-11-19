@@ -64,6 +64,21 @@ namespace UnityEditor
         extern internal static bool HasObjectOverride(Object componentOrGameObject, bool includeDefaultOverrides = false);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static bool HasDataComponentOverride(EntityId dataComponent, bool includeDefaultOverrides = false);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static EntityId[] GetDataComponents(EntityId gameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static Type GetDataComponentType(EntityId dataComponent);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static EntityId GetCorrespondingDataComponentFromSource(EntityId dataComponent);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static EntityId GetCorrespondingDataComponentFromSourceAtPath(EntityId dataComponent, string assetPath);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern internal static bool HasPrefabInstanceUnusedOverrides_Internal(GameObject gameObject);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
@@ -101,6 +116,10 @@ namespace UnityEditor
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod(ThrowsException = true)]
         extern internal static bool HasApplicableObjectOverridesForTarget([NotNull] Object targetPrefab, [NotNull] Object applyTarget, bool includeDefaultOverrides);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod(ThrowsException = true)]
+        extern internal static bool HasApplicableDataComponentOverridesForTarget(EntityId dataComponent, [NotNull] Object applyTarget, bool includeDefaultOverrides);
 
         [NativeMethod("PrefabUtilityBindings::FindNearestInstanceOfAsset", IsFreeFunction = true)]
         extern internal static GameObject FindNearestInstanceOfAsset(Object componentOrGameObjectInstance, Object prefab);
@@ -340,7 +359,7 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod(ThrowsException = true)]
-        extern static void SetRemovedComponents([NotNull] Object prefabInstance, [NotNull] Component[] removedComponents);
+        extern internal static void SetRemovedComponents([NotNull] Object prefabInstance, [NotNull] Component[] removedComponents);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod(ThrowsException = true)]
@@ -386,6 +405,10 @@ namespace UnityEditor
         // scripts for Prefab instances in GenericInspector.cs
         [FreeFunction]
         extern internal static bool IsInstanceIDPartOfNonAssetPrefabInstance(EntityId componentOrGameObjectInstanceID);
+
+        // Unlike IsInstanceIDPartOfNonAssetPrefabInstance, this is also true inside a Prefab asset, where revert is allowed.
+        [FreeFunction]
+        extern internal static bool IsEntityIdPartOfPrefabInstance(EntityId componentOrGameObjectEntityId);
 
         // Returns true if the object is from a regular prefab or instance of regular prefab
         [FreeFunction]
@@ -459,12 +482,56 @@ namespace UnityEditor
         extern private static bool ApplyObjectOverrideWithoutUndo([NotNull] Object componentOrGameObject, string assetPath);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern private static bool CanApplySelectedOverridesInBatch();
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod(ThrowsException = true)]
+        extern private static bool ApplySelectedOverridesInternal([NotNull] GameObject instanceRoot, [NotNull] Object[] objectOverrideInstanceObjects, [NotNull] Component[] removedAssetComponents, [NotNull] Component[] coupledRemovedAssetComponents, [NotNull] GameObject[] removedAssetGameObjects, [NotNull] Component[] addedInstanceComponents, [NotNull] GameObject[] addedInstanceGameObjects, [NotNull] EntityId[] overriddenInstanceDataComponents, [NotNull] EntityId[] addedInstanceDataComponents, [NotNull] EntityId[] removedAssetDataComponents);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod(ThrowsException = true)]
         extern private static bool ApplyPropertyOverride([NotNull] Object componentOrGameObject, string propertyPath, string managedReferenceFieldPath, long[] managedReferenceIds, string assetPath);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod(ThrowsException = true)]
         extern private static bool ApplyPropertyOverrideWithoutUndo([NotNull] Object componentOrGameObject, string propertyPath, string managedReferenceFieldPath, long[] managedReferenceIds, string assetPath);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod(ThrowsException = true)]
+        extern private static bool ApplyDataComponentPropertyOverride(EntityId dataComponent, string propertyPath, string assetPath, bool recordUndo);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod(ThrowsException = true)]
+        extern private static bool ApplyDataComponentOverride(EntityId dataComponent, string assetPath, bool recordUndo);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod(ThrowsException = true)]
+        extern private static bool RevertDataComponentOverride(EntityId dataComponent, bool recordUndo);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static bool IsAddedDataComponentOverride(EntityId dataComponent);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod(ThrowsException = true)]
+        extern private static bool ApplyAddedDataComponent(EntityId dataComponent, string assetPath, bool recordUndo);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod(ThrowsException = true)]
+        extern private static bool RevertAddedDataComponent(EntityId dataComponent, bool recordUndo);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern internal static EntityId[] GetRemovedDataComponents([NotNull] GameObject instanceGameObject);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        extern static void RemoveUnusedRemovedDataComponents([NotNull] Object prefabInstance);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod(ThrowsException = true)]
+        extern private static bool ApplyRemovedDataComponent([NotNull] GameObject instanceGameObject, EntityId assetDataComponent, string assetPath, bool recordUndo);
+
+        [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod(ThrowsException = true)]
+        extern private static bool RevertRemovedDataComponent([NotNull] GameObject instanceGameObject, EntityId assetDataComponent, bool recordUndo);
 
     }
 }

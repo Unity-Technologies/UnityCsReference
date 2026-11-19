@@ -52,13 +52,11 @@ namespace UnityEngine.UIElements
             m_Children = children ?? new List<TreeViewItemData<T>>();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void AddChild(TreeViewItemData<T> child)
         {
             m_Children.Add(child);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void AddChildren(IList<TreeViewItemData<T>> children)
         {
             foreach (var child in children)

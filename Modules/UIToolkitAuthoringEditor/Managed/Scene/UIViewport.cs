@@ -8,21 +8,22 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
+using Toolbar = UnityEditor.UIElements.Toolbar;
 
 namespace Unity.UIToolkit.Editor;
 
 [UxmlElement(visibility = LibraryVisibility.Hidden)]
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 sealed partial class UIViewport : VisualElement
 {
     const string k_VisualTreeAsset = "UIToolkitAuthoring/UIViewportWindow/UIViewport.uxml";
     const string k_StyleSheetDark = "UIToolkitAuthoring/UIViewportWindow/UIViewportDark.uss";
     const string k_StyleSheetLight = "UIToolkitAuthoring/UIViewportWindow/UIViewportLight.uss";
 
-    const string k_OuterSplitViewName = UssClass + "__viewport-preview-split-view";
-    const string k_InnerSplitViewUssClass = UssClass + "__code-section";
     const string k_ShowUxmlPreviewPrefKey = "UIToolkit.UIViewportWindow.ShowUxmlPreview";
     const string k_ShowUssPreviewPrefKey = "UIToolkit.UIViewportWindow.ShowUssPreview";
 
@@ -39,6 +40,8 @@ sealed partial class UIViewport : VisualElement
     public const string ViewportContainerUssClass = UssClass + "__viewport-container";
     public const string PreviewModeUssClass = ViewportContainerUssClass + "--preview";
 
+    public const string ToolbarName = UssClass + "__toolbar";
+    public const string BreadcrumbsToolbarName = UssClass + "__breadcrumbs-toolbar";
     public const string BreadcrumbsName = UssClass + "__breadcrumbs-view";
 
     internal static readonly string SaveTooltipFormat = L10n.Tr("Save {0}", null);
@@ -51,19 +54,23 @@ sealed partial class UIViewport : VisualElement
     readonly ToolbarButton m_SaveButton;
     readonly ToolbarMenu m_ViewMenu;
     IUIViewportContext m_SaveTarget;
+
+    AuthoringContext Context => AuthoringContext.For(this);
     readonly UIViewportThemeMenu m_ThemeMenu;
     readonly ToolbarToggle m_PreviewToggle;
     readonly Button m_FitViewportButton;
 
+    readonly Toolbar m_Toolbar;
+    readonly Toolbar m_BreadcrumbsToolbar;
     readonly ToolbarBreadcrumbs m_Breadcrumbs;
 
     readonly UICanvasPanManipulator m_PanManipulator;
     readonly UICanvasZoomManipulator m_ZoomManipulator;
     readonly List<UICanvasResizeManipulator> m_ResizeManipulators = new();
     readonly AddElementDropManipulator m_DropManipulator;
+    readonly Func<VisualElement, bool> m_IsShownInCanvas;
 
-    TwoPaneSplitView m_OuterSplitView;
-    TwoPaneSplitView m_InnerSplitView;
+    UIViewportView m_View;
 
     const int k_FitAnimationDuration = 250;
     ValueAnimation<float> m_FitAnimation;
@@ -74,6 +81,12 @@ sealed partial class UIViewport : VisualElement
     public UICanvas Canvas => m_Canvas;
     public VisualElement Surface => m_Surface;
     public AddElementDropManipulator DropManipulator => m_DropManipulator;
+
+    /// <summary>The toolbar with the Save button, the zoom and the theme menus.</summary>
+    public Toolbar Toolbar => m_Toolbar;
+
+    /// <summary>The toolbar holding the breadcrumbs.</summary>
+    public Toolbar BreadcrumbsToolbar => m_BreadcrumbsToolbar;
 
     public UIViewport()
     {
@@ -95,6 +108,7 @@ sealed partial class UIViewport : VisualElement
         m_Surface.RegisterCallback<ValidateCommandEvent>(OnValidateCommand);
         m_Surface.RegisterCallback<ExecuteCommandEvent>(OnExecuteCommand);
         m_Canvas = this.Q<UICanvas>();
+        m_IsShownInCanvas = IsShownInCanvas;
 
         m_PanManipulator = new UICanvasPanManipulator(this);
         m_ZoomManipulator = new UICanvasZoomManipulator(this);
@@ -121,6 +135,8 @@ sealed partial class UIViewport : VisualElement
         SetupPreviewToggle();
         EnableInClassList(PreviewModeUssClass, m_Canvas.PreviewMode);
 
+        m_Toolbar = this.Q<Toolbar>(ToolbarName);
+        m_BreadcrumbsToolbar = this.Q<Toolbar>(BreadcrumbsToolbarName);
         m_Breadcrumbs = this.Q<ToolbarBreadcrumbs>(BreadcrumbsName);
 
         m_FitViewportButton = this.Q<Button>(className: ToolbarFitViewportButtonUssClass);
@@ -179,10 +195,12 @@ sealed partial class UIViewport : VisualElement
     {
         if (m_Canvas.PreviewMode)
             return;
-        UIViewportContextMenuUtility.PopulateMenu(evt.menu,
-            CommandSources.Viewport, m_Canvas.DocumentRoot.InPlaceEditor,
-            m_Canvas.PanelElement?.subRootVisualElement?.panel);
+        UIViewportContextMenuUtility.PopulateMenu(Context, evt.menu,
+            CommandSources.Viewport, m_Canvas.DocumentRoot.InPlaceEditor, m_IsShownInCanvas);
     }
+
+    // Outside the UI Stage the selection holds the live scene element, not the clone this canvas renders.
+    bool IsShownInCanvas(VisualElement element) => m_Canvas.DocumentRoot.ResolveCanvasElement(element) != null;
 
     void OnValidateCommand(ValidateCommandEvent evt)
     {
@@ -191,7 +209,7 @@ sealed partial class UIViewport : VisualElement
             case EventCommandNames.Cut:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(Context, filteredSelection);
                 if (CutElementsCommand.Validate(CommandSources.Viewport, NoAllocHelpers.CreateSpan(filteredSelection)))
                     evt.StopPropagation();
                 break;
@@ -199,19 +217,19 @@ sealed partial class UIViewport : VisualElement
             case EventCommandNames.Copy:
             {
                 using var copyHandle = ListPool<VisualElementAsset>.Get(out var copySelection);
-                UIViewportContextMenuUtility.FilterSelection(copySelection, requireFullyEditable: false);
+                UIViewportContextMenuUtility.FilterSelection(Context, copySelection, requireFullyEditable: false);
                 if (CopyElementsCommand.Validate(NoAllocHelpers.CreateSpan(copySelection)))
                     evt.StopPropagation();
                 break;
             }
             case EventCommandNames.Paste:
-                if (UIViewportContextMenuUtility.CanPaste(m_Canvas.PanelElement?.subRootVisualElement?.panel))
+                if (UIViewportContextMenuUtility.CanPaste(Context, m_IsShownInCanvas))
                     evt.StopPropagation();
                 break;
             case EventCommandNames.Duplicate:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(Context, filteredSelection);
                 if (DuplicateElementsCommand.Validate(NoAllocHelpers.CreateSpan(filteredSelection)))
                     evt.StopPropagation();
                 break;
@@ -220,7 +238,7 @@ sealed partial class UIViewport : VisualElement
             case EventCommandNames.SoftDelete:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(Context, filteredSelection);
                 if (RemoveElementsCommand.Validate(NoAllocHelpers.CreateSpan(filteredSelection)))
                     evt.StopPropagation();
                 break;
@@ -235,34 +253,34 @@ sealed partial class UIViewport : VisualElement
             case EventCommandNames.Cut:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(Context, filteredSelection);
                 if (filteredSelection.Count > 0 &&
-                    CutElementsCommand.Execute(CommandSources.Viewport, filteredSelection.ToArray()) == CommandExecutionStatus.Success)
+                    CutElementsCommand.Execute(CommandSources.Viewport, filteredSelection.ToArray(), Context) == CommandExecutionStatus.Success)
                     evt.StopPropagation();
                 break;
             }
             case EventCommandNames.Copy:
             {
                 using var copyHandle = ListPool<VisualElementAsset>.Get(out var copySelection);
-                UIViewportContextMenuUtility.FilterSelection(copySelection, requireFullyEditable: false);
+                UIViewportContextMenuUtility.FilterSelection(Context, copySelection, requireFullyEditable: false);
                 if (copySelection.Count > 0 &&
-                    CopyElementsCommand.Execute(CommandSources.Viewport, copySelection.ToArray()) == CommandExecutionStatus.Success)
+                    CopyElementsCommand.Execute(CommandSources.Viewport, copySelection.ToArray(), Context) == CommandExecutionStatus.Success)
                     evt.StopPropagation();
                 break;
             }
             case EventCommandNames.Paste:
-                if (UIViewportContextMenuUtility.DoPaste(CommandSources.Viewport, m_Canvas.PanelElement?.subRootVisualElement?.panel))
+                if (UIViewportContextMenuUtility.DoPaste(Context, CommandSources.Viewport, m_IsShownInCanvas))
                     evt.StopPropagation();
                 break;
             case EventCommandNames.Duplicate:
-                if (UIViewportContextMenuUtility.DoDuplicate(CommandSources.Viewport))
+                if (UIViewportContextMenuUtility.DoDuplicate(Context, CommandSources.Viewport))
                     evt.StopPropagation();
                 break;
             case EventCommandNames.Delete:
             case EventCommandNames.SoftDelete:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(Context, filteredSelection);
                 if (RemoveElementsCommand.Execute(CommandSources.Viewport, filteredSelection.ToArray()) == CommandExecutionStatus.Success)
                     evt.StopPropagation();
                 break;
@@ -279,16 +297,14 @@ sealed partial class UIViewport : VisualElement
                 break;
             case AttachToPanelEvent:
                 PrefSettings.settingChanged += OnPrefsChanged;
-                m_OuterSplitView = panel.visualTree.Q<TwoPaneSplitView>(k_OuterSplitViewName);
-                m_InnerSplitView = panel.visualTree.Q<TwoPaneSplitView>(className: k_InnerSplitViewUssClass);
+                m_View = GetFirstAncestorOfType<UIViewportView>();
                 ApplyPreviewVisibility();
                 break;
             case DetachFromPanelEvent:
                 PrefSettings.settingChanged -= OnPrefsChanged;
                 if (m_FitAnimation != null && m_FitAnimation.isRunning)
                     m_FitAnimation?.Stop();
-                m_OuterSplitView = null;
-                m_InnerSplitView = null;
+                m_View = null;
                 break;
             case PointerUpEvent pointerUpEvent:
                 if (TrySelectCanvas(pointerUpEvent))
@@ -326,7 +342,7 @@ sealed partial class UIViewport : VisualElement
         m_PreviewToggle.SetValueWithoutNotify(m_Canvas.PreviewMode);
     }
 
-    internal UIViewportThemeMenu ThemeMenu => m_ThemeMenu;
+    public UIViewportThemeMenu ThemeMenu => m_ThemeMenu;
 
     void OnPreviewToggleChanged(ChangeEvent<bool> evt)
     {
@@ -437,13 +453,13 @@ sealed partial class UIViewport : VisualElement
 
     VisualElement GetFirstSelectedElement()
     {
-        var subRoot = m_Canvas.PanelElement?.subRootVisualElement;
-        foreach (var selectedId in Selection.entityIds)
+        foreach (var selectedId in Context.Selection.EntityIds)
         {
             if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection { Element: { } element })
             {
-                if (element.panel != null && element.panel == subRoot?.panel)
-                    return element;
+                var canvasElement = m_Canvas.DocumentRoot.ResolveCanvasElement(element);
+                if (canvasElement != null)
+                    return canvasElement;
             }
         }
         return null;
@@ -520,30 +536,18 @@ sealed partial class UIViewport : VisualElement
 
     void ApplyPreviewVisibility()
     {
-        if (m_InnerSplitView == null || m_OuterSplitView == null)
+        if (m_View == null)
             return;
 
-        var showUxml = ShowUxmlPreview;
-        var showUss = ShowUssPreview;
+        // The grid around the previews collapses the tracks of a hidden one, and their row when both are hidden.
+        SetDisplayed(m_View.UxmlPreview, ShowUxmlPreview);
+        SetDisplayed(m_View.UssPreview, ShowUssPreview);
+    }
 
-        if (showUxml || showUss)
-        {
-            // Ensure the code section and inner split view are fully restored before
-            // selectively collapsing one side, to avoid double-collapsed state.
-            m_OuterSplitView.UnCollapse();
-            m_InnerSplitView.UnCollapse();
-
-            if (!showUxml)
-                m_InnerSplitView.CollapseChild(0);
-            else if (!showUss)
-                m_InnerSplitView.CollapseChild(1);
-        }
-        else
-        {
-            // Collapse the code section pane (index 1) from the outer split view.
-            // CollapseChild handles hiding the drag line automatically.
-            m_OuterSplitView.CollapseChild(1);
-        }
+    static void SetDisplayed(VisualElement element, bool displayed)
+    {
+        if (element != null)
+            element.style.display = displayed ? StyleKeyword.Null : DisplayStyle.None;
     }
 
     static bool GetUserSettingBool(string key, bool defaultValue)

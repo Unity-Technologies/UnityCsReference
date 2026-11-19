@@ -27,6 +27,7 @@ internal struct SDKPreconfiguredSettingsVariantInfo
     public string tooltip;
     public bool selectedInitially;
     public string platformGuid;
+    public string[] requiredPackages;
 }
 
 [Serializable]

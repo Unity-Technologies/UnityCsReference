@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Type result of a binding visitation.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal readonly struct BindingTypeResult
     {
         /// <summary>
@@ -92,7 +92,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides information about the resolved type of a property.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal readonly struct PropertyPathInfo
     {
         /// <summary>
@@ -104,6 +104,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public readonly Type type;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal PropertyPathInfo(in PropertyPath propertyPath, Type type)
         {
             this.propertyPath = propertyPath;
@@ -114,7 +115,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides a subset of helper methods for the data binding system.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class DataBindingUtility
     {
         [NoAutoStaticsCleanup]
@@ -217,7 +218,6 @@ namespace UnityEngine.UIElements
         /// <param name="dataSourceType">The data source type found</param>
         /// <param name="fullPath">The chain of paths found</param>
         /// <returns>Returns true if at least the data source, the data source type or a binding path is inherited</returns>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool TryGetDataSourceOrDataSourceTypeFromHierarchy(VisualElement element, out object dataSourceObject, out Type dataSourceType, out PropertyPath fullPath)
         {
             var sourceElement = element;
@@ -283,7 +283,7 @@ namespace UnityEngine.UIElements
         /// <param name="element">The element to start from.</param>
         /// <param name="type">The data source type found.</param>
         /// <returns>True if the resolved data source type is found.</returns>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool TryGetRelativeDataSourceTypeFromHierarchy(VisualElement element, out Type type)
         {
             type = null;
@@ -302,18 +302,9 @@ namespace UnityEngine.UIElements
                 // otherwise get the type of the property resolved from the (combined) binding path from the top data source type.
                 else
                 {
-                    var bindingPathStr = bindingPath.ToString();
-                    using var pool = ListPool<PropertyPathInfo>.Get(out var  allProperties);
-
-                    GetPropertyPaths(dataSourceType, int.MaxValue, allProperties);
-                    // Replace all the indices to '0' in the binding path before searching because the indices in the paths returned by DataBindingUtility.GetPropertyPaths are all '0'.
-                    bindingPathStr = ReplaceAllIndicesInPath(bindingPathStr, "0");
-                    foreach (var prop in allProperties)
-                    {
-                        if (prop.propertyPath.ToString() != bindingPathStr) continue;
-                        type = prop.type;
-                        break;
-                    }
+                    var result = IsPathValid(dataSourceType, bindingPath);
+                    if (result.returnCode == VisitReturnCode.Ok)
+                        type = result.type;
                 }
             }
 
@@ -326,7 +317,7 @@ namespace UnityEngine.UIElements
         /// <param name="path">The original path</param>
         /// <param name="newText">The text to replace the indices</param>
         /// <returns>The new path with replaced indices</returns>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static string ReplaceAllIndicesInPath(string path, string newText)
         {
             return path.Contains('[') ? s_ReplaceIndices.Replace(path, $"[{newText}]") : path;
@@ -481,7 +472,7 @@ namespace UnityEngine.UIElements
         /// <returns>Type information of the property at the specified path.</returns>
         public static BindingTypeResult IsPathValid(object dataSource, string path)
         {
-            return IsPathValid(dataSource, dataSource?.GetType(), path);
+            return IsPathValid(dataSource, dataSource?.GetType(), new PropertyPath(path));
         }
 
         /// <summary>
@@ -492,10 +483,16 @@ namespace UnityEngine.UIElements
         /// <returns>Type information of the property at the specified path.</returns>
         public static BindingTypeResult IsPathValid(Type type, string path)
         {
+            return IsPathValid(null, type, new PropertyPath(path));
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static BindingTypeResult IsPathValid(Type type, in PropertyPath path)
+        {
             return IsPathValid(null, type, path);
         }
 
-        static BindingTypeResult IsPathValid(object dataSource, Type type, string path)
+        static BindingTypeResult IsPathValid(object dataSource, Type type, in PropertyPath path)
         {
             if (type == null)
                 return new BindingTypeResult(VisitReturnCode.NullContainer, 0, default);
@@ -507,7 +504,7 @@ namespace UnityEngine.UIElements
 
             try
             {
-                visitor.Path = new PropertyPath(path);
+                visitor.Path = path;
 
                 if (properties == null)
                 {
@@ -563,7 +560,24 @@ namespace UnityEngine.UIElements
             GetPropertyPaths(null, type, depth, listResult);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static void GetPropertyPaths(Type type, int depth, int maxResults, List<PropertyPathInfo> listResult)
+        {
+            GetPropertyPaths(null, type, depth, maxResults, listResult);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static void GetPropertyPaths(object dataSource, int depth, int maxResults, List<PropertyPathInfo> listResult)
+        {
+            GetPropertyPaths(dataSource, dataSource?.GetType(), depth, maxResults, listResult);
+        }
+
         static void GetPropertyPaths(object dataSource, Type type, int depth, List<PropertyPathInfo> resultList)
+        {
+            GetPropertyPaths(dataSource, type, depth, int.MaxValue, resultList);
+        }
+
+        static void GetPropertyPaths(object dataSource, Type type, int depth, int maxResults, List<PropertyPathInfo> resultList)
         {
             if (type == null)
                 return;
@@ -578,6 +592,7 @@ namespace UnityEngine.UIElements
             {
                 visitor.propertyPathList = resultList;
                 visitor.maxDepth = depth;
+                visitor.maxResults = maxResults;
 
                 if (dataSource == null)
                     bag.Accept(visitor);

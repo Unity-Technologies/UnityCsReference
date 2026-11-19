@@ -577,6 +577,7 @@ namespace UnityEditor
                 name = "QualityLevelsListView",
                 showBoundCollectionSize = false,
                 showFoldoutHeader = false,
+                showBorder = true,
                 reorderable = true,
                 showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly,
                 reorderMode = ListViewReorderMode.Animated,

@@ -2,12 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IModalManager : IService
     {
         public bool ShowModal(ModalContent content);
-        public bool ShowExportModal(IPackageVersion version, OrganizationInfo[] organizationInfos);
+        public void ShowExportModal(IPackageVersion version);
     }
 
     internal class ModalManager : BaseService<IModalManager>, IModalManager
@@ -17,14 +19,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IResourceLoader m_ResourceLoader;
         private readonly IUnityConnectProxy m_UnityConnectProxy;
         private readonly IUpmClient m_UpmClient;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
 
-        public ModalManager(IApplicationProxy applicationProxy, IIOProxy ioProxy, IResourceLoader resourceLoader, IUnityConnectProxy unityConnectProxy, IUpmClient upmClient)
+        public ModalManager(IApplicationProxy applicationProxy, IIOProxy ioProxy, IResourceLoader resourceLoader, IUnityConnectProxy unityConnectProxy, IUpmClient upmClient, IProjectSettingsProxy settingsProxy)
         {
             m_ApplicationProxy = RegisterDependency(applicationProxy);
             m_IOProxy = RegisterDependency(ioProxy);
             m_ResourceLoader = RegisterDependency(resourceLoader);
             m_UnityConnectProxy = RegisterDependency(unityConnectProxy);
             m_UpmClient = RegisterDependency(upmClient);
+            m_SettingsProxy = RegisterDependency(settingsProxy);
         }
 
         public bool ShowModal(ModalContent content)
@@ -32,9 +36,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             return ModalWindowContainer.ShowModal(content);
         }
 
-        public bool ShowExportModal(IPackageVersion version, OrganizationInfo[] organizationInfos)
+        public void ShowExportModal(IPackageVersion version)
         {
-            var content = new ExportWindowContent(m_ApplicationProxy, m_IOProxy, m_ResourceLoader, m_UnityConnectProxy, m_UpmClient, version);
+            if (m_SettingsProxy.isSignatureDisabled)
+            {
+                ShowExportModal(version, Array.Empty<OrganizationInfo>());
+                return;
+            }
+
+            m_UnityConnectProxy.ParseOrganizationInfosAsync(organizationInfos => ShowExportModal(version, organizationInfos));
+        }
+
+        private bool ShowExportModal(IPackageVersion version, OrganizationInfo[] organizationInfos)
+        {
+            var content = new ExportWindowContent(m_ApplicationProxy, m_IOProxy, m_ResourceLoader, m_UnityConnectProxy, m_UpmClient, m_SettingsProxy, version);
             content.SetOrganizationInfos(organizationInfos);
             return ModalWindowContainer.ShowModal(content);
         }

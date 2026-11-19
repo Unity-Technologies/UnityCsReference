@@ -6,6 +6,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.Bindings;
 
 namespace Unity.UIToolkit.Editor;
@@ -14,7 +15,6 @@ namespace Unity.UIToolkit.Editor;
 /// This class represents a popup as a real window or an in-UI popup.
 /// </summary>
 [UxmlElement]
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 partial class Popup : VisualElement
 {
     /// <summary>
@@ -30,15 +30,6 @@ partial class Popup : VisualElement
     /// </summary>
     public const string RealWindowUssClassName = UssClassName + "--real-window";
 
-    /// <summary>
-    /// Cached screen rect of the anchored element.
-    /// This is used to position the popup when it is displayed as a real window.
-    /// The anchored element should set this property before showing the popup to ensure that the popup is positioned
-    /// correctly. If this property is not set, the popup will use the current screen rect of the anchored element,
-    /// which may not be accurate if the anchored element has moved since the last time it was shown.
-    /// </summary>
-    public const string k_AnchoredElementCachedScreenRectVEPropertyName = "Popup_AnchoredElementCachedScreenRect";
-
     private const string k_StyleSheet = "UIToolkitAuthoring/Inspector/Controls/Popup.uss";
     private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/Controls/PopupDark.uss";
     private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/Controls/PopupLight.uss";
@@ -49,7 +40,6 @@ partial class Popup : VisualElement
     const int k_PopupElementMinWidth = 250;
 
     VisualElement m_AnchoredElement;
-    Rect m_AnchoredElementScreenPos;
 
     bool m_UsesRealWindow;
     PopupWindow m_Window;
@@ -156,24 +146,6 @@ partial class Popup : VisualElement
     /// </summary>
     public virtual void Show()
     {
-        if (m_AnchoredElement == null)
-        {
-            var mousePos = Event.current != null ? GUIUtility.GUIToScreenPoint(Event.current.mousePosition) : Vector2.zero;
-            m_AnchoredElementScreenPos = new Rect(mousePos, Vector2.zero);
-        }
-        else
-        {
-            if (m_AnchoredElement.HasProperty(k_AnchoredElementCachedScreenRectVEPropertyName))
-            {
-                m_AnchoredElementScreenPos =
-                    (Rect)m_AnchoredElement.GetProperty(k_AnchoredElementCachedScreenRectVEPropertyName);
-            }
-            else
-            {
-                m_AnchoredElementScreenPos = GUIUtility.GUIToScreenRect(m_AnchoredElement.worldBound);
-            }
-        }
-
         OnShow?.Invoke();
         m_Window?.Close();
 
@@ -182,11 +154,15 @@ partial class Popup : VisualElement
         // Create a new window
         if (UsesRealWindow)
         {
+            var anchorScreenRect = m_AnchoredElement == null
+                ? new Rect(UnityEditor.Editor.GetCurrentMousePosition(), Vector2.zero)
+                : GetAnchoredElementScreenRect();
+
             m_Window = ScriptableObject.CreateInstance<PopupWindow>();
             var windowWidth = Mathf.Max(k_PopupWindowMinWidth, m_AnchoredElement != null ? m_AnchoredElement.worldBound.width : 0);
             const float windowHeight = 30;
 
-            m_Window.ShowAsDropDown(m_AnchoredElementScreenPos, new Vector2(windowWidth, windowHeight), null, ShowMode.PopupMenu, false);
+            m_Window.ShowAsDropDown(anchorScreenRect,new Vector2(windowWidth, windowHeight), null, ShowMode.PopupMenu, false);
 
             // Reset the min and max size of the window
             m_Window.minSize = Vector2.zero;
@@ -269,9 +245,9 @@ partial class Popup : VisualElement
         {
             if (UsesRealWindow)
             {
-                if (m_Window != null && !float.IsNaN(layout.width) && !float.IsNaN(layout.height))
+                if (m_Window != null && m_AnchoredElement.panel != null && !float.IsNaN(layout.width) && !float.IsNaN(layout.height))
                 {
-                    var pos = m_AnchoredElementScreenPos;
+                    var pos = GetAnchoredElementScreenRect();
 
                     pos.y += m_AnchoredElement.layout.height;
 
@@ -293,6 +269,11 @@ partial class Popup : VisualElement
                 style.width = (!float.IsNaN(parentWidth) && parentWidth > 0) ? Math.Min(parentWidth, anchorWidth) : anchorWidth;
             }
         }
+    }
+
+    Rect GetAnchoredElementScreenRect()
+    {
+        return EditorMenuExtensions.GUIToScreenRect(m_AnchoredElement, m_AnchoredElement.worldBound);
     }
 
     /// <summary>

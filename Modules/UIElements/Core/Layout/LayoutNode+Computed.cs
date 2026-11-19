@@ -91,6 +91,20 @@ unsafe partial struct LayoutNode
     public ReadOnlySpan<float> GridResolvedRowSizes => GetGridTracks(GridTrackSegment.RowSizes);
     public ReadOnlySpan<float> GridResolvedRowOffsets => GetGridTracks(GridTrackSegment.RowOffsets);
 
+    // Index of the track after grid line 1: lines before it add implicit tracks at the start.
+    public int GridResolvedExplicitColumnStart => GetGridExplicitStart(columns: true);
+    public int GridResolvedExplicitRowStart => GetGridExplicitStart(columns: false);
+
+    int GetGridExplicitStart(bool columns)
+    {
+        var handle = Layout.GridTracks;
+        if (handle == 0)
+            return 0;
+
+        LayoutNative.GetGridExplicitStart(m_Access.ManagerIndex, handle, out var columnStart, out var rowStart);
+        return columns ? columnStart : rowStart;
+    }
+
     enum GridTrackSegment
     {
         ColumnSizes,

@@ -218,7 +218,7 @@ namespace UnityEditor
     public enum ManagedStrippingLevel
     {
         Disabled = 0,
-        [Obsolete("ManagedStrippingLevel.Low is no longer supported. Use ManagedStrippingLevel.Minimal instead. (UnityUpgradable) -> Minimal")]
+        [Obsolete("ManagedStrippingLevel.Low is no longer supported. Use ManagedStrippingLevel.Minimal instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         Low = 1,
         Medium = 2,
@@ -592,7 +592,8 @@ namespace UnityEditor
 
         internal static extern void SetDirty();
 
-        internal static extern void CopySettingsToBuildProfilePlayerSettings(BuildProfilePlayerSettings buildProfilePlayerSettings);
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void CopyProjectSettingsToBuildProfilePlayerSettings(BuildProfilePlayerSettings buildProfilePlayerSettings);
 
         [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
         internal static extern BuildProfilePlayerSettings DeserializeBuildProfilePlayerSettingsFromYAMLString(string yamlSettings);
@@ -1817,6 +1818,10 @@ namespace UnityEditor
 
         [FreeFunction("GetPlayerSettings().GetDisableOldInputManagerSupport")]
         internal static extern bool GetDisableOldInputManagerSupport();
+
+        // 0: Input Manager, 1: Input System, 2: both
+        [FreeFunction("GetPlayerSettings().GetActiveInputHandler")]
+        internal static extern int GetActiveInputHandler();
 
         [FreeFunction("GetPlayerSettings().GetWindowsGamepadBackendHint")]
         internal static extern WindowsGamepadBackendHint GetWindowsGamepadBackendHint();

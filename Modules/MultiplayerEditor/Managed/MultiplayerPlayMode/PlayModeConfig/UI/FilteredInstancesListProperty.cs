@@ -42,12 +42,14 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
     readonly SerializedObject m_SerializedObject;
     readonly int m_CountLimit;
     readonly Dictionary<string, int> m_NameCounts = new();
+    readonly List<ControllerRuntime> m_ObservedRuntimes = new();
     int m_ServersCount = 0;
 
     internal NeedsTearDownDelegate NeedsTearDownOverride;
     internal Action<IPlayModeControllerItem> TearDownOverride;
     internal Func<string, string, string, string, bool> DisplayConfirmOverride;
     internal Func<IPlayModeControllerItem, bool> IsInstanceActiveOverride;
+    internal Func<IEnumerable<ControllerRuntime>> RuntimesOverride;
 
     public FilteredInstancesListProperty(OrchestratedScenario scenario, int countLimit)
     {
@@ -75,6 +77,8 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
         Add(m_ListView);
 
         this.TrackSerializedObjectValue(m_SerializedObject, _ => OnScenarioUpdated());
+        RegisterCallback<AttachToPanelEvent>(_ => ObserveRuntimes());
+        RegisterCallback<DetachFromPanelEvent>(_ => StopObservingRuntimes());
         OnScenarioUpdated();
     }
 
@@ -86,6 +90,10 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
 
     void OnScenarioUpdated()
     {
+        // Settings edits recreate the Scenario and its runtimes.
+        if (panel != null)
+            ObserveRuntimes();
+
         UpdateNameAndServersCount();
 
         var i = 0;
@@ -171,6 +179,47 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
         {
             element.RemoveFromClassList(className);
         }
+    }
+
+    void ObserveRuntimes()
+    {
+        StopObservingRuntimes();
+
+        var runtimes = RuntimesOverride != null ? RuntimesOverride() : m_Scenario.Scenario?.GetAllRuntimes();
+        if (runtimes == null)
+            return;
+
+        foreach (var runtime in runtimes)
+        {
+            runtime.StatusRefreshed += OnRuntimeStatusRefreshed;
+            m_ObservedRuntimes.Add(runtime);
+        }
+    }
+
+    void StopObservingRuntimes()
+    {
+        foreach (var runtime in m_ObservedRuntimes)
+            runtime.StatusRefreshed -= OnRuntimeStatusRefreshed;
+
+        m_ObservedRuntimes.Clear();
+    }
+
+    // Status refreshes fire on every node progress update, so only rebind when the edit guard is out of date.
+    void OnRuntimeStatusRefreshed(ControllerRuntime runtime, InstanceStatusData status)
+    {
+        var requiresRebind = false;
+        m_ListView.Query(className: k_ItemFieldUssClass).ForEach(field =>
+        {
+            if (field.userData is not Item item)
+                return;
+
+            var showsHelpBox = field.Q<HelpBox>(className: k_DisabledInstanceHelpBoxUssClass) != null;
+            if (showsHelpBox != IsInstanceActive(GetInstanceItemAtScenarioIndex(item.ScenarioIndex)))
+                requiresRebind = true;
+        });
+
+        if (requiresRebind)
+            m_ListView.RefreshItems();
     }
 
     IEnumerable<Item> GetAllInstancesOfType()

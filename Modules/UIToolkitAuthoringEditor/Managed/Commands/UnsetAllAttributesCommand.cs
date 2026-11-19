@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -105,8 +104,7 @@ internal sealed class UnsetAllAttributesCommand : Command<UnsetAllAttributesComm
                 templateAsset.serializedDataOverrides.Clear();
                 UxmlSerializer.CreateSerializedDataOverrides(VisualTreeAsset);
 
-                var currentStage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
-                currentStage?.RequestRefresh();
+                AuthoringContext.For(VisualElement).Session?.RequestRefresh();
             }
         }
         else

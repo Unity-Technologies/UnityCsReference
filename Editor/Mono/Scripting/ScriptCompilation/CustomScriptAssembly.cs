@@ -241,7 +241,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             "com.unity.ide.rider", // UUM-156130: UAC0005/6/7/20
             "com.unity.ide.visualstudio", // UUM-156135: UAC0005/6/7 in Testing folder for test runner integration
             "com.unity.addressables", // UAC0023
-            "com.unity.memoryprofiler", // UUM-156136: UAC0006
             "com.unity.purchasing", // UUM-156137: UAC0005
             "com.unity.learn.iet-framework", // UUM-156139: UAC0005
             "com.unity.polyspatial", // UUM-156140: UAC0005/7
@@ -251,7 +250,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             "com.unity.barracuda", // to be deprecated
             "com.unity.xrtools.utils", // to be deprecated
             "com.unity.test-framework", // UUM-156148: UAC0007
-            "com.unity.netcode", // UUM-156149: UAC0005
             "com.unity.package-validation-suite", // UUM-156151: UAC0005/7
             "com.unity.xr.legacyinputhelpers", // UUM-156154: CS0618: obsolete FindObjectsOfType
             "com.unity.ads", // UUM-156156: CS0168: unused variable
@@ -316,8 +314,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             "com.unity.ui.builder",
             "com.unity.ui.test-framework",
             "com.unity.visualeffectgraph",
-            "com.unity.xr.core-utils",
             "com.unity.xr.openxr",
+            "com.unity.xr.foundation",
         };
 
         [NoAutoStaticsCleanup] // immutable package ruleset file path computed once, safe to persist across reload

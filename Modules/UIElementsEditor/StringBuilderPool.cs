@@ -9,7 +9,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+[VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 internal static class StringBuilderPool
 {
     [NoAutoStaticsCleanup]

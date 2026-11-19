@@ -32,6 +32,9 @@ namespace UnityEngine.UIElements
         public Action<VisualElement> onChanged;
         public ComponentBindingDispatcher bindingDispatcher;
 
+        // Set by VisualElement.RegisterComponentStyleSync; null for a type whose generated code uses CustomStyleResolvedEvent.
+        public Action<VisualElement> styleSync;
+
         // Number of live slots for this type. Mutated on the main thread only: incremented by
         // AddComponent, decremented when the deferred free is drained by Collect().
         public int liveCount;
@@ -127,7 +130,7 @@ namespace UnityEngine.UIElements
     /// <c>LayoutManager.SharedManager</c>: a lazily created singleton with a concurrent free-queue
     /// drained on the main thread by <see cref="Collect"/>.
     /// </summary>
-    partial class ComponentManager
+    partial class ComponentManager : IPooledNativeStore
     {
         // Small default: enough for one chunk's worth of slots without an immediate resize.
         internal const int k_DefaultInitialCapacity = 32;
@@ -214,6 +217,7 @@ namespace UnityEngine.UIElements
         ComponentManager()
         {
             m_Index = s_NextManagerIndex++;
+            PooledNativeStores.Register(this);
         }
 
         // First call is always main-thread (VisualElements are main-thread only), so the state
@@ -475,11 +479,24 @@ namespace UnityEngine.UIElements
             return bytes;
         }
 
+        string IPooledNativeStore.storeName => "Components";
+
+        long IPooledNativeStore.GetBytesReserved() => GetUnmanagedBytesReserved();
+
+        long IPooledNativeStore.GetBytesUsed() => GetUnmanagedBytesUsed();
+
+        void IPooledNativeStore.ReleasePendingSlots()
+        {
+            while (m_ToFree.Count > 0)
+                Collect();
+        }
+
         void DisposeAll()
         {
             // Don't unsubscribe (the dispatcher clears subscribers) and don't null s_SharedManager: this hook
             // runs before the code-reload statics cleanup, which resets both fields.
             s_State = SharedManagerState.Shutdown;
+            PooledNativeStores.Unregister(this);
 
             // Pin the weakly-tracked managed boxes before any hook runs. From here on a finalizer drops its
             // slots without enqueueing (the state above closed that road), so a box's element is no longer

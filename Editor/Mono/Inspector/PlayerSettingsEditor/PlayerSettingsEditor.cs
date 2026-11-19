@@ -170,7 +170,7 @@ namespace UnityEditor
             public static readonly GUIContent runInBackground = L10n.TextContent("Run In Background*", null, null, null);
             public static readonly GUIContent callOnDisableOnAssetBundleUnload = L10n.TextContent("Call OnDisable On AssetBundle Unload", "Call OnDisable on MonoBehaviours and ScriptableObjects when unloading AssetBundles", null, null);
             public static readonly GUIContent defaultIsNativeResolution = L10n.TextContent("Default Is Native Resolution", null, null, null);
-            public static readonly GUIContent defaultScreenOrientation = L10n.TextContent("Default Orientation*", null, null, null);
+            public static readonly GUIContent defaultScreenOrientation = L10n.TextContent("Default Orientation*", "The orientation the application starts in.\n\nAndroid: On devices with large screens, such as tablets and unfolded foldables, Android can ignore a fixed orientation and letterbox the application instead of rotating the screen. Use Auto Rotation to support these devices.", null, null);
             public static readonly GUIContent allowedAutoRotateToPortrait = L10n.TextContent("Portrait", null, null, null);
             public static readonly GUIContent allowedAutoRotateToPortraitUpsideDown = L10n.TextContent("Portrait Upside Down", null, null, null);
             public static readonly GUIContent allowedAutoRotateToLandscapeRight = L10n.TextContent("Landscape Right", null, null, null);
@@ -2313,9 +2313,9 @@ namespace UnityEditor
                 return;
 
             GraphicsDeviceType[] availableDevices = PlayerSettings.GetSupportedGraphicsAPIs(targetPlatform);
-            // if no devices (e.g. no platform module), or we only have one possible choice, then no
-            // point in having any UI
-            if (availableDevices == null || availableDevices.Length < 2)
+            // If there is a single API that is UGK capable, we will still show a list as we can select API + API (UGK).
+            GraphicsDeviceType[] ugkCapableDevices = PlayerSettings.GetUGKCapableGraphicsAPIs(targetPlatform) ?? Array.Empty<GraphicsDeviceType>();
+            if (availableDevices == null || availableDevices.Length + ugkCapableDevices.Length < 2)
                 return;
 
 
@@ -4956,92 +4956,98 @@ namespace UnityEditor
             return GetGUIContentsForValues(m_NiceManagedStrippingLevelNames, managedStrippingLevels);
         }
 
-        internal static void BuildPathBoxButton(SerializedProperty prop, string uiString, string directory)
+        static bool DrawPathBox(Rect rect, GUIContent label, string pathText)
         {
-            BuildPathBoxButton(prop, uiString, directory, null, null);
-        }
-
-        internal static void BuildPathBoxButton(SerializedProperty prop, string uiString, string directory, Action onSelect, Action onChanged)
-        {
-            float h = EditorGUI.kSingleLineHeight;
-            float kLabelFloatMinW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
-            float kLabelFloatMaxW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
-            Rect r = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, h, h, EditorStyles.layerMaskField, null);
-
             float labelWidth = EditorGUIUtility.labelWidth;
-            Rect buttonRect = new Rect(r.x + EditorGUI.indent, r.y, labelWidth - EditorGUI.indent, r.height);
-            Rect fieldRect = new Rect(r.x + labelWidth, r.y, r.width - labelWidth, r.height);
+            var buttonRect = new Rect(rect.x + EditorGUI.indent, rect.y, labelWidth - EditorGUI.indent, rect.height);
+            var fieldRect = new Rect(rect.x + labelWidth, rect.y, rect.width - labelWidth, rect.height);
 
-            string display = (prop.stringValue.Length == 0) ? "Not selected" : prop.stringValue;
-            EditorGUI.LabelField(fieldRect, display, EditorStyles.label);
-
-            bool changed = false;
-            if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
-            {
-                string prevVal = prop.stringValue;
-                string path = EditorUtility.OpenFolderPanel(EditorGUIUtility.TextContent(uiString).text, directory, "");
-
-                string relPath = FileUtil.GetProjectRelativePath(path);
-                prop.stringValue = (relPath != string.Empty) ? relPath : path;
-                changed = (prop.stringValue != prevVal);
-
-                if (onSelect != null)
-                    onSelect();
-
-                prop.serializedObject.ApplyModifiedProperties();
-
-                if (changed && onChanged != null)
-                    onChanged();
-
-                // Necessary to avoid the error "BeginLayoutGroup must be called first".
-                GUIUtility.ExitGUI();
-            }
+            EditorGUI.LabelField(fieldRect, pathText, EditorStyles.label);
+            return GUI.Button(buttonRect, label);
         }
 
-        internal static void BuildFileBoxButton(SerializedProperty prop, string uiString, string directory, string ext)
+        internal static bool FolderBoxButton(Rect rect, GUIContent label, string pathText, string directory,
+            out string selectedFolderPath)
         {
-            BuildFileBoxButton(prop, uiString, directory, ext, null, null);
+            bool clicked = DrawPathBox(rect, label, pathText);
+            selectedFolderPath = clicked ? EditorUtility.OpenFolderPanel(label.text, directory, "") : string.Empty;
+            return clicked;
         }
 
-        internal static void BuildFileBoxButton(SerializedProperty prop, string uiString, string directory,
-            string ext, Action onSelect, Action onChanged)
+        internal static bool FileBoxButton(Rect rect, GUIContent label, string pathText, string directory, string fileExtension,
+            out string selectedFilePath)
         {
-            bool changed = false;
-            using (var vertical = new EditorGUILayout.VerticalScope())
-            using (new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, prop))
+            bool clicked = DrawPathBox(rect, label, pathText);
+            selectedFilePath = clicked ? EditorUtility.OpenFilePanel(label.text, directory, fileExtension) : string.Empty;
+            return clicked;
+        }
+
+        internal delegate bool ValidateSelectedPath(string path);
+        internal delegate void CommitSelectedPath(SerializedProperty property, string path);
+        delegate bool PathBoxButton(Rect rect, string pathText, out string selectedPath);
+
+        internal static void FileBoxFieldForProperty(SerializedProperty property, GUIContent label, string directory, string fileExtension)
+        {
+            FileBoxFieldForProperty(property, label, directory, fileExtension, null, null);
+        }
+
+        internal static void FileBoxFieldForProperty(SerializedProperty property, GUIContent label, string directory, string fileExtension,
+            ValidateSelectedPath validateFilePath, CommitSelectedPath commitFilePath)
+        {
+            PathBoxFieldForProperty(property,
+                (Rect rect, string pathText, out string selectedPath) => FileBoxButton(rect, label, pathText, directory, fileExtension, out selectedPath),
+                validateFilePath, commitFilePath);
+        }
+
+        internal static void FolderBoxFieldForProperty(SerializedProperty property, GUIContent label, string directory)
+        {
+            FolderBoxFieldForProperty(property, label, directory, null, null);
+        }
+
+        internal static void FolderBoxFieldForProperty(SerializedProperty property, GUIContent label, string directory,
+            ValidateSelectedPath validateFolderPath, CommitSelectedPath commitFolderPath)
+        {
+            PathBoxFieldForProperty(property,
+                (Rect rect, string pathText, out string selectedPath) => FolderBoxButton(rect, label, pathText, directory, out selectedPath),
+                validateFolderPath, commitFolderPath);
+        }
+
+        static void PathBoxFieldForProperty(SerializedProperty property, PathBoxButton pathBoxButton,
+            ValidateSelectedPath validateSelectedPath, CommitSelectedPath commitPathOverride)
+        {
+            const string pathIsEmptyPlaceholder = "Not Selected";
+            string path = string.IsNullOrEmpty(property.stringValue) ? pathIsEmptyPlaceholder : property.stringValue;
+            Rect rect = EditorGUILayout.GetControlRect();
+            using (new EditorGUI.PropertyScope(rect, GUIContent.none, property))
             {
-                float h = EditorGUI.kSingleLineHeight;
-                float kLabelFloatMinW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
-                float kLabelFloatMaxW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
-                Rect r = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, h, h, EditorStyles.layerMaskField, null);
+                if (!pathBoxButton(rect, path, out var selectedPath))
+                    return;
 
-                float labelWidth = EditorGUIUtility.labelWidth;
-                Rect buttonRect = new Rect(r.x + EditorGUI.indent, r.y, labelWidth - EditorGUI.indent, r.height);
-                Rect fieldRect = new Rect(r.x + labelWidth, r.y, r.width - labelWidth, r.height);
-
-                string display = (prop.stringValue.Length == 0) ? "Not selected" : prop.stringValue;
-                EditorGUI.LabelField(fieldRect, display, EditorStyles.label);
-
-                if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
+                if (string.IsNullOrEmpty(selectedPath))
                 {
-                    string prevVal = prop.stringValue;
-                    string path = EditorUtility.OpenFilePanel(EditorGUIUtility.TextContent(uiString).text, directory, ext);
-
-                    string relPath = FileUtil.GetProjectRelativePath(path);
-                    prop.stringValue = (relPath != string.Empty) ? relPath : path;
-                    changed = (prop.stringValue != prevVal);
-
-                    if (onSelect != null)
-                        onSelect();
-
-                    prop.serializedObject.ApplyModifiedProperties();
-
-                    if (changed && onChanged != null)
-                        onChanged();
-
-                    // Necessary to avoid the error "BeginLayoutGroup must be called first".
-                    GUIUtility.ExitGUI();
+                    selectedPath = null;
                 }
+                else
+                {
+                    string relativePath = FileUtil.GetProjectRelativePath(selectedPath);
+                    if (relativePath != string.Empty)
+                        selectedPath = relativePath;
+                }
+
+                if (validateSelectedPath == null || validateSelectedPath(selectedPath))
+                {
+                    if (commitPathOverride != null)
+                    {
+                        commitPathOverride(property, selectedPath);
+                    }
+                    else
+                    {
+                        property.stringValue = selectedPath ?? string.Empty;
+                        property.serializedObject.ApplyModifiedProperties();
+                    }
+                }
+
+                GUIUtility.ExitGUI();
             }
         }
 

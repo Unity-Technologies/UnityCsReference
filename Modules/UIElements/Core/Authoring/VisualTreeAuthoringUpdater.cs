@@ -209,6 +209,15 @@ namespace UnityEngine.UIElements
             m_ProcessorRegistrationList.Remove(processor);
         }
 
+        // Every processor is detached by the next update
+        internal int UnregisterAllProcessors()
+        {
+            m_ProcessorRegistrationList.Clear();
+            foreach (var processor in m_RegisteredProcessors)
+                UnregisterProcessor(processor);
+            return m_RegisteredProcessors.Count;
+        }
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             if (!m_AccumulatingChanges)

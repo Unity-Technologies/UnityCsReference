@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using Object = UnityEngine.Object;
+using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 
@@ -24,6 +25,16 @@ namespace UnityEditor
         public string value;
         // The value being applied when it is a object reference (which can not be represented as a string)
         public Object objectReference;
+        // Names the target even when it is a data component, which has no Object for `target` to hold.
+        // A non-null `target` wins over this id. Valid for the current session only; store a GlobalObjectId instead.
+        internal EntityId targetEntityId
+        {
+            get => m_TargetEntityId;
+            set => m_TargetEntityId = value;
+        }
+
+        // Matches the native field by name, so it must stay a field.
+        EntityId m_TargetEntityId;
 
         internal void Apply()
         {

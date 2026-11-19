@@ -429,23 +429,23 @@ namespace Unity.Mathematics
         /// <param name="x">The quaternion to compare with.</param>
         /// <returns>True if the quaternion is equal to the input, false otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(quaternion x) { return value.x == x.value.x && value.y == x.value.y && value.z == x.value.z && value.w == x.value.w; }
+        public readonly bool Equals(quaternion x) { return value.x == x.value.x && value.y == x.value.y && value.z == x.value.z && value.w == x.value.w; }
 
         /// <summary>Returns whether true if the quaternion is equal to a given quaternion, false otherwise.</summary>
         /// <param name="x">The object to compare with.</param>
         /// <returns>True if the quaternion is equal to the input, false otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals(object x) { return x is quaternion converted && Equals(converted); }
+        public readonly override bool Equals(object x) { return x is quaternion converted && Equals(converted); }
 
         /// <summary>Returns a hash code for the quaternion.</summary>
         /// <returns>The hash code of the quaternion.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() { return (int)math.hash(this); }
+        public readonly override int GetHashCode() { return (int)math.hash(this); }
 
         /// <summary>Returns a string representation of the quaternion.</summary>
         /// <returns>The string representation of the quaternion.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override string ToString()
+        public readonly override string ToString()
         {
             return string.Format("quaternion({0}f, {1}f, {2}f, {3}f)", value.x, value.y, value.z, value.w);
         }
@@ -455,7 +455,7 @@ namespace Unity.Mathematics
         /// <param name="formatProvider">The format provider to use during string formatting.</param>
         /// <returns>The formatted string representation of the quaternion.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             return string.Format("quaternion({0}f, {1}f, {2}f, {3}f)", value.x.ToString(format, formatProvider), value.y.ToString(format, formatProvider), value.z.ToString(format, formatProvider), value.w.ToString(format, formatProvider));
         }
@@ -582,11 +582,13 @@ namespace Unity.Mathematics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion unitexp(quaternion q)
         {
-            float v_rcp_len = rsqrt(dot(q.value.xyz, q.value.xyz));
+            float v_len_sq = dot(q.value.xyz, q.value.xyz);
+            float v_rcp_len = rsqrt(v_len_sq);
             float v_len = rcp(v_rcp_len);
             float sin_v_len, cos_v_len;
             sincos(v_len, out sin_v_len, out cos_v_len);
-            return quaternion(float4(q.value.xyz * v_rcp_len * sin_v_len, cos_v_len));
+            float3 xyz = select(q.value.xyz * v_rcp_len * sin_v_len, q.value.xyz, v_len_sq == 0.0f);
+            return quaternion(float4(xyz, cos_v_len));
         }
 
         /// <summary>Returns the natural exponent of a quaternion.</summary>
@@ -595,11 +597,13 @@ namespace Unity.Mathematics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion exp(quaternion q)
         {
-            float v_rcp_len = rsqrt(dot(q.value.xyz, q.value.xyz));
+            float v_len_sq = dot(q.value.xyz, q.value.xyz);
+            float v_rcp_len = rsqrt(v_len_sq);
             float v_len = rcp(v_rcp_len);
             float sin_v_len, cos_v_len;
             sincos(v_len, out sin_v_len, out cos_v_len);
-            return quaternion(float4(q.value.xyz * v_rcp_len * sin_v_len, cos_v_len) * exp(q.value.w));
+            float3 xyz = select(q.value.xyz * v_rcp_len * sin_v_len, q.value.xyz, v_len_sq == 0.0f);
+            return quaternion(float4(xyz, cos_v_len) * exp(q.value.w));
         }
 
         /// <summary>Returns the natural logarithm of a unit length quaternion.</summary>
@@ -608,9 +612,11 @@ namespace Unity.Mathematics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static quaternion unitlog(quaternion q)
         {
-            float w = clamp(q.value.w, -1.0f, 1.0f);
-            float s = acos(w) * rsqrt(1.0f - w*w);
-            return quaternion(float4(q.value.xyz * s, 0.0f));
+            float v_len_sq = dot(q.value.xyz, q.value.xyz);
+            float v_len = sqrt(v_len_sq);
+            float s = atan2(v_len, q.value.w) * rcp(v_len);
+            float3 xyz = select(q.value.xyz * s, 0.0f, v_len_sq == 0.0f);
+            return quaternion(float4(xyz, 0.0f));
         }
 
         /// <summary>Returns the natural logarithm of a quaternion.</summary>
@@ -620,10 +626,11 @@ namespace Unity.Mathematics
         public static quaternion log(quaternion q)
         {
             float v_len_sq = dot(q.value.xyz, q.value.xyz);
-            float q_len_sq = v_len_sq + q.value.w*q.value.w;
-
-            float s = acos(clamp(q.value.w * rsqrt(q_len_sq), -1.0f, 1.0f)) * rsqrt(v_len_sq);
-            return quaternion(float4(q.value.xyz * s, 0.5f * log(q_len_sq)));
+            float q_len_sq = v_len_sq + q.value.w * q.value.w;
+            float v_len = sqrt(v_len_sq);
+            float s = atan2(v_len, q.value.w) * rcp(v_len);
+            float3 xyz = select(q.value.xyz * s, 0.0f, v_len_sq == 0);
+            return quaternion(float4(xyz, 0.5f * log(q_len_sq)));
         }
 
         /// <summary>Returns the result of transforming the quaternion b by the quaternion a.</summary>

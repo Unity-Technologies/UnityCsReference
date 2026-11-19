@@ -25,10 +25,8 @@ namespace Unity.UIToolkit.Editor
         // them. The defaults match the legacy values we used to read from "Scene/RectTransform
         // Wire" (white) and Handles.UIColliderHandleColor (uGUI's soft green).
         const string k_SceneViewCategory = "Scene View";
-        [NoAutoStaticsCleanup] // editor pref-color, safe to persist
         static readonly UIPrefColor s_PanelSelectionColor =
             new(k_SceneViewCategory, "Panel Selection", new Color(1f, 1f, 1f, 1f));
-        [NoAutoStaticsCleanup] // editor pref-color, safe to persist
         static readonly UIPrefColor s_VisualElementSelectionColor =
             new(k_SceneViewCategory, "VisualElement Selection", new Color(145f / 255f, 244f / 255f, 139f / 255f, 210f / 255f));
 
@@ -37,7 +35,7 @@ namespace Unity.UIToolkit.Editor
         {
             SceneView.duringSceneGui += OnSceneGUI;
             Selection.selectionChanged += OnSelectionChanged;
-            UICommandQueue.RegisterHandler<RequestFramingCommand>(OnFramingRequested);
+            AuthoringContext.Global.Messages.RegisterHandler<RequestFramingCommand>(OnFramingRequested);
 
             // Undo can rebuild the panel (live-reload after asset revert) and may fire transient
             // selection events; re-collect so the overlay doesn't disappear after Ctrl+Z.
@@ -49,7 +47,7 @@ namespace Unity.UIToolkit.Editor
         {
             SceneView.duringSceneGui -= OnSceneGUI;
             Selection.selectionChanged -= OnSelectionChanged;
-            UICommandQueue.UnregisterHandler<RequestFramingCommand>(OnFramingRequested);
+            AuthoringContext.Global.Messages.UnregisterHandler<RequestFramingCommand>(OnFramingRequested);
             Undo.undoRedoPerformed -= OnSelectionChanged;
         }
 

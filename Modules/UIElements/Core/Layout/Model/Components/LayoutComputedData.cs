@@ -42,6 +42,7 @@ unsafe struct LayoutComputedData
     public uint GenerationCount;
     public float LastPointScaleFactor;
     public fixed float MeasuredDimensions[2];
+    public fixed float RawPosition[2];
 
     // Narrow fields grouped last so they pack into the struct's final 8 bytes; native LayoutLayoutData mirrors this order.
     byte m_Direction;

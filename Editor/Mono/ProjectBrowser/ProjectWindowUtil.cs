@@ -406,7 +406,6 @@ namespace UnityEditor
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal class DoCreateAssetWithContent : AssetCreationEndAction
         {
             public string filecontent;

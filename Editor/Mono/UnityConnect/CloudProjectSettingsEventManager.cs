@@ -56,23 +56,10 @@ namespace UnityEditor
             RegisterToUnityConnectEvents();
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
-        ~CloudProjectSettingsEventManager()
-        {
-            UnregisterToUnityConnectEvents();
-        }
-#pragma warning restore UA5000
-
         void RegisterToUnityConnectEvents()
         {
             UnityConnect.instance.ProjectStateChanged += OnProjectStateChanged;
             UnityConnect.instance.ProjectRefreshed += OnProjectRefreshed;
-        }
-
-        void UnregisterToUnityConnectEvents()
-        {
-            UnityConnect.instance.ProjectStateChanged -= OnProjectStateChanged;
-            UnityConnect.instance.ProjectRefreshed -= OnProjectRefreshed;
         }
 
         void OnProjectStateChanged(ProjectInfo projectInfo)

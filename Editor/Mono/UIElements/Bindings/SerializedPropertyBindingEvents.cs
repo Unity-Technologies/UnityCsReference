@@ -159,7 +159,7 @@ namespace UnityEditor.UIElements
     }
 
     [EventCategory(EventCategory.Bind)]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class SerializedPropertyBindEvent : EventBase<SerializedPropertyBindEvent>
     {
         static SerializedPropertyBindEvent()

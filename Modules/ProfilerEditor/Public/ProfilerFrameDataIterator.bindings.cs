@@ -35,17 +35,20 @@ namespace UnityEditorInternal
             GC.SuppressFinalize(this);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Releases the native handle; Internal_Destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
         ~ProfilerFrameDataIterator()
         {
             FreeNativeResources();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         [NativeMethod("GetNext")]
         public extern bool Next(bool enterChildren);
 
         public extern int GetThreadCount(int frame);
+
+        // Index of the GPU thread, which GetThreadCount does not include; -1 when the frame has none.
+        internal extern int GetGpuThreadIndex(int frame);
 
         public extern double GetFrameStartS(int frame);
         public extern int GetGroupCount(int frame);

@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.UIElements;
 
@@ -244,6 +245,7 @@ namespace Unity.Profiling.Editor
 
         internal bool active
         {
+            [VisibleToOtherModules("UnityEditor.NetworkProfilerModule")]
             get => m_Active;
             set
             {
@@ -314,6 +316,7 @@ namespace Unity.Profiling.Editor
         // For ProfilerModuleBase to access private property.
         private protected string[] GetAutoEnabledCategoryNames => AutoEnabledCategoryNames;
 
+        [VisibleToOtherModules("UnityEditor.NetworkProfilerModule")]
         internal virtual void OnEnable()
         {
             // Read pinned state before active. The active-setter calls PlaceChartViewInContainer,
@@ -326,6 +329,7 @@ namespace Unity.Profiling.Editor
             ProfilerWindow.SelectedFrameIndexChanged += SelectedFrameIndexChanged;
         }
 
+        [VisibleToOtherModules("UnityEditor.NetworkProfilerModule")]
         internal virtual void OnDisable()
         {
             ProfilerWindow.SelectedFrameIndexChanged -= SelectedFrameIndexChanged;
@@ -383,6 +387,7 @@ namespace Unity.Profiling.Editor
             m_ChartViewController = null;
         }
 
+        [VisibleToOtherModules("UnityEditor.NetworkProfilerModule")]
         internal virtual void Clear()
         {
             m_LastUpdatedFrameIndex = k_NoFrameIndex;

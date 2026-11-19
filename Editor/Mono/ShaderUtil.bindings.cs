@@ -121,7 +121,6 @@ namespace UnityEditor
     {
         extern internal static int GetAvailableShaderCompilerPlatforms();
 
-        extern internal static bool HasSurfaceShaders([NotNull] Shader s);
         extern internal static bool HasFixedFunctionShaders([NotNull] Shader s);
         extern internal static bool HasShaderSnippets([NotNull] Shader s);
         extern internal static bool HasInstancing([NotNull] Shader s);
@@ -240,7 +239,6 @@ namespace UnityEditor
         extern internal static void OpenCompiledShader(Shader shader, int mode, int externPlatformsMask, bool includeAllVariants, bool preprocessOnly, bool stripLineDirectives);
 
         extern internal static void OpenCompiledComputeShader(ComputeShader shader, bool allVariantsAndPlatforms, bool showPreprocessed, bool stripLineDirectives);
-        extern internal static void OpenParsedSurfaceShader(Shader shader);
         extern internal static void OpenGeneratedFixedFunctionShader(Shader shader);
         extern internal static void OpenShaderCombinations(Shader shader, bool usedBySceneOnly);
         extern internal static void OpenSystemShaderIncludeError(string includeName, int line);
@@ -300,7 +298,7 @@ namespace UnityEditor
         extern public static bool IsPassCompiled([NotNull] Material material, int pass);
         extern public static void CompilePass([NotNull] Material material, int pass, bool forceSync = false);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static MaterialProperty[] GetMaterialProperties(UnityEngine.Object[] mats)
         {
             if ((mats == null) || (mats.Length == 0))

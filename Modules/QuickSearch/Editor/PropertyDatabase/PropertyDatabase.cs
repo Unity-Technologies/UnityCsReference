@@ -119,12 +119,12 @@ namespace UnityEditor.Search
             GC.SuppressFinalize(this);
         }
 
-#pragma warning disable UA5000 // Releases the static s_DatabaseFiles refcount under lock; removing it would leak entries when Dispose is missed.
+#pragma warning disable UAC0045 // Releases the static s_DatabaseFiles refcount under lock; removing it would leak entries when Dispose is missed.
         ~PropertyDatabaseLock()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         void Dispose(bool disposed)
         {
@@ -641,12 +641,12 @@ namespace UnityEditor.Search
             }
         }
 
-#pragma warning disable UA5000 // Disposes the debounce delayer and the database lock (static refcount); safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Disposes the debounce delayer and the database lock (static refcount); safety net when Dispose is missed.
         ~PropertyDatabase()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
     }
 
     struct PropertyDatabaseView : IPropertyDatabaseView

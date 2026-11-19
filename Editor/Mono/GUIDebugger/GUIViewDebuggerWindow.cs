@@ -443,7 +443,10 @@ namespace UnityEditor
 
             SplitterGUILayout.EndHorizontalSplit();
 
-            EditorGUIUtility.DrawHorizontalSplitter(new Rect(m_InstructionListDetailSplitter.realSizes[0] + 1, EditorGUI.kWindowToolbarHeight, 1, position.height));
+            var splitX = m_InstructionListDetailSplitter.realSizes[0];
+            var drawRect = new Rect(splitX + 1, EditorGUI.kWindowToolbarHeight, 1, position.height);
+            var hoverRect = new Rect(splitX - m_InstructionListDetailSplitter.splitSize / 2, EditorGUI.kWindowToolbarHeight, m_InstructionListDetailSplitter.splitSize, position.height);
+            EditorGUIUtility.DrawHorizontalSplitter(drawRect, hoverRect);
         }
     }
 

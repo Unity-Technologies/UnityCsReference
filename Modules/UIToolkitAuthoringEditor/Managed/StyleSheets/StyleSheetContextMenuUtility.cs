@@ -36,7 +36,7 @@ internal static class StyleSheetContextMenuUtility
         var isReadOnly = styleSheetHandler.IsReadOnly(node);
         // Document-level authoring needs an editable document: a UI Stage, or a scene document while Main
         // Stage authoring is enabled.
-        var canEdit = styleSheetHandler.Window is { IsReadOnly: false };
+        var canChangeStyleSheets = styleSheetHandler.View is { CanChangeStyleSheets: true };
 
         var copyMenu = k_EditFolderName + "/" + k_Copy;
         AppendAction(menu, k_Copy, Menu.GetHotkey(copyMenu), view.OnCopy, handler.CanCopy(view));
@@ -55,24 +55,24 @@ internal static class StyleSheetContextMenuUtility
 
         menu.AppendSeparator();
 
-        AppendAction(menu, k_CreateNewUss, Menu.GetHotkey(k_CreateNewUss), styleSheetHandler.Window.CreateStyleSheet, canEdit);
-        AppendAction(menu, k_AddExistingUss, Menu.GetHotkey(k_AddExistingUss), styleSheetHandler.Window.AddStyleSheet, canEdit);
-        AppendAction(menu, k_RemoveUss, Menu.GetHotkey(k_RemoveUss), () => styleSheetHandler.Window.RemoveStyleSheet(n), isStyleSheet && !isReadOnly);
+        AppendAction(menu, k_CreateNewUss, Menu.GetHotkey(k_CreateNewUss), styleSheetHandler.View.CreateStyleSheet, canChangeStyleSheets);
+        AppendAction(menu, k_AddExistingUss, Menu.GetHotkey(k_AddExistingUss), styleSheetHandler.View.AddStyleSheet, canChangeStyleSheets);
+        AppendAction(menu, k_RemoveUss, Menu.GetHotkey(k_RemoveUss), () => styleSheetHandler.View.RemoveStyleSheet(n), isStyleSheet && !isReadOnly && canChangeStyleSheets);
 
         // Only in the Main Stage: a UI Stage settles the document it edits as a whole.
         if (isStyleSheet && UIToolkitStageUtility.IsAuthoringActiveInMainStage)
         {
-            var canSettle = styleSheetHandler.Window?.CanSettleStyleSheet(n) ?? false;
+            var canSettle = styleSheetHandler.View?.CanSettleStyleSheet(n) ?? false;
 
             menu.AppendSeparator();
             AppendAction(menu, k_SaveUss, Menu.GetHotkey(k_SaveUss),
-                () => styleSheetHandler.Window.SaveStyleSheet(n), canSettle);
+                () => styleSheetHandler.View.SaveStyleSheet(n), canSettle);
             AppendAction(menu, k_DiscardUss, Menu.GetHotkey(k_DiscardUss),
-                () => styleSheetHandler.Window.DiscardStyleSheet(n), canSettle);
+                () => styleSheetHandler.View.DiscardStyleSheet(n), canSettle);
         }
 
         menu.AppendSeparator();
-        AppendAction(menu, k_SetActiveUss, Menu.GetHotkey(k_SetActiveUss),  () => styleSheetHandler.Window.SetActiveStyleSheet(n), isStyleSheet && !isReadOnly);
+        AppendAction(menu, k_SetActiveUss, Menu.GetHotkey(k_SetActiveUss),  () => styleSheetHandler.View.SetActiveStyleSheet(n), isStyleSheet && !isReadOnly);
     }
 
     static void AppendAction(DropdownMenu menu, string name, string hotkey, Action action, bool enabled = true)

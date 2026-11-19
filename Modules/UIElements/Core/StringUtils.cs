@@ -67,7 +67,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class StringUtilsExtensions
     {
         private static readonly char NoDelimiter = '\0'; //invalid character

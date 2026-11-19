@@ -8,7 +8,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UXMLConstants
     {
         const string k_WindowsNewlineChar = "\r\n";

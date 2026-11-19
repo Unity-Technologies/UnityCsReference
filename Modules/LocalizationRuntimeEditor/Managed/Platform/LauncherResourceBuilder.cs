@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using Android = Unity.Localization.Android;
 
@@ -15,7 +14,6 @@ static class LauncherResourceBuilder
 {
     // Lowest density to highest. The order is the contract the payload documents, so a writer can map position to
     // whatever its platform calls each density.
-    [NoAutoStaticsCleanup] // immutable lookup table
     static readonly Android.IconDensity[] k_Densities =
     {
         Android.IconDensity.Low,

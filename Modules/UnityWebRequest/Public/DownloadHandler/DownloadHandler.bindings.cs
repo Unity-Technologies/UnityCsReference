@@ -43,12 +43,12 @@ namespace UnityEngine.Networking
         internal DownloadHandler()
         {}
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Releases the native handler; ReleaseFromScripting is thread-safe, so it is the safety net when Dispose is missed.
         ~DownloadHandler()
         {
             Dispose();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         ///<summary>Signals that this <see cref="DownloadHandler" /> is no longer being used, and should clean up any resources it is using.</summary>
         ///<remarks>This method must be called once you have finished using a [DownloadHandler] object.
@@ -640,6 +640,101 @@ namespace UnityEngine.Networking
             public static IntPtr ConvertToNative(DownloadHandlerFile handler) => handler.m_Ptr;
         }
 
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerCallback.h")]
+    internal sealed class DownloadHandlerCallback : DownloadHandler
+    {
+        // Invoked on the transport thread; data is only valid until the delegate returns
+        internal delegate bool ReceiveDataCallback(ReadOnlySpan<byte> data);
+        internal delegate void ReceiveContentLengthCallback(ulong contentLength);
+        internal delegate void CompleteCallback();
+
+        private extern static IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerCallback obj);
+
+        private readonly ReceiveDataCallback m_OnReceiveData;
+        private readonly ReceiveContentLengthCallback m_OnReceiveContentLength;
+        private readonly CompleteCallback m_OnComplete;
+
+        internal DownloadHandlerCallback(ReceiveDataCallback onReceiveData, ReceiveContentLengthCallback onReceiveContentLength = null, CompleteCallback onComplete = null)
+        {
+            if (onReceiveData == null)
+                throw new ArgumentNullException(nameof(onReceiveData));
+
+            m_OnReceiveData = onReceiveData;
+            m_OnReceiveContentLength = onReceiveContentLength;
+            m_OnComplete = onComplete;
+            m_Ptr = Create(this);
+        }
+
+        protected override NativeArray<byte> GetNativeData()
+        {
+            throw new System.NotSupportedException("Raw data access is not supported");
+        }
+
+        protected override byte[] GetData()
+        {
+            throw new System.NotSupportedException("Raw data access is not supported");
+        }
+
+        protected override string GetText()
+        {
+            throw new System.NotSupportedException("String access is not supported");
+        }
+
+        [RequiredByNativeCode]
+        private static bool InvokeReceiveData(DownloadHandlerCallback handler, ReadOnlySpan<byte> data)
+        {
+            try
+            {
+                return handler.m_OnReceiveData(data);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                return false;
+            }
+        }
+
+        [RequiredByNativeCode]
+        private static bool InvokeReceiveContentLength(DownloadHandlerCallback handler, ulong contentLength)
+        {
+            if (handler.m_OnReceiveContentLength == null)
+                return true;
+
+            try
+            {
+                handler.m_OnReceiveContentLength(contentLength);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                return false;
+            }
+        }
+
+        [RequiredByNativeCode]
+        private static void InvokeComplete(DownloadHandlerCallback handler)
+        {
+            if (handler.m_OnComplete == null)
+                return;
+
+            try
+            {
+                handler.m_OnComplete();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(DownloadHandlerCallback handler) => handler.m_Ptr;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

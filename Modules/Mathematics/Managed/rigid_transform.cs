@@ -281,23 +281,23 @@ namespace Unity.Mathematics
         /// <param name="x">The RigidTransform to compare with.</param>
         /// <returns>True if the RigidTransform is equal to the input, false otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(RigidTransform x) { return rot.Equals(x.rot) && pos.Equals(x.pos); }
+        public readonly bool Equals(RigidTransform x) { return rot.Equals(x.rot) && pos.Equals(x.pos); }
 
         /// <summary>Returns true if the RigidTransform is equal to a given RigidTransform, false otherwise.</summary>
         /// <param name="x">The object to compare with.</param>
         /// <returns>True if the RigidTransform is equal to the input, false otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals(object x) { return x is RigidTransform converted && Equals(converted); }
+        public readonly override bool Equals(object x) { return x is RigidTransform converted && Equals(converted); }
 
         /// <summary>Returns a hash code for the RigidTransform.</summary>
         /// <returns>The hash code of the RigidTransform.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() { return (int)math.hash(this); }
+        public readonly override int GetHashCode() { return (int)math.hash(this); }
 
         /// <summary>Returns a string representation of the RigidTransform.</summary>
         /// <returns>The string representation of the RigidTransform.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override string ToString()
+        public readonly override string ToString()
         {
             return string.Format("RigidTransform(({0}f, {1}f, {2}f, {3}f),  ({4}f, {5}f, {6}f))",
                 rot.value.x, rot.value.y, rot.value.z, rot.value.w, pos.x, pos.y, pos.z);
@@ -308,7 +308,7 @@ namespace Unity.Mathematics
         /// <param name="formatProvider">The format provider to use during formatting.</param>
         /// <returns>The formatted string representation of the RigidTransform.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             return string.Format("float4x4(({0}f, {1}f, {2}f, {3}f),  ({4}f, {5}f, {6}f))",
                 rot.value.x.ToString(format, formatProvider),

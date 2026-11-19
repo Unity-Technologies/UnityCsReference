@@ -94,6 +94,8 @@ namespace UnityEditor
             }
         }
 
+        protected override bool CountsViewOfTracker => m_ParentInspectorWindow == null;
+
         protected override void CreateTracker()
         {
             if (m_ParentInspectorWindow != null)

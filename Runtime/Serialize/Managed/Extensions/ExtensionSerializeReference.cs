@@ -123,6 +123,12 @@ internal static unsafe partial class SerializationBackendManagedCommands
         GCHandle arrayHandle = GCHandle.Alloc(dataAsBytes);
         try
         {
+            if (cmd->elementWireBytes == sizeof(int))
+            {
+                V2ReadLegacySerializeReferenceArray(cmd, ctx, assignElements, arrayHandle, count, registerPaths, registerPath, pathSegments, pathNames);
+                return;
+            }
+
             int processed = 0;
             while (processed < count)
             {
@@ -158,6 +164,46 @@ internal static unsafe partial class SerializationBackendManagedCommands
         finally
         {
             arrayHandle.Free();
+        }
+    }
+
+    // Ids stored with the legacy int "id", which v1 reads widened to a RefId: widened in batches into a local buffer
+    // and assigned as the 8-byte ones are.
+    private static unsafe void V2ReadLegacySerializeReferenceArray(V2CmdExternalArray* cmd, NativeReadBufferContext* ctx,
+        delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, int, int, void> assignElements, GCHandle arrayHandle, int count,
+        bool registerPaths, delegate* unmanaged[Cdecl]<IntPtr, long, IntPtr, void> registerPath, byte* pathSegments, byte* pathNames)
+    {
+        const int kBatch = 64;
+        long* refIds = stackalloc long[kBatch];
+        int processed = 0;
+        while (processed < count)
+        {
+            if (ctx->readerEnd - ctx->readerPtr < sizeof(int))
+                InvokeEnsureReadable(ctx, sizeof(int));
+            int batch = (int)(ctx->readerEnd - ctx->readerPtr) / sizeof(int);
+            if (batch > kBatch)
+                batch = kBatch;
+            if (batch > count - processed)
+                batch = count - processed;
+            for (int i = 0; i < batch; ++i)
+                refIds[i] = Unsafe.ReadUnaligned<int>(ctx->readerPtr + i * sizeof(int));
+
+            assignElements(ctx->transferState, GCHandle.ToIntPtr(arrayHandle), (IntPtr)refIds, batch, processed);
+
+            if (registerPaths)
+            {
+                for (int i = 0; i < batch; ++i)
+                {
+                    byte[] identifier = BuildV2FuidIdentifier(pathSegments, pathNames, cmd->segment, default, processed + i);
+                    if (identifier == null)
+                        continue;
+                    fixed (byte* identifierPtr = identifier)
+                        registerPath(ctx->transferState, refIds[i], (IntPtr)identifierPtr);
+                }
+            }
+
+            ctx->readerPtr += batch * sizeof(int);
+            processed += batch;
         }
     }
 

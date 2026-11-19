@@ -110,7 +110,7 @@ namespace UnityEngine.UIElements
         // this will be null until a visual tree is added to a panel
         internal BaseVisualElementPanel elementPanel
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
             get;
             private set;
         }
@@ -164,7 +164,7 @@ namespace UnityEngine.UIElements
         public VisualTreeAsset visualTreeAssetSource
         {
             get => m_VisualTreeAssetSource;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             internal set => m_VisualTreeAssetSource = value;
         }
 
@@ -506,7 +506,7 @@ namespace UnityEngine.UIElements
 
         internal IReadOnlyList<VisualElement> children
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 if (contentContainer == this)
@@ -1254,7 +1254,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="predicate">The predicate to be satisfied by the ancestor to find.</param>
         /// <returns>The first ancestor satisfying the predicate or null otherwise.</returns>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.GraphToolkitModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.GraphToolkitModule")]
         internal VisualElement GetFirstAncestorWhere(Predicate<VisualElement> predicate)
         {
             VisualElement ancestor = hierarchy.parent;
@@ -1270,7 +1270,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>Returns the nearest visual ancestor establishing a stacking context, stopping before boundary (exclusive); null if none before the panel root.</summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static VisualElement FindStackingContextRootElement(VisualElement element, VisualElement boundary)
         {
             var ancestor = element?.hierarchy.parent;
@@ -1384,7 +1384,7 @@ namespace UnityEngine.UIElements
             return thisSide;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement GetRoot()
         {
             if (panel != null)

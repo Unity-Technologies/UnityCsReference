@@ -15,19 +15,12 @@ namespace Unity.UIToolkit.Editor
         /// <summary>
         /// Opens a search picker over the UI Library and reports the picked entry.
         /// </summary>
+        /// <param name="targetContext">The context whose document the picked entry is for.</param>
         /// <param name="includeDocuments">Whether UXML documents can be picked, to be added as template instances.</param>
-        internal static void ShowLibraryPicker(string title, bool includeDocuments, Action<LibraryItem> onPicked)
+        internal static void ShowLibraryPicker(AuthoringContext targetContext, string title, bool includeDocuments,
+            Action<LibraryItem> onPicked)
         {
-            var providers = new List<SearchProvider>
-            {
-                SearchService.GetProvider(k_EngineProviderId),
-                SearchService.GetProvider(k_CustomProviderId)
-            };
-            if (includeDocuments)
-                providers.Add(SearchService.GetProvider(k_UxmlProviderId));
-
-            var context = SearchService.CreateContext(providers, string.Empty);
-            context.useExplicitProvidersAsNormalProviders = true;
+            var context = CreatePickerContext(targetContext, includeDocuments);
 
             var origin = EditorWindow.focusedWindow;
             ISearchView picker = null;
@@ -49,6 +42,23 @@ namespace Unity.UIToolkit.Editor
             };
 
             picker = SearchService.ShowPicker(state);
+        }
+
+        internal static SearchContext CreatePickerContext(AuthoringContext targetContext, bool includeDocuments)
+        {
+            var providers = new List<SearchProvider>
+            {
+                SearchService.GetProvider(k_EngineProviderId),
+                SearchService.GetProvider(k_CustomProviderId)
+            };
+            if (includeDocuments)
+                providers.Add(SearchService.GetProvider(k_UxmlProviderId));
+
+            var context = SearchService.CreateContext(providers, string.Empty);
+            context.useExplicitProvidersAsNormalProviders = true;
+            if (targetContext != null)
+                s_PickerTargetContexts.AddOrUpdate(context, targetContext);
+            return context;
         }
 
         // The library's default action keeps the search window open, and the picker inherits that on Enter.

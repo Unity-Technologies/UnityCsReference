@@ -185,21 +185,21 @@ namespace Unity.Entities
             public int CompareTo(ChunkAndEnabledMask other) => Chunk.CompareTo(other.Chunk);
         }
 
-        public void AddComponent(EntityQueryImpl *queryImpl, ComponentType componentType, int sharedComponentIndex = 0,
-            in AddedComponentValue value = default)
+        // The query's matching chunks, with their enabled masks. Structural changes aren't allowed while an
+        // UnsafeChunkCacheIterator is in use, so callers gather the chunks first and change them afterwards.
+        UnsafeList<ChunkAndEnabledMask> GatherChunksToProcess(EntityQueryImpl* queryImpl, EntityQueryProfiler.Operation operation,
+            AllocatorManager.AllocatorHandle allocator)
         {
+            using var profilerScope = new EntityQueryProfiler.CallScope(operation, queryImpl);
+            var chunks = queryImpl->GetQueryChunks();
             var chunkCacheIterator = new UnsafeChunkCacheIterator(queryImpl->_Filter,
-                queryImpl->_QueryData->HasEnableableComponents != 0,
-                queryImpl->GetMatchingChunkCache(), queryImpl->_QueryData->MatchingArchetypes.Ptr);
+                queryImpl->_QueryData->HasEnableableComponents != 0, chunks);
             int chunkIndex = -1;
             v128 chunkEnabledMask = default;
-            int maxChunkCount = chunkCacheIterator.Length;
-            using var chunksToProcess = new UnsafeList<ChunkAndEnabledMask>(maxChunkCount, Allocator.TempJob);
+            var chunksToProcess = new UnsafeList<ChunkAndEnabledMask>(chunks.CalculateLength(), allocator);
             while (chunkCacheIterator.MoveNextChunk(ref chunkIndex, out var archetypeChunk, out int chunkEntityCount,
                        out byte useEnabledMask, ref chunkEnabledMask))
             {
-                // Structural changes are not allowed while using an UnsafeChunkCacheIterator, so we just track
-                // the chunks & metadata to process outside the loop.
                 chunksToProcess.AddNoResize(new ChunkAndEnabledMask
                 {
                     Chunk = archetypeChunk.m_Chunk,
@@ -208,6 +208,13 @@ namespace Unity.Entities
                     UseEnabledMask = useEnabledMask,
                 });
             }
+            return chunksToProcess;
+        }
+
+        public void AddComponent(EntityQueryImpl *queryImpl, ComponentType componentType, int sharedComponentIndex = 0,
+            in AddedComponentValue value = default)
+        {
+            using var chunksToProcess = GatherChunksToProcess(queryImpl, EntityQueryProfiler.Operation.BatchAddComponent, Allocator.TempJob);
             // Apply the structural change to all chunks
             Archetype* srcArchetype = null;
             Archetype* dstArchetype = null;
@@ -247,7 +254,7 @@ namespace Unity.Entities
                     // for both branches here is fine.
                     int batchCount = 0;
                     int batchEndIndex = 0;
-                    chunkEnabledMask = chunksToProcess[iChunk].EnabledMask;
+                    var chunkEnabledMask = chunksToProcess[iChunk].EnabledMask;
                     while (EnabledBitUtility.TryGetNextRange(chunkEnabledMask, batchEndIndex,
                                out int batchStartIndex, out batchEndIndex))
                     {
@@ -321,27 +328,7 @@ namespace Unity.Entities
 
         public void AddComponents(EntityQueryImpl* queryImpl, in ComponentTypeSet componentTypeSet)
         {
-            var chunkCacheIterator = new UnsafeChunkCacheIterator(queryImpl->_Filter,
-                queryImpl->_QueryData->HasEnableableComponents != 0,
-                queryImpl->GetMatchingChunkCache(), queryImpl->_QueryData->MatchingArchetypes.Ptr);
-
-            int chunkIndex = -1;
-            v128 chunkEnabledMask = default;
-            int maxChunkCount = chunkCacheIterator.Length;
-            using var chunksToProcess = new UnsafeList<ChunkAndEnabledMask>(maxChunkCount, Allocator.TempJob);
-            while (chunkCacheIterator.MoveNextChunk(ref chunkIndex, out var archetypeChunk, out int chunkEntityCount,
-                       out byte useEnabledMask, ref chunkEnabledMask))
-            {
-                // Structural changes are not allowed while using an UnsafeChunkCacheIterator, so we just track
-                // the chunks & metadata to process outside the loop.
-                chunksToProcess.AddNoResize(new ChunkAndEnabledMask
-                {
-                    Chunk = archetypeChunk.m_Chunk,
-                    EnabledMask = chunkEnabledMask,
-                    ChunkEntityCount = chunkEntityCount,
-                    UseEnabledMask = useEnabledMask,
-                });
-            }
+            using var chunksToProcess = GatherChunksToProcess(queryImpl, EntityQueryProfiler.Operation.BatchAddComponent, Allocator.TempJob);
             // Apply the structural change to all chunks
             Archetype* srcArchetype = null;
             Archetype* dstArchetype = null;
@@ -370,7 +357,7 @@ namespace Unity.Entities
                     // for both branches here is fine.
                     int batchCount = 0;
                     int batchEndIndex = 0;
-                    chunkEnabledMask = chunksToProcess[iChunk].EnabledMask;
+                    var chunkEnabledMask = chunksToProcess[iChunk].EnabledMask;
                     while (EnabledBitUtility.TryGetNextRange(chunkEnabledMask, batchEndIndex, out int batchStartIndex, out batchEndIndex))
                     {
                         chunkBatches[batchCount++] = new EntityBatchInChunk
@@ -416,26 +403,7 @@ namespace Unity.Entities
 
         public void RemoveComponent(EntityQueryImpl* queryImpl, ComponentType componentType)
         {
-            var chunkCacheIterator = new UnsafeChunkCacheIterator(queryImpl->_Filter,
-                queryImpl->_QueryData->HasEnableableComponents != 0,
-                queryImpl->GetMatchingChunkCache(), queryImpl->_QueryData->MatchingArchetypes.Ptr);
-            int chunkIndex = -1;
-            v128 chunkEnabledMask = default;
-            int maxChunkCount = chunkCacheIterator.Length;
-            using var chunksToProcess = new UnsafeList<ChunkAndEnabledMask>(maxChunkCount, Allocator.TempJob);
-            while (chunkCacheIterator.MoveNextChunk(ref chunkIndex, out var archetypeChunk, out int chunkEntityCount,
-                       out byte useEnabledMask, ref chunkEnabledMask))
-            {
-                // Structural changes are not allowed while using an UnsafeChunkCacheIterator, so we just track
-                // the chunks & metadata to process outside the loop.
-                chunksToProcess.AddNoResize(new ChunkAndEnabledMask
-                {
-                    Chunk = archetypeChunk.m_Chunk,
-                    EnabledMask = chunkEnabledMask,
-                    ChunkEntityCount = chunkEntityCount,
-                    UseEnabledMask = useEnabledMask,
-                });
-            }
+            using var chunksToProcess = GatherChunksToProcess(queryImpl, EntityQueryProfiler.Operation.BatchRemoveComponent, Allocator.TempJob);
             // Apply the structural change to all chunks
             Archetype* srcArchetype = null;
             Archetype* dstArchetype = null;
@@ -465,7 +433,7 @@ namespace Unity.Entities
                     // for both branches here is fine.
                     int batchCount = 0;
                     int batchEndIndex = 0;
-                    chunkEnabledMask = chunksToProcess[iChunk].EnabledMask;
+                    var chunkEnabledMask = chunksToProcess[iChunk].EnabledMask;
                     while (EnabledBitUtility.TryGetNextRange(chunkEnabledMask, batchEndIndex, out int batchStartIndex, out batchEndIndex))
                     {
                         chunkBatches[batchCount++] = new EntityBatchInChunk
@@ -485,27 +453,7 @@ namespace Unity.Entities
 
         public void RemoveComponents(EntityQueryImpl* queryImpl, in ComponentTypeSet componentTypeSet)
         {
-            var chunkCacheIterator = new UnsafeChunkCacheIterator(queryImpl->_Filter,
-                queryImpl->_QueryData->HasEnableableComponents != 0,
-                queryImpl->GetMatchingChunkCache(), queryImpl->_QueryData->MatchingArchetypes.Ptr);
-
-            int chunkIndex = -1;
-            v128 chunkEnabledMask = default;
-            int maxChunkCount = chunkCacheIterator.Length;
-            using var chunksToProcess = new UnsafeList<ChunkAndEnabledMask>(maxChunkCount, Allocator.TempJob);
-            while (chunkCacheIterator.MoveNextChunk(ref chunkIndex, out var archetypeChunk, out int chunkEntityCount,
-                       out byte useEnabledMask, ref chunkEnabledMask))
-            {
-                // Structural changes are not allowed while using an UnsafeChunkCacheIterator, so we just track
-                // the chunks & metadata to process outside the loop.
-                chunksToProcess.AddNoResize(new ChunkAndEnabledMask
-                {
-                    Chunk = archetypeChunk.m_Chunk,
-                    EnabledMask = chunkEnabledMask,
-                    ChunkEntityCount = chunkEntityCount,
-                    UseEnabledMask = useEnabledMask,
-                });
-            }
+            using var chunksToProcess = GatherChunksToProcess(queryImpl, EntityQueryProfiler.Operation.BatchRemoveComponent, Allocator.TempJob);
             // Apply the structural change to all chunks
             Archetype* srcArchetype = null;
             Archetype* dstArchetype = null;
@@ -534,7 +482,7 @@ namespace Unity.Entities
                     // for both branches here is fine.
                     int batchCount = 0;
                     int batchEndIndex = 0;
-                    chunkEnabledMask = chunksToProcess[iChunk].EnabledMask;
+                    var chunkEnabledMask = chunksToProcess[iChunk].EnabledMask;
                     while (EnabledBitUtility.TryGetNextRange(chunkEnabledMask, batchEndIndex, out int batchStartIndex, out batchEndIndex))
                     {
                         chunkBatches[batchCount++] = new EntityBatchInChunk
@@ -627,26 +575,7 @@ namespace Unity.Entities
 
         public void SetSharedComponentDataIndex(EntityQueryImpl* queryImpl, ComponentType componentType, int dstSharedComponentDataIndex)
         {
-            var chunkCacheIterator = new UnsafeChunkCacheIterator(queryImpl->_Filter,
-                queryImpl->_QueryData->HasEnableableComponents != 0,
-                queryImpl->GetMatchingChunkCache(), queryImpl->_QueryData->MatchingArchetypes.Ptr);
-            int chunkIndex = -1;
-            v128 chunkEnabledMask = default;
-            int maxChunkCount = chunkCacheIterator.Length;
-            using var chunksToProcess = new UnsafeList<ChunkAndEnabledMask>(maxChunkCount, Allocator.TempJob);
-            while (chunkCacheIterator.MoveNextChunk(ref chunkIndex, out var archetypeChunk, out int chunkEntityCount,
-                       out byte useEnabledMask, ref chunkEnabledMask))
-            {
-                // Structural changes are not allowed while using an UnsafeChunkCacheIterator, so we just track
-                // the chunks & metadata to process outside the loop.
-                chunksToProcess.AddNoResize(new ChunkAndEnabledMask
-                {
-                    Chunk = archetypeChunk.m_Chunk,
-                    EnabledMask = chunkEnabledMask,
-                    ChunkEntityCount = chunkEntityCount,
-                    UseEnabledMask = useEnabledMask,
-                });
-            }
+            using var chunksToProcess = GatherChunksToProcess(queryImpl, EntityQueryProfiler.Operation.BatchSetSharedComponent, Allocator.TempJob);
             // Apply the structural change to all chunks
             var chunkBatches = stackalloc EntityBatchInChunk[TypeManager.MaximumChunkCapacity];
             for(int iChunk=0,chunkCount=chunksToProcess.Length; iChunk<chunkCount; ++iChunk)
@@ -734,6 +663,7 @@ namespace Unity.Entities
 
             if (ChunkDataUtility.AreLayoutCompatible(srcArchetype, archetypeChunkFilter.Archetype))
             {
+                RemoveComponentObjectStates((Entity*)srcChunk.Buffer, srcChunk.Count, srcArchetype, archetypeChunkFilter.Archetype);
                 fixed(int* sharedComponentValues = archetypeChunkFilter.SharedComponentValues)
                 {
                     ChunkDataUtility.ChangeArchetypeInPlace(srcArchetype, srcChunk, archetypeChunkFilter.Archetype, sharedComponentValues);
@@ -845,6 +775,7 @@ namespace Unity.Entities
             FireLifecycleCallbacks(srcChunk, dstChunk, srcArchetype, dstArchetype, srcStartIndex, dstChunkIndex, srcCount,
                 value.DeferredOnAddedRanges != null ? value.TypeIndex : default);
 
+            RemoveComponentObjectStates((Entity*)srcChunk.Buffer + srcStartIndex, srcCount, srcArchetype, dstArchetype);
             fixed (EntityComponentStore* store = &this)
             {
                 ChunkDataUtility.Remove(store, partialSrcBatch);

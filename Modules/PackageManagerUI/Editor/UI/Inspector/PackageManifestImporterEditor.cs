@@ -64,7 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (s_MajorUnityVersions != null)
                     return s_MajorUnityVersions;
 
-                var version = InternalEditorUtility.GetUnityVersion();
+                var version = ServicesContainer.instance.Resolve<IInternalEditorUtilityProxy>().GetUnityVersion();
                 s_MajorUnityVersions = new List<string> { "2020", "2021", "2022" };
                 for (var majorVersion = 6000; majorVersion <= version.Major; majorVersion += 1000)
                     s_MajorUnityVersions.Add(majorVersion.ToString());
@@ -83,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (s_MinorUnityVersions != null)
                     return s_MinorUnityVersions;
 
-                var version = InternalEditorUtility.GetUnityVersion();
+                var version = ServicesContainer.instance.Resolve<IInternalEditorUtilityProxy>().GetUnityVersion();
                 var maxMinor = version.Minor;
                 s_MinorUnityVersions = new List<string>();
                 for (var minorVersion = 0; minorVersion <= maxMinor; minorVersion++)
@@ -906,7 +906,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     }
                     else
                     {
-                        var unityVersion = InternalEditorUtility.GetUnityVersion();
+                        var unityVersion = ServicesContainer.instance.Resolve<IInternalEditorUtilityProxy>().GetUnityVersion();
                         packageState.info.unityVersion = new PackageUnityVersion
                         {
                             enabled = false,

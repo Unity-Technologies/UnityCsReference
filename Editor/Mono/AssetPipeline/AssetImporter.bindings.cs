@@ -116,6 +116,13 @@ namespace UnityEditor
         [NativeMethod("SetThumbnailFromTexture2D")]
         extern internal void SetThumbnailFromTexture2D(Texture2D image, EntityId instanceID);
 
+        // Moves whenever any importer is marked dirty, whichever API changed it.
+        internal static extern uint settingsVersion
+        {
+            [FreeFunction("AssetImporter::GetSettingsVersion")]
+            get;
+        }
+
         [FreeFunction("FindAssetImporterAtAssetPath")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_Warning, "AssetImporters may not be accessed during gathering of import dependencies, as it is a source of non-determinism and will be disallowed in a forthcoming release.")]
         extern public static  AssetImporter GetAtPath(string path);

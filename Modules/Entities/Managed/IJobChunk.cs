@@ -90,8 +90,7 @@ namespace Unity.Entities
             [NativeDisableUnsafePtrRestriction] [ReadOnly] public int* ChunkBaseEntityIndices;
             public T JobData;
 
-            public UnsafeMatchingArchetypePtrList MatchingArchetypes;
-            public UnsafeCachedChunkList CachedChunks;
+            public QueryChunks Chunks;
             public EntityQueryFilter Filter;
 
             public int IsParallel;
@@ -247,7 +246,7 @@ namespace Unity.Entities
                 queryImpl->SyncFilterTypes();
 
                 var chunkCacheIterator = new UnsafeChunkCacheIterator(queryImpl->_Filter, queryImpl->_QueryData->HasEnableableComponents != 0,
-                    queryImpl->GetMatchingChunkCache(), queryImpl->_QueryData->MatchingArchetypes.Ptr);
+                    queryImpl->GetQueryChunks());
 
                 int chunkIndex = -1;
                 v128 chunkEnabledMask = default;
@@ -260,16 +259,15 @@ namespace Unity.Entities
             else
             {
                 // Fast path for queries with no filtering and no enableable components
-                var cachedChunkList = queryImpl->GetMatchingChunkCache();
-                var chunkIndices = cachedChunkList.ChunkIndices;
-                int chunkCount = cachedChunkList.Length;
-                ArchetypeChunk chunk = new ArchetypeChunk(ChunkIndex.Null, cachedChunkList.EntityComponentStore);
+                var chunks = queryImpl->GetQueryChunks();
+                var cursor = chunks.GetCursor();
+                ArchetypeChunk chunk = new ArchetypeChunk(ChunkIndex.Null, chunks.EntityComponentStore);
                 v128 defaultMask = default;
-                for (int chunkIndex = 0; chunkIndex < chunkCount; ++chunkIndex)
+                while (cursor.MoveNext())
                 {
-                    chunk.m_Chunk = chunkIndices[chunkIndex];
+                    chunk.m_Chunk = cursor.Chunk;
                     Assert.AreNotEqual(0, chunk.Count);
-                    jobData.Execute(chunk, chunkIndex, false, defaultMask);
+                    jobData.Execute(chunk, cursor.Index, false, defaultMask);
                 }
             }
             queryImpl->_Access->DependencyManager->ForEachStructuralChange.EndIsInForEach();
@@ -287,9 +285,11 @@ namespace Unity.Entities
             if (queryImpl->_Access->IsInExclusiveTransaction)
                 throw new InvalidOperationException("You can't schedule an IJobChunk while an exclusive transaction is active");
             var queryData = queryImpl->_QueryData;
-            var cachedChunks = queryImpl->GetMatchingChunkCache();
-            var totalChunkCount = cachedChunks.Length;
             bool isParallel = (mode == ScheduleMode.Parallel);
+            QueryChunks chunks;
+            using (new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.ScheduleJob, queryImpl))
+                chunks = isParallel ? queryImpl->GetQueryChunksForParallelJob() : queryImpl->GetQueryChunks();
+            var totalChunkCount = chunks.CalculateLength();
 
             JobChunkWrapper<T> jobChunkWrapper = new JobChunkWrapper<T>
             {
@@ -298,8 +298,7 @@ namespace Unity.Entities
                 ChunkBaseEntityIndices = (isParallel && chunkBaseEntityIndices.Length > 0)
                     ? (int*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(chunkBaseEntityIndices)
                     : null,
-                MatchingArchetypes = queryData->MatchingArchetypes,
-                CachedChunks = cachedChunks,
+                Chunks = chunks,
                 Filter = queryImpl->_Filter,
 
                 JobData = jobData,
@@ -366,17 +365,17 @@ namespace Unity.Entities
                 ref JobRanges ranges,
                 int jobIndex)
             {
-                var chunks = jobWrapper.CachedChunks;
+                var chunks = jobWrapper.Chunks;
                 var chunkCacheIterator = new UnsafeChunkCacheIterator(jobWrapper.Filter,
-                    jobWrapper.QueryHasEnableableComponents != 0,
-                    jobWrapper.CachedChunks, jobWrapper.MatchingArchetypes.Ptr);
+                    jobWrapper.QueryHasEnableableComponents != 0, chunks);
+                var cursor = chunks.GetCursor();
 
                 bool isParallel = jobWrapper.IsParallel == 1;
                 bool isFiltering = jobWrapper.Filter.RequiresMatchesFilter;
                 while (true)
                 {
                     int beginChunkIndex = 0;
-                    int endChunkIndex = chunks.Length;
+                    int endChunkIndex = chunks.CalculateLength();
 
                     // If we are running the job in parallel, steal some work.
                     if (isParallel)
@@ -389,13 +388,14 @@ namespace Unity.Entities
                     // Do the actual user work.
                     if (jobWrapper.QueryHasEnableableComponents == 0 && !isFiltering)
                     {
-                        // Fast path with no entity/chunk filtering active: we can just iterate over the cached chunk list directly.
-                        var chunkIndices = chunks.ChunkIndices;
+                        // Fast path with no entity/chunk filtering active: we can just walk the matching chunks directly.
                         ArchetypeChunk chunk = new ArchetypeChunk(ChunkIndex.Null, chunks.EntityComponentStore);
                         v128 defaultMask = default;
-                        for (int chunkIndex = beginChunkIndex; chunkIndex < endChunkIndex; ++chunkIndex)
+                        cursor.SeekBefore(beginChunkIndex);
+                        while (cursor.MoveNext() && cursor.Index < endChunkIndex)
                         {
-                            chunk.m_Chunk = chunkIndices[chunkIndex];
+                            int chunkIndex = cursor.Index;
+                            chunk.m_Chunk = cursor.Chunk;
                             Assert.AreNotEqual(0, chunk.Count);
                             // For containers passed in the job struct, parallel jobs can limit writes to a range of indices.
                             // By default, writes are limited to the element corresponding to the unfiltered chunk index.
@@ -419,7 +419,7 @@ namespace Unity.Entities
                     {
                         // With any filtering active, we need to iterate using the UnsafeChunkCacheIterator.
                         // Update cache range
-                        chunkCacheIterator.Length = endChunkIndex;
+                        chunkCacheIterator.EndIndex = endChunkIndex;
                         int chunkIndex = beginChunkIndex - 1;
 
                         v128 chunkEnabledMask = default;

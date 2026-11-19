@@ -31,11 +31,8 @@ namespace UnityEngine
 
         internal event Action OnTextChanged;
 
-        [NoAutoStaticsCleanup] // marshaling cache; reference persists, fields mutated and restored within each Temp() call
         private static readonly GUIContent s_Text      = new GUIContent();
-        [NoAutoStaticsCleanup] // marshaling cache; reference persists, fields mutated and restored within each Temp() call
         private static readonly GUIContent s_Image     = new GUIContent();
-        [NoAutoStaticsCleanup] // marshaling cache; reference persists, fields mutated and restored within each Temp() call
         private static readonly GUIContent s_TextImage = new GUIContent();
 
         internal static readonly string k_ZeroWidthSpace = "\u200B";

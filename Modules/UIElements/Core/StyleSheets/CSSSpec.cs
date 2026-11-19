@@ -8,7 +8,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     static class CSSSpec
     {
         static readonly Regex rgx = new Regex(

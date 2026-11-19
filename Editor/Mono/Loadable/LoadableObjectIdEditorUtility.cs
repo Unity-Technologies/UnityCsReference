@@ -31,6 +31,14 @@ namespace UnityEditor
     [VisibleToOtherModules]
     public static class LoadableObjectIdEditorUtility
     {
+        // Editor, built-in and built-in extra resources
+        static readonly GUID[] k_UnityResourcesGUIDs =
+        {
+            new GUID("0000000000000000d000000000000000"),
+            new GUID("0000000000000000e000000000000000"),
+            new GUID("0000000000000000f000000000000000"),
+        };
+
         static readonly string kLoadableObjectIdTooltip = L10n.Tr("References an object that will be included in the Content Directory build and can be loaded asynchronously on demand.", null);
         internal static string GetLoadableObjectIdTooltip()
         {
@@ -70,6 +78,16 @@ namespace UnityEditor
             localId = loadableObjectId.m_LocalIdentifierInFile;
             fileType = loadableObjectId.m_FileIdentifierType;
             return true;
+        }
+
+        [VisibleToOtherModules("UnityEditor.ContentLoadModule")]
+        internal static bool TryGetSourceAssetGUID(GUID sourceGuid, ContentFileSourceType kind, out GUID guid)
+        {
+            bool fromAsset = !sourceGuid.Empty()
+                && kind != ContentFileSourceType.DefaultResources
+                && Array.IndexOf(k_UnityResourcesGUIDs, sourceGuid) < 0;
+            guid = fromAsset ? sourceGuid : new GUID();
+            return fromAsset;
         }
 
         /// <summary>

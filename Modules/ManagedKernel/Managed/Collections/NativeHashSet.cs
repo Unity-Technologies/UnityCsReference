@@ -186,7 +186,7 @@ namespace Unity.Collections
         /// </remarks>
         /// <param name="item">The value to add.</param>
         /// <returns>True if the value was not already present.</returns>
-        public bool Add(T item)
+        public readonly bool Add(T item)
         {
             CheckWrite();
             return -1 != m_Data->TryAdd(item);
@@ -197,7 +197,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="item">The value to add.</param>
         /// <returns>True if the value was not already present (thus was successfully added).</returns>
-        public bool TryAdd(T item)
+        public readonly bool TryAdd(T item)
         {
             CheckWrite();
             return -1 != m_Data->TryAdd(item);
@@ -219,7 +219,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="item">The item to look up.</param>
         /// <returns>True if the value was present.</returns>
-        public bool Contains(T item)
+        public readonly bool Contains(T item)
         {
             CheckRead();
             return -1 != m_Data->Find(item);
@@ -239,7 +239,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array with a copy of the set's values.</returns>
-        public NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
         {
             CheckRead();
             return m_Data->GetKeyArray(allocator);
@@ -249,7 +249,7 @@ namespace Unity.Collections
         /// Returns an enumerator over the values of this set.
         /// </summary>
         /// <returns>An enumerator over the values of this set.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             AtomicSafetyHandle.CheckGetSecondaryDataPointerAndThrow(m_Safety);
             var ash = m_Safety;
@@ -266,7 +266,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -276,7 +276,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -299,7 +299,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next value.
@@ -346,9 +346,9 @@ namespace Unity.Collections
         /// </summary>
         /// <remarks>ReadOnly containers point to the same underlying data as the NativeHashSet it is made from.</remarks>
         /// <returns>ReadOnly instance for this.</returns>
-        public ReadOnly AsReadOnly()
+        public readonly ReadOnly AsReadOnly()
         {
-            return new ReadOnly(ref this);
+            return new ReadOnly(this);
         }
 
         /// <summary>
@@ -366,7 +366,7 @@ namespace Unity.Collections
             AtomicSafetyHandle m_Safety;
             internal static readonly SharedStatic<int> s_staticSafetyId = SharedStatic<int>.GetOrCreate<ReadOnly>();
 
-            internal ReadOnly(ref NativeHashSet<T> data)
+            internal ReadOnly(in NativeHashSet<T> data)
             {
                 m_Data = data.m_Data;
                 m_Safety = data.m_Safety;
@@ -473,7 +473,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -483,7 +483,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -505,7 +505,7 @@ namespace Unity.Collections
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CheckWrite()
+        readonly void CheckWrite()
         {
             AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
         }

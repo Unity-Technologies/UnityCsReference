@@ -2716,8 +2716,8 @@ namespace UnityEditor
 
         public void DefaultPreviewSettingsGUI()
         {
-            var mat = target as Material;
-            if (!SupportsRenderingPreview(mat))
+            var mat = GetFirstPreviewableTarget();
+            if (mat == null)
                 return;
 
             Init();
@@ -2744,7 +2744,7 @@ namespace UnityEditor
         public sealed override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)
         {
             var mat = target as Material;
-            if (!SupportsRenderingPreview(mat) || IsUIToolkitShader(mat))
+            if (!SupportsRenderingPreview(mat))
                 return null;
 
             Init();
@@ -2901,7 +2901,13 @@ namespace UnityEditor
 
         public sealed override bool HasPreviewGUI()
         {
-            return !IsUIToolkitShader(target as Material);
+            // Previews are drawn per target, so the preview area is hidden only when no target can be previewed.
+            foreach (var t in targets)
+            {
+                if (!IsUIToolkitShader(t as Material))
+                    return true;
+            }
+            return false;
         }
 
         // UI Toolkit shaders depend on vertex data and constant buffers that only the UI Toolkit renderer provides,
@@ -2950,8 +2956,8 @@ namespace UnityEditor
             var rootElement = inspectorPreviewWindow as PreviewRootElement;
             var toolbar = rootElement?.GetButtonPane();
 
-            var mat = target as Material;
-            if (!SupportsRenderingPreview(mat))
+            var mat = GetFirstPreviewableTarget();
+            if (mat == null)
                 return null;
 
             Init();
@@ -2998,12 +3004,27 @@ namespace UnityEditor
             return state;
         }
 
+        // In a multi-selection, the first target may not be previewable while others are.
+        Material GetFirstPreviewableTarget()
+        {
+            foreach (var t in targets)
+            {
+                var mat = t as Material;
+                if (SupportsRenderingPreview(mat))
+                    return mat;
+            }
+            return null;
+        }
+
         private static bool SupportsRenderingPreview(Material material)
         {
             if (!ShaderUtil.hardwareSupportsRectRenderTexture)
                 return false;
 
             if (material == null)
+                return false;
+
+            if (IsUIToolkitShader(material))
                 return false;
 
             var assetPath = AssetDatabase.GetAssetPath(material);
@@ -3427,7 +3448,7 @@ namespace UnityEditor
 
         internal override void OnHeaderIconGUI(Rect iconRect)
         {
-            if (!HasPreviewGUI())
+            if (IsUIToolkitShader(target as Material))
             {
                 if (Event.current.type == EventType.Repaint)
                     GUI.DrawTexture(iconRect, AssetPreview.GetMiniThumbnail(target), ScaleMode.ScaleToFit);

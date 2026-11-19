@@ -81,7 +81,7 @@ namespace UnityEditor.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class UXMLImporterImpl : StyleValueImporter
     {
         private class LogAuthoringIdConflictScope : IDisposable
@@ -148,7 +148,7 @@ namespace UnityEditor.UIElements
         /// </summary>
         internal bool enableAutomaticAttributeRenames = true;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal UXMLImporterImpl()
         {
         }
@@ -284,7 +284,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Hash128 GenerateHash(string uxmlPath)
         {
             var h = new Hash128();
@@ -329,7 +328,7 @@ namespace UnityEditor.UIElements
             TryCreateInlineStyleSheet(vta);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void ImportXmlFromString(string xml, out VisualTreeAsset vta)
         {
             byte[] b = Encoding.UTF8.GetBytes(xml);

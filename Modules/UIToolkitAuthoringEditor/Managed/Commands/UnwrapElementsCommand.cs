@@ -28,9 +28,10 @@ internal sealed class UnwrapElementsCommand : Command<UnwrapElementsCommand>
         return cmd;
     }
 
-    public static CommandExecutionStatus Execute(object source, VisualElementAsset[] elements)
+    public static CommandExecutionStatus Execute(object source, VisualElementAsset[] elements, AuthoringContext requestingContext = null)
     {
         using var command = GetPooled(source, elements);
+        command.RequestingContext = requestingContext;
         return UICommandQueue.Execute(command).Status;
     }
 
@@ -105,7 +106,7 @@ internal sealed class UnwrapElementsCommand : Command<UnwrapElementsCommand>
             toSelectAssets.AddRange(children);
         }
 
-        UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(RequestingContext, toSelectAssets);
         return CommandExecutionStatus.Success;
     }
 }

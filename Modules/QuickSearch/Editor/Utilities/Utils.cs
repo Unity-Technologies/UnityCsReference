@@ -1236,7 +1236,7 @@ namespace UnityEditor.Search
         {
             if (float.IsNaN(f))
                 return string.Empty;
-            return f.ToString(Utils.k_FloatQueryFormatter);
+            return f.ToString(Utils.k_FloatQueryFormatter, CultureInfo.InvariantCulture);
         }
 
         internal static string FormatIntString(in int i)

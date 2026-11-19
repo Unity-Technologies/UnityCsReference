@@ -132,7 +132,7 @@ namespace Unity.Mathematics.Geometry
         /// </remarks>
         public float3 Normal
         {
-            get => NormalAndDistance.xyz;
+            readonly get => NormalAndDistance.xyz;
             set => NormalAndDistance.xyz = value;
         }
 
@@ -145,7 +145,7 @@ namespace Unity.Mathematics.Geometry
         /// </remarks>
         public float Distance
         {
-            get => NormalAndDistance.w;
+            readonly get => NormalAndDistance.w;
             set => NormalAndDistance.w = value;
         }
 
@@ -187,7 +187,7 @@ namespace Unity.Mathematics.Geometry
         /// <param name="point">Point to find the signed distance with.</param>
         /// <returns>Signed distance of the point from the plane.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float SignedDistanceToPoint(float3 point)
+        public readonly float SignedDistanceToPoint(float3 point)
         {
             CheckPlaneIsNormalized();
             return math.dot(NormalAndDistance, new float4(point, 1.0f));
@@ -203,7 +203,7 @@ namespace Unity.Mathematics.Geometry
         /// <param name="point">Point to project onto the plane.</param>
         /// <returns>Projected point that's inside the plane.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float3 Projection(float3 point)
+        public readonly float3 Projection(float3 point)
         {
             CheckPlaneIsNormalized();
             return point - Normal * SignedDistanceToPoint(point);
@@ -212,7 +212,7 @@ namespace Unity.Mathematics.Geometry
         /// <summary>
         /// Flips the plane so the normal points in the opposite direction.
         /// </summary>
-        public Plane Flipped => new Plane { NormalAndDistance = -NormalAndDistance };
+        public readonly Plane Flipped => new Plane { NormalAndDistance = -NormalAndDistance };
 
         /// <summary>
         /// Implicitly converts a <see cref="Plane"/> to <see cref="float4"/>.
@@ -223,7 +223,7 @@ namespace Unity.Mathematics.Geometry
         public static implicit operator float4(Plane plane) => plane.NormalAndDistance;
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        void CheckPlaneIsNormalized()
+        readonly void CheckPlaneIsNormalized()
         {
             float ll = math.lengthsq(Normal.xyz);
             const float lowerBound = 0.999f * 0.999f;

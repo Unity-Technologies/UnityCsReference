@@ -78,7 +78,8 @@ namespace UnityEditor.AddComponent
             else if (command.StartsWith("DATACOMPONENT"))
             {
                 base.name = name;
-                base.icon = EditorGUIUtility.LoadIcon("DataComponent Icon");
+                var type = Type.GetType(command.Substring("DATACOMPONENT".Length));
+                base.icon = AssetPreview.GetMiniTypeThumbnail(type);
             }
             else
             {

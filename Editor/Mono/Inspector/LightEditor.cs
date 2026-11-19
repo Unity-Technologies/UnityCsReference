@@ -759,8 +759,12 @@ namespace UnityEditor
             }
         }
 
+#pragma warning disable CS0618 // Light command buffers are obsolete
         private void CommandBufferGUI()
         {
+            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
+                return;
+
             // Command buffers are not serialized data, so can't get to them through
             // serialized property (hence no multi-edit).
             if (targets.Length != 1)
@@ -813,6 +817,7 @@ namespace UnityEditor
             }
             EditorGUI.indentLevel--;
         }
+#pragma warning restore CS0618
 
         static Rect GetRemoveButtonRect(Rect r)
         {

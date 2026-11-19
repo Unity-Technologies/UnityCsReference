@@ -156,7 +156,7 @@ namespace UnityEditor
             m_previewOpened = false;
         }
 
-#pragma warning disable UA5000 // Intentional leak warning: logs an error when the preview scene was not cleaned up.
+#pragma warning disable UAC0045 // Intentional leak warning: logs an error when the preview scene was not cleaned up.
         ~PreviewRenderUtility()
         {
             if (m_Type != null)
@@ -169,7 +169,7 @@ namespace UnityEditor
                     "This can be caused by not calling Cleanup() (or its execution being interrupted) during the OnDisable of an Editor or an EditorWindow.");
             }
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         internal static void SetEnabledRecursive(GameObject go, bool enabled)
         {

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -21,7 +20,7 @@ static class MainStageViewportSelection
     /// </summary>
     public static IPanelComponent ResolveFromSelection()
     {
-        foreach (var selected in Selection.entityIds.ResolveObjects(EntityIdExtensions.MayBeGameObjectOrComponent))
+        foreach (var selected in AuthoringContext.Global.Selection.EntityIds.ResolveObjects(EntityIdExtensions.MayBeGameObjectOrComponent))
         {
             var panelComponent = Resolve(selected);
             if (panelComponent.IsAlive())

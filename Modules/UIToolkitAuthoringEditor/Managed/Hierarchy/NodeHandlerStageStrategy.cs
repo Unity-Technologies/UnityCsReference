@@ -31,6 +31,12 @@ abstract class NodeHandlerStageStrategy(Stage stage)
     protected void RaiseDocumentCloned() => DocumentCloned?.Invoke();
 
     /// <summary>
+    /// The context the handler's hierarchy belongs to: its selection is the one the handler writes, and its
+    /// messages are the ones the handler exchanges highlights and framing requests on.
+    /// </summary>
+    public virtual AuthoringContext Context => AuthoringContext.Global;
+
+    /// <summary>
     /// Subscribes <paramref name="handler"/> to the panels the stage shows. Called by the handler this strategy
     /// was created for while it initializes, and undone by <see cref="Dispose"/> when that handler is disposed.
     /// </summary>
@@ -70,6 +76,13 @@ abstract class NodeHandlerStageStrategy(Stage stage)
     /// anchors each of them under the GameObject that renders it.
     /// </summary>
     public virtual GameObject GetDocumentHostGameObject(VisualElement element) => null;
+
+    /// <summary>
+    /// The document whose row <paramref name="element"/> is, when the stage shows a document as a node of its own
+    /// and <paramref name="element"/> is the one standing for it; <see langword="null"/> otherwise. Scene documents
+    /// are not asked: their root element already names its document.
+    /// </summary>
+    public virtual VisualTreeAsset GetDocumentNodeAsset(VisualElement element) => null;
 
     /// <summary>
     /// The object identifying the document scope <paramref name="element"/> belongs to. Its
@@ -125,14 +138,14 @@ abstract class NodeHandlerStageStrategy(Stage stage)
     }
 
     /// <summary>
-    /// Resolves where a paste operation should land for the current stage.
+    /// Resolves where a paste operation should land in <see cref="Context"/>.
     /// </summary>
     /// <param name="selected">The first selected element, or <see langword="null"/> when nothing is selected.</param>
     /// <param name="parentElement">The live element the pasted content should be added to.</param>
     /// <param name="parentAsset">The asset the pasted assets should be reparented onto.</param>
     /// <returns><see langword="true"/> when a paste target was resolved; <see langword="false"/> otherwise.</returns>
     public virtual bool TryResolvePasteParent(VisualElement selected, out VisualElement parentElement, out VisualElementAsset parentAsset)
-        => VisualElementEditingUtility.TryResolvePasteParent(selected, out parentElement, out parentAsset);
+        => VisualElementEditingUtility.TryResolvePasteParent(Context, selected, out parentElement, out parentAsset);
 
     /// <summary>
     /// Whether the hierarchy root can receive visual elements. Only a stage whose hierarchy root <em>is</em> the
@@ -306,77 +319,110 @@ sealed class MainStageNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrateg
     public override bool CreatesPanelForRootLibraryDrop => true;
 }
 
-sealed class UIStageNodeHandlerStrategy(VisualElementEditingStage stage) : NodeHandlerStageStrategy(stage)
+/// <summary>
+/// The strategy for a hierarchy that shows one <see cref="UIDocumentSession"/>: the UI Stage's, or that of a view
+/// editing a document outside any stage.
+/// </summary>
+/// <remarks>
+/// With <paramref name="showsDocumentNode"/>, the document the panel holds gets a node of its own, parent of its root
+/// elements: the panel root element stands for it. Otherwise its root elements are the hierarchy roots, under the
+/// stage header that names the document.
+/// </remarks>
+sealed class UIDocumentSessionStrategy(UIDocumentSession session, Stage stage = null, bool showsDocumentNode = false)
+    : NodeHandlerStageStrategy(stage)
 {
-    new VisualElementEditingStage Stage => stage;
+    public UIDocumentSession Session => session;
 
-    // The stage owns the single authoring panel its document is cloned into.
+    public override AuthoringContext Context => session.Owner;
+
+    // The session owns the single authoring panel its document is cloned into.
     public override void Initialize(VisualElementNodeHandler handler)
     {
         base.Initialize(handler);
 
-        Stage.MainDocumentWasCloned += OnMainDocumentWasCloned;
-        Stage.AuthoringPanelWasCreated += OnAuthoringPanelWasCreated;
+        session.DocumentCloned += OnDocumentCloned;
+
+        // The document row carries the unsaved-changes marker.
+        if (showsDocumentNode)
+            UIAssetRegistry.instance.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
 
         AttachPanel();
 
-        // A handler only needs the document to be there to populate its nodes; the stage that clones it on its
+        // A handler only needs the document to be there to populate its nodes; the session that clones it on its
         // way open would pay for a second clone of the same tree.
-        Stage.EnsureDocumentShown();
+        session.EnsureDocumentShown();
     }
 
     public override void Dispose()
     {
-        if (Stage)
-        {
-            Stage.MainDocumentWasCloned -= OnMainDocumentWasCloned;
-            Stage.AuthoringPanelWasCreated -= OnAuthoringPanelWasCreated;
-        }
+        session.DocumentCloned -= OnDocumentCloned;
+        if (UIAssetRegistry.LiveInstance is { } registry)
+            registry.AssetDirtyStateChanged -= OnAssetDirtyStateChanged;
 
         base.Dispose();
     }
 
-    void OnMainDocumentWasCloned(VisualElementEditingStage stage) => RaiseDocumentCloned();
-
-    void OnAuthoringPanelWasCreated(VisualElementEditingStage stage)
+    // A domain reload recreates the session's panel and the hierarchy in an order neither controls, so the panel
+    // can first appear with a clone. Attaching is idempotent.
+    void OnDocumentCloned(UIDocumentSession clonedSession)
     {
         AttachPanel();
         RaiseDocumentCloned();
     }
 
+    void OnAssetDirtyStateChanged(UnityEngine.Object asset)
+    {
+        if (asset is VisualTreeAsset)
+            Handler?.MarkHierarchyDirty();
+    }
+
     void AttachPanel()
     {
-        var panel = Stage.GetAuthoringPanel();
+        var panel = session.Panel;
         if (Handler == null || panel == null)
             return;
 
         // The selection registry has to see a panel's changes before the hierarchy does: it computes the
         // old-instance to new-instance remaps the hierarchy consumes to keep its node map stable.
-        VisualElementSelectionRegistry.Instance?.TrackStagePanel(Stage);
+        session.Track();
         Handler.RegisterPanel(panel);
     }
 
     public override bool IsReadOnly => false;
 
     public override VisualElementEditFlags GetEditFlags(VisualElement element)
-     => Stage.Context.GetElementEditFlags(element);
+     => session.GetElementEditFlags(element);
 
     public override bool IsPanelRoot(VisualElement element)
-        => element is PanelRootElement or PanelElement.PanelElementRootVisualElement;
+        => element is PanelRootElement || (!showsDocumentNode && element is PanelElement.PanelElementRootVisualElement);
 
-    // The stage edits one document, cloned right under the panel: its root elements are the hierarchy roots.
+    // The session edits one document, cloned right under the panel: the node standing for it is the hierarchy root,
+    // or else its root elements are.
     public override bool IsEditedDocumentRootElement(VisualElement element)
-        => element.parent is PanelRootElement or PanelElement.PanelElementRootVisualElement;
+        => showsDocumentNode
+            ? element is PanelElement.PanelElementRootVisualElement
+            : element.parent is PanelRootElement or PanelElement.PanelElementRootVisualElement;
 
-    // The editing stage edits a single asset; scope by that asset (stable across reloads) plus the in-context
+    // The document cloned into the panel: the edited one, or the one it is edited in the context of.
+    public override VisualTreeAsset GetDocumentNodeAsset(VisualElement element)
+    {
+        if (!showsDocumentNode || session.IsDisposed || element is not PanelElement.PanelElementRootVisualElement)
+            return null;
+
+        return session.Document.SubDocumentOptions == SubDocumentOptions.Isolation
+            ? session.EditedVisualTreeAsset
+            : session.Document.RootVisualTreeAsset;
+    }
+
+    // The session edits a single asset; scope by that asset (stable across reloads) plus the in-context
     // sub-document chain so identical elements edited in different sub-document contexts of the same asset do
     // not collide.
     public override UnityEngine.Object GetScopeObject(VisualElement element)
-        => Stage ? Stage.Context.RootVisualTreeAsset : null;
+        => session.IsDisposed ? null : session.Document.RootVisualTreeAsset;
 
     public override string GetScopeKeySuffix()
     {
-        var subDocumentPath = Stage.Context.SubDocumentPath;
+        var subDocumentPath = session.Document.SubDocumentPath;
         if (subDocumentPath is not { Length: > 0 })
             return null;
 
@@ -393,46 +439,57 @@ sealed class UIStageNodeHandlerStrategy(VisualElementEditingStage stage) : NodeH
     public override bool LimitsNavigationToEditedDocument => true;
 
     public override bool ExpandsDocumentRootWhenOpened
-        => Stage.GetAuthoringPanel() != null && Stage.Context.SubDocumentOptions == SubDocumentOptions.InContext;
+        => session.Panel != null && (showsDocumentNode || session.Document.SubDocumentOptions == SubDocumentOptions.InContext);
 
     public override VisualElement ValidateDocumentRoot()
     {
-        var localRoot = ResolveLocalRoot();
+        var localRoot = session.ResolveLocalRoot();
 
         // We couldn't find the correct local root, so we go out of the current staging mode.
-        if (localRoot == null && Stage.GetAuthoringPanel() != null)
+        if (localRoot == null && session.Panel != null)
         {
             Debug.LogWarning("Current stage could not be recreated correctly.");
 
             // Wrong: this runs from the handler's Initialize, and switching stages there re-enters the stage switch that is creating the handler; it must move out of Initialize
-            StageUtility.GoBackToPreviousStage();
+            if (Stage is VisualElementEditingStage)
+                StageUtility.GoBackToPreviousStage();
         }
 
         return localRoot;
     }
 
+    // The document row acts on the document, like a click on empty space does.
     public override void PopulateContextMenu(HierarchyView view, in HierarchyNode node, VisualElement element,
         DropdownMenu menu, VisualElementNodeHandler handler)
-        => StageContextMenuUtility.PopulateMenu(view, in node, element, menu, handler);
+    {
+        if (GetDocumentNodeAsset(element) != null)
+            StageContextMenuUtility.PopulateStageMenu(view, menu, handler);
+        else
+            StageContextMenuUtility.PopulateMenu(view, in node, element, menu, handler);
+    }
 
     public override void PopulateStageContextMenu(HierarchyView view, DropdownMenu menu, VisualElementNodeHandler handler)
         => StageContextMenuUtility.PopulateStageMenu(view, menu, handler);
 
     public override void PopulateCreateMenu(DropdownMenu menu)
-        => StageContextMenuUtility.PopulateElementOperations(menu);
+        => StageContextMenuUtility.PopulateElementOperations(menu, Context);
+
+    public override bool TryResolvePasteParent(VisualElement selected, out VisualElement parentElement,
+        out VisualElementAsset parentAsset)
+        => VisualElementEditingUtility.TryResolvePasteParent(session, selected, out parentElement, out parentAsset);
 
     // Root-level elements are either all editable or all non-editable: when editing a sub-document in context
-    // the hierarchy root belongs to the parent document, which is read-only.
-    public override bool AcceptRootAsParent => Stage.Context.SubDocumentOptions != SubDocumentOptions.InContext;
+    // the hierarchy root belongs to the parent document, which is read-only. A drop next to the document row
+    // lands in the document.
+    public override bool AcceptRootAsParent => session.Document.SubDocumentOptions != SubDocumentOptions.InContext;
 
-    // The stage edits a single document, so every element resolves to the same root.
-    public override VisualElement ResolveDocumentRoot(VisualElement element) => ResolveLocalRoot();
+    // The session edits a single document, so every element resolves to the same root.
+    public override VisualElement ResolveDocumentRoot(VisualElement element) => session.ResolveLocalRoot();
 
-    public override VisualTreeAsset ResolveDocumentAsset(VisualElement element) => Stage.EditedVisualTreeAsset;
+    public override VisualTreeAsset ResolveDocumentAsset(VisualElement element) => session.EditedVisualTreeAsset;
 
-    // The live root element of the document (or the in-context sub-document) currently being edited in the
-    // stage's authoring panel.
-    // Owned by the stage: the menu resolves the same element when it authors without a live parent, and it has
-    // only the stage to ask.
-    VisualElement ResolveLocalRoot() => Stage.ResolveLocalRoot();
+    // The document row has no asset of its own, but receives what is dropped on it as root elements.
+    public override bool CanHostDrop(VisualElement element)
+        => base.CanHostDrop(element) ||
+            (GetDocumentNodeAsset(element) != null && !session.IsDocumentReadOnly && element == ResolveDocumentRoot(element));
 }

@@ -6,29 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityObject = UnityEngine.Object;
-using DataModeSupportHandler = UnityEditor.DeclareDataModeSupportAttribute.DataModeSupportHandler;
-using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
     /// <summary>
     /// Options for the different modes of an <see cref="EditorWindow"/>.
     /// </summary>
-    //
-    // Dev note:
-    //
-    // There should be no reason to ever add to this enum. It exists only to express the duality between author-time
-    // and runtime data. If you feel like you need to add to this, please reconsider: it will likely break the
-    // `Authoring VS Runtime` feature for DOTS.
-    //
-    // Thank you for your consideration and have a great day!
-    //
-    // Sincerely,
-    // The #dots-editor team
-    //
     [Serializable]
-    public enum DataMode // Values must be kept in sync with `DataMode.h`
+    [Obsolete("DataMode is deprecated and will be removed in a future release. #from(7000.0)", false)]
+    public enum DataMode
     {
         /// <summary>
         /// Represents a situation or context in which the usage of <see cref="DataMode"/> is not applicable.
@@ -67,6 +53,7 @@ namespace UnityEditor
     /// <param name="nextDataMode"> DataMode to which the <see cref="EditorWindow"/> should change.</param>
     /// <param name="changedThroughUI"> Whether the change was initiated by the DataMode switcher UI
     /// at the top-right of the Editor window.</param>
+    [Obsolete("DataModeChangeEventArgs is deprecated and will be removed in a future release. #from(7000.0)", false)]
     public readonly struct DataModeChangeEventArgs
     {
         public readonly DataMode nextDataMode;
@@ -87,6 +74,7 @@ namespace UnityEditor
     /// This interface displays a switch in the docking area when the window is visible and has
     /// more than one supported DataModes.
     /// </para> </remarks>
+    [Obsolete("IDataModeController is deprecated and will be removed in a future release. #from(7000.0)", false)]
     public interface IDataModeController
     {
         /// <summary>
@@ -139,6 +127,7 @@ namespace UnityEditor
         bool TryChangeDataMode(DataMode newDataMode);
     }
 
+    #pragma warning disable CS0618 // DataMode is obsolete
     // DataModeController handles DataMode related actions internally.
     // Each Editor window has a DataModeController instance.
     [Serializable]
@@ -287,45 +276,5 @@ namespace UnityEditor
     {
         event Action<DataMode> dataModeChanged;
     }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    class DeclareDataModeSupportAttribute : Attribute
-    {
-        public delegate void DataModeSupportHandler(UnityObject activeSelection, UnityObject activeContext, HashSet<DataMode> supportedModes);
-
-        [RequiredSignature]
-        static void signature(UnityObject activeSelection, UnityObject activeContext, HashSet<DataMode> supportedModes)
-        {
-        }
-    }
-
-    static partial class DataModeSupportUtils
-    {
-        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)] // initializer is not trivial but we can still clear only
-        static readonly List<DataModeSupportHandler> k_Handlers = new(4);
-
-        public static void GetDataModeSupport(UnityObject activeSelection, UnityObject activeContext, HashSet<DataMode> supportedDataModes)
-        {
-            foreach (var handler in k_Handlers)
-            {
-                handler(activeSelection, activeContext, supportedDataModes);
-            }
-        }
-
-        [OnCodeInitializing]
-        static void Rebuild()
-        {
-            k_Handlers.Clear();
-            var candidates = TypeCache.GetMethodsWithAttribute<DeclareDataModeSupportAttribute>();
-            var attributeType = typeof(DeclareDataModeSupportAttribute);
-            foreach (var candidate in candidates)
-            {
-                if (!AttributeHelper.MethodMatchesAnyRequiredSignatureOfAttribute(candidate, attributeType))
-                    continue;
-
-                if (Delegate.CreateDelegate(typeof(DataModeSupportHandler), candidate) is DataModeSupportHandler handler)
-                    k_Handlers.Add(handler);
-            }
-        }
-    }
+    #pragma warning restore CS0618
 }

@@ -26,8 +26,8 @@ namespace UnityEditorInternal
         int m_FrameIndex = -1;
 
         public GUIStyle listElementStyle = null; // if null then a default style is used
-        public GUIStyle renameOverlayStyle = null;  // if null then the default rename style is used
-        public Func<int, string> onGetNameAtIndex; // rect, index, selected
+        public GUIStyle renameOverlayStyle = null;
+        public Func<int, string> onGetNameAtIndex; // index
         public Action<int, string> onNameChangedAtIndex; // index, new name
         public Action<int> onSelectionChanged;
         public Action<int> onDeleteItemAtIndex;
@@ -89,8 +89,6 @@ namespace UnityEditorInternal
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
-
-            //Event evt = Event.current;
 
             if (onGetNameAtIndex == null)
                 Debug.LogError("Ensure to set: 'onGetNameAtIndex'");

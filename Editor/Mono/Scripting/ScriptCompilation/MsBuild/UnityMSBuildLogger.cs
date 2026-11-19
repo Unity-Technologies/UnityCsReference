@@ -60,7 +60,7 @@ class UnityMSBuildLogger
         }
     }
 
-    public static void LogCompilerMessages(BuildResultMessage buildResultMessage, bool buildingForEditor)
+    public static void LogCompilerMessages(BuildResultMessage buildResultMessage, bool buildingForEditor, IReadOnlyList<LogMessage> scriptUpdaterMessages = null)
     {
         const int kLogIdentifierFor_EditorMessages = 1234;
         const int kLogIdentifierFor_PlayerMessages = 1235;
@@ -73,7 +73,7 @@ class UnityMSBuildLogger
         {
             foreach (LogMessage logMessage in projectResults.Value.GetLogMessages())
             {
-                if (logMessage.MessageType == LogMessageType.Message)
+                if (logMessage.MessageType == LogMessageType.Message || IsScriptUpdaterManifestPointer(logMessage))
                 {
                     continue;
                 }
@@ -91,11 +91,25 @@ class UnityMSBuildLogger
             if (logMessage.MessageType == LogMessageType.Message)
                 continue;
 
+            if (IsScriptUpdaterManifestPointer(logMessage))
+                continue;
+
             var instanceId = LookupInstanceId(fileInstanceIdCache, logMessage.File);
             Debug.LogCompilerMessage(FormatLogMessageToString(logMessage), logMessage.File, logMessage.LineNumber, logMessage.ColumnNumber,
                                    buildingForEditor, logMessage.MessageType == LogMessageType.Error, logIdentifier, instanceId);
         }
+
+        // Not tied to a source location, so logged as plain text rather than in compiler message form.
+        foreach (var logMessage in scriptUpdaterMessages ?? Array.Empty<LogMessage>())
+        {
+            Debug.LogCompilerMessage(logMessage.Message, string.Empty, 0, 0,
+                buildingForEditor, logMessage.MessageType == LogMessageType.Error, logIdentifier, EntityId.None);
+        }
     }
+
+    // Tells the Editor where the script updater wrote its updated files; the updater's own messages are logged instead.
+    private static bool IsScriptUpdaterManifestPointer(LogMessage logMessage) =>
+        logMessage.Code == MsBuildCompilation.k_PendingScriptUpdatesWarningCode;
 
     private static string FormatLogMessageToString(LogMessage logMessage)
     {

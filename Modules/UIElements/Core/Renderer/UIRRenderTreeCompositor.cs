@@ -4,14 +4,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Profiling;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Experimental.Rendering;
-using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements.UIR
 {
-    class RenderTreeCompositor : IDisposable
+    partial class RenderTreeCompositor : IDisposable
     {
         enum DrawOperationType
         {
@@ -29,7 +30,11 @@ namespace UnityEngine.UIElements.UIR
             int m_FlatPassIndex;
             FilterFunction m_Filter;
 
-            public DrawOperationType type => m_Type;
+            public DrawOperationType type
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => m_Type;
+            }
 
             // This rectangle represents, in render-tree space (pixels, not points), the clipping rect into which the
             // draw operation can modify pixels from the cleared state. It represents the area of the draw operation
@@ -69,15 +74,20 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (m_HasMargins)
                     return;
-                m_ReadMargins = FilterHelper.GetReadMargins(m_FilterPass, m_Filter);
-                m_WriteMargins = FilterHelper.GetWriteMargins(m_FilterPass, m_Filter);
+                FilterHelper.GetMargins(ref m_FilterPass, m_Filter, out m_ReadMargins, out m_WriteMargins);
                 m_HasMargins = true;
             }
 
-            // Only assigned after the operation has been drawn. Only used by Effect draw operations.
-            public RenderTreeAtlas.AtlasBlock dstAtlasBlock;
+            public RenderTreeAtlas.AtlasBlock dstAtlasBlock = new() { page = -1 };
 
-            // Only assigned on operations that are direct children of RenderTree draw operations.
+            public bool hasAtlasBlock
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => dstAtlasBlock.page >= 0;
+            }
+
+            // Only assigned on outputs (direct children of RenderTree draw operations): the TextureId that their render
+            // tree's quad also holds.
             public TextureId dstTextureId;
 
             public VisualElement visualElement => m_VisualElement; // The visual element that performs the effect or that creates the nested render tree
@@ -86,7 +96,12 @@ namespace UnityEngine.UIElements.UIR
             // OR the render tree to draw)
             public RenderTree renderTree => m_RenderTree;
 
-            public PostProcessingPass FilterPass => m_FilterPass;
+            // By reference: the struct is large, and read for every op in the planning loops
+            public ref PostProcessingPass FilterPass
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => ref m_FilterPass;
+            }
 
             // Flat slot index of this pass in the element's per-pass MaterialPropertyBlock list
             // (see FilterHelper.CountFilterChainPasses for the slot layout). Captured at op-build
@@ -97,6 +112,50 @@ namespace UnityEngine.UIElements.UIR
 
             // Identifies a specific filter application, all passes belonging to one filter share the same id
             public int filterGroupId;
+
+            // Ops whose output an Effect op reads: the source pass first, then the requiredInput if any
+            readonly List<DrawOperation> m_Inputs = new();
+            public List<DrawOperation> inputs
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => m_Inputs;
+            }
+
+            // The op bound to FilterPass.requiredInputTextureName, also listed in inputs
+            public DrawOperation requiredInput;
+
+            // Effect ops that read this op's output. Render tree quads (dstTextureId) are never counted here.
+            readonly List<DrawOperation> m_Readers = new();
+            public List<DrawOperation> readers
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => m_Readers;
+            }
+
+            // Scratch for the atlas planning passes: the readers that haven't run yet in the replayed order
+            public int planReaders;
+
+            // Scratch for the scheduling: the ops this one waits for that haven't been scheduled yet
+            public int pendingDependencies;
+
+            // Scratch for k_TallestBlockFirst: the position before the sort, which keeps blocks of the same size in order
+            public int sortIndex;
+
+            // Scratch for the scheduling: the chunk that runs the op
+            public int chunk;
+
+            // The op renders the texture of a quad that its parent render tree draws
+            public bool isOutput
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => parent != null && parent.type == DrawOperationType.RenderTree;
+            }
+
+            public void AddInput(DrawOperation input)
+            {
+                m_Inputs.Add(input);
+                input.m_Readers.Add(this);
+            }
 
             public void Init(VisualElement ve, in PostProcessingPass filterPass, int flatPassIndex, FilterFunction filter)
             {
@@ -128,9 +187,10 @@ namespace UnityEngine.UIElements.UIR
 
             public void Reset()
             {
-                // Do not call InitPointers() here since the Reset() happens
-                // while we are crawling the operation hierarchy.
+                if (dstTextureId.IsValid())
+                    m_RenderTree.quadTextureId = TextureId.invalid; // the atlas owns and releases the TextureId
 
+                InitPointers();
                 m_Type = DrawOperationType.Undefined;
                 m_VisualElement = null;
                 m_RenderTree = null;
@@ -138,6 +198,13 @@ namespace UnityEngine.UIElements.UIR
                 m_FlatPassIndex = -1;
                 m_Filter = new FilterFunction();
                 filterGroupId = 0;
+                m_Inputs.Clear();
+                requiredInput = null;
+                m_Readers.Clear();
+                planReaders = 0;
+                pendingDependencies = 0;
+                sortIndex = 0;
+                chunk = 0;
 
                 bounds = default;
                 drawSourceBounds = default;
@@ -149,7 +216,7 @@ namespace UnityEngine.UIElements.UIR
                 chainMargins = default;
                 chainPassCount = 0;
                 hasChainMargins = false;
-                dstAtlasBlock = default;
+                dstAtlasBlock = new RenderTreeAtlas.AtlasBlock { page = -1 };
                 dstTextureId = TextureId.invalid;
             }
 
@@ -171,13 +238,30 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        // The ops in the order they run, cut into batches, and the batches into chunks
+        sealed class ExecutionPlan
+        {
+            public readonly List<DrawOperation> order = new(); // Every op but the root, children before parents
+
+            // Start of each batch in order. The ops of a batch run together: an effect batch shares its material
+            // and pass, and draws one instanced draw per target and input pages.
+            public readonly List<int> batchStarts = new();
+
+            // Start of each chunk in batchStarts. A chunk runs to its end before the next one starts.
+            public readonly List<int> chunkStarts = new();
+
+            public int GetBatchEnd(int batch) => batch + 1 < batchStarts.Count ? batchStarts[batch + 1] : order.Count;
+        }
+
         readonly RenderTreeManager m_RenderTreeManager;
+        readonly RenderTreeAtlas m_Atlas;
+        readonly ExecutionPlan m_Plan = new();
+        readonly BatchScheduler m_Scheduler;
+        readonly AtlasPlanner m_AtlasPlanner;
+        readonly EffectDrawer m_EffectDrawer;
         DrawOperation m_RootOperation;
-        MaterialPropertyBlock m_Block = new();
-        ObjectPool<DrawOperation> m_DrawOperationPool = new(() => new DrawOperation());
+        readonly ImplicitPool<DrawOperation> m_DrawOperationPool = new(() => new DrawOperation(), op => op.Reset(), 32, int.MaxValue);
         int m_NextFilterGroupId;
-        [NoAutoStaticsCleanup] // per-material log dedup: a persistently broken filter logs once without hiding other filters' failures
-        static readonly HashSet<EntityId> s_EffectDrawErrorLogged = new();
 
         // Snapshotted once per frame: the underlying graphics caps are a native read, and they change
         // when the device is re-created (graphics API switch, RenderDoc load), so they can't be cached longer.
@@ -196,6 +280,10 @@ namespace UnityEngine.UIElements.UIR
         public RenderTreeCompositor(RenderTreeManager owner)
         {
             m_RenderTreeManager = owner;
+            m_Atlas = new RenderTreeAtlas(owner.textureRegistry);
+            m_Scheduler = new BatchScheduler(m_Plan);
+            m_AtlasPlanner = new AtlasPlanner(m_Plan, m_Atlas, owner);
+            m_EffectDrawer = new EffectDrawer(m_Plan, m_Atlas, owner);
         }
 
         // Here we do the following:
@@ -209,7 +297,8 @@ namespace UnityEngine.UIElements.UIR
         {
             CleanupOperationTree();
 
-            if (rootRenderTree == null)
+            // Without a nested tree, nothing renders into the atlas
+            if (rootRenderTree?.firstChild == null)
                 return;
 
             m_MaxBlockWidth = RenderTreeAtlas.maxBlockWidth;
@@ -221,10 +310,48 @@ namespace UnityEngine.UIElements.UIR
             m_PanelIsFlat = m_RenderTreeManager.panel.isFlat;
             m_HasScreenClip = m_PanelIsFlat && !m_RenderTreeManager.drawInCameras;
 
-            BuildDrawOperationTree(rootRenderTree);
-            UpdateDrawBounds_PostOrder(m_RootOperation);
-            AssignTextureIds_DepthFirst(m_RootOperation);
+            using (k_MarkerBuild.Auto())
+            {
+                BuildDrawOperationTree(rootRenderTree);
+                UpdateDrawBounds_PostOrder(m_RootOperation);
+                AddToExecutionOrder_PostOrder(m_RootOperation);
+            }
+            using (k_MarkerSchedule.Auto())
+                m_Scheduler.Schedule(m_RenderTreeManager.filterTextureBudget);
+            m_AtlasPlanner.Plan();
+            using (k_MarkerAssignTextures.Auto())
+                AssignTextureIds_DepthFirst(m_RootOperation);
         }
+
+        static readonly ProfilerMarker k_MarkerBuild = new(ProfilerCategory.UIToolkit, "RenderTreeCompositor.Build");
+        static readonly ProfilerMarker k_MarkerSchedule = new(ProfilerCategory.UIToolkit, "RenderTreeCompositor.Schedule");
+        static readonly ProfilerMarker k_MarkerMeasure = new(ProfilerCategory.UIToolkit, "RenderTreeCompositor.MeasureAtlas");
+        static readonly ProfilerMarker k_MarkerPack = new(ProfilerCategory.UIToolkit, "RenderTreeCompositor.PackAtlas");
+        static readonly ProfilerMarker k_MarkerAssignTextures = new(ProfilerCategory.UIToolkit, "RenderTreeCompositor.AssignTextures");
+        static readonly ProfilerMarker k_MarkerRender = new(ProfilerCategory.UIToolkit, "RenderTreeCompositor.Render");
+
+        void AddToExecutionOrder_PostOrder(DrawOperation op)
+        {
+            for (var child = op.firstChild; child != null; child = child.nextSibling)
+                AddToExecutionOrder_PostOrder(child);
+
+            if (op.parent != null)
+                m_Plan.order.Add(op);
+        }
+
+        // Packing mixed sizes in arbitrary order fragments the packer's free list and makes packing quadratic
+        [NoAutoStaticsCleanup] // stateless sort comparator; no captured state
+        static readonly Comparison<DrawOperation> k_TallestBlockFirst = (a, b) =>
+        {
+            int byHeight = b.dstAtlasBlock.height.CompareTo(a.dstAtlasBlock.height);
+            if (byHeight != 0)
+                return byHeight;
+            int byWidth = b.dstAtlasBlock.width.CompareTo(a.dstAtlasBlock.width);
+            return byWidth != 0 ? byWidth : a.sortIndex.CompareTo(b.sortIndex);
+        };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool NeedsAtlasBlock(DrawOperation op) => op.dstAtlasBlock.width > 0 && op.dstAtlasBlock.height > 0;
 
         void BuildDrawOperationTree(RenderTree rootRenderTree)
         {
@@ -251,6 +378,7 @@ namespace UnityEngine.UIElements.UIR
             // Running flat slot base, walked backwards in step with the reverse iteration below so
             // each op stores its flat block index (filter i pass j = base of filter i + j).
             int flatBase = FilterHelper.CountFilterChainPasses(computedFilter);
+            DrawOperation outermostPass = null;
 
             // Reverse iteration: outer pass first becomes innermost child in the operation tree.
             for (int i = computedFilter.Length - 1; i >= 0; i--)
@@ -262,12 +390,13 @@ namespace UnityEngine.UIElements.UIR
                 if (filterDef == null || filterDef.passes == null)
                     continue;
 
+                var passes = filterDef.passes;
                 int filterGroupId = m_NextFilterGroupId++;
-                flatBase -= filterDef.passes.Length;
+                flatBase -= passes.Length;
 
-                for (int j = filterDef.passes.Length - 1; j >= 0; j--)
+                for (int j = passes.Length - 1; j >= 0; j--)
                 {
-                    var pass = filterDef.passes[j];
+                    ref var pass = ref passes[j];
                     if (pass.material == null)
                         continue;
 
@@ -277,6 +406,7 @@ namespace UnityEngine.UIElements.UIR
 
                     parentOperation.AddChild(operation);
                     parentOperation = operation;
+                    outermostPass ??= operation;
                 }
             }
 
@@ -284,12 +414,30 @@ namespace UnityEngine.UIElements.UIR
             treeDrawOp.Init(renderTree);
 
             parentOperation.AddChild(treeDrawOp);
+            LinkPassInputs(outermostPass);
 
             var childRenderTree = renderTree.firstChild;
             while (childRenderTree != null)
             {
                 AddChildrenOperations_DepthFirst(treeDrawOp, childRenderTree);
                 childRenderTree = childRenderTree.nextSibling;
+            }
+        }
+
+        // Requires the whole chain down to the content op, so that "Source" can resolve
+        static void LinkPassInputs(DrawOperation outermostPass)
+        {
+            for (var op = outermostPass; op != null && op.type == DrawOperationType.Effect; op = op.firstChild)
+            {
+                op.AddInput(op.firstChild);
+
+                string name = op.FilterPass.requiredInputTextureName;
+                if (string.IsNullOrEmpty(name))
+                    continue;
+
+                op.requiredInput = ResolveInputOp(op, name);
+                if (op.requiredInput != null)
+                    op.AddInput(op.requiredInput);
             }
         }
 
@@ -424,7 +572,7 @@ namespace UnityEngine.UIElements.UIR
                     op.renderTree.rasterPixelsPerPoint = Vector2.zero;
 
                 RenderTreeAtlas.AtlasBlock block;
-                if (RenderTreeAtlas.ReserveSize(width, height, out block))
+                if (RenderTreeAtlas.ReserveSize(width, height, m_MaxBlockWidth, m_MaxBlockHeight, out block))
                 {
                     // A clamped reserve squeezes the content; rescale the read-margin offsets to match (UUM-147797)
                     if (op.parent.type == DrawOperationType.Effect && (block.width < width || block.height < height))
@@ -445,11 +593,8 @@ namespace UnityEngine.UIElements.UIR
                     if (op.type == DrawOperationType.RenderTree && width > 0 && height > 0)
                         op.renderTree.rasterPixelsPerPoint = Vector2.Scale(op.pixelsPerPoint, new Vector2(block.width / (float)width, block.height / (float)height));
 
-                    if (op.parent.type == DrawOperationType.RenderTree)
-                    {
+                    if (op.isOutput)
                         op.renderTree.quadRect = PixelsToPoints(op.bounds, op.pixelsPerPoint);
-                        op.renderTree.quadUVRect = block.uvRect;
-                    }
                 }
             }
         }
@@ -638,15 +783,16 @@ namespace UnityEngine.UIElements.UIR
                 $"maximum supported size ({m_MaxBlockWidth}x{m_MaxBlockHeight}); {action}.");
         }
 
-        // In the future, we could reuse textures, but for now we simply allocate one TextureId for each renderTree.
+        // The quads whose textures share a page share its TextureId, which the atlas owns
         void AssignTextureIds_DepthFirst(DrawOperation op)
         {
-            if (op.parent?.type == DrawOperationType.RenderTree)
+            if (op.isOutput)
             {
                 Debug.Assert(!op.renderTree.quadTextureId.IsValid());
-                TextureId textureId = m_RenderTreeManager.textureRegistry.AllocAndAcquireDynamic();
+                TextureId textureId = op.hasAtlasBlock ? m_Atlas.GetTextureId(op.dstAtlasBlock.page) : TextureId.invalid;
                 op.dstTextureId = textureId;
                 op.renderTree.quadTextureId = textureId;
+                op.renderTree.quadUVRect = op.dstAtlasBlock.uvRect;
                 op.renderTree.quadIsGammaEncoded = m_RenderTreeManager.forceGammaRendering && op.type == DrawOperationType.RenderTree;
                 op.parent.renderTree.OnRenderDataVisualsChanged(op.visualElement.renderData, false);
             }
@@ -665,190 +811,110 @@ namespace UnityEngine.UIElements.UIR
 
         public void RenderNestedPasses()
         {
-            // Clear the property block to avoid accidentally inheriting properties from previous context.
-            m_Block.Clear();
+            m_EffectDrawer.BeginFrame();
+            m_ContentGroupCount = 0;
+            if (m_Plan.batchStarts.Count == 0)
+                return;
 
-            ExecuteDrawOperation_PostOrder(m_RootOperation, false);
+            using (k_MarkerRender.Auto())
+            {
+                // The order must match the one AtlasPlanner replayed
+                var executionOrder = m_Plan.order;
+                var batchStarts = m_Plan.batchStarts;
+                for (int batch = 0; batch < batchStarts.Count; ++batch)
+                {
+                    m_Atlas.BeginExecution(batch);
+                    int start = batchStarts[batch];
+                    int end = m_Plan.GetBatchEnd(batch);
+                    if (executionOrder[start].type == DrawOperationType.RenderTree)
+                        ExecuteTreeBatch(start, end);
+                    else
+                        m_EffectDrawer.DrawBatch(start, end);
+                    m_Atlas.EndExecution(batch);
+                }
+            }
+        }
+
+        readonly List<DrawOperation> m_BatchOps = new();
+        readonly List<UIRenderDevice.NestedChain> m_NestedChains = new();
+        int m_ContentGroupCount;
+
+        // The trees that draw into the same page render together
+        void ExecuteTreeBatch(int start, int end)
+        {
+            var executionOrder = m_Plan.order;
+            m_BatchOps.Clear();
+            for (int i = start; i < end; ++i)
+            {
+                var op = executionOrder[i];
+                if (BeginOperation(m_Atlas, op) && op.renderTree.firstCommand != null)
+                    m_BatchOps.Add(op);
+            }
+            m_Atlas.PrepareRegions();
+
+            while (m_BatchOps.Count > 0)
+            {
+                var block = m_BatchOps[0].dstAtlasBlock;
+                m_NestedChains.Clear();
+                int kept = 0;
+                for (int i = 0; i < m_BatchOps.Count; ++i)
+                {
+                    var op = m_BatchOps[i];
+                    if (op.dstAtlasBlock.page != block.page)
+                    {
+                        m_BatchOps[kept++] = op;
+                        continue;
+                    }
+
+                    m_NestedChains.Add(new UIRenderDevice.NestedChain
+                    {
+                        head = op.renderTree.firstCommand,
+                        viewport = op.dstAtlasBlock.rect,
+                        bounds = PixelsToPoints(op.bounds, op.pixelsPerPoint),
+                        pixelsPerPoint = GetTreePixelsPerPoint(op),
+                    });
+                }
+                m_BatchOps.RemoveRange(kept, m_BatchOps.Count - kept);
+
+                ++m_ContentGroupCount;
+                m_RenderTreeManager.RenderNestedTreeGroup(m_NestedChains, m_Atlas.GetTexture(block));
+            }
+        }
+
+        float GetTreePixelsPerPoint(DrawOperation op)
+        {
+            float pixelsPerPoint = Mathf.Sqrt(op.pixelsPerPoint.x * op.pixelsPerPoint.y);
+            return pixelsPerPoint > 0 ? pixelsPerPoint : m_PixelsPerPoint;
+        }
+
+        static bool BeginOperation(RenderTreeAtlas atlas, DrawOperation op)
+        {
+            if (op.bounds.width <= 0)
+                return false;
+            Debug.Assert(op.bounds.height > 0); // Otherwise, the width should have been set to 0 as well.
+            return op.hasAtlasBlock && atlas.BeginDraw(op.dstAtlasBlock, IsReadByCustomPass(op));
+        }
+
+        // Built-in passes are known to sample inside their source rect: only custom passes need the editor's pink margins
+        static bool IsReadByCustomPass(DrawOperation op)
+        {
+            var readers = op.readers;
+            for (int i = 0; i < readers.Count; ++i)
+            {
+                if (readers[i].filter.type == FilterFunctionType.Custom)
+                    return true;
+            }
+            return false;
         }
 
         // For panels that skip rendering: visits the nested trees RenderNestedPasses would render, without rendering them.
         public void CallNestedImmediateModeElements()
         {
-            ExecuteDrawOperation_PostOrder(m_RootOperation, true);
-        }
-
-
-        [NoAutoStaticsCleanup] // pre-allocated scratch array; infrastructure
-        static Vector4[] s_UVRects = new Vector4[1];
-
-
-        void ExecuteDrawOperation_PostOrder(DrawOperation op, bool callImmediateModeElementsOnly)
-        {
-            var child = op.firstChild;
-            while (child != null)
+            foreach (var op in m_Plan.order)
             {
-                ExecuteDrawOperation_PostOrder(child, callImmediateModeElementsOnly);
-                child = child.nextSibling;
+                if (op.type == DrawOperationType.RenderTree && op.bounds.width > 0)
+                    UIRenderDevice.CallImmediateCommands(op.renderTree.firstCommand, PixelsToPoints(op.bounds, op.pixelsPerPoint));
             }
-
-            if (op.parent == null) // Skip the root
-                return;
-
-            RectInt bounds = op.bounds;
-            if (bounds.width <= 0)
-                return;
-
-            Debug.Assert(bounds.height > 0); // Otherwise, the width should have been set to 0 as well.
-
-            if (callImmediateModeElementsOnly)
-            {
-                if (op.type == DrawOperationType.RenderTree)
-                    UIRenderDevice.CallImmediateCommands(op.renderTree.firstCommand, PixelsToPoints(bounds, op.pixelsPerPoint));
-                return;
-            }
-
-            bool forceGamma = m_RenderTreeManager.forceGammaRendering;
-
-            // Under force-gamma: a filter's last pass outputs sRGB (parent samples linear + re-applies gamma); a plain
-            // nested-tree quad stays UNorm so it blends in gamma like direct rendering (UI-5094).
-            bool isLastFilterPass = op.type == DrawOperationType.Effect && op.parent?.type == DrawOperationType.RenderTree;
-
-            // Only render trees use the stencil (masking)
-            bool needsDepthStencil = op.type == DrawOperationType.RenderTree;
-
-            if (RenderTreeAtlas.CreateTextureForAtlasBlock(ref op.dstAtlasBlock, forceGamma && !isLastFilterPass, needsDepthStencil))
-            {
-                if (op.dstTextureId.IsValid())
-                    m_RenderTreeManager.textureRegistry.UpdateDynamic(op.dstTextureId, op.dstAtlasBlock.texture);
-            }
-            else
-            {
-                Debug.LogError($"Failed to create a texture for draw operation with bounds {bounds}.");
-                return;
-            }
-
-            switch (op.type)
-            {
-                case DrawOperationType.Effect:
-                {
-                    try
-                    {
-                        Debug.Assert(op.firstChild != null, "An effect draw operation must have at least one child operation to render from.");
-
-                        var dstTex = op.dstAtlasBlock.texture;
-                        var dstRect = op.dstAtlasBlock.rect;
-                        var srcTexEntry = op.firstChild.dstAtlasBlock;
-                        var srcUVRect = srcTexEntry.uvRect;
-
-                        bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma;
-
-                        // Calculate adjusted UV rect with texture offsets
-                        var texOffsets = op.drawSourceTexOffsets;
-                        float texWidth = srcTexEntry.texture.width;
-                        float texHeight = srcTexEntry.texture.height;
-                        var uvRect = new Rect(
-                            srcUVRect.x + texOffsets.x / texWidth,
-                            srcUVRect.y + texOffsets.w / texHeight,
-                            srcUVRect.width - (texOffsets.x + texOffsets.z) / texWidth,
-                            srcUVRect.height - (texOffsets.y + texOffsets.w) / texHeight);
-
-                        // Look up the pre-built MaterialPropertyBlock for this pass, populated in
-                        // the update phase by FilterHelper.InvokeFilterCallbacksForElement (default
-                        // parameter bindings + user applySettingsCallback). The compositor layers
-                        // its per-pass uniforms on top; nothing here may run user code.
-                        var elementRenderData = op.visualElement.renderData;
-                        MaterialPropertyBlock perPassBlock = null;
-                        if (elementRenderData != null && elementRenderData.hasExtraData)
-                        {
-                            var perPassBlocks = m_RenderTreeManager.GetExtraData(elementRenderData).filterCallbackPropertyBlocks;
-                            if (perPassBlocks != null && (uint)op.FlatPassIndex < (uint)perPassBlocks.Count)
-                                perPassBlock = perPassBlocks[op.FlatPassIndex];
-                        }
-                        if (perPassBlock == null)
-                        {
-                            // The chain wasn't pre-populated this frame (e.g. it became non-empty
-                            // after the update-phase walk). Fall back to the shared block with the
-                            // default bindings so the pass still produces a valid output.
-                            m_Block.Clear();
-                            FilterHelper.ApplyDefaultParameterBindings(m_Block, op.FilterPass, op.filter, readsGamma);
-                            perPassBlock = m_Block;
-                        }
-
-                        // Set up additional properties for compositor (UV rects, etc)
-                        // unity_uie_UVRect must match the UV domain the quad's UV0 actually spans (uvRect,
-                        // margin-adjusted), not the raw atlas block (srcUVRect, margin-inflated)
-                        s_UVRects[0] = new Vector4(uvRect.x, uvRect.y, uvRect.width, uvRect.height);
-                        perPassBlock.SetVectorArray(FilterHelper.s_UVRectId, s_UVRects);
-
-                        // In force-gamma rendering, the last filter pass outputs linear because the parent render tree expects texture reads to output linear.
-                        bool outputLinear = forceGamma && isLastFilterPass;
-
-                        // Set up projection matrix for compositor rendering
-                        var projection = ProjectionUtils.Ortho(bounds.xMin, bounds.xMax, bounds.yMax, bounds.yMin, 0, 1);
-                        GL.LoadProjectionMatrix(projection);
-                        GL.modelview = Matrix4x4.identity;
-
-                        var drawRect = op.drawSourceBounds;
-                        var viewportRect = new Rect(dstRect.xMin, dstRect.yMin, dstRect.width, dstRect.height);
-                        var drawBounds = new RectInt(drawRect.xMin, drawRect.yMin, drawRect.width, drawRect.height);
-
-                        if (!string.IsNullOrEmpty(op.FilterPass.requiredInputTextureName))
-                            BindRequiredInput(perPassBlock, op, drawBounds, uvRect);
-
-                        // Use shared filter helper (with custom projection already set).
-                        FilterHelper.ApplyFilterPass(
-                            source: srcTexEntry.texture,
-                            target: dstTex,
-                            pass: op.FilterPass,
-                            propertyBlock: perPassBlock,
-                            outputLinear: outputLinear,
-                            sourceUVRect: uvRect,
-                            drawBounds: drawBounds,
-                            viewport: viewportRect,
-                            usePixelMatrix: false  // We set up projection matrix ourselves
-                        );
-                    }
-                    catch (Exception e)
-                    {
-                        // The pass failed to render (e.g. a misconfigured custom filter material);
-                        // the destination texture is left unwritten.
-                        var material = op.FilterPass.material;
-                        if (s_EffectDrawErrorLogged.Add(material != null ? material.GetEntityId() : EntityId.None))
-                            Debug.LogException(e, material);
-                    }
-
-                    if (op.parent.filterGroupId != op.filterGroupId)
-                        ReleaseFilterInputs(op);
-                    break;
-                }
-                case DrawOperationType.RenderTree:
-                {
-                    float treePixelsPerPoint = Mathf.Sqrt(op.pixelsPerPoint.x * op.pixelsPerPoint.y);
-                    m_RenderTreeManager.RenderSingleTree(op.renderTree, op.dstAtlasBlock.texture, op.dstAtlasBlock.rect, PixelsToPoints(bounds, op.pixelsPerPoint), treePixelsPerPoint);
-                    break;
-                }
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        void BindRequiredInput(MaterialPropertyBlock block, DrawOperation currentOp, RectInt drawRect, Rect uvRect)
-        {
-            string name = currentOp.FilterPass.requiredInputTextureName;
-
-            DrawOperation sourceOp = ResolveInputOp(currentOp, name);
-            if (sourceOp == null)
-            {
-                Debug.LogWarning($"Filter pass requested input '{name}' but no matching upstream pass was found.");
-                return;
-            }
-
-            if (sourceOp.dstAtlasBlock.texture == null)
-                return;
-            if (sourceOp.bounds.width <= 0 || sourceOp.bounds.height <= 0)
-                return;
-
-            BindMappedTexture(block, sourceOp, drawRect, uvRect, FilterHelper.GetInputBindingIds(name));
         }
 
         static DrawOperation ResolveInputOp(DrawOperation currentOp, string name)
@@ -878,79 +944,105 @@ namespace UnityEngine.UIElements.UIR
             return null;
         }
 
-        static void BindMappedTexture(MaterialPropertyBlock block, DrawOperation sourceOp, RectInt drawRect, Rect uvRect, FilterHelper.InputBindingIds ids)
-        {
-            var srcUV = sourceOp.dstAtlasBlock.uvRect;
-            var srcBounds = sourceOp.bounds;
-
-            // IN.uv interpolates uvRect across drawRect
-            float Bx = srcUV.width / srcBounds.width;
-            float By = srcUV.height / srcBounds.height;
-            float Ax = drawRect.width / uvRect.width;
-            float Ay = drawRect.height / uvRect.height;
-
-            float scaleX = Bx * Ax;
-            float scaleY = By * Ay;
-            float offsetX = srcUV.xMin + Bx * (drawRect.xMin - srcBounds.xMin) - uvRect.xMin * scaleX;
-            float offsetY = srcUV.yMax - By * (drawRect.yMin - srcBounds.yMin) - uvRect.yMax * scaleY;
-
-            block.SetTexture(ids.texId, sourceOp.dstAtlasBlock.texture);
-            block.SetVector(ids.scaleOffsetId, new Vector4(scaleX, scaleY, offsetX, offsetY));
-            block.SetVector(ids.uvRectId, new Vector4(srcUV.xMin, srcUV.yMin, srcUV.xMax, srcUV.yMax));
-        }
-
-        // Passes only read inputs from their own filter (see ResolveInputOp), so once the last pass has drawn, the
-        // intermediate passes and the filter input can return to the pool for the remaining operations of the frame.
-        static void ReleaseFilterInputs(DrawOperation lastPass)
-        {
-            int groupId = lastPass.filterGroupId;
-            var op = lastPass.firstChild;
-            while (op != null)
-            {
-                Debug.Assert(!op.dstTextureId.IsValid());
-                ReleaseTexture(op);
-                if (op.filterGroupId != groupId)
-                    break;
-                op = op.firstChild;
-            }
-        }
-
-        static void ReleaseTexture(DrawOperation op)
-        {
-            if (op.dstAtlasBlock.texture == null)
-                return;
-            RenderTexture.ReleaseTemporary(op.dstAtlasBlock.texture);
-            op.dstAtlasBlock.texture = null;
-        }
-
         void CleanupOperationTree()
         {
-            if (m_RootOperation != null)
-            {
-                CleanupOperation_PostOrder(m_RootOperation);
-                m_RootOperation = null;
-            }
+            m_DrawOperationPool.ReturnAll();
+            m_RootOperation = null;
+
+            m_Plan.order.Clear();
+            m_Plan.batchStarts.Clear();
+            m_Plan.chunkStarts.Clear();
+            m_Atlas.ReleaseAll();
         }
 
-        void CleanupOperation_PostOrder(DrawOperation op)
+        public static class Testing
         {
-            DrawOperation child = op.firstChild;
-            while (child != null)
+            [NoAutoStaticsCleanup] // test-only switch, reset by the tests that set it
+            public static bool disableBatching;
+
+            [NoAutoStaticsCleanup] // test-only switch, reset by the tests that set it
+            public static bool disableTreeGrouping;
+
+            // In pixels, and overrides PanelSettings.filterTextureBudget; 0 keeps the panel's budget
+            [NoAutoStaticsCleanup] // test-only switch, reset by the tests that set it
+            public static long chunkBudget;
+
+            public static int CountChunks(RenderTreeCompositor compositor) => compositor.m_Plan.chunkStarts.Count;
+
+            public static int CountEffectBatches(RenderTreeCompositor compositor)
             {
-                CleanupOperation_PostOrder(child);
-                child = child.nextSibling;
+                int count = 0;
+                foreach (var start in compositor.m_Plan.batchStarts)
+                {
+                    if (compositor.m_Plan.order[start].type == DrawOperationType.Effect)
+                        ++count;
+                }
+                return count;
             }
 
-            if (op.dstTextureId.IsValid())
+            // The block that the element's content was drawn into in the last frame; page is -1 when there is none
+            public static RenderTreeAtlas.AtlasBlock GetContentBlock(RenderTreeCompositor compositor, VisualElement element)
             {
-                m_RenderTreeManager.textureRegistry.Release(op.dstTextureId);
-                op.dstTextureId = TextureId.invalid;
-                op.renderTree.quadTextureId = TextureId.invalid;
+                foreach (var op in compositor.m_Plan.order)
+                {
+                    if (op.type == DrawOperationType.RenderTree && op.visualElement == element)
+                        return op.dstAtlasBlock;
+                }
+                return new RenderTreeAtlas.AtlasBlock { page = -1 };
             }
 
-            ReleaseTexture(op);
-            op.Reset();
-            m_DrawOperationPool.Release(op);
+            public static RenderTexture GetTexture(RenderTreeCompositor compositor, in RenderTreeAtlas.AtlasBlock block) => compositor.m_Atlas.GetTexture(block);
+            public static int CountPageClears(RenderTreeCompositor compositor) => RenderTreeAtlas.Testing.CountPageClears(compositor.m_Atlas);
+            public static long PeakTransientArea(RenderTreeCompositor compositor) => RenderTreeAtlas.Testing.PeakTransientArea(compositor.m_Atlas);
+
+            public static int CountRegionClears(RenderTreeCompositor compositor)
+            {
+                int count = 0;
+                foreach (var op in compositor.m_Plan.order)
+                {
+                    if (op.hasAtlasBlock && op.dstAtlasBlock.needsClear)
+                        ++count;
+                }
+                return count;
+            }
+
+            public static int CountLiveTextures(RenderTreeCompositor compositor) => RenderTreeAtlas.Testing.CountLiveTextures(compositor.m_Atlas);
+            public static int CountLiveIntermediateTextures(RenderTreeCompositor compositor) => RenderTreeAtlas.Testing.CountLiveIntermediateTextures(compositor.m_Atlas);
+            public static int CountPages(RenderTreeCompositor compositor) => RenderTreeAtlas.Testing.CountPages(compositor.m_Atlas);
+            public static long CountPagePixels(RenderTreeCompositor compositor) => RenderTreeAtlas.Testing.CountPagePixels(compositor.m_Atlas);
+            public static int CountEffectPasses(RenderTreeCompositor compositor) => CountOperations(compositor, DrawOperationType.Effect);
+            public static int CountNestedTreeDraws(RenderTreeCompositor compositor) => CountOperations(compositor, DrawOperationType.RenderTree);
+
+            static int CountOperations(RenderTreeCompositor compositor, DrawOperationType type)
+            {
+                int count = 0;
+                foreach (var op in compositor.m_Plan.order)
+                {
+                    if (op.type == type)
+                        ++count;
+                }
+                return count;
+            }
+
+            // In the last RenderNestedPasses: an instanced draw counts once, whatever its quad count
+            public static int CountEffectDraws(RenderTreeCompositor compositor) => compositor.m_EffectDrawer.effectDrawCount;
+
+            // In the last RenderNestedPasses: the trees rendered together count once
+            public static int CountContentGroups(RenderTreeCompositor compositor) => compositor.m_ContentGroupCount;
+
+            // In the last RenderNestedPasses
+            public static int CountInstancedPasses(RenderTreeCompositor compositor) => compositor.m_EffectDrawer.instancedPassCount;
+
+            // A draw must never sample the texture it renders into
+            public static bool AnyOperationReadsItsOwnPage(RenderTreeCompositor compositor)
+            {
+                foreach (var op in compositor.m_Plan.order)
+                {
+                    if (op.hasAtlasBlock && compositor.m_AtlasPlanner.ReadsItsOwnPage(op))
+                        return true;
+                }
+                return false;
+            }
         }
 
         #region Dispose Pattern

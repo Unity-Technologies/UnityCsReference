@@ -277,6 +277,12 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public static extern void FlowEvent(uint flowId, ProfilerFlowEventType flowEventType);
 
         [NativeMethod(IsThreadSafe = true)]
+        internal static extern unsafe ulong BeginAsyncSample(IntPtr markerPtr, int metadataCount, void* metadata);
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern unsafe void EndAsyncSample(ulong asyncId, int metadataCount, void* metadata);
+
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void Internal_BeginWithObject(IntPtr markerPtr, UnityEngine.Object contextUnityObject);
 
         [NativeConditional("ENABLE_PROFILER")]

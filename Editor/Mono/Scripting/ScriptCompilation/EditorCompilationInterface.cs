@@ -39,6 +39,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        [OnCodeLoaded]
+        static void RegisterQuitHandler()
+        {
+            EditorApplication.quitting += CancelAndWaitForActiveBuildOnQuit;
+        }
+
+        static void CancelAndWaitForActiveBuildOnQuit()
+        {
+            editorCompilation?.CancelAndWaitForActiveBuild();
+        }
+
         static void LogException(Exception exception)
         {
             bool exceptionProcessed = Instance.CompilationSetupErrorsTracker.ProcessException(exception);

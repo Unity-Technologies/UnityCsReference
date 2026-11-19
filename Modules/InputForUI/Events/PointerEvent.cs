@@ -46,14 +46,22 @@ namespace UnityEngine.InputForUI
             State = 5,
 
             /// <summary>
-            /// Button was released.
+            /// The press ended without a release the pointer can report, such as when its input was reset.
             /// Event is sent strictly between PointerEntered and PointerLeft.
+            /// </summary>
+            Canceled = 6,
+
+            /// <summary>
+            /// Touch was canceled.
+            /// Event is sent strictly between PointerEntered and PointerLeft.
+            /// Same value as Canceled, which is preferred: the event can come from any pointer, so use eventSource to tell the device.
             /// </summary>
             TouchCanceled = 6,
 
             /// <summary>
             /// Tracked device has become inactive or is out of range.
             /// Event is sent strictly between PointerEntered and PointerLeft.
+            /// Same value as Canceled, which is preferred: the event can come from any pointer, so use eventSource to tell the device.
             /// </summary>
             TrackedCanceled = 6,
         }

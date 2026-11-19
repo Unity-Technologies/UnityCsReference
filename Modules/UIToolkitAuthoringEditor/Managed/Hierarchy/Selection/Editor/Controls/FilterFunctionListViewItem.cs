@@ -189,7 +189,9 @@ namespace Unity.UIToolkit.Editor
                         floatField.SetValueWithoutNotify(clamped);
                     floatValue = clamped;
                 }
-                f.SetParameter(paramIndex, new FilterParameter(floatValue));
+                var parameter = f.GetParameter(paramIndex);
+                parameter.floatValue = floatValue;
+                f.SetParameter(paramIndex, parameter);
             }
             else if (evt.newValue is Color colorValue)
             {

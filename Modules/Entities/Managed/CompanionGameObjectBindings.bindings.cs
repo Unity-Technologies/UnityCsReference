@@ -10,7 +10,7 @@ namespace Unity.Entities
     [NativeHeader("Modules/Entities/Public/CompanionGameObjectBindings.bindings.h")]
     internal static unsafe class CompanionGameObjectBindings
     {
-        // Instantiates count copies of source into its scene, writing the new GameObject and Transform ids.
+        // Instantiates count copies of source into its scene, each with the id in newEntityIds, and writes the Transform ids.
         [FreeFunction("CompanionGameObjectBindings::InstantiateCompanionGameObjects")]
         internal static extern void InstantiateCompanionGameObjects(EntityId source, void* newEntityIds, void* newTransformEntityIds, int count);
     }

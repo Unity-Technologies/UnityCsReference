@@ -7,9 +7,11 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Search
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     interface ISearchListComparer : IComparer<SearchItem>
     {
 
@@ -122,12 +124,12 @@ namespace UnityEditor.Search
                 context.asyncItemReceived += OnAsyncItemsReceived;
         }
 
-#pragma warning disable UA5000 // Unsubscribes the context and disposes an owned context; lists returned to callers may be dropped without Dispose.
+#pragma warning disable UAC0045 // Unsubscribes the context and disposes an owned context; lists returned to callers may be dropped without Dispose.
         ~BaseSearchList()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public void Dispose()
         {

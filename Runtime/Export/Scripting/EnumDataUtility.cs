@@ -11,7 +11,7 @@ using UnityEngine.Pool;
 
 namespace UnityEngine
 {
-    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal struct EnumData
     {
         public Enum[] values;
@@ -25,7 +25,7 @@ namespace UnityEngine
         public bool serializable;
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class EnumDataUtility
     {
         public enum CachedType

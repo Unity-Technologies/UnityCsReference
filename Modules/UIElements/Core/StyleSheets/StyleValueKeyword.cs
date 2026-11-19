@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal enum StyleValueKeyword
     {
         Inherit,
@@ -21,7 +21,6 @@ namespace UnityEngine.UIElements
         Contain
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class StyleValueKeywordExtension
     {
         public static string ToUssString(this StyleValueKeyword svk)

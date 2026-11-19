@@ -15,6 +15,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The <see cref="Background"/> value.
         /// </summary>
+        /// <remarks>
+        /// A gradient read from <see cref="VisualElement.style"/> has its own copy of the color stops. To change the style, modify the stops and assign the value back.
+        /// The element stores its own copy of the stops, so later changes to an assigned value have no effect until it is assigned again.
+        /// </remarks>
         public Background value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : new Background(); }

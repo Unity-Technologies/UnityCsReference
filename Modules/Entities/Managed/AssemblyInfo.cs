@@ -42,7 +42,15 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Transforms.Hybrid")]
 [assembly: InternalsVisibleTo("Unity.Transforms.Tests")]
 [assembly: InternalsVisibleTo("Unity.Transforms.PerformanceTests")]
+// TODO DOTS-XXXXX: Remove once GameObjectComponentStoreBridge.IsGameObject is public. The Transform perf tests
+// need it to keep GameObject entities out of their pure-entity queries.
+[assembly: InternalsVisibleTo("TransformPerformanceTest")]
+[assembly: InternalsVisibleTo("Unity.Transform.Tests.Runtime")]
+// TODO: Remove this once Galaxy is no longer using TransformRef.CalculateLocalToWorld in BuildSpatialDatabasesSystem
+[assembly: InternalsVisibleTo("Galaxy.GOTransformRef")]
 [assembly: InternalsVisibleTo("Unity.Entities.Baking.PerformanceTests")]
 [assembly: InternalsVisibleTo("Unity.NetCode.EntitiesInternalAccess")]
+// Animation's internal Motion package
+[assembly: InternalsVisibleTo("Unity.Motion")]
 // This adds internal access for UNSUPPORTED package that is currently in the Monorepo
 [assembly: InternalsVisibleTo("Unity.StableID.Hybrid")]

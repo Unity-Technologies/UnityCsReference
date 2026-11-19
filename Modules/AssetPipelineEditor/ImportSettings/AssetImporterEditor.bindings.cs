@@ -38,5 +38,11 @@ namespace UnityEditor.AssetImporters
                 importerEditor.hasUnsavedChanges = importerEditor.HasModified();
             }
         }
+
+        [UsedByNativeCode]
+        private static bool HasUnsavedChanges(Editor editor)
+        {
+            return editor != null && editor.hasUnsavedChanges;
+        }
     }
 }

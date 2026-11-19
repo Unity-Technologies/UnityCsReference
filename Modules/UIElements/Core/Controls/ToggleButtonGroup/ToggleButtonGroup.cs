@@ -257,6 +257,9 @@ namespace UnityEngine.UIElements
         /// <param name="newValue">The new value.</param>
         public override void SetValueWithoutNotify(ToggleButtonGroupState newValue)
         {
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
+
             if (newValue.length == 0)
             {
                 newValue = new ToggleButtonGroupState(0, 0);
@@ -269,7 +272,9 @@ namespace UnityEngine.UIElements
                 m_EmptyLabel?.RemoveFromHierarchy();
             }
 
-            base.SetValueWithoutNotify(newValue);
+            using (IgnoreValidation())
+                base.SetValueWithoutNotify(newValue);
+
             UpdateButtonStates(newValue);
         }
 
@@ -342,34 +347,38 @@ namespace UnityEngine.UIElements
             if (ve is not Button button)
                 return;
 
-            var toggleButtonGroupState = value;
-            var checkedButtonIndex = m_Buttons.IndexOf(button);
-            var selected = toggleButtonGroupState.GetActiveOptions(stackalloc int[toggleButtonGroupState.length]);
-            var isRemovedButtonChecked = selected.IndexOf(checkedButtonIndex) != -1;
+            var removedIndex = m_Buttons.IndexOf(button);
+            if (removedIndex < 0)
+                return;
+
+            var oldState = value;
+            var selected = oldState.GetActiveOptions(stackalloc int[oldState.length]);
+            var isRemovedButtonChecked = selected.IndexOf(removedIndex) != -1;
             button.clickable.clickedWithEventInfo -= OnOptionChange;
 
             if (isRemovedButtonChecked)
-                m_Buttons[checkedButtonIndex].SetCheckedPseudoState(false);
+                button.SetCheckedPseudoState(false);
 
             m_Buttons.Remove(button);
             UpdateButtonsStyling();
 
-            toggleButtonGroupState.length = m_Buttons.Count;
-
             if (m_Buttons.Count == 0)
             {
-                toggleButtonGroupState.ResetAllOptions();
-                SetValueWithoutNotify(toggleButtonGroupState);
+                SetValueWithoutNotify(new ToggleButtonGroupState(0, 0));
+                return;
             }
-            else if (isRemovedButtonChecked)
-            {
-                toggleButtonGroupState[checkedButtonIndex] = false;
 
-                if (!allowEmptySelection && selected.Length == 1)
-                    toggleButtonGroupState[0] = true;
+            var low = oldState.data & ((1ul << removedIndex) - 1);
+            var high = removedIndex == ToggleButtonGroupState.maxLength - 1 ? 0 : (oldState.data >> (removedIndex + 1)) << removedIndex;
+            var newState = new ToggleButtonGroupState(low | high, m_Buttons.Count);
 
-                value = toggleButtonGroupState;
-            }
+            if (!allowEmptySelection && isRemovedButtonChecked && selected.Length == 1)
+                newState[0] = true;
+
+            if (isRemovedButtonChecked)
+                value = newState;
+            else
+                SetValueWithoutNotify(newState);
         }
 
         void UpdateButtonStates(ToggleButtonGroupState options)

@@ -13,7 +13,6 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal class VariableInfoView : VisualElement
 {
     static readonly string s_UssClassName = "unity-ui-inspector__varinfo-view";

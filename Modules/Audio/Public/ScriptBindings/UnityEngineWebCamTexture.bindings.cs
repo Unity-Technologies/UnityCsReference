@@ -40,7 +40,6 @@ namespace UnityEngine
         ///On Android devices, this value is reported for cameras with a calculated Equivalent Focal Length of greater than 45mm.</remarks>
         ///<seealso cref="WebCamDevice.kind" />
         Telephoto = 2,
-        // Camera which supports synchronized color and depth data (Dual or TrueDepth)
         ///<summary>Camera which supports synchronized color and depth data (currently these are only dual back and true depth cameras on latest iOS devices).</summary>
         ///<seealso cref="WebCamDevice.kind" />
         ///<seealso cref="WebCamDevice.depthCameraName" />

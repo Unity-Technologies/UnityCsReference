@@ -51,7 +51,7 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             return false;
 
         using var memoryOwner = GetSelection(view, out var selection);
-        Clipboard.GetClipboardForStage().ClearCutElements();
+        Clipboard.For(m_Context).ClearCutElements();
 
         using var assetsHandle = ListPool<VisualElementAsset>.Get(out var assets);
         FilterSelection(view, in selection, assets);
@@ -59,7 +59,7 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
         if (assets.Count == 0)
             return false;
 
-        CutElementsCommand.Execute(CommandSources.Hierarchy, assets.ToArray());
+        CutElementsCommand.Execute(CommandSources.Hierarchy, assets.ToArray(), m_Context);
         return true;
     }
 
@@ -124,7 +124,7 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
         if (assets.Count == 0)
             return false;
 
-        CopyElementsCommand.Execute(CommandSources.Hierarchy, assets.ToArray());
+        CopyElementsCommand.Execute(CommandSources.Hierarchy, assets.ToArray(), m_Context);
         return true;
     }
 
@@ -142,7 +142,7 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
 
     void RefreshCutFlagsForView(HierarchyView view)
     {
-        var cutElements = Clipboard.GetClipboardForStage()?.GetCutElements();
+        var cutElements = Clipboard.For(m_Context)?.GetCutElements();
         if (cutElements == null || cutElements.Count == 0)
             return;
 
@@ -185,7 +185,7 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             return false;
 
         return TryResolvePasteParent(in selection, out var parentElement, out var parentAsset)
-            && VisualElementEditingUtility.CanPasteContent(parentElement, parentAsset);
+            && VisualElementEditingUtility.CanPasteContent(m_Context, parentElement, parentAsset);
     }
 
     /// <summary>
@@ -241,7 +241,7 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             return false;
 
         // Cut (move) branch: move the live elements into the new parent and reparent their assets in place.
-        var cutElements = Clipboard.GetClipboardForStage().GetCutElements();
+        var cutElements = Clipboard.For(m_Context).GetCutElements();
         if (cutElements.Count > 0)
         {
             if (!VisualElementEditingUtility.CanMoveCutElements(cutElements, parentElement, parentAsset))
@@ -273,12 +273,12 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
                 return false;
             RequestSelectionOnNextUpdate(toPaste);
             ScopePendingSelectionRequestsTo(parentElement);
-            Clipboard.GetClipboardForStage().Clear();
+            Clipboard.For(m_Context).Clear();
             return true;
         }
 
         // Copy branch: there is nothing live to move, so the content is recreated from the UXML in the buffer.
-        return VisualElementEditingUtility.TryPasteCopied(CommandSources.Hierarchy, parentElement, parentAsset);
+        return VisualElementEditingUtility.TryPasteCopied(m_Context, CommandSources.Hierarchy, parentElement, parentAsset);
     }
 
     bool IHierarchyEditorNodeTypeHandler.CanPasteAsChild(HierarchyView view)
@@ -336,6 +336,10 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             return false;
 
         if (!m_Mappings.TryGetValue(in node, out var element))
+            return false;
+
+        // The document a stage shows as a row is the one it edits, which it does not rename.
+        if (StageStrategy.GetDocumentNodeAsset(element) != null)
             return false;
 
         if (element is IPanelComponentRootElement rootElement)
@@ -442,18 +446,17 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
         if (!m_Mappings.TryGetValue(node, out var element) || element == null)
             return "<null>";
 
-        switch (element)
+        // Only the file name; the extension and unsaved marker are added as a separate label in Bind, except on the
+        // document node, which is never renamed.
+        if (TryGetDocumentRowAsset(element, out var document))
         {
-            // Only the file name; the extension and unsaved marker are added as a separate label in Bind.
-            case IPanelComponentRootElement rootElement:
-                GetDocumentRowParts(rootElement, out var name, out _);
-                return name;
-
-            default:
-                return string.IsNullOrEmpty(element.name)
-                    ? string.Empty
-                    : $"#{element.name}";
+            GetDocumentRowParts(document, out var name, out var suffix);
+            return StageStrategy.GetDocumentNodeAsset(element) != null ? name + suffix : name;
         }
+
+        return string.IsNullOrEmpty(element.name)
+            ? string.Empty
+            : $"#{element.name}";
     }
 
     string IHierarchyEditorNodeTypeHandler.GetRenameTextOverride(HierarchyView view, in HierarchyNode node)
@@ -502,7 +505,7 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             parents.Add(elements[i].parent);
         }
 
-        DuplicateElementsCommand.Execute(CommandSources.Hierarchy, toDuplicate);
+        DuplicateElementsCommand.Execute(CommandSources.Hierarchy, toDuplicate, m_Context);
 
         // The rows duplicated name the instance; the asset alone matches every instance of the document.
         ScopePendingSelectionRequestsTo(parents);
@@ -561,7 +564,7 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
     {
         if (!m_Mappings.TryGetValue(node, out var element))
             return false;
-        RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: false);
+        RequestFramingCommand.Execute(m_Context, CommandSources.Hierarchy, element, orientToFace: false);
         return true;
     }
 

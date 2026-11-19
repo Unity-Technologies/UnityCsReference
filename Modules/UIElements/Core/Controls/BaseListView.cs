@@ -452,7 +452,7 @@ namespace UnityEngine.UIElements
 
         internal Foldout headerFoldout
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_Foldout;
         }
 
@@ -617,7 +617,7 @@ namespace UnityEngine.UIElements
             if (m_ArraySizeField.showMixedValue && TextInputBaseField<string>.mixedValueString == evt.newValue)
                 return;
 
-            if (!int.TryParse(evt.newValue, out var value) || value < 0)
+            if (viewController == null || !int.TryParse(evt.newValue, out var value) || value < 0)
             {
                 using (m_ArraySizeField.IgnoreValidation())
                     m_ArraySizeField.SetValueWithoutNotify(evt.previousValue);
@@ -690,14 +690,14 @@ namespace UnityEngine.UIElements
             {
                 m_ListViewLabel ??= new Label();
                 m_ListViewLabel.text = m_MaxMultiEditStr;
-                scrollView.contentViewport.Add(m_ListViewLabel);
+                scrollView.contentViewport.Insert(0, m_ListViewLabel);
             }
             else if (noItemsCount)
             {
                 if (m_MakeNoneElement != null)
                 {
                     m_NoneElement ??= m_MakeNoneElement.Invoke();
-                    scrollView.contentViewport.Add(m_NoneElement);
+                    scrollView.contentViewport.Insert(0, m_NoneElement);
                     m_ListViewLabel?.RemoveFromHierarchy();
                     m_ListViewLabel = null;
                 }
@@ -705,7 +705,7 @@ namespace UnityEngine.UIElements
                 {
                     m_ListViewLabel ??= new Label();
                     m_ListViewLabel.text = k_EmptyListStr;
-                    scrollView.contentViewport.Add(m_ListViewLabel);
+                    scrollView.contentViewport.Insert(0, m_ListViewLabel);
                     m_NoneElement?.RemoveFromHierarchy();
                     m_NoneElement = null;
                 }
@@ -1188,7 +1188,7 @@ namespace UnityEngine.UIElements
         /// affects every add button element located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         internal static readonly string footerAddButtonWithMenuName = footerAddButtonName + "--with-menu";
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly UniqueStyleString footerAddButtonWithMenuNameUnique = new(footerAddButtonWithMenuName);
         /// <summary>
         /// The name of the remove button element in the footer.

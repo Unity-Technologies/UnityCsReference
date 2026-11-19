@@ -4,12 +4,14 @@
 
 using System.Collections.Generic;
 using UnityEditor.UIElements;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
 
 namespace Unity.UIToolkit.Editor;
 
 [UxmlElement]
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 sealed partial class UxmlCodePreview : CodePreview<VisualTreeAsset>
 {
     internal class VisualTreeAssetHighlightExporter : VisualTreeAssetExporter
@@ -46,6 +48,8 @@ sealed partial class UxmlCodePreview : CodePreview<VisualTreeAsset>
     }
 
     internal readonly VisualTreeAssetHighlightExporter Exporter = new();
+
+    AuthoringContext m_Context = AuthoringContext.Global;
 
     VisualTreeAssetExporter.ExportOptions Options
     {
@@ -85,7 +89,7 @@ sealed partial class UxmlCodePreview : CodePreview<VisualTreeAsset>
         if (!int.TryParse(linkId, out var id))
             return;
 
-        HighlightUtility.RequestHighlights(id, Asset, CommandSources.UxmlPreview);
+        HighlightUtility.RequestHighlights(m_Context, id, Asset, CommandSources.UxmlPreview);
     }
 
     protected override string GenerateCodePreview()
@@ -96,11 +100,12 @@ sealed partial class UxmlCodePreview : CodePreview<VisualTreeAsset>
         switch (evt)
         {
             case AttachToPanelEvent:
-                UICommandQueue.RegisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
+                m_Context = AuthoringContext.For(this);
+                m_Context.Messages.RegisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
                 break;
 
             case DetachFromPanelEvent:
-                UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
+                m_Context.Messages.UnregisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
                 break;
             case PointerOverLinkTagEvent overTagEvent:
                 RequestHighlightsForLink(overTagEvent.linkID);
@@ -109,7 +114,7 @@ sealed partial class UxmlCodePreview : CodePreview<VisualTreeAsset>
                 RequestHighlightsForLink(overTagEvent.linkID);
                 break;
             case PointerOutLinkTagEvent:
-                HighlightUtility.ClearHighlights();
+                HighlightUtility.ClearHighlights(m_Context);
                 break;
         }
         base.HandleEventBubbleUp(evt);

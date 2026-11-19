@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -55,7 +54,7 @@ sealed class UICanvasInPlaceEditor
         if (element == null || element.visualElementAsset == null || element.panel == null)
             return false;
 
-        if (!UIToolkitStageUtility.GetEditFlags(element).CanSetAttribute())
+        if (!AuthoringContext.For(element).GetEditFlags(element).CanSetAttribute())
             return false;
 
         return element is IPrefixLabel
@@ -411,8 +410,8 @@ sealed class UICanvasInPlaceEditor
 
     static EditingContext BuildContext(VisualElement element)
     {
-        var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
-        var editedVta = stage != null ? stage.EditedVisualTreeAsset : element.visualTreeAssetSource;
+        var session = AuthoringContext.For(element).Session;
+        var editedVta = session != null ? session.EditedVisualTreeAsset : element.visualTreeAssetSource;
         var ctx = new EditingContext
         {
             editedElement = element,

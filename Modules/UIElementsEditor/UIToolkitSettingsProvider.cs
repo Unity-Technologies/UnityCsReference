@@ -22,12 +22,9 @@ namespace UnityEditor.UIElements
         void OnDeactivate();
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class UIToolkitSettingsProvider : SettingsProvider
     {
         const string k_EditorExtensionsModeToggleName = "editor-extensions-mode-toggle";
-        const string k_DisableMouseWheelZoomingToggleName = "disable-mouse-wheel-zooming";
-        const string k_EnableAbsolutePositionPlacementToggleName = "enable-absolute-position-placement";
         const string k_EnableFilterShaderGraphToggleName = "enable-filter-shader-graph";
         const string k_ConsistentAttributeOrdering = "consistent-attribute-ordering-toggle";
         const string k_LegacyThemePriorityToggleName = "legacy-theme-priority-toggle";
@@ -174,20 +171,6 @@ namespace UnityEditor.UIElements
             rootElement.Q<Button>(k_ScanAffectedThemesButtonName).clicked += () =>
                 ThemePriorityUpgradeNotice.LogAffectedThemes(onDemand: true);
 
-            var zoomToggle = rootElement.Q<Toggle>(k_DisableMouseWheelZoomingToggleName);
-            zoomToggle.SetValueWithoutNotify(UIToolkitProjectSettings.disableMouseWheelZooming);
-            zoomToggle.RegisterValueChangedCallback(e =>
-            {
-                UIToolkitProjectSettings.disableMouseWheelZooming = e.newValue;
-            });
-
-            var absolutePlacementToggle = rootElement.Q<Toggle>(k_EnableAbsolutePositionPlacementToggleName);
-            absolutePlacementToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableAbsolutePositionPlacement);
-            absolutePlacementToggle.RegisterValueChangedCallback(e =>
-            {
-                UIToolkitProjectSettings.enableAbsolutePositionPlacement = e.newValue;
-            });
-
             var filterShaderGraphToggle = rootElement.Q<Toggle>(k_EnableFilterShaderGraphToggleName);
             filterShaderGraphToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableFilterShaderGraph);
             filterShaderGraphToggle.RegisterValueChangedCallback(e =>
@@ -226,13 +209,6 @@ namespace UnityEditor.UIElements
                 UIToolkitProjectSettings.enableStyleSheetEditingMode = e.newValue;
                 styleSheetEditingPreviewField.style.display = e.newValue ? DisplayStyle.Flex : DisplayStyle.None;
             });
-
-            if (!Unsupported.IsDeveloperMode())
-            {
-                VisualElement container = rootElement.Q("developer-settings-container");
-                if (container != null)
-                    container.style.display = DisplayStyle.None;
-            }
 
             var eventDebuggerToggle = rootElement.Q<Toggle>(k_EnableEventDebugger);
             eventDebuggerToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableEventDebugger);

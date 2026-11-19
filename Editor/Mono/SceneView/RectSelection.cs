@@ -331,7 +331,7 @@ namespace UnityEditor
         {
             ActiveEditorTracker.delayFlushDirtyRebuild = false;
             ActiveEditorTracker.RebuildAllIfNecessary();
-            rectSelectionFinished();
+            rectSelectionFinished?.Invoke();
         }
 
         void StartRectSelection(SceneView view)
@@ -341,7 +341,7 @@ namespace UnityEditor
             // The hot control needs to be set in an OnGUI call.
             view.SendEvent(EditorGUIUtility.CommandEvent(k_SetRectSelectionHotControlEventCommandName));
 
-            rectSelectionStarting();
+            rectSelectionStarting?.Invoke();
 
             // This is needed to update the selection in case the modifier keys changed.
             UpdateSelection(m_SelectionStart, m_CurrentSelection, m_CurrentSelectionType, true);

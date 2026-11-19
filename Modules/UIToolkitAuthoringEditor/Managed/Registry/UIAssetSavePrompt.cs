@@ -8,10 +8,12 @@ using System.IO;
 using System.Text;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
+using UnityEngine.Bindings;
 
 namespace Unity.UIToolkit.Editor;
 
 /// <summary>How the user answered an unsaved-changes prompt.</summary>
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 enum UIAssetSaveChoice
 {
     /// <summary>Write the unsaved changes to disk.</summary>
@@ -32,6 +34,7 @@ enum UIAssetSaveChoice
 /// One dialog covers the whole batch, mirroring the editor's own "Scene(s) Have Been Modified" prompt: a
 /// scene close that dirtied a document and two of its stylesheets asks once, not three times.
 /// </remarks>
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 static partial class UIAssetSavePrompt
 {
     // How many asset names the message lists before collapsing the rest, matching the editor's own
@@ -61,6 +64,7 @@ static partial class UIAssetSavePrompt
     /// </param>
     /// <param name="consequence">The sentence explaining what happens to the changes if they are not saved.</param>
     /// <param name="allowCancel">Whether the user can back out of what triggered the prompt.</param>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static bool AskAndResolve(IReadOnlyList<UnityEngine.Object> assets, string consequence, bool allowCancel)
     {
         if (assets == null || assets.Count == 0)
@@ -73,6 +77,20 @@ static partial class UIAssetSavePrompt
             return true;
 
         return Apply(Ask(assets, consequence, allowCancel), assets);
+    }
+
+    /// <summary>
+    /// Asks what to do with <paramref name="assets"/> and leaves the answer to the caller, for a caller that saves
+    /// some of them its own way. Null when nobody was asked: the assets stay as they are and the caller goes ahead,
+    /// as with <see cref="AskAndResolve"/>.
+    /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    internal static UIAssetSaveChoice? AskWithoutResolving(IReadOnlyList<UnityEngine.Object> assets, string consequence, bool allowCancel)
+    {
+        if (assets == null || assets.Count == 0 || (Resolver == null && UIAssetRegistry.PreventDialogsFromOpening))
+            return null;
+
+        return Ask(assets, consequence, allowCancel);
     }
 
     static UIAssetSaveChoice Ask(IReadOnlyList<UnityEngine.Object> assets, string consequence, bool allowCancel)
@@ -106,26 +124,21 @@ static partial class UIAssetSavePrompt
             return false;
 
         var registry = UIAssetRegistry.instance;
-        var succeeded = true;
-
-        // Batch the imports so saving a template doesn't reimport its dirty dependents first.
-        using var batch = choice == UIAssetSaveChoice.Save ? new AssetDatabase.AssetEditingScope() : null;
+        if (choice == UIAssetSaveChoice.Save)
+            return registry.SaveAssets(assets);
 
         foreach (var asset in assets)
         {
-            // Saving or discarding a document also covers the stylesheets it references, so by the time we
-            // reach those sheets they are usually already settled — skip them rather than rewriting (or
-            // force-reimporting) a file that now matches disk.
+            // Discarding a document also covers the stylesheets it references, so by the time we reach those
+            // sheets they are usually already settled — skip them rather than force-reimporting a file that
+            // now matches disk.
             if (asset == null || !registry.IsDirty(asset))
                 continue;
 
-            if (choice == UIAssetSaveChoice.Save)
-                succeeded &= registry.SaveAsset(asset);
-            else
-                registry.DiscardAsset(asset);
+            registry.DiscardAsset(asset);
         }
 
-        return succeeded;
+        return true;
     }
 
     /// <summary>
@@ -133,6 +146,7 @@ static partial class UIAssetSavePrompt
     /// them. Shared with the tools that raise the editor's own window-close prompt instead of this one, so the
     /// wording is the same wherever the question is asked.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static string BuildMessage(IReadOnlyList<UnityEngine.Object> assets, string consequence)
     {
         var builder = new StringBuilder();

@@ -32,19 +32,16 @@ static class SerializedPropertyExtensions
         return copy.Parent() ? copy : null;
     }
 
-    // The virtual-path-part selector that routes a data binding into a component's live data on the owner
-    // element rather than a property of the element itself: "${component:<Type>}.<field>".
-    internal const string componentBindingSelectorPrefix = "${component:";
-    internal const char componentBindingSelectorSuffix = '}';
+    const string k_ComponentDataPath = "m_ComponentData.Array.data[";
 
     // A direct field of a component attached to the element: its parent is the component's serialized data
-    // entry in the owner's m_ComponentData list. The binding selector is ${component:<ComponentName>}.<field>.
-    static bool TryGetComponentBindingPath(SerializedProperty property, out string result)
+    // entry in the owner's m_ComponentData list. The selector is ${component:<identity>}.<field>.
+    static bool TryGetComponentBindingPath(SerializedProperty property, VisualElement owner, out string result)
     {
         result = null;
         var parent = property.GetParentProperty();
         if (parent is not { propertyType: SerializedPropertyType.ManagedReference } ||
-            !parent.propertyPath.Contains("m_ComponentData.Array.data["))
+            !parent.propertyPath.Contains(k_ComponentDataPath))
             return false;
 
         var description = GetDescriptionFromManagedReferenceTypename(parent.managedReferenceFullTypename);
@@ -56,34 +53,92 @@ static class SerializedPropertyExtensions
         if (attribute == null)
             return false;
 
-        result = $"{componentBindingSelectorPrefix}{componentType.Name}{componentBindingSelectorSuffix}.{attribute.bindingPath}";
+        // Author the short name, which is what every existing document carries, and reach for the
+        // namespace-qualified one only when a sibling component on this owner shares the short name.
+        var shortNameIsAmbiguous = ShortNameClashesOnOwner(parent, componentType) ||
+            owner?.ResolveComponentTypeByIdentity(componentType.Name, out _) == VisualElement.ComponentIdentityResolution.Ambiguous;
+        result = ComponentBindingSelector.Format(componentType, shortNameIsAmbiguous, attribute.bindingPath);
         return true;
+    }
+
+    // The serialized data can hold only some of the owner's components (a template instance edits a temporary
+    // copy holding the selected one), so the live owner also decides whether a short name clashes.
+    internal static BindingId GetFullBindingPath(this SerializedProperty property, VisualElement owner)
+    {
+        if (property != null && owner != null && TryGetComponentBindingPath(property, owner, out var componentPath))
+            return componentPath;
+
+        return property.GetFullBindingPath();
+    }
+
+    // An existing binding keeps the identity it was authored with, which can differ from what Format would
+    // pick now (a clashing sibling was added or removed), so match on the resolved component and field.
+    internal static BindingId ResolveStoredComponentBindingId(VisualElement owner, BindingId authoredPath)
+    {
+        if (owner == null || owner.GetBinding(authoredPath) != null ||
+            !ComponentBindingSelector.TrySplit(authoredPath, out var identity, out var fieldPath) ||
+            owner.ResolveComponentTypeByIdentity(identity, out var componentType) != VisualElement.ComponentIdentityResolution.Resolved)
+            return authoredPath;
+
+        using var infosPool = ListPool<BindingInfo>.Get(out var infos);
+        owner.GetBindingInfos(infos);
+        foreach (var info in infos)
+        {
+            if (ComponentBindingSelector.TrySplit(info.bindingId, out var storedIdentity, out var storedFieldPath) &&
+                storedFieldPath == fieldPath &&
+                owner.ResolveComponentTypeByIdentity(storedIdentity, out var storedType) == VisualElement.ComponentIdentityResolution.Resolved &&
+                storedType == componentType)
+                return info.bindingId;
+        }
+        return authoredPath;
+    }
+
+    // True when another component in the same owner's m_ComponentData list has the same short type name, so
+    // the short name would not identify this one.
+    static bool ShortNameClashesOnOwner(SerializedProperty componentEntry, Type componentType)
+    {
+        // Walk back to the owner's list by path: the entry's own path ends at "m_ComponentData.Array.data[i]".
+        var listStart = componentEntry.propertyPath.IndexOf(k_ComponentDataPath, StringComparison.Ordinal);
+        if (listStart < 0)
+            return false;
+
+        var list = componentEntry.serializedObject.FindProperty(
+            componentEntry.propertyPath.Substring(0, listStart) + "m_ComponentData");
+        if (list is not { isArray: true })
+            return false;
+
+        for (var i = 0; i < list.arraySize; i++)
+        {
+            var entry = list.GetArrayElementAtIndex(i);
+            if (entry.propertyPath == componentEntry.propertyPath)
+                continue;
+
+            var other = GetDescriptionFromManagedReferenceTypename(entry.managedReferenceFullTypename)
+                ?.serializedDataType?.DeclaringType;
+            if (other != null && other != componentType && other.Name == componentType.Name)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>
     /// Resolves the C# field type targeted by a component binding path
-    /// (<c>${component:&lt;Type&gt;}.&lt;field&gt;</c>). Returns false for element binding paths, whose
-    /// target type is resolved through the element's own property bag instead. Used by the inspector to
-    /// label a component binding and to decide that a component field is bindable.
+    /// (<c>${component:&lt;identity&gt;}.&lt;field&gt;</c>) against the components attached to
+    /// <paramref name="owner"/>. Returns false for element binding paths, whose target type is resolved
+    /// through the element's own property bag instead. Used by the inspector to label a component binding
+    /// and to decide that a component field is bindable.
     /// </summary>
-    public static bool TryGetComponentAttributeType(string bindingPath, out Type type)
+    /// <param name="owner">The element carrying the component, or null when there is no owner context.</param>
+    /// <param name="bindingPath">The authored binding path.</param>
+    /// <param name="type">The resolved field type.</param>
+    /// <returns>True when the path is a component selector that resolves to a field.</returns>
+    public static bool TryGetComponentAttributeType(VisualElement owner, string bindingPath, out Type type)
     {
         type = null;
-        if (string.IsNullOrEmpty(bindingPath) ||
-            !bindingPath.StartsWith(componentBindingSelectorPrefix, StringComparison.Ordinal))
+        if (!ComponentBindingSelector.TrySplit(bindingPath, out var identity, out var fieldBindingPath))
             return false;
 
-        // The identifier runs to the closing brace; a "." and the field path must follow it.
-        var close = bindingPath.IndexOf(componentBindingSelectorSuffix, componentBindingSelectorPrefix.Length);
-        if (close <= componentBindingSelectorPrefix.Length ||
-            close + 1 >= bindingPath.Length || bindingPath[close + 1] != '.')
-            return false;
-
-        var shortTypeName = bindingPath.Substring(componentBindingSelectorPrefix.Length,
-            close - componentBindingSelectorPrefix.Length);
-        var fieldBindingPath = bindingPath.Substring(close + 2);
-
-        var description = FindComponentDescriptionByShortName(shortTypeName);
+        var description = ResolveComponentDescription(owner, identity);
         if (description == null)
             return false;
 
@@ -98,21 +153,73 @@ static class SerializedPropertyExtensions
         return false;
     }
 
-    // A component binding selector uses the component's short type name; there is at most one component of a
-    // given type per element, so the short name locates it on the owner. Match it against the registered
-    // component serialized-data descriptions.
-    static UxmlSerializedDataDescription FindComponentDescriptionByShortName(string shortTypeName)
+    /// <summary>
+    /// Resolves a component binding path with no owner context. Prefer the overload taking the owner
+    /// element: without one, an ambiguous short name cannot be resolved and fails instead.
+    /// </summary>
+    /// <param name="bindingPath">The authored binding path.</param>
+    /// <param name="type">The resolved field type.</param>
+    /// <returns>True when the path is a component selector that resolves to a field.</returns>
+    public static bool TryGetComponentAttributeType(string bindingPath, out Type type)
+        => TryGetComponentAttributeType(null, bindingPath, out type);
+
+    // The owner's attached components are the resolution scope, so the description belongs to the component
+    // the owner actually carries. The global registry is only a fallback for when there is no owner.
+    static UxmlSerializedDataDescription ResolveComponentDescription(VisualElement owner, string identity)
     {
+        if (owner != null)
+        {
+            var resolution = owner.ResolveComponentTypeByIdentity(identity, out var componentType);
+            if (resolution == VisualElement.ComponentIdentityResolution.Ambiguous)
+            {
+                ComponentBindingSelector.WarnAmbiguous(identity);
+                return null;
+            }
+
+            if (resolution == VisualElement.ComponentIdentityResolution.Resolved)
+            {
+                var ownerDescription = UxmlSerializedDataRegistry.GetDescription(componentType.FullName);
+                return ownerDescription is { isComponent: true } ? ownerDescription : null;
+            }
+        }
+
+        return FindComponentDescriptionInRegistry(identity);
+    }
+
+    // No owner context: match the identity against every registered component description. A qualified name
+    // outranks a short one, and an ambiguous short name fails visibly rather than picking the first match.
+    static UxmlSerializedDataDescription FindComponentDescriptionInRegistry(string identity)
+    {
+        UxmlSerializedDataDescription match = null;
+        var bestRank = 0;
+        var matchCount = 0;
+
         foreach (var serializedDataType in UxmlSerializedDataRegistry.SerializedDataTypes.Values)
         {
             var declaringType = serializedDataType?.DeclaringType;
-            if (declaringType == null || declaringType.Name != shortTypeName)
+            var rank = ComponentBindingSelector.MatchRank(declaringType, identity);
+            if (rank == 0 || rank < bestRank)
                 continue;
 
             var description = UxmlSerializedDataRegistry.GetDescription(declaringType.FullName);
-            if (description is { isComponent: true })
-                return description;
+            if (description is not { isComponent: true })
+                continue;
+
+            if (rank > bestRank)
+            {
+                bestRank = rank;
+                matchCount = 1;
+                match = description;
+                continue;
+            }
+
+            matchCount++;
         }
+
+        if (matchCount <= 1)
+            return match;
+
+        ComponentBindingSelector.WarnAmbiguous(identity);
         return null;
     }
 
@@ -169,8 +276,8 @@ static class SerializedPropertyExtensions
             return string.Empty;
 
         // A component attribute is rooted at the owner's m_ComponentData list, not m_SerializedData, and
-        // binds through the ${component:<Type>}.<field> selector rather than an element property path.
-        if (TryGetComponentBindingPath(property, out var componentPath))
+        // binds through the ${component:<identity>}.<field> selector rather than an element property path.
+        if (TryGetComponentBindingPath(property, null, out var componentPath))
             return componentPath;
 
         // Walk up from the property to the m_SerializedData root, collecting path segments

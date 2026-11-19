@@ -11,7 +11,6 @@ namespace Unity.UIToolkit.Editor
 {
     [UxmlElement]
     [UsedImplicitly]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class BackgroundRepeatStyleField : BaseField<BackgroundRepeat>
     {
         static readonly string s_FieldClassName = "unity-background-repeat-style-field";

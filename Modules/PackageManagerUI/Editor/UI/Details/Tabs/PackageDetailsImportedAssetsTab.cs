@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditorInternal;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -33,9 +32,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private readonly IPackageManagerPrefs m_PackageManagerPrefs;
-        public PackageDetailsImportedAssetsTab(IUnityConnectProxy unityConnect, IPackageManagerPrefs packageManagerPrefs) : base(unityConnect)
+        private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
+        public PackageDetailsImportedAssetsTab(IUnityConnectProxy unityConnect, IPackageManagerPrefs packageManagerPrefs,
+            IInternalEditorUtilityProxy internalEditorUtilityProxy) : base(unityConnect)
         {
             m_PackageManagerPrefs = packageManagerPrefs;
+            m_InternalEditorUtilityProxy = internalEditorUtilityProxy;
 
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Imported Assets", null);
@@ -87,7 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 bindCell = (ve, index) =>
                 {
                     var image = ve.Q<Image>();
-                    image.image = InternalEditorUtility.GetIconForFile(m_Assets[index].importedPath);
+                    image.image = m_InternalEditorUtilityProxy.GetIconForFile(m_Assets[index].importedPath);
                     var label = ve.Q<Label>();
                     var labelText = IOUtils.GetFileName(m_Assets[index].importedPath);
                     label.text = labelText;

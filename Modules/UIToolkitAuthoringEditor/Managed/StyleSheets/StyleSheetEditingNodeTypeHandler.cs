@@ -209,10 +209,10 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
     }
 
     VisualTreeAsset EditedAsset =>
-        Window?.EditedAsset
-        ?? (UnityEditor.SceneManagement.StageUtility.GetCurrentStage() as VisualElementEditingStage)?.EditedVisualTreeAsset;
+        View?.EditedAsset
+        ?? Context.EditedVisualTreeAsset;
 
-    int GroupOffset => Window != null && Window.ParentStyleSheetCount > 0 ? 1 : 0;
+    int GroupOffset => View != null && View.ParentStyleSheetCount > 0 ? 1 : 0;
 
     bool TryResolveRootLevelDrop(in HierarchyNode parent, out bool intoInheritedGroup)
     {
@@ -233,7 +233,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
             return DragVisualMode.Rejected;
 
         var vta = EditedAsset;
-        if (vta == null)
+        if (vta == null || View is { CanChangeStyleSheets: false })
             return DragVisualMode.Rejected;
 
         var visualTree = vta.visualTreeNoAlloc;
@@ -328,7 +328,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
                 freshRules.Add(rules[index]);
         }
 
-        Window?.SelectAndScrollTo(freshRules);
+        View?.SelectAndScrollTo(freshRules);
         return DragVisualMode.Move;
     }
 
@@ -351,7 +351,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
 
         // Add USS files to the document currently being edited.
         var vta = EditedAsset;
-        if (vta == null)
+        if (vta == null || View is { CanChangeStyleSheets: false })
             return DragVisualMode.Rejected;
 
         if (!performDrop)
@@ -417,7 +417,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
 
         try
         {
-            var styleSheet = Window.ActiveStyleSheet;
+            var styleSheet = View.ActiveStyleSheet;
             var originalRuleCount = styleSheet.rules.Length;
 
             PasteStyleRuleCommand.Execute(CommandSources.StyleSheets, Clipboard.SystemCopyBuffer, styleSheet);
@@ -429,7 +429,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
                 pastedRules.Add(styleSheet.rules[i]);
             }
 
-            Window?.SelectAndScrollTo(pastedRules);
+            View?.SelectAndScrollTo(pastedRules);
             return true;
         }
         catch (ArgumentException)
@@ -551,7 +551,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
         }
 
         if (newRules.Count > 0)
-            Window?.SelectAndScrollTo(newRules);
+            View?.SelectAndScrollTo(newRules);
 
         return true;
     }

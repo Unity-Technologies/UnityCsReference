@@ -134,6 +134,24 @@ namespace Unity.Entities
             internal void DeallocateEntities(Entity* entities, int count)
                 => EntityIdStore.ReleaseEntityIds((EntityId*)entities, count);
 
+            // A GameObject (or a companion cloned with its entity's id) holds the id too, and the engine
+            // releases it once the GameObject is gone, so those entities only leave their chunk.
+            internal void DeallocateOrDetachEntities(Entity* entities, int count)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    var entity = entities[i];
+                    if (!Exists(entity))
+                        continue;
+
+                    ref var slot = ref EntityIdStore.GetSlot((uint)entity.Index);
+                    if ((Volatile.Read(ref slot.versionAndChunk) & EntityIdStore.k_SlotNotAnObjectMask) == 0)
+                        SetEntityInChunk(entity, EntityInChunk.Null);
+                    else
+                        DeallocateEntities(&entity, 1);
+                }
+            }
+
             public void Dispose() { this = default; }
         }
     }

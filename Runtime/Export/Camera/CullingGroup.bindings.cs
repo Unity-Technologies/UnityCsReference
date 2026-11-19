@@ -60,7 +60,7 @@ namespace UnityEngine
             m_Ptr = Init(this);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Intentional leak warning: reports through the thread-safe FinalizerFailure when Dispose was not called.
         ~CullingGroup()
         {
             if (m_Ptr != IntPtr.Zero)
@@ -68,7 +68,7 @@ namespace UnityEngine
                 FinalizerFailure();
             }
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         [FreeFunction("CullingGroup_Bindings::Dispose", HasExplicitThis = true)]
         extern private void DisposeInternal();

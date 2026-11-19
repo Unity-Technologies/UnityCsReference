@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal struct CategoryDropdownContent
     {
         public enum ItemType
@@ -29,7 +29,6 @@ namespace UnityEditor.UIElements
             public string categoryName;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal struct Item
         {
             public string value;
@@ -42,7 +41,6 @@ namespace UnityEditor.UIElements
 
         internal List<Item> Items
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get { return m_Items ??= new List<Item>(); }
         }
 

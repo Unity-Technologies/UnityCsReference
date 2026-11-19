@@ -13,7 +13,6 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 [UxmlElement]
 internal partial class StyleAnimationListView : StyleLonghandListView<StyleAnimationListView.AnimationData>
 {

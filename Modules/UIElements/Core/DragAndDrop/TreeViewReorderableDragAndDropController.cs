@@ -133,7 +133,7 @@ namespace UnityEngine.UIElements
 
                 var newChildIndex = insertAtChildIndex + insertIndexShift;
 
-                if (parentId != insertAtParentId || childIndex >= insertAtChildIndex)
+                if (m_TreeView.viewController.CanMove(id, insertAtParentId) && (parentId != insertAtParentId || childIndex >= insertAtChildIndex))
                 {
                     insertIndexShift++;
                 }
@@ -177,6 +177,13 @@ namespace UnityEngine.UIElements
             }
 
             m_ExpandDropItemScheduledItem?.Pause();
+        }
+
+        internal void PauseAutoExpand()
+        {
+            m_ExpandDropItemScheduledItem?.Pause();
+            if (m_DropData != null)
+                m_DropData.lastItemId = -1;
         }
 
         void RestoreExpanded(List<int> ids)

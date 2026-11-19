@@ -1223,17 +1223,18 @@ namespace UnityEngine.TextCore.LowLevel
         /// <summary>
         /// Render and add the glyphs in the provided list to the texture for the face identified by the given handle.
         /// </summary>
-        internal static FontEngineError RenderGlyphsToTexture(FontFaceHandle faceHandle, List<Glyph> glyphs, int padding, GlyphRenderMode renderMode, Texture2D texture)
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
+        internal static FontEngineError RenderGlyphsToTexture(FontFaceHandle faceHandle, List<Glyph> glyphs, int padding, GlyphRenderMode renderMode, bool enableCheckerboardDebug, Texture2D texture)
         {
             int glyphCount = GlyphListToMarshallingArray(glyphs);
 
-            int error = RenderGlyphsToTexture_FontFaceHandle_Internal(ref faceHandle, s_GlyphMarshallingStruct_IN, glyphCount, padding, renderMode, texture);
+            int error = RenderGlyphsToTexture_FontFaceHandle_Internal(ref faceHandle, s_GlyphMarshallingStruct_IN, glyphCount, padding, renderMode, enableCheckerboardDebug, texture);
 
             return (FontEngineError)error;
         }
 
         [NativeMethod(Name = "TextCore::FontEngine::RenderGlyphsToTexture", IsFreeFunction = true)]
-        extern static int RenderGlyphsToTexture_FontFaceHandle_Internal(ref FontFaceHandle faceHandle, GlyphMarshallingStruct[] glyphs, int glyphCount, int padding, GlyphRenderMode renderMode, Texture2D texture);
+        extern static int RenderGlyphsToTexture_FontFaceHandle_Internal(ref FontFaceHandle faceHandle, GlyphMarshallingStruct[] glyphs, int glyphCount, int padding, GlyphRenderMode renderMode, bool enableCheckerboardDebug, Texture2D texture);
 
 
         /// <summary>
@@ -1292,7 +1293,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// Internal function used to add glyph to atlas texture for the face identified by the given handle.
         /// </summary>
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
-        internal static bool TryAddGlyphToTexture(FontFaceHandle faceHandle, uint glyphIndex, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture, out Glyph glyph)
+        internal static bool TryAddGlyphToTexture(FontFaceHandle faceHandle, uint glyphIndex, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, bool enableCheckerboardDebug, Texture2D texture, out Glyph glyph)
         {
             // Determine potential total allocations required for glyphs and glyph rectangles.
             int freeGlyphRectCount = freeGlyphRects.Count;
@@ -1321,7 +1322,7 @@ namespace UnityEngine.TextCore.LowLevel
             GlyphMarshallingStruct glyphStruct;
 
             // Marshall data over to the native side.
-            if (TryAddGlyphToTexture_FontFaceHandle_Internal(ref faceHandle, glyphIndex, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture, out glyphStruct))
+            if (TryAddGlyphToTexture_FontFaceHandle_Internal(ref faceHandle, glyphIndex, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, enableCheckerboardDebug, texture, out glyphStruct))
             {
                 // Copy marshalled data over to new glyph.
                 glyph = new Glyph(glyphStruct);
@@ -1351,14 +1352,14 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::TryAddGlyphToTexture", IsThreadSafe = true, IsFreeFunction = true)]
         extern static bool TryAddGlyphToTexture_FontFaceHandle_Internal(ref FontFaceHandle faceHandle, uint glyphIndex, int padding,
             GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
-            GlyphRenderMode renderMode, Texture2D texture, out GlyphMarshallingStruct glyph);
+            GlyphRenderMode renderMode, bool enableCheckerboardDebug, Texture2D texture, out GlyphMarshallingStruct glyph);
 
 
         /// <summary>
         /// Internal function used to add glyphs to atlas texture for the face identified by the given handle.
         /// </summary>
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
-        internal static bool TryAddGlyphsToTexture(FontFaceHandle faceHandle, List<Glyph> glyphsToAdd, List<Glyph> glyphsAdded, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture)
+        internal static bool TryAddGlyphsToTexture(FontFaceHandle faceHandle, List<Glyph> glyphsToAdd, List<Glyph> glyphsAdded, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, bool enableCheckerboardDebug, Texture2D texture)
         {
             using var tryAddGlyphsToTextureScope = s_TryAddGlyphsToTextureMarker.Auto();
 
@@ -1430,7 +1431,7 @@ namespace UnityEngine.TextCore.LowLevel
                 writeIndex += 1;
             }
 
-            bool allGlyphsAdded = TryAddGlyphsToTexture_FontFaceHandle_MultiThread(ref faceHandle, s_GlyphMarshallingStruct_IN, ref glyphsToAddCount, s_GlyphMarshallingStruct_OUT, ref glyphsAddedCount, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture);
+            bool allGlyphsAdded = TryAddGlyphsToTexture_FontFaceHandle_MultiThread(ref faceHandle, s_GlyphMarshallingStruct_IN, ref glyphsToAddCount, s_GlyphMarshallingStruct_OUT, ref glyphsAddedCount, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, enableCheckerboardDebug, texture);
 
             // Clear inbound lists
             glyphsToAdd.Clear();
@@ -1487,13 +1488,13 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::TryAddGlyphsToTexture", IsThreadSafe = true, IsFreeFunction = true)]
         extern static bool TryAddGlyphsToTexture_FontFaceHandle_MultiThread(ref FontFaceHandle faceHandle, [In, Out] GlyphMarshallingStruct[] glyphsToAdd, ref int glyphsToAddCount, [Out] GlyphMarshallingStruct[] glyphsAdded, ref int glyphsAddedCount,
             int padding, GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
-            GlyphRenderMode renderMode, Texture2D texture);
+            GlyphRenderMode renderMode, bool enableCheckerboardDebug, Texture2D texture);
 
         /// <summary>
         /// Internal function used to add multiple glyphs to atlas texture for the face identified by the given handle.
         /// </summary>
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
-        internal static bool TryAddGlyphsToTexture(FontFaceHandle faceHandle, List<uint> glyphIndexes, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture, out Glyph[] glyphs)
+        internal static bool TryAddGlyphsToTexture(FontFaceHandle faceHandle, List<uint> glyphIndexes, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, bool enableCheckerboardDebug, Texture2D texture, out Glyph[] glyphs)
         {
             using var tryAddGlyphsToTextureScope = s_TryAddGlyphsToTextureMarker.Auto();
 
@@ -1547,7 +1548,7 @@ namespace UnityEngine.TextCore.LowLevel
             }
 
             // Marshall data over to the native side.
-            bool allGlyphsAdded = TryAddGlyphsToTexture_FontFaceHandle_Internal(ref faceHandle, s_GlyphIndexes_MarshallingArray_A, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, texture, s_GlyphMarshallingStruct_OUT, ref glyphCount);
+            bool allGlyphsAdded = TryAddGlyphsToTexture_FontFaceHandle_Internal(ref faceHandle, s_GlyphIndexes_MarshallingArray_A, padding, packingMode, s_FreeGlyphRects, ref freeGlyphRectCount, s_UsedGlyphRects, ref usedGlyphRectCount, renderMode, enableCheckerboardDebug, texture, s_GlyphMarshallingStruct_OUT, ref glyphCount);
 
             // Make sure internal glyph array is properly sized.
             if (s_Glyphs == null || s_Glyphs.Length <= glyphCount)
@@ -1582,7 +1583,7 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::TryAddGlyphsToTexture", IsThreadSafe = true, IsFreeFunction = true)]
         extern static bool TryAddGlyphsToTexture_FontFaceHandle_Internal(ref FontFaceHandle faceHandle, uint[] glyphIndex, int padding,
             GlyphPackingMode packingMode, [Out] GlyphRect[] freeGlyphRects, ref int freeGlyphRectCount, [Out] GlyphRect[] usedGlyphRects, ref int usedGlyphRectCount,
-            GlyphRenderMode renderMode, Texture2D texture, [In, Out] GlyphMarshallingStruct[] glyphs, ref int glyphCount);
+            GlyphRenderMode renderMode, bool enableCheckerboardDebug, Texture2D texture, [In, Out] GlyphMarshallingStruct[] glyphs, ref int glyphCount);
 
 
         // ================================================

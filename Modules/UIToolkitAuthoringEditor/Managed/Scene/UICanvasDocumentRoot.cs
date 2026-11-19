@@ -33,6 +33,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     readonly VisualElementManipulatorOverlayManager m_ManipulatorOverlayManager;
     readonly UICanvasInPlaceEditor m_UICanvasInPlaceEditor;
     PanelElement m_PanelElement;
+    AuthoringContext m_Context = AuthoringContext.Global;
 
     public float ZoomScale
     {
@@ -66,7 +67,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     int m_DragPointerId = -1;
     Vector2 m_DragStartCanvasPosition = Vector2.zero;
     Vector2 m_DragStartPanelPosition = Vector2.zero;
-    // Snapshot of Selection.entityIds taken at drag start so ESC / a capture loss can revert.
+    // Snapshot of the selected ids taken at drag start so ESC / a capture loss can revert.
     EntityId[] m_SelectionSnapshot;
 
     // Drag-time preview of the resulting selection, drawn over the canvas while the rectangle selection
@@ -85,9 +86,9 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
                 return;
             m_HoveredElement = value;
             if (m_HoveredElement != null)
-                HighlightUtility.RequestHighlights(m_HoveredElement, CommandSources.Viewport);
+                HighlightUtility.RequestHighlights(m_Context, m_HoveredElement, CommandSources.Viewport);
             else
-                HighlightUtility.ClearHighlights();
+                HighlightUtility.ClearHighlights(m_Context);
         }
     }
 
@@ -175,10 +176,11 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         switch (evt)
         {
             case AttachToPanelEvent:
-                Selection.selectionChanged += OnSelectionChanged;
+                m_Context = AuthoringContext.For(this);
+                m_Context.Selection.Changed += OnSelectionChanged;
                 break;
             case DetachFromPanelEvent:
-                Selection.selectionChanged -= OnSelectionChanged;
+                m_Context.Selection.Changed -= OnSelectionChanged;
                 m_ManipulatorOverlayManager.ReleaseAll();
                 break;
             case GeometryChangedEvent:
@@ -280,7 +282,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
                     ClearPreviewSelection();
                     if (m_SelectionSnapshot != null)
                     {
-                        Selection.entityIds = m_SelectionSnapshot;
+                        m_Context.Selection.EntityIds = m_SelectionSnapshot;
                         m_SelectionSnapshot = null;
                     }
                 }
@@ -350,7 +352,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     {
         ClearSelection();
 
-        var selectedIds = Selection.entityIds;
+        var selectedIds = m_Context.Selection.EntityIds;
         foreach (var selectedId in selectedIds)
         {
             if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection selection
@@ -384,9 +386,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         if (ReferenceEquals(element.panel, subPanel))
             return element;
 
-        // Only the live tree this canvas previews. Two GameObjects can render one document, and the id path is
-        // built from asset ids alone — their elements correspond to the same clone — so the panel is the only
-        // thing that says whether this element is the one we stand in for.
+        // Ancestry, not panel: components sharing PanelSettings share one panel.
         var authoritativeRoot = AuthoritativeRootProvider?.Invoke();
         if (authoritativeRoot == null || !ReferenceEquals(element.panel, authoritativeRoot.panel))
             return null;
@@ -395,6 +395,9 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         // VisualElementAsset, so correspondence has nothing to match it on.
         if (ReferenceEquals(element, authoritativeRoot))
             return m_PanelElement.subRootVisualElement;
+
+        if (!authoritativeRoot.Contains(element))
+            return null;
 
         return m_PanelElement.subRootVisualElement?.FindCorrespondingElement(element);
     }
@@ -553,8 +556,8 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     void IVisualElementChangeProcessor.ProcessChanges(BaseVisualElementPanel panelElementPanel, AuthoringChanges changes)
     {
         using var _ = HashSetPool<VisualElementSelection>.Get(out var updateSet);
-        if (panelElementPanel is PanelElement.RuntimePanel runtimePanel &&
-            (changes.styleChanged.Contains(runtimePanel.Root) || changes.layoutChanged.Contains(runtimePanel.Root)))
+        if (panelElementPanel is PanelElement.IPanelElementSubPanel subPanel &&
+            (changes.styleChanged.Contains(subPanel.Root) || changes.layoutChanged.Contains(subPanel.Root)))
         {
             foreach (var selection in m_ElementSelections)
                 updateSet.Add(selection);
@@ -634,7 +637,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         if (picked.Count == 0)
         {
             ResetCycleState();
-            Selection.entityIds = Array.Empty<EntityId>();
+            m_Context.Selection.EntityIds = Array.Empty<EntityId>();
             return;
         }
 
@@ -724,10 +727,10 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         var id = ResolveSelectionId(element);
         if (id == EntityId.None)
         {
-            Selection.entityIds = Array.Empty<EntityId>();
+            m_Context.Selection.EntityIds = Array.Empty<EntityId>();
             return;
         }
-        Selection.entityIds = new[] { id };
+        m_Context.Selection.EntityIds = new[] { id };
     }
 
     void ToggleSingleSelection(VisualElement element)
@@ -736,11 +739,10 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         if (id == EntityId.None)
             return;
 
-        var currentIds = Selection.entityIds;
-        if (Array.IndexOf(currentIds, id) < 0)
-            Selection.Add(id);
+        if (!m_Context.Selection.Contains(id))
+            m_Context.Selection.Add(id);
         else
-            Selection.Remove(id);
+            m_Context.Selection.Remove(id);
     }
 
     void ShowPickerPopup(List<VisualElement> picked, Vector2 menuPanelPosition)
@@ -808,12 +810,12 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         if (!CanSelectContent)
             return;
 
-        m_SelectionSnapshot = Selection.entityIds;
+        m_SelectionSnapshot = m_Context.Selection.EntityIds;
 
         var hasShift = (modifiers & EventModifiers.Shift) != 0;
         var hasAction = (modifiers & (EventModifiers.Control | EventModifiers.Command)) != 0;
         if (!hasShift && !hasAction)
-            Selection.entityIds = Array.Empty<EntityId>();
+            m_Context.Selection.EntityIds = Array.Empty<EntityId>();
     }
 
     internal void CancelRectangleSelection()
@@ -823,7 +825,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
 
         HideRectangleSelection();
         ClearPreviewSelection();
-        Selection.entityIds = m_SelectionSnapshot;
+        m_Context.Selection.EntityIds = m_SelectionSnapshot;
         m_SelectionSnapshot = null;
         if (m_PointerCaptured && this.HasPointerCapture(m_DragPointerId))
             this.ReleasePointer(m_DragPointerId);
@@ -845,7 +847,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         foreach (var sel in candidates)
             next[i++] = sel.GetEntityId();
 
-        Selection.entityIds = next;
+        m_Context.Selection.EntityIds = next;
         ResetCycleState();
     }
 
@@ -862,7 +864,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
 
         if (isShift || isAction)
         {
-            foreach (var id in Selection.entityIds)
+            foreach (var id in m_Context.Selection.EntityIds)
             {
                 // Filtered like the handles are: a selection mapping onto nothing this canvas shows cannot be
                 // drawn, kept or subtracted here.

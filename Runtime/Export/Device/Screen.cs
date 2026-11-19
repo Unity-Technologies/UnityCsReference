@@ -37,6 +37,8 @@ namespace UnityEngine.Device
 
         public static Rect[] cutouts => ShimManager.screenShim.cutouts;
 
+        public static UnityEngine.Rendering.SwapchainPreTransform currentSwapChainPreTransform => ShimManager.screenShim.currentSwapChainPreTransform;
+
         public static float dpi => ShimManager.screenShim.dpi;
 
         public static bool fullScreen

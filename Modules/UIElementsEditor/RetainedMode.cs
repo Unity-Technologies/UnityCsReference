@@ -15,7 +15,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     partial class RetainedMode
     {
         // Every slot installed here is cleared on code reload, so the wiring has to be re-established on

@@ -109,7 +109,7 @@ namespace UnityEditorInternal.Profiling
         protected const string k_MainThreadName = "Main Thread";
 
         const string k_ViewTypeSettingsKey = "ViewType";
-        const string k_UseTimelineV2SettingsKey = "UseTimelineV2";
+        const string k_UseLegacyTimelineSettingsKey = "UseLegacyTimeline";
         const string k_HierarchyViewSettingsKeyPrefix = "HierarchyView.";
 
         protected abstract string SettingsKeyPrefix { get; }
@@ -118,7 +118,7 @@ namespace UnityEditorInternal.Profiling
         // (see UUM-114839 -- accessing treeView before this is correct selects CPU columns).
         protected virtual bool IsGpuView => false;
         string ViewTypeSettingsKey { get { return SettingsKeyPrefix + k_ViewTypeSettingsKey; } }
-        string UseTimelineV2SettingsKey { get { return SettingsKeyPrefix + k_UseTimelineV2SettingsKey; } }
+        string UseLegacyTimelineSettingsKey { get { return SettingsKeyPrefix + k_UseLegacyTimelineSettingsKey; } }
         string HierarchyViewSettingsKeyPrefix { get { return SettingsKeyPrefix + k_HierarchyViewSettingsKeyPrefix; } }
 
         string ProfilerViewFilteringOptionsKey => SettingsKeyPrefix + nameof(m_ProfilerViewFilteringOptions);
@@ -303,11 +303,9 @@ namespace UnityEditorInternal.Profiling
 
 
             ProfilerViewType stored = (ProfilerViewType)EditorPrefs.GetInt(ViewTypeSettingsKey, (int)DefaultViewTypeSetting);
-            bool? useTimelineV2Pref = EditorPrefs.HasKey(UseTimelineV2SettingsKey)
-                ? EditorPrefs.GetBool(UseTimelineV2SettingsKey)
-                : (bool?)null;
+            bool useLegacyTimeline = EditorPrefs.GetBool(UseLegacyTimelineSettingsKey, false);
 
-            m_ViewType = ResolveViewTypeOnLoad(stored, useTimelineV2Pref, m_ViewType);
+            m_ViewType = ResolveViewTypeOnLoad(stored, useLegacyTimeline);
 
             m_ProfilerViewFilteringOptions = SessionState.GetInt(ProfilerViewFilteringOptionsKey, m_ProfilerViewFilteringOptions);
         }
@@ -320,10 +318,9 @@ namespace UnityEditorInternal.Profiling
             SendViewTypeAnalytics(m_ViewType);
         }
 
-        internal static ProfilerViewType ResolveViewTypeOnLoad(ProfilerViewType storedViewType, bool? useTimelineV2Pref, ProfilerViewType serializedViewType)
+        internal static ProfilerViewType ResolveViewTypeOnLoad(ProfilerViewType storedViewType, bool useLegacyTimeline)
         {
-            bool useTimelineV2 = useTimelineV2Pref ?? serializedViewType == ProfilerViewType.TimelineV2;
-            if (storedViewType == ProfilerViewType.Timeline && useTimelineV2)
+            if (storedViewType == ProfilerViewType.Timeline && !useLegacyTimeline)
                 return ProfilerViewType.TimelineV2;
 
             return storedViewType;
@@ -333,9 +330,9 @@ namespace UnityEditorInternal.Profiling
         {
             base.SaveViewSettings();
 
-            bool useTimelineV2 = m_ViewType == ProfilerViewType.TimelineV2;
-            EditorPrefs.SetInt(ViewTypeSettingsKey, (int)(useTimelineV2 ? ProfilerViewType.Timeline : m_ViewType));
-            EditorPrefs.SetBool(UseTimelineV2SettingsKey, useTimelineV2);
+            bool isTimelineV2 = m_ViewType == ProfilerViewType.TimelineV2;
+            EditorPrefs.SetInt(ViewTypeSettingsKey, (int)(isTimelineV2 ? ProfilerViewType.Timeline : m_ViewType));
+            EditorPrefs.SetBool(UseLegacyTimelineSettingsKey, m_ViewType == ProfilerViewType.Timeline);
             SessionState.SetInt(ProfilerViewFilteringOptionsKey, m_ProfilerViewFilteringOptions);
             m_FrameDataHierarchyView?.SaveViewSettings();
         }
@@ -423,6 +420,18 @@ namespace UnityEditorInternal.Profiling
 
         internal HierarchyFrameDataView GetFrameDataView()
         {
+            // The GPU thread holds the GPU samples of every thread, so it is preferred whenever the frame has one.
+            if (IsGpuView && IsGpuDataGathered())
+            {
+                var gpuThreadIndex = GetGpuThreadIndex();
+                if (gpuThreadIndex >= 0)
+                {
+                    var gpuThreadView = GetFrameDataView(gpuThreadIndex);
+                    if (gpuThreadView != null && gpuThreadView.valid)
+                        return gpuThreadView;
+                }
+            }
+
             var frameDataView = GetFrameDataView(m_FrameDataHierarchyView.groupName, m_FrameDataHierarchyView.threadName, m_FrameDataHierarchyView.threadId);
 
             // GPU samples can resolve on any thread (e.g. the render thread under multithreaded
@@ -432,8 +441,7 @@ namespace UnityEditorInternal.Profiling
             // via IMGUIContainer, and without the gate, a frame with no GPU data anywhere (e.g. GPU
             // profiling unsupported under graphics jobs) would build and discard a full
             // HierarchyFrameDataView per thread on every single repaint for nothing.
-            if (IsGpuView && frameDataView != null && frameDataView.valid && !frameDataView.hasGpuSamples
-                && (ProfilerDriver.GetGpuStatisticsAvailabilityState((int)ProfilerWindow.selectedFrameIndex) & GpuProfilingStatisticsAvailabilityStates.Gathered) != 0)
+            if (IsGpuView && frameDataView != null && frameDataView.valid && !frameDataView.hasGpuSamples && IsGpuDataGathered())
             {
                 // ProfilerWindow.GetFrameDataView caches its result in a single shared field, reusing
                 // and disposing it on every call - so the search below invalidates frameDataView itself.
@@ -446,6 +454,17 @@ namespace UnityEditorInternal.Profiling
             }
 
             return frameDataView;
+        }
+
+        bool IsGpuDataGathered()
+        {
+            return (ProfilerDriver.GetGpuStatisticsAvailabilityState((int)ProfilerWindow.selectedFrameIndex) & GpuProfilingStatisticsAvailabilityStates.Gathered) != 0;
+        }
+
+        int GetGpuThreadIndex()
+        {
+            using (var iter = new ProfilerFrameDataIterator())
+                return iter.GetGpuThreadIndex((int)ProfilerWindow.selectedFrameIndex);
         }
 
         HierarchyFrameDataView FindThreadWithGpuSamples()

@@ -145,6 +145,14 @@ namespace UnityEngine
         [NativeName("MixedBakeMode")]
         public extern MixedLightingMode mixedBakeMode { get; set; }
 
+        // Whether the bake includes environment (sky) lighting.
+        [NativeName("BakeEnvironmentLighting")]
+        public extern bool bakeEnvironmentLighting { get; set; }
+
+        // Whether the bake includes the emission of materials that use MaterialGlobalIlluminationFlags.RealtimeIndirectEmission.
+        [NativeName("BakeRealtimeEmission")]
+        public extern bool bakeRealtimeEmission { get; set; }
+
         [NativeName("AlbedoBoost")]
         public extern float albedoBoost { get; set; }
 

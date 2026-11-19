@@ -32,7 +32,7 @@ namespace UnityEngine.Animations
     ///See also <see cref="GenericBindingUtility" />.</remarks>
     [NativeType(CodegenOptions.Custom, "UnityEngine::Animation::MonoGenericBinding")]
     [UsedByNativeCode]
-    public readonly struct GenericBinding
+    public readonly struct GenericBinding : IEquatable<GenericBinding>
     {
         ///<summary>This property is True when this GenericBinding target is an animatable Unity object reference, such as a sprite.</summary>
         public bool isObjectReference => (m_Flags & Flags.kPPtr) == Flags.kPPtr;
@@ -65,6 +65,41 @@ namespace UnityEngine.Animations
         readonly byte m_CustomType;
 
         internal readonly Flags m_Flags;
+
+        ///<summary>Determines whether this GenericBinding targets the same property as another object.</summary>
+        ///<param name="obj">The object to compare with.</param>
+        ///<returns>True if the object is a GenericBinding that targets the same property; false otherwise.</returns>
+        public override bool Equals(object obj)
+        {
+            return obj is GenericBinding other && Equals(other);
+        }
+
+        ///<summary>Determines whether this GenericBinding targets the same property as another GenericBinding.</summary>
+        ///<param name="other">The GenericBinding to compare with.</param>
+        ///<returns>True if both bindings have the same transform path, property name, script, component type, custom type, and flags; false otherwise.</returns>
+        public bool Equals(GenericBinding other)
+        {
+            return
+                m_Path == other.m_Path &&
+                m_PropertyName == other.m_PropertyName &&
+                m_ScriptEntityId == other.m_ScriptEntityId &&
+                m_TypeID == other.m_TypeID &&
+                m_CustomType == other.m_CustomType &&
+                m_Flags == other.m_Flags;
+        }
+
+        ///<summary>Returns a hash code for this GenericBinding.</summary>
+        ///<returns>A hash code computed from all the values that <see cref="Equals(GenericBinding)"/> compares.</returns>
+        public override int GetHashCode()
+        {
+            var hash = (int)m_Path;
+            hash = hash * 397 ^ (int)m_PropertyName;
+            hash = hash * 397 ^ m_ScriptEntityId.GetHashCode();
+            hash = hash * 397 ^ m_TypeID;
+            hash = hash * 397 ^ m_CustomType;
+            hash = hash * 397 ^ (int)m_Flags;
+            return hash;
+        }
     }
 
     ///<summary>Animation utility functions for reading and writing values from Unity components.</summary>
@@ -167,6 +202,24 @@ namespace UnityEngine.Animations
         [NativeMethod(IsThreadSafe = false)]
         extern private static bool CreateGenericBindingForComponent([NotNull] Component component, string property, [NotNull] GameObject root, bool isObjectReference, out GenericBinding genericBinding);
 
+        /// <summary>
+        /// <summary>Retrieves the <see cref="GenericBinding" /> that represents a specific property associated with a GameObject or one of its components.</summary>
+        /// </summary>
+        /// <param name="path">The path of the game object or component being animated.</param>
+        /// <param name="componentType">The type of the component being animated.</param>
+        /// <param name="property">The name of the property.</param>
+        /// <param name="isObjectReference">Specifies whether the property is an object reference. If you do not identify the property correctly, the method fails. Set this parameter to True if the property references an object. Set to False if the property is a float or an integer.</param>
+        /// <param name="genericBinding">Returns the <see cref="GenericBinding" /> representing the property on the GameObject to animate.</param>
+        /// <returns>Returns True if the operation is successful, otherwise False.</returns>
+        [NativeMethod(IsThreadSafe = false, ThrowsException = true)]
+        public static extern bool CreateGenericBinding(string path, Type componentType, string property, bool isObjectReference,
+            out GenericBinding genericBinding);
+
+        // Unlike the EntityId, the hash is the same in every session. Returns 0 if scriptEntityId isn't a MonoScript.
+        [NativeMethod(IsThreadSafe = false)]
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        internal static extern uint GetScriptTypeHash(EntityId scriptEntityId);
+
         // Discover bindings
         ///<summary>Retrieves the animatable bindings for a specific GameObject.</summary>
         ///<param name="targetObject">The target <see cref="GameObject" /> to extract the bindings from.</param>
@@ -211,7 +264,7 @@ namespace UnityEngine.Animations
 
                 if (genericBindings[i].isDiscrete)
                     discretePropertiesCount++;
-                if (genericBindings[i].isObjectReference)
+                else if (genericBindings[i].isObjectReference)
                     entityIdPropertiesCount++;
                 else
                     floatPropertyCount++;

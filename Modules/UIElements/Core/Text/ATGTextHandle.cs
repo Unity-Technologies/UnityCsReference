@@ -21,12 +21,12 @@ namespace UnityEngine.UIElements
         // elided). Stored and freed with the element's other text buffers in TextBufferStore.
         ref NativeTextBuffer processedTextBuffer => ref m_TextElement.processedTextBuffer;
 
-#pragma warning disable UA5000 // Only finalizer-thread-safe work: TextGenerationInfo.Destroy is thread-safe.
+#pragma warning disable UAC0045 // Only finalizer-thread-safe work: TextGenerationInfo.Destroy is thread-safe.
         ~UITKTextHandle()
         {
             DestroyPermanentCachedGenerationInfo();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         internal unsafe bool TryGetSourceTextPointer(out IntPtr ptr, out int length)
         {
@@ -106,16 +106,19 @@ namespace UnityEngine.UIElements
             if (!wasCached)
                 uvsAreGenerated = false;
 
-            // If there are links, we need to generate the text again and cache it
+            // Links need an event handler and a permanently cached TGI for hit-testing
             if (m_TextElement.enableRichText)
             {
                 SyncLinksFromNative();
 
-                if (m_Links is { Length: > 0 } && !IsCachedPermanentATG)
+                if (m_Links is { Length: > 0 })
                 {
-                    m_TextElement.uitkTextHandle.CacheTextGenerationInfo();
                     m_ATGTextEventHandler ??= new ATGTextEventHandler(m_TextElement);
-                    textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo, ref wasCached);
+                    if (!IsCachedPermanentATG)
+                    {
+                        m_TextElement.uitkTextHandle.CacheTextGenerationInfo();
+                        textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo, ref wasCached);
+                    }
                 }
             }
             else
@@ -125,6 +128,20 @@ namespace UnityEngine.UIElements
 
             m_IsElided = textInfo.isElided;
             return (textInfo, true);
+        }
+
+        internal void GetUsedFontAssets(List<FontAsset> fontAssets)
+        {
+            fontAssets.Clear();
+            var (textInfo, success) = UpdateNative();
+            if (!success)
+                return;
+
+            foreach (var meshInfo in textInfo.meshInfos)
+            {
+                if (Object.FindObjectFromInstanceID(meshInfo.textAssetId) is FontAsset fontAsset && !fontAssets.Contains(fontAsset))
+                    fontAssets.Add(fontAsset);
+            }
         }
 
         public void ShapeText()
@@ -208,13 +225,8 @@ namespace UnityEngine.UIElements
             if (fa == null)
                 return;
 
-            ref var style = ref m_TextElement.computedStyle;
-            if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
-            {
-                var effectiveFontsize = (int)Math.Round((style.fontSize) * GetPixelsPerPoint(), MidpointRounding.AwayFromZero);
-                nativeSettings.fontSize = effectiveFontsize * 64;
-                fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
-            }
+            if (TryGetBitmapFontAsset(fa, m_TextElement.computedStyle.fontSize * GetPixelsPerPoint(), out var bitmapFontAsset, out _))
+                fa = bitmapFontAsset;
             textSettings.UpdateNativeTextSettings();
             fa.EnsureNativeFontAssetIsCreated();
 
@@ -248,12 +260,25 @@ namespace UnityEngine.UIElements
 
             nativeSettings.preProcessFlags = PreProcessFlags.None;
             nativeSettings.minContentMeasure = false;
+            nativeSettings.isEditable = m_TextElement.isInputField;
 
             // A managed string is only required for an explicit measure request
             string? text = textToMeasure;
 
+            var fa = m_TextElement.cachedFontAsset;
+            if (fa == null)
+                fa = textSettings.GetFontAsset();
+            if (fa == null)
+                return false;
+
             var effectiveFontSize = (fontsize ?? style.fontSize) * scale;
-            nativeSettings.fontSize = (int)Math.Round(effectiveFontSize * 64.0f, MidpointRounding.AwayFromZero);
+            var layoutFontSize = (int)Math.Round(effectiveFontSize * 64.0f, MidpointRounding.AwayFromZero);
+            if (TryGetBitmapFontAsset(fa, effectiveFontSize, out var bitmapFontAsset, out var bitmapFontSize))
+            {
+                fa = bitmapFontAsset;
+                layoutFontSize = bitmapFontSize * 64;
+            }
+            nativeSettings.fontSize = layoutFontSize;
             nativeSettings.bestFit = style.unityTextAutoSize.mode == TextAutoSizeMode.BestFit;
             nativeSettings.maxFontSize = (int)(style.unityTextAutoSize.maxSize.value * 64.0f * scale);
             nativeSettings.minFontSize = (int)(style.unityTextAutoSize.minSize.value * 64.0f * scale);
@@ -314,18 +339,6 @@ namespace UnityEngine.UIElements
             // Doing an extra round prevent problems unlike truncating.
             nativeSettings.screenWidth = Mathf.RoundToInt(size.x * 64.0f * scale);
             nativeSettings.screenHeight =  Mathf.RoundToInt(size.y * 64.0f * scale);
-
-            var fa = m_TextElement.cachedFontAsset;
-            if (fa == null)
-            {
-                fa = textSettings.GetFontAsset();
-            }
-
-            if (fa ==  null)
-                return false;
-
-            if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
-                fa = GetCorrespondingBitmapFontAsset(fa, (int)Math.Round(effectiveFontSize, MidpointRounding.AwayFromZero));
 
             #pragma warning disable CS0618 // Type or member is obsolete
             if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
@@ -404,22 +417,23 @@ namespace UnityEngine.UIElements
             #pragma warning restore CS0618
                 return;
 
-            var scale = GetPixelsPerPoint();
-            var effectiveFontsize = (int)Math.Round((style.fontSize) * scale, MidpointRounding.AwayFromZero);
-
-            GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
-            GenerateBitmapFallbackFontAssets(effectiveFontsize, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
+            TryGetBitmapFontAsset(fa, style.fontSize * GetPixelsPerPoint(), out _, out var bitmapFontSize);
+            GenerateBitmapFallbackFontAssets(bitmapFontSize, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
         }
 
-        FontAsset GetCorrespondingBitmapFontAsset(FontAsset fa, int effectiveFontsize)
+        // Bitmap atlases exist per whole pixel size, so text drawn from one must be laid out at bitmapFontSize.
+        bool TryGetBitmapFontAsset(FontAsset fa, float effectiveFontSize, out FontAsset bitmapFontAsset, out int bitmapFontSize)
         {
-            if (fa == null)
-                return null;
+            bitmapFontSize = (int)Math.Round(effectiveFontSize, MidpointRounding.AwayFromZero);
+            bitmapFontAsset = null;
 
-            if (TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap() && fa.IsEditorFont)
-                fa = GetBlurryFontAssetMapping(effectiveFontsize, fa, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
+            if (fa == null || m_TextElement.computedStyle.unityEditorTextRenderingMode != EditorTextRenderingMode.Bitmap)
+                return false;
+            if (!TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap() || !fa.IsEditorFont)
+                return false;
 
-            return fa;
+            bitmapFontAsset = GetBlurryFontAssetMapping(bitmapFontSize, fa, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
+            return bitmapFontAsset != null && bitmapFontAsset != fa;
         }
 
         internal override TextAsset GetICUAsset()

@@ -12,7 +12,7 @@ namespace UnityEditor.UIElements
 {
     // CSS Grid. A proportional schematic preview of a grid's explicit tracks: one
     // cell per column x row, sized by each track's weight. Read-only; the owner feeds it SetColumns/SetRows.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class GridTemplatePreview : VisualElement
     {
         readonly List<GridTrackSize> m_Columns = new();

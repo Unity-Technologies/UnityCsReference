@@ -601,7 +601,7 @@ namespace Unity.Collections
             /// <summary>
             /// Empty job execute function used for Burst compilation testing
             /// </summary>
-            public void Execute()
+            public readonly void Execute()
             {
             }
         }

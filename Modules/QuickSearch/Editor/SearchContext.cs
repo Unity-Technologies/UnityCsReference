@@ -485,12 +485,12 @@ namespace UnityEditor.Search
         /// <summary>
         /// Search context finalizer.
         /// </summary>
-#pragma warning disable UA5000 // Dispose(false) only sets a flag, but this public unsealed class has a protected virtual Dispose(bool) that external code may override.
+#pragma warning disable UAC0045 // Dispose(false) only sets a flag, but this public unsealed class has a protected virtual Dispose(bool) that external code may override.
         ~SearchContext()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         /// <summary>
         /// Enable or disable a single provider.

@@ -8,7 +8,6 @@ using UnityEngine.UIElements;
 namespace Unity.UIToolkit.Editor
 {
     [UxmlElement]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class PositionAnchors : VisualElement
     {
         static readonly string k_UssClassName = "unity-position-anchors";

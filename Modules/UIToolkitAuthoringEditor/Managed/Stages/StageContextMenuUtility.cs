@@ -87,7 +87,7 @@ internal static class StageContextMenuUtility
                 UIStageNavigation.Navigate(new VisualTreeAssetEditingContext(vtaSource, element.GetPanelSettings()),
                     BreadcrumbBar.SeparatorStyle.Arrow);
                 if (vea != null)
-                    UIToolkitStageUtility.RequestSelectionOnNextUpdate(new[] { vea });
+                    UIToolkitStageUtility.RequestSelectionOnNextUpdate(AuthoringContext.Global, new[] { vea });
             });
         }
 
@@ -116,7 +116,7 @@ internal static class StageContextMenuUtility
     {
         PopulateEditOperations(view, in node, menu, handler);
         menu.AppendSeparator();
-        KeyboardAuthoringShortcuts.AppendMenuActions(menu);
+        KeyboardAuthoringShortcuts.AppendMenuActions(AuthoringContext.For(element), menu);
         menu.AppendSeparator();
         PopulateFrameOperations(element, menu);
         menu.AppendSeparator();
@@ -127,7 +127,7 @@ internal static class StageContextMenuUtility
         PopulateTemplateOperations(menu, element, CommandSources.Hierarchy);
         AppendGenerateSelectorAction(menu, element, view.ViewModel.HasFlagsCount(HierarchyNodeFlags.Selected));
         menu.AppendSeparator();
-        PopulateElementOperations(menu);
+        PopulateElementOperations(menu, AuthoringContext.For(element));
     }
 
     /// <summary>
@@ -140,7 +140,7 @@ internal static class StageContextMenuUtility
         menu.AppendSeparator();
         PopulateSelectionOperations(view, menu);
         menu.AppendSeparator();
-        PopulateElementOperations(menu);
+        PopulateElementOperations(menu, (handler as VisualElementNodeHandler)?.Context ?? AuthoringContext.Global);
     }
 
     /// <summary>
@@ -158,7 +158,7 @@ internal static class StageContextMenuUtility
         PopulateEditOperations(view, in node, menu, handler);
         menu.AppendSeparator();
 
-        KeyboardAuthoringShortcuts.AppendMenuActions(menu);
+        KeyboardAuthoringShortcuts.AppendMenuActions(AuthoringContext.For(element), menu);
         menu.AppendSeparator();
 
         PopulateFrameOperations(element, menu);
@@ -241,15 +241,15 @@ internal static class StageContextMenuUtility
         }
 
         menu.AppendSeparator();
-        PopulateElementOperations(menu);
+        PopulateElementOperations(menu, AuthoringContext.Global);
     }
 
     static void PopulateFrameOperations(VisualElement element, DropdownMenu menu)
     {
         AppendAction(menu, FrameSelection, Menu.GetHotkey("Edit/Frame Selected in Window under Cursor"),
-            () => RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: false));
+            () => RequestFramingCommand.Execute(AuthoringContext.For(element), CommandSources.Hierarchy, element, orientToFace: false));
         AppendAction(menu, FrameAndAlignToView, GetShortcutHotkey(FrameAndFaceShortcut.ShortcutId),
-            () => RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: true));
+            () => RequestFramingCommand.Execute(AuthoringContext.For(element), CommandSources.Hierarchy, element, orientToFace: true));
     }
 
     // The native menu right-aligns hotkeys only in the encoded form Menu.GetHotkey uses (e.g. "&f"),
@@ -306,7 +306,8 @@ internal static class StageContextMenuUtility
     /// "Open Instance…" sub-menu items for both UI Builder (In Isolation / In Context) and the
     /// staging environment (In Isolation / In Context). The "Open Instance/In Context" stage
     /// action is disabled when the element is already the active staging context or falls outside
-    /// the current sub-document scope.
+    /// the current sub-document scope. An element of a local context gets <see cref="PopulateLocalOpenActions"/>
+    /// instead.
     /// </summary>
     internal static void PopulateOpenActions(
         DropdownMenu menu,
@@ -317,6 +318,13 @@ internal static class StageContextMenuUtility
         List<TemplateAsset> ancestorInstances,
         CommandSources.CommandSource source)
     {
+        var context = AuthoringContext.For(element);
+        if (!context.IsGlobal)
+        {
+            PopulateLocalOpenActions(menu, context, element, ancestorInstances, source);
+            return;
+        }
+
         menu.AppendAction(
             OpenInUIBuilder,
             _ =>
@@ -351,7 +359,8 @@ internal static class StageContextMenuUtility
             {
                 LoadUIDocumentCommand.Execute(source, rootVisualTreeAsset,
                     subDocumentOptions: SubDocumentOptions.Isolation,
-                    subDocuments: ancestorVTAs);
+                    subDocuments: ancestorVTAs,
+                    contextInstances: ancestorInstances);
             });
 
         // ancestorInstances is outermost-first and ends at the instance being selected, so its
@@ -395,6 +404,52 @@ internal static class StageContextMenuUtility
             canOpenInContext ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
     }
 
+    /// <summary>
+    /// The open actions of a local context: a template instance opens in the window that shows the context,
+    /// through <see cref="RequestOpenDocumentCommand"/>, rather than in the UI Stage or the UI Builder.
+    /// </summary>
+    static void PopulateLocalOpenActions(DropdownMenu menu, AuthoringContext context, VisualElement element,
+        List<TemplateAsset> ancestorInstances, CommandSources.CommandSource source)
+    {
+        if (ancestorInstances.Count == 0 || context.Session is not { IsDisposed: false } session)
+            return;
+
+        GetOpenOptions(element, ancestorInstances, out _, out var canOpenInContext);
+
+        var document = session.Document;
+        var subDocumentPath = ResolveSubDocumentPath(document, ancestorInstances);
+
+        menu.AppendAction(
+            OpenInstanceInIsolation,
+            _ => RequestOpenDocumentCommand.Execute(context, source, new VisualTreeAssetEditingContext(
+                document.RootVisualTreeAsset, subDocumentPath, SubDocumentOptions.Isolation, document.PanelSettings)));
+
+        menu.AppendAction(
+            OpenInstanceInContext,
+            _ => RequestOpenDocumentCommand.Execute(context, source, new VisualTreeAssetEditingContext(
+                document.RootVisualTreeAsset, subDocumentPath, SubDocumentOptions.InContext, document.PanelSettings)),
+            canOpenInContext ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+    }
+
+    /// <summary>
+    /// The path from the root of <paramref name="document"/> to the last of <paramref name="ancestorInstances"/>.
+    /// </summary>
+    /// <remarks>
+    /// A document edited in isolation is cloned from the document it isolates, so the instances above an element
+    /// start below it: the path to the isolated document goes in front.
+    /// </remarks>
+    internal static TemplateAsset[] ResolveSubDocumentPath(VisualTreeAssetEditingContext document,
+        List<TemplateAsset> ancestorInstances)
+    {
+        if (document.SubDocumentOptions != SubDocumentOptions.Isolation)
+            return ancestorInstances.ToArray();
+
+        var path = new TemplateAsset[document.SubDocumentPath.Length + ancestorInstances.Count];
+        document.SubDocumentPath.CopyTo(path, 0);
+        ancestorInstances.CopyTo(path, document.SubDocumentPath.Length);
+        return path;
+    }
+
     static void PopulateEditOperations(HierarchyView view, in HierarchyNode node, DropdownMenu menu, IHierarchyEditorNodeTypeHandler handler)
     {
         AppendActionWithHotKey(menu, Cut, view.OnCut, handler.CanCut(view));
@@ -416,7 +471,14 @@ internal static class StageContextMenuUtility
         AppendActionWithHotKey(menu, k_SelectChildren, view.SelectChildrenAndExpandRecursive);
     }
 
-    public static void PopulateElementOperations(DropdownMenu menu)
+    /// <summary>
+    /// Appends the element library, which adds the chosen element under the selection of <paramref name="context"/>.
+    /// </summary>
+    /// <remarks>
+    /// A local context only offers the element types: the other items of the menu ("UI Library...") act on the
+    /// scene.
+    /// </remarks>
+    public static void PopulateElementOperations(DropdownMenu menu, AuthoringContext context)
     {
         // Use the top most group priority value as default
         var previousPriority = MenuItemGenerator.k_DefaultStandardElementsPriority;
@@ -451,6 +513,13 @@ internal static class StageContextMenuUtility
                 previousPriority = menuItem.priority;
 
                 var menuItemPath = menuItem.path;
+                if (!context.IsGlobal)
+                {
+                    if (MenuItemGenerator.TryGetTypeForMenuPath(menuItemPath, out var localType))
+                        menu.AppendAction(contextMenuPath, _ => MenuUtility.AddElementAsLastChild(context, localType));
+                    continue;
+                }
+
                 menu.AppendAction(
                     contextMenuPath,
                     _ =>
@@ -512,7 +581,7 @@ internal static class StageContextMenuUtility
             for (var current = element; current != null; current = current.parent)
             {
                 if (current.visualElementAsset is TemplateAsset ta &&
-                    UIToolkitStageUtility.GetEditFlags(current) == VisualElementEditFlags.FullyEditable)
+                    AuthoringContext.For(current).GetEditFlags(current) == VisualElementEditFlags.FullyEditable)
                 {
                     if (seen.Add(ta))
                     {
@@ -532,16 +601,17 @@ internal static class StageContextMenuUtility
             for (var i = 0; i < liveTemplateElements.Count; i++)
                 liveParents[i] = liveTemplateElements[i].hierarchy.parent;
             var canUnpack = UnpackTemplatesCommand.Validate(templates.AsSpan());
+            var context = AuthoringContext.For(liveTemplateElements[0]);
 
             menu.AppendAction(UnpackTemplate, _ =>
             {
-                UnpackTemplatesCommand.Execute(source, templates, unpackCompletely: false);
-                UIToolkitStageUtility.ScopePendingSelectionRequestsTo(liveParents);
+                UnpackTemplatesCommand.Execute(source, templates, unpackCompletely: false, context);
+                UIToolkitStageUtility.ScopePendingSelectionRequestsTo(context, liveParents);
             }, canUnpack ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
             menu.AppendAction(UnpackTemplateCompletely, _ =>
             {
-                UnpackTemplatesCommand.Execute(source, templates, unpackCompletely: true);
-                UIToolkitStageUtility.ScopePendingSelectionRequestsTo(liveParents);
+                UnpackTemplatesCommand.Execute(source, templates, unpackCompletely: true, context);
+                UIToolkitStageUtility.ScopePendingSelectionRequestsTo(context, liveParents);
             }, canUnpack ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
             if (includeShowInProject && nearestTemplates.Count == 1)
@@ -561,7 +631,7 @@ internal static class StageContextMenuUtility
         else if (elements.Count == 1)
         {
             var element = elements[0];
-            var isFullyEditable = UIToolkitStageUtility.GetEditFlags(element) == VisualElementEditFlags.FullyEditable;
+            var isFullyEditable = AuthoringContext.For(element).GetEditFlags(element) == VisualElementEditFlags.FullyEditable;
             if (isFullyEditable && element.visualElementAsset?.visualTreeAsset != null)
                 menu.AppendAction(CreateTemplate, _ => DoCreateTemplate(element, source));
         }
@@ -613,8 +683,9 @@ internal static class StageContextMenuUtility
         }
 
         var parent = element.parent;
-        CreateTemplateFromElementCommand.Execute(source, vea, parentVea, templateVta);
-        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parent);
+        var context = AuthoringContext.For(element);
+        CreateTemplateFromElementCommand.Execute(source, vea, parentVea, templateVta, context);
+        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(context, parent);
     }
 
     internal static void AppendGenerateSelectorAction(DropdownMenu menu, VisualElement element, int selectionCount)
@@ -634,9 +705,9 @@ internal static class StageContextMenuUtility
         if (element == null)
             return false;
 
-        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
+        if (AuthoringContext.For(element).Session is { } session)
         {
-            var localRoot = stage.ResolveLocalRoot();
+            var localRoot = session.ResolveLocalRoot();
             return localRoot != null && (element == localRoot || localRoot.Contains(element));
         }
 
@@ -654,7 +725,7 @@ internal static class StageContextMenuUtility
     // parent document, which the rule being written cannot reach.
     internal static string GenerateSelectorForElement(VisualElement element)
     {
-        var localRoot = (StageUtility.GetCurrentStage() as VisualElementEditingStage)?.ResolveLocalRoot();
+        var localRoot = AuthoringContext.For(element).Session?.ResolveLocalRoot();
         if (localRoot == null)
             return VisualElementSelectorUtility.GenerateTargetedSelector(element, e => e is IPanelComponentRootElement);
 
@@ -665,6 +736,15 @@ internal static class StageContextMenuUtility
     static void DoGenerateSelector(VisualElement element)
     {
         var selector = GenerateSelectorForElement(element);
+
+        // A local context has its own style sheets view; only the in-scene workflow opens the window.
+        var context = AuthoringContext.For(element);
+        if (!context.IsGlobal)
+        {
+            RequestNewSelectorCommand.Execute(context, CommandSources.Hierarchy, selector);
+            return;
+        }
+
         var window = EditorWindow.GetWindow<StyleSheetsWindow>();
         window.rootVisualElement.schedule.Execute(() => window.FocusNewSelectorField(selector)).ExecuteLater(0);
     }
@@ -730,11 +810,11 @@ internal static class StageContextMenuUtility
 
     static void GetOpenOptions(VisualElement element, List<TemplateAsset> templateAssetPath, out bool showTemplateOptions, out bool canOpenInContext)
     {
-        var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
-        // An isolation stage's panel is rooted at the document it isolates, so the element's path never shares
-        // a frame with the stage's own path into it; every instance in the panel is below the edited document.
-        var subDocPath = stage != null && stage.Context.SubDocumentOptions == SubDocumentOptions.InContext
-            ? stage.Context.SubDocumentPath
+        var session = AuthoringContext.For(element).Session;
+        // An isolation session's panel is rooted at the document it isolates, so the element's path never shares
+        // a frame with the session's own path into it; every instance in the panel is below the edited document.
+        var subDocPath = session != null && session.Document.SubDocumentOptions == SubDocumentOptions.InContext
+            ? session.Document.SubDocumentPath
             : null;
         var isTemplateContainer = element is TemplateContainer;
 

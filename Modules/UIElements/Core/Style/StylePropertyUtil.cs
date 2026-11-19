@@ -8,30 +8,30 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class StylePropertyUtil
     {
         internal static Dictionary<string, StylePropertyId> propertyNameToStylePropertyId
         {
-            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => s_NameToId;
         }
 
         internal static Dictionary<StylePropertyId, string> stylePropertyIdToPropertyName
         {
-            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => s_IdToName;
         }
 
         internal static Dictionary<string, string> ussNameToCSharpName
         {
-            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => s_UssNameToCSharpName;
         }
 
         internal static Dictionary<string, string> cSharpNameToUssName
         {
-            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => s_CSharpNameToUssName;
         }
 
@@ -45,7 +45,6 @@ namespace UnityEngine.UIElements.StyleSheets
             return s_IdToName.Keys;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         public static string ToDisplayString(this LengthUnit unit)
         {
             return unit switch

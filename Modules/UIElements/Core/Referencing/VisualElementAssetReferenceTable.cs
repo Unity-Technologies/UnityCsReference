@@ -65,9 +65,9 @@ public sealed partial class VisualElementAssetReferenceTable : IDisposable
         {
         }
 
-#pragma warning disable UA5000 // Frees the weak GCHandle when the pooled node is dropped without Release; owners are not guaranteed to dispose.
+#pragma warning disable UAC0045 // Frees the weak GCHandle when the pooled node is dropped without Release; owners are not guaranteed to dispose.
         ~ElementNode() => Dispose(false);
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         /// <summary>
         /// Disposes the ElementNode and releases its handle.
@@ -159,12 +159,12 @@ public sealed partial class VisualElementAssetReferenceTable : IDisposable
     {
     }
 
-#pragma warning disable UA5000 // Frees cached weak GCHandles when the table is dropped without Release; owners are not guaranteed to dispose.
+#pragma warning disable UAC0045 // Frees cached weak GCHandles when the table is dropped without Release; owners are not guaranteed to dispose.
     ~VisualElementAssetReferenceTable()
     {
         Dispose(false);
     }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
     /// <summary>
     /// Creates a new VisualElementAssetReferenceTable from the pool.

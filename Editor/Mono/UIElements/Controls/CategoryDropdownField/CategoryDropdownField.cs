@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     /// Makes a text field for entering a Category.
     /// </summary>
     [UxmlElement]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class CategoryDropdownField : BaseField<string>
     {
         public class WillDisplayContentEvent : EventBase<WillDisplayContentEvent>

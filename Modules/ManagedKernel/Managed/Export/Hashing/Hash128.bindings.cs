@@ -37,11 +37,11 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.BurstModule")]
         internal ulong u64_1;
 
-        public bool isValid =>
+        public readonly bool isValid =>
             u64_0 != 0
             || u64_1 != 0;
 
-        public int CompareTo(Hash128 rhs)
+        public readonly int CompareTo(Hash128 rhs)
         {
             if (this < rhs)
                 return -1;
@@ -50,7 +50,7 @@ namespace UnityEngine
             return 0;
         }
 
-        public override string ToString()
+        public readonly override string ToString()
         {
             return Hash128ToStringImpl(this);
         }
@@ -234,22 +234,22 @@ namespace UnityEngine
             ComputeFromPtr(new IntPtr(data), 0, (int)size, 1, ref this);
         }
 
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             return obj is Hash128 && this == (Hash128)obj;
         }
 
-        public bool Equals(Hash128 obj)
+        public readonly bool Equals(Hash128 obj)
         {
             return this == obj;
         }
 
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             return u64_0.GetHashCode() ^ u64_1.GetHashCode();
         }
 
-        public int CompareTo(object obj)
+        public readonly int CompareTo(object obj)
         {
             if (obj == null || !(obj is Hash128))
                 return 1;

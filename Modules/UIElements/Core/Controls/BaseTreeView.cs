@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -45,10 +44,8 @@ namespace UnityEngine.UIElements
     {
         internal static readonly BindingId autoExpandProperty = nameof(autoExpand);
 
-        [NoAutoStaticsCleanup]
         internal static readonly CustomStyleProperty<float> s_TreeViewIndentProperty = new("--unity-tree-view-indent");
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static readonly int invalidId = -1;
 
         /// <summary>
@@ -387,6 +384,8 @@ namespace UnityEngine.UIElements
 
         private protected override bool HandleItemNavigation(bool moveIn, bool altPressed)
         {
+            dragger?.CompletePendingCancel();
+
             var selectionIncrement = 1;
             var hasChanges = false;
 
@@ -540,7 +539,6 @@ namespace UnityEngine.UIElements
             return viewController.GetIndexForId(id);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void CopyExpandedStates(int sourceId, int targetId)
         {
             if (IsExpanded(sourceId))

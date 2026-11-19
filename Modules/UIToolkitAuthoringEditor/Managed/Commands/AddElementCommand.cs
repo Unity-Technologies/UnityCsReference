@@ -24,9 +24,10 @@ sealed class AddElementCommand : Command<AddElementCommand>
         return cmd;
     }
 
-    public static CommandExecutionStatus Execute(object source, Type elementType, VisualTreeAsset visualTreeAsset, VisualElementAsset parentVea, int index = -1, string variantName = null)
+    public static CommandExecutionStatus Execute(object source, Type elementType, VisualTreeAsset visualTreeAsset, VisualElementAsset parentVea, int index = -1, string variantName = null, AuthoringContext requestingContext = null)
     {
         using var command = GetPooled(source, elementType, visualTreeAsset, parentVea, index, variantName);
+        command.RequestingContext = requestingContext;
         return UICommandQueue.Execute(command).Status;
     }
 
@@ -75,7 +76,7 @@ sealed class AddElementCommand : Command<AddElementCommand>
 
         using var toSelectNodesHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);
         toSelectAssets.Add(vea);
-        UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(RequestingContext, toSelectAssets);
 
         return CommandExecutionStatus.Success;
     }

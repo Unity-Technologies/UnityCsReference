@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     {
         /// <summary>The edge is resolved by the grid's auto-placement algorithm.</summary>
         Auto = 0,
-        /// <summary>An explicit, 1-based grid line.</summary>
+        /// <summary>An explicit grid line: positive values count from the start edge (1-based), negative values from the end edge.</summary>
         Line = 1,
         /// <summary>A span of N tracks, measured from the item's opposite edge.</summary>
         Span = 2
@@ -25,50 +25,53 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A single placement value for <c>grid-column-start</c>, <c>grid-column-end</c>,
     /// <c>grid-row-start</c> and <c>grid-row-end</c>: <c>auto</c>, an explicit line
-    /// (an integer &gt;= 1), or <c>span &lt;n&gt;</c> (n &gt;= 1).
+    /// (a non-zero integer; negative lines count back from the end edge of the explicit grid),
+    /// or <c>span &lt;n&gt;</c> (n &gt;= 1).
     /// </summary>
-    /// <remarks>
-    /// The value is sign-encoded into a single blittable int so it mirrors the native field 1:1:
-    /// <c>0</c> = auto, <c>&gt; 0</c> = line, <c>&lt; 0</c> = span(-value). This mirrors how
-    /// aspect-ratio uses a sentinel value rather than a separate flag.
-    /// </remarks>
     [StructLayout(LayoutKind.Sequential)]
     public readonly partial struct GridLine : IEquatable<GridLine>
     {
-        // 0 = auto | > 0 = line n | < 0 = span(-n). Layout matches the native `int` field.
+        // Shared with the native int field and persisted in UI animation clip curves, so existing raw values keep their meaning:
+        // 0 = auto | > 0 = line n | (int.MinValue, int.MinValue + k_MaxNegativeLine] = line -(raw - int.MinValue) | other < 0 = span(-raw).
         readonly int m_Value;
+
+        internal const int k_MaxNegativeLine = 100000;
+        internal const int k_MaxSpan = int.MaxValue - k_MaxNegativeLine;
 
         GridLine(int rawValue) { m_Value = rawValue; }
 
-        // Raw sign-encoded value (0 auto | >0 line | <0 span). Used by the style pipeline to move the
-        // value through the blittable int field it shares with native, bypassing the throwing ctors.
-        internal int rawValue => m_Value;
+        internal int rawValue { [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")] get => m_Value; }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static GridLine FromRawValue(int raw) => new GridLine(raw);
+
+        bool isNegativeLine => m_Value > int.MinValue && m_Value <= int.MinValue + k_MaxNegativeLine;
 
         // ---- pretty constructors --------------------------------------------------------------
 
         /// <summary><c>auto</c>: the edge is resolved by grid auto-placement.</summary>
         public static GridLine Auto => new GridLine(0);
 
-        /// <summary>An explicit 1-based grid line.</summary>
-        /// <param name="line">The line index; must be &gt;= 1 (0 and negatives are invalid).</param>
-        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="line"/> is less than 1.</exception>
+        /// <summary>An explicit grid line.</summary>
+        /// <param name="line">The 1-based line index, or a negative index counted from the end edge of the explicit grid (-1 is the last line). Values below -100000 are clamped to -100000.</param>
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="line"/> is 0.</exception>
         public static GridLine AtLine(int line)
         {
-            if (line < 1)
-                throw new ArgumentOutOfRangeException(nameof(line), line,
-                    "A grid line must be >= 1; 0 and negative values are invalid.");
-            return new GridLine(line);
+            if (line == 0)
+                throw new ArgumentOutOfRangeException(nameof(line), line, "A grid line must not be 0.");
+            if (line > 0)
+                return new GridLine(line);
+            return new GridLine(int.MinValue + (int)Math.Min(-(long)line, k_MaxNegativeLine));
         }
 
         /// <summary>A span of <paramref name="count"/> tracks from the opposite edge.</summary>
-        /// <param name="count">The number of tracks to span; must be &gt;= 1.</param>
+        /// <param name="count">The number of tracks to span; must be &gt;= 1. Values above int.MaxValue - 100000 are clamped.</param>
         /// <exception cref="ArgumentOutOfRangeException">If <paramref name="count"/> is less than 1.</exception>
         public static GridLine Span(int count)
         {
             if (count < 1)
                 throw new ArgumentOutOfRangeException(nameof(count), count, "A grid span must be >= 1.");
-            return new GridLine(-count);
+            return new GridLine(-Math.Min(count, k_MaxSpan));
         }
 
         // ---- inspection -----------------------------------------------------------------------
@@ -76,24 +79,24 @@ namespace UnityEngine.UIElements
         /// <summary>Which kind of placement this value represents.</summary>
         public GridLinePlacement placement =>
             m_Value == 0 ? GridLinePlacement.Auto :
-            m_Value  > 0 ? GridLinePlacement.Line : GridLinePlacement.Span;
+            isLine ? GridLinePlacement.Line : GridLinePlacement.Span;
 
         /// <summary>Whether this value is <c>auto</c>.</summary>
         public bool isAuto => m_Value == 0;
         /// <summary>Whether this value is an explicit line.</summary>
-        public bool isLine => m_Value > 0;
+        public bool isLine => m_Value > 0 || isNegativeLine;
         /// <summary>Whether this value is a span.</summary>
-        public bool isSpan => m_Value < 0;
+        public bool isSpan => m_Value < 0 && !isNegativeLine;
 
-        /// <summary>The 1-based line index when <see cref="isLine"/> is true; otherwise 0.</summary>
-        public int line => m_Value > 0 ? m_Value : 0;
+        /// <summary>The line index when <see cref="isLine"/> is true (1-based, or negative counting back from the end edge); otherwise 0.</summary>
+        public int line => m_Value > 0 ? m_Value : isNegativeLine ? int.MinValue - m_Value : 0;
         /// <summary>The span count when <see cref="isSpan"/> is true; otherwise 0.</summary>
-        public int span => m_Value < 0 ? -m_Value : 0;
+        public int span => !isSpan ? 0 : m_Value == int.MinValue ? k_MaxSpan : -m_Value;
 
         // ---- conversions ----------------------------------------------------------------------
 
-        /// <summary>Converts a positive integer to an explicit line; 0 and negatives throw.</summary>
-        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="line"/> is less than 1.</exception>
+        /// <summary>Converts a non-zero integer to an explicit line (see <see cref="AtLine"/>).</summary>
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="line"/> is 0.</exception>
         public static implicit operator GridLine(int line) => AtLine(line);
 
         // ---- equality -------------------------------------------------------------------------
@@ -122,11 +125,11 @@ namespace UnityEngine.UIElements
         // ---- parsing --------------------------------------------------------------------------
 
         /// <summary>
-        /// Parses a single grid line value: <c>auto</c>, <c>&lt;integer &gt;= 1&gt;</c>, <c>span</c>
+        /// Parses a single grid line value: <c>auto</c>, a non-zero <c>&lt;integer&gt;</c>, <c>span</c>
         /// (defaults to 1), or <c>span &lt;integer &gt;= 1&gt;</c>. Case-insensitive. Rejects <c>0</c>,
-        /// negatives, non-integers, and unknown identifiers.
+        /// non-integers, and unknown identifiers.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIElementsModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIElementsModule")]
         internal static bool TryParse(string s, out GridLine value)
         {
             value = Auto;
@@ -160,10 +163,9 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
-            // <integer> line (>= 1; rejects 0 and negatives)
             if (tokens.Length == 1 &&
                 int.TryParse(tokens[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var lineIndex) &&
-                lineIndex >= 1)
+                lineIndex != 0)
             {
                 value = AtLine(lineIndex);
                 return true;

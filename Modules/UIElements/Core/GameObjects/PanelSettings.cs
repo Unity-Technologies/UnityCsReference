@@ -125,6 +125,46 @@ namespace UnityEngine.UIElements
         MatchDocumentRect = 2,
     }
 
+    /// <summary>
+    /// Options for the area of temporary textures that UI Toolkit can use at the same time to apply filters.
+    /// </summary>
+    /// <remarks>
+    /// One megapixel is 1024 × 1024 pixels. Each pixel uses about 4 to 8 bytes of GPU memory.
+    /// </remarks>
+    /// <seealso cref="PanelSettings.filterTextureBudget"/>
+    public enum FilterTextureBudget
+    {
+        /// <summary>
+        /// UI Toolkit chooses the budget.
+        /// </summary>
+        Automatic,
+        /// <summary>
+        /// Half a megapixel.
+        /// </summary>
+        [InspectorName("0.5 Mpx (2-4 MB)")]
+        HalfMegapixel,
+        /// <summary>
+        /// One megapixel.
+        /// </summary>
+        [InspectorName("1 Mpx (4-8 MB)")]
+        OneMegapixel,
+        /// <summary>
+        /// Two megapixels.
+        /// </summary>
+        [InspectorName("2 Mpx (8-16 MB)")]
+        TwoMegapixels,
+        /// <summary>
+        /// Four megapixels.
+        /// </summary>
+        [InspectorName("4 Mpx (16-32 MB)")]
+        FourMegapixels,
+        /// <summary>
+        /// Eight megapixels.
+        /// </summary>
+        [InspectorName("8 Mpx (32-64 MB)")]
+        EightMegapixels,
+    }
+
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IPanelSettings
     {
@@ -149,6 +189,7 @@ namespace UnityEngine.UIElements
         int targetDisplay { get; }
         Rect targetRect { get; }
         TextureSlotCount textureSlotCount { get; }
+        FilterTextureBudget filterTextureBudget { get; }
         uint vertexBudget { get; }
         ExtraVertexChannels extraVertexChannels { get; }
     }
@@ -747,6 +788,29 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
+        FilterTextureBudget m_FilterTextureBudget;
+
+        /// <summary>
+        /// The area of temporary textures that UI Toolkit can use at the same time to apply filters.
+        /// </summary>
+        /// <remarks>
+        /// UI Toolkit draws the same filter pass for many elements in one draw call. To do this, the temporary
+        /// textures of these elements must exist at the same time. A higher budget reduces the number of draw calls,
+        /// which can improve CPU performance, but uses more GPU memory.
+        ///
+        /// The budget doesn't include the final results of the filters, so it isn't a strict memory limit. An element
+        /// that needs more than the budget is still drawn.
+        ///
+        /// To measure the effect of this setting, use the Rendering module of the Profiler window to compare the render
+        /// texture memory and the draw calls.
+        /// </remarks>
+        public FilterTextureBudget filterTextureBudget
+        {
+            get => m_FilterTextureBudget;
+            set => m_FilterTextureBudget = value;
+        }
+
+        [SerializeField]
         TextureSlotCount m_TextureSlotCount = TextureSlotCount.Eight;
 
         /// <summary>
@@ -868,6 +932,15 @@ namespace UnityEngine.UIElements
         [HideInInspector]
         private Shader m_RuntimeDropShadowComposite;
 
+        // Built-in materials with GPU instancing enabled, so that player builds keep the instancing variants of the filter shaders
+        [SerializeField]
+        [HideInInspector]
+        private Material[] m_FilterMaterials;
+
+        [SerializeField]
+        [HideInInspector]
+        private Shader m_CopyRegionShader;
+
         [SerializeField]
         [HideInInspector]
         private Shader m_SDFShader;
@@ -943,12 +1016,14 @@ namespace UnityEngine.UIElements
 
             InitializeShaders();
             AssignICUData();
+            AssignFilterMaterials();
         }
 
         private void OnEnable()
         {
             InitializeShaders();
             AssignICUData();
+            AssignFilterMaterials();
 
             if (m_ICUDataAsset != null)
                 TextCore.Text.TextHandle.RegisterICUDataAsset(m_ICUDataAsset);
@@ -1041,6 +1116,29 @@ namespace UnityEngine.UIElements
             return old != m_ICUDataAsset;
         }
 
+        internal bool AssignFilterMaterials()
+        {
+            var materials = s_GetFilterMaterials?.Invoke();
+            if (materials == null || HasSameMaterials(m_FilterMaterials, materials))
+                return false;
+            m_FilterMaterials = (Material[])materials.Clone();
+            return true;
+        }
+
+        static bool HasSameMaterials(Material[] a, Material[] b)
+        {
+            if (a == null || a.Length != b.Length)
+                return false;
+            for (int i = 0; i < a.Length; ++i)
+            {
+                if (a[i] != b[i])
+                    return false;
+            }
+            return true;
+        }
+
+        internal Material[] filterMaterials => m_FilterMaterials;
+
         void InitializeShaders()
         {
             if (m_AtlasBlitShader == null)
@@ -1062,6 +1160,10 @@ namespace UnityEngine.UIElements
             if (m_RuntimeDropShadowComposite == null)
             {
                 m_RuntimeDropShadowComposite = Shader.Find(UIR.Shaders.k_RuntimeDropShadowComposite);
+            }
+            if (m_CopyRegionShader == null)
+            {
+                m_CopyRegionShader = Shader.Find(UIR.Shaders.k_CopyRegion);
             }
             if (m_SDFShader == null)
             {
@@ -1162,17 +1264,22 @@ namespace UnityEngine.UIElements
                 m_AttachedPanelComponentsList.RemoveFromListAndFromVisualTree(panelComponent);
             }
 
-            // A prefab-stage instance of a screen-space panel must not attach while playing: it would draw
-            // over the live UI and steal its input. World-space panels keep attaching so prefab contents
-            // stay visible while editing.
-            if (Application.isPlaying && renderMode != PanelRenderMode.WorldSpace &&
-                (UIDocument.IsGameObjectInOpenPrefabStage?.Invoke(panelComponent.gameObject) ?? false))
+            if (RefusesPrefabStageContents(panelComponent.gameObject))
+            {
+                // Drops registrations made in edit mode; an emptied panel gets disposed
+                panelComponent.DetachRootVisualElement();
                 return;
+            }
 
             m_AttachedPanelComponentsList.AddToListAndToVisualTree(panelComponent, visualTree, false);
 
             UITKAccessibilityBridge.OnPanelComponentAttached(panelComponent);
         }
+
+        // Screen-space prefab stage contents would draw over the live UI and steal its input
+        internal bool RefusesPrefabStageContents(GameObject gameObject) =>
+            Application.isPlaying && renderMode != PanelRenderMode.WorldSpace &&
+            (UIDocument.IsGameObjectInOpenPrefabStage?.Invoke(gameObject) ?? false);
 
         internal void DetachPanelComponent(IPanelComponent panelComponent)
         {
@@ -1198,6 +1305,10 @@ namespace UnityEngine.UIElements
         // load and reinstalls it, so the value cleared on reload is back before anything reads it.
         [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Action<PanelSettings> s_AssignICUData;
+
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
+        internal static Func<Material[]> s_GetFilterMaterials;
 
         private void OnValidate()
         {
@@ -1251,6 +1362,11 @@ namespace UnityEngine.UIElements
                 }
 
                 if (AssignICUData())
+                {
+                    isDirty = true;
+                }
+
+                if (AssignFilterMaterials())
                 {
                     isDirty = true;
                 }

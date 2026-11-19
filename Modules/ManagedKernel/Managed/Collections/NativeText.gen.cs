@@ -387,7 +387,7 @@ namespace Unity.Collections
         /// The pointer is made invalid by operations that reallocate the character buffer, such as setting <see cref="Capacity"/>.
         /// </remarks>
         /// <returns>A pointer to this string's character buffer.</returns>
-        public unsafe byte* GetUnsafePtr()
+        public readonly unsafe byte* GetUnsafePtr()
         {
             CheckNull(m_Data);
             CheckRead();
@@ -428,7 +428,7 @@ namespace Unity.Collections
         /// <returns>A reference to the byte at the index.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown if the index is out of bounds.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref byte ElementAt(int index)
+        public readonly ref byte ElementAt(int index)
         {
             CheckNull(m_Data);
             CheckWrite();
@@ -617,7 +617,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -648,7 +648,7 @@ namespace Unity.Collections
                 current = default;
             }
 
-            object IEnumerator.Current
+            readonly object IEnumerator.Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => Current;
@@ -658,7 +658,7 @@ namespace Unity.Collections
             /// The current character.
             /// </summary>
             /// <value>The current character.</value>
-            public Unicode.Rune Current => current;
+            public readonly Unicode.Rune Current => current;
         }
 
         /// <summary>
@@ -753,7 +753,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">Another string to compare with.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString32Bytes other)
+        public readonly bool Equals(FixedString32Bytes other)
         {
             return this == other;
         }
@@ -811,7 +811,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">Another string to compare with.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString64Bytes other)
+        public readonly bool Equals(FixedString64Bytes other)
         {
             return this == other;
         }
@@ -869,7 +869,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">Another string to compare with.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString128Bytes other)
+        public readonly bool Equals(FixedString128Bytes other)
         {
             return this == other;
         }
@@ -927,7 +927,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">Another string to compare with.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString512Bytes other)
+        public readonly bool Equals(FixedString512Bytes other)
         {
             return this == other;
         }
@@ -985,7 +985,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">Another string to compare with.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString4096Bytes other)
+        public readonly bool Equals(FixedString4096Bytes other)
         {
             return this == other;
         }
@@ -1055,7 +1055,7 @@ namespace Unity.Collections
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CheckWrite()
+        readonly void CheckWrite()
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
         }
@@ -1069,7 +1069,7 @@ namespace Unity.Collections
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CheckIndexInRange(int index)
+        readonly void CheckIndexInRange(int index)
         {
             if (index < 0)
                 throw new IndexOutOfRangeException($"Index {index} must be positive.");
@@ -1078,7 +1078,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void ThrowCopyError(CopyError error, String source)
+        readonly void ThrowCopyError(CopyError error, String source)
         {
             throw new ArgumentException($"NativeText: {error} while copying \"{source}\"");
         }
@@ -1219,7 +1219,7 @@ namespace Unity.Collections
             /// Sets the length to 0. For a NativeText.Readonly this function does nothing, unless safety checks are enabled (in which case it throws).
             /// </summary>
             /// <exception cref="NotSupportedException">Thrown if ENABLE_UNITY_COLLECTIONS_CHECKS is defined.</exception>
-            public void Clear()
+            public readonly void Clear()
             {
                 ErrorWrite();
             }
@@ -1233,7 +1233,7 @@ namespace Unity.Collections
             /// <param name="index">A byte index.</param>
             /// <returns>A reference to the byte at the index.</returns>
             /// <exception cref="NotSupportedException">Thrown when called. This operation is not supported.</exception>
-            public ref byte ElementAt(int index)
+            public readonly ref byte ElementAt(int index)
             {
                 throw new NotSupportedException("Trying to retrieve non-readonly ref to NativeText.ReadOnly data. This is not permitted.");
             }
@@ -1259,7 +1259,7 @@ namespace Unity.Collections
             /// <param name="clearOptions">Whether any bytes added should be zeroed out.</param>
             /// <returns>Always false.</returns>
             /// <exception cref="NotSupportedException">Thrown if ENABLE_UNITY_COLLECTIONS_CHECKS is defined.</exception>
-            public bool TryResize(int newLength, NativeArrayOptions clearOptions = NativeArrayOptions.ClearMemory)
+            public readonly bool TryResize(int newLength, NativeArrayOptions clearOptions = NativeArrayOptions.ClearMemory)
             {
                 ErrorWrite();
                 return false;
@@ -1284,7 +1284,7 @@ namespace Unity.Collections
             }
 
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-            void ErrorWrite()
+            readonly void ErrorWrite()
             {
                 throw new NotSupportedException("Trying to write to a NativeText.ReadOnly. Write operations are not permitted and are ignored.");
             }
@@ -1436,7 +1436,7 @@ namespace Unity.Collections
             /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
             /// <param name="other">Another string to compare with.</param>
             /// <returns>True if the two strings are equal.</returns>
-            public bool Equals(FixedString32Bytes other)
+            public readonly bool Equals(FixedString32Bytes other)
             {
                 return this == other;
             }
@@ -1495,7 +1495,7 @@ namespace Unity.Collections
             /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
             /// <param name="other">Another string to compare with.</param>
             /// <returns>True if the two strings are equal.</returns>
-            public bool Equals(FixedString64Bytes other)
+            public readonly bool Equals(FixedString64Bytes other)
             {
                 return this == other;
             }
@@ -1554,7 +1554,7 @@ namespace Unity.Collections
             /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
             /// <param name="other">Another string to compare with.</param>
             /// <returns>True if the two strings are equal.</returns>
-            public bool Equals(FixedString128Bytes other)
+            public readonly bool Equals(FixedString128Bytes other)
             {
                 return this == other;
             }
@@ -1613,7 +1613,7 @@ namespace Unity.Collections
             /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
             /// <param name="other">Another string to compare with.</param>
             /// <returns>True if the two strings are equal.</returns>
-            public bool Equals(FixedString512Bytes other)
+            public readonly bool Equals(FixedString512Bytes other)
             {
                 return this == other;
             }
@@ -1672,7 +1672,7 @@ namespace Unity.Collections
             /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
             /// <param name="other">Another string to compare with.</param>
             /// <returns>True if the two strings are equal.</returns>
-            public bool Equals(FixedString4096Bytes other)
+            public readonly bool Equals(FixedString4096Bytes other)
             {
                 return this == other;
             }

@@ -410,6 +410,7 @@ namespace UnityEditor.Modules
             var linkerFlagsFile = Il2CppLinkerFlagsFileFor(args);
             var relativeDataPath = Il2CppDataRelativePath(args);
 
+            // VS solution exports pick Development at compile time, so do not gate on it.
             if (CrashReportingSettings.canUploadReports)
                 additionalArgs.Add("--emit-source-mapping");
 
@@ -454,7 +455,7 @@ namespace UnityEditor.Modules
 #pragma warning disable CS0618
                         apiCompatibilityLevel == ApiCompatibilityLevel.NET),
 #pragma warning restore CS0618
-                CreateSymbolFiles = !GetDevelopment(args) || CrashReportingSettings.canUploadReports,
+                CreateSymbolFiles = !GetDevelopment(args) || GetProcessCrashReportingSymbols(args),
                 AdditionalCppFiles = GetDesktopCppPluginFilesMatchingDefineConstraints(args),
                 AdditionalArgs = additionalArgs.ToArray(),
                 AllowDebugging = allowDebugging,
@@ -1008,6 +1009,10 @@ namespace UnityEditor.Modules
 
         protected bool GetDevelopment(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.Development);
+
+        // Development builds create and upload symbols only when Cloud Diagnostics crash reporting is on.
+        protected bool GetProcessCrashReportingSymbols(BuildPostProcessArgs args) =>
+            GetDevelopment(args) ? CrashReportingSettings.enabled : CrashReportingSettings.canUploadReports;
 
         protected bool GetInstallingIntoBuildsFolder(BuildPostProcessArgs args) =>
             IsBuildOptionSet(args.options, BuildOptions.InstallInBuildFolder);

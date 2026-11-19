@@ -70,6 +70,12 @@ static class CommandSources
     public static readonly CommandSource Menus = new();
 
     /// <summary>
+    /// Command source representing the library pane.
+    /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
+    public static readonly CommandSource Library = new();
+
+    /// <summary>
     /// Command source representing a UI Stage instance.
     /// </summary>
     [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
@@ -96,7 +102,6 @@ static class CommandSources
 /// Multiple categories can be combined using bitwise OR (e.g., InlineRule | StyleSheetRule).
 /// </summary>
 [Flags]
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal enum CommandCategory
 {
     /// <summary>

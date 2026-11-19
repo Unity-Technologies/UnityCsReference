@@ -230,7 +230,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var releaseDateString = m_Version.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
             detailVersion.text = string.IsNullOrEmpty(releaseDateString)
                 ? versionString
-                : string.Format(L10n.Tr("{0} · {1}", null), versionString, releaseDateString);
+                : string.Format(L10n.Tr("{0} | {1}", null), versionString, releaseDateString);
         }
 
         private VisualElementCache cache { get; }

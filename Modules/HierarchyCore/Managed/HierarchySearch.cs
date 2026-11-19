@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Hierarchy
 {
@@ -15,7 +14,6 @@ namespace Unity.Hierarchy
 
     sealed class DefaultHierarchySearchQueryParser : IHierarchySearchQueryParser
     {
-        [NoAutoStaticsCleanup]
         static readonly Regex s_Filter = new Regex(@"([#$\w\[\]]+)(<=|<|>=|>|<|=|:)(.*)", RegexOptions.Compiled);
 
         static List<string> Tokenize(string s)

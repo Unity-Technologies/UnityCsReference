@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using Object = UnityEngine.Object;
 
 namespace Unity.Localization.Providers;
@@ -81,34 +82,40 @@ public sealed class ResourceFolderProvider : IAsyncAssetProvider, ISynchronousAs
     }
 
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
-    internal void RemoveAliasesTo(string path)
+    internal bool SetOwnedAliases(string path, string address, string guidAddress)
     {
         if (string.IsNullOrEmpty(path))
-            return;
-        List<string> stale = null;
-        for (var i = 0; i < m_OwnedAddresses.Count; i++)
+            return false;
+        var changed = false;
+        for (var i = m_OwnedAddresses.Count - 1; i >= 0; i--)
         {
-            var address = m_OwnedAddresses[i];
-            if (m_AliasByAddress.TryGetValue(address, out var value) && value == path)
-                (stale ??= new List<string>()).Add(address);
+            var owned = m_OwnedAddresses[i];
+            if (owned == address || owned == guidAddress)
+                continue;
+            if (m_AliasByAddress.TryGetValue(owned, out var value) && value == path)
+            {
+                m_AliasByAddress.Remove(owned);
+                m_OwnedAddresses.RemoveAt(i);
+                changed = true;
+            }
         }
-        if (stale == null)
-            return;
-        foreach (var address in stale)
-        {
-            m_AliasByAddress.Remove(address);
-            m_OwnedAddresses.Remove(address);
-        }
+        changed |= AddOwnedAlias(guidAddress, path);
+        changed |= AddOwnedAlias(address, path);
+        if (changed)
+            SortByAddress();
+        return changed;
     }
 
-    [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
-    internal void AddOwnedAlias(string address, string path)
+    bool AddOwnedAlias(string address, string path)
     {
         if (string.IsNullOrEmpty(address) || string.IsNullOrEmpty(path))
-            return;
+            return false;
+        if (m_AliasByAddress.TryGetValue(address, out var existing) && existing == path && m_OwnedAddresses.Contains(address))
+            return false;
         // AddAlias drops any owned record for the address, so this append cannot duplicate.
         AddAlias(address, path);
         m_OwnedAddresses.Add(address);
+        return true;
     }
 
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
@@ -117,6 +124,23 @@ public sealed class ResourceFolderProvider : IAsyncAssetProvider, ISynchronousAs
         for (var i = 0; i < m_OwnedAddresses.Count; i++)
             m_AliasByAddress.Remove(m_OwnedAddresses[i]);
         m_OwnedAddresses.Clear();
+    }
+
+    // The serialized asset must not depend on registration history.
+    void SortByAddress()
+    {
+        m_OwnedAddresses.Sort(StringComparer.Ordinal);
+        using var pooledAddresses = ListPool<string>.Get(out var addresses);
+        using var pooledEntries = DictionaryPool<string, string>.Get(out var entries);
+        foreach (var entry in m_AliasByAddress)
+        {
+            addresses.Add(entry.Key);
+            entries.Add(entry.Key, entry.Value);
+        }
+        addresses.Sort(StringComparer.Ordinal);
+        m_AliasByAddress.Clear();
+        for (var i = 0; i < addresses.Count; i++)
+            m_AliasByAddress.Add(addresses[i], entries[addresses[i]]);
     }
 
     /// <summary>

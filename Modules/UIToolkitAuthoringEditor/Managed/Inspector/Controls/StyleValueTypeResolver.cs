@@ -15,7 +15,6 @@ namespace Unity.UIToolkit.Editor;
 /// compatible with it, using <see cref="StyleDebug.GetComputedStyleType"/> to
 /// resolve the property's computed type.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static class StyleValueTypeResolver
 {
     static readonly StyleValueType[] s_FloatTypes = { StyleValueType.Float, StyleValueType.Keyword };

@@ -11,15 +11,10 @@ namespace UnityEditor
     internal class AudioMixerDrawUtils
     {
         [NoAutoStaticsCleanup] // Recomputed on demand by DetectVertexOffset(); persisting the rasterization offset across reload is harmless
-        // OpenGL and D3D<11 use different ways of specifying the rasterization grid, so in order to draw exactly we need to account for this.
         private static float vertexOffset = -1.0f;
         private static void DetectVertexOffset()
         {
-            //string driver = SystemInfo.graphicsDeviceVersion;
-            //vertexOffset = 0.5f; //(driver.StartsWith("OpenGL") || driver.StartsWith("Direct3D 11")) ? 0.0f : 0.5f;
-            //vertexOffset /= EditorGUIUtility.pixelsPerPoint;
             vertexOffset = 0.0f;
-            //Debug.Log("Detected vertex offset as " + vertexOffset + " driver=" + driver);
         }
 
         static readonly Color kAttenuationColor = AudioCurveRendering.kAudioOrange;
@@ -53,7 +48,7 @@ namespace UnityEditor
             public GUIStyle reorderableListLabel = GetStyle("ReorderableList");
             public GUIStyle regionBg = GetStyle("RegionBg");
             public GUIStyle channelStripVUMeterBg = GetStyle("ChannelStripVUMeterBg");
-            public GUIStyle channelStripAreaBackground = GetStyle("CurveEditorBackground"); //"flow background";
+            public GUIStyle channelStripAreaBackground = GetStyle("CurveEditorBackground");
             public GUIStyle channelStripBg = GetStyle("ChannelStripBg");
             public GUIStyle duckingMarker = GetStyle("ChannelStripDuckingMarker");
             public GUIStyle channelStripAttenuationMarkerSquare = GetStyle("ChannelStripAttenuationMarkerSquare");
@@ -147,7 +142,6 @@ namespace UnityEditor
         {
             if (Event.current.type != EventType.Repaint)
                 return;
-            //Profiler.BeginSample ("DrawGradientRect");
             HandleUtility.ApplyWireMaterial();
             GL.Begin(GL.QUADS);
             GL.Color(new Color(c1.r, c1.g, c1.b, c1.a * GetAlpha()));
@@ -157,14 +151,12 @@ namespace UnityEditor
             Vertex(r.x + r.width, r.y + r.height);
             Vertex(r.x, r.y + r.height);
             GL.End();
-            //Profiler.EndSample ();
         }
 
         public static void DrawGradientRectHorizontal(Rect r, Color c1, Color c2)
         {
             if (Event.current.type != EventType.Repaint)
                 return;
-            //Profiler.BeginSample ("DrawGradientRectHorizontal");
             HandleUtility.ApplyWireMaterial();
             GL.Begin(GL.QUADS);
             GL.Color(new Color(c1.r, c1.g, c1.b, c1.a * GetAlpha()));
@@ -174,7 +166,6 @@ namespace UnityEditor
             Vertex(r.x, r.y + r.height);
             Vertex(r.x, r.y);
             GL.End();
-            //Profiler.EndSample ();
         }
 
         internal const float kSectionHeaderHeight = 22f;
@@ -240,7 +231,6 @@ namespace UnityEditor
             if (Event.current.type != EventType.Repaint)
                 return;
 
-            //Profiler.BeginSample ("DrawConnection");
             HandleUtility.ApplyWireMaterial();
 
             var dirX = dstX - srcX;
@@ -272,7 +262,6 @@ namespace UnityEditor
                 new[] { new Color(col.r, col.g, col.b, mixLevel), new Color(col.r, col.g, col.b, mixLevel) },
                 new[] { new Vector3(srcX, srcY, 0.0f), new Vector3(dstX, dstY, 0.0f) }
             );
-            //Profiler.EndSample ();
         }
 
         public static void DrawVerticalShow(Rect rect, bool fadeToTheRight)

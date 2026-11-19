@@ -4,9 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.PackageManager;
 using UnityEditor.UIElements;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
@@ -15,7 +18,6 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static partial class LibraryContent
     {
         const string k_ShowInternalControlsPrefKey = "UIToolkit.UILibrary.ShowInternalControls";
@@ -27,6 +29,8 @@ namespace Unity.UIToolkit.Editor
         static bool s_VariantsGenerated;
         [AutoStaticsCleanupOnCodeReload] // caches user Assembly refs; cleared on reload so unloaded assemblies aren't pinned
         static readonly Dictionary<Assembly, bool> s_IsPackageAssembly = new();
+        [AutoStaticsCleanupOnCodeReload] // the script assemblies change with each compilation
+        static HashSet<string> s_EditorScriptAssemblyNames;
 
         internal static bool ShowInternalControls
         {
@@ -192,6 +196,87 @@ namespace Unity.UIToolkit.Editor
                 return false;
 
             return true;
+        }
+
+        /// <summary>
+        /// Determines whether a type only works in editor UI, which a document has to opt in to with its editor
+        /// extension mode. The curated categories say it for the standard controls; any other type is editor-only
+        /// when it is compiled in an editor assembly.
+        /// </summary>
+        internal static bool IsEditorOnly(Type type)
+        {
+            if (type == null)
+                return false;
+
+            var category = LibraryOrdering.GetCategory(type);
+            if (category != null)
+                return category.IsEditorOnly;
+
+            return (type.Namespace != null && type.Namespace.StartsWith("UnityEditor"))
+                || IsEditorAssembly(type.Assembly);
+        }
+
+        static bool IsEditorAssembly(Assembly assembly)
+        {
+            if (assembly.GetCustomAttribute<AssemblyIsEditorAssembly>() != null)
+                return true;
+
+            // Script assemblies do not carry the attribute; the compilation pipeline knows which are editor-only.
+            if (s_EditorScriptAssemblyNames == null)
+            {
+                s_EditorScriptAssemblyNames = new HashSet<string>();
+                var scriptAssemblies = UnityEditor.Compilation.CompilationPipeline.GetAssemblies(
+                    UnityEditor.Compilation.AssembliesType.Editor);
+                foreach (var scriptAssembly in scriptAssemblies)
+                {
+                    if ((scriptAssembly.flags & UnityEditor.Compilation.AssemblyFlags.EditorAssembly) != 0)
+                        s_EditorScriptAssemblyNames.Add(scriptAssembly.name);
+                }
+            }
+
+            return s_EditorScriptAssemblyNames.Contains(assembly.GetName().Name);
+        }
+
+        /// <summary>
+        /// Lazily enumerates the project's UXML documents as <see cref="LibraryItem"/>s, sorted by path. The
+        /// documents of embedded and local packages are included on request; other packages are read-only and
+        /// never are.
+        /// </summary>
+        internal static IEnumerable<LibraryItem> EnumerateProjectTemplates(bool includePackages = false)
+        {
+            var searchFilter = new SearchFilter
+            {
+                classNames = new[] { nameof(VisualTreeAsset) },
+                searchArea = includePackages ? SearchFilter.SearchArea.AllAssets : SearchFilter.SearchArea.InAssetsOnly
+            };
+
+            var guids = AssetDatabase.FindAssets(searchFilter);
+            var paths = new string[guids.Length];
+            for (var i = 0; i < guids.Length; i++)
+                paths[i] = AssetDatabase.GUIDToAssetPath(guids[i]);
+
+            Array.Sort(paths, StringComparer.Ordinal);
+
+            foreach (var assetPath in paths)
+            {
+                if (string.IsNullOrEmpty(assetPath))
+                    continue;
+
+                if (includePackages && !assetPath.StartsWith("Assets/", StringComparison.Ordinal) && !IsWritablePackageAsset(assetPath))
+                    continue;
+
+                var name = Path.GetFileName(assetPath);
+                var folder = Path.GetDirectoryName(assetPath);
+                folder = string.IsNullOrEmpty(folder) ? string.Empty : folder.ConvertSeparatorsToUnity();
+
+                yield return new LibraryItem(name, assetPath, folder);
+            }
+        }
+
+        static bool IsWritablePackageAsset(string assetPath)
+        {
+            var packageInfo = PackageInfo.FindForAssetPath(assetPath);
+            return packageInfo != null && (packageInfo.source == PackageSource.Embedded || packageInfo.source == PackageSource.Local);
         }
 
         static bool IsPackageType(Type type)

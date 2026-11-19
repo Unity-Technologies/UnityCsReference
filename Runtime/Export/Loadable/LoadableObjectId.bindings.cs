@@ -20,7 +20,6 @@ namespace Unity.Loading
         ObjectCluster = 1,
         SingleImportedObject = 2,
         SingleSourceObject = 3,
-        MonoScript = 4,
         DefaultResources = 5,
     }
 
@@ -83,10 +82,8 @@ namespace Unity.Loading
 
             if (x.m_ContentFileSourceType != ContentFileSourceType.None)
             {
-                // Baked ids compare by owning content file + target lfid. All MonoScripts share one
-                // file, so the (source script) GUID is not part of a MonoScript reference's identity.
-                return x.m_LocalIdentifierInFile == y.m_LocalIdentifierInFile &&
-                       (x.m_ContentFileSourceType == ContentFileSourceType.MonoScript || x.m_GUID == y.m_GUID);
+                // Baked ids compare by owning content file + target lfid.
+                return x.m_LocalIdentifierInFile == y.m_LocalIdentifierInFile && x.m_GUID == y.m_GUID;
             }
 
             // Otherwise use the guid, type, and fileid
@@ -120,7 +117,7 @@ namespace Unity.Loading
             {
                 if (m_ContentFileSourceType != ContentFileSourceType.None)
                 {
-                    var bakedHashCode = m_ContentFileSourceType == ContentFileSourceType.MonoScript ? 0 : m_GUID.GetHashCode();
+                    var bakedHashCode = m_GUID.GetHashCode();
                     bakedHashCode = (bakedHashCode * 397) ^ (int)m_ContentFileSourceType;
                     bakedHashCode = (bakedHashCode * 397) ^ m_LocalIdentifierInFile.GetHashCode();
                     return bakedHashCode;

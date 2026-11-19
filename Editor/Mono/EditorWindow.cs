@@ -53,6 +53,7 @@ namespace UnityEditor
         [SerializeField]
         [HideInInspector]
         internal DataModeController m_SerializedDataModeController;
+        [Obsolete("EditorWindow.dataModeController is deprecated and will be removed in a future release. #from(7000.0)", false)]
         public IDataModeController dataModeController => GetDataModeController_Internal(); // For each editor window.
         internal DataModeController GetDataModeController_Internal()  // For HostView to use internally.
             => m_SerializedDataModeController ??= new DataModeController();
@@ -61,7 +62,7 @@ namespace UnityEditor
 
         internal VisualElement baseRootVisualElement
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_UIRootElement ??= CreateRoot();
         }
 
@@ -141,7 +142,7 @@ namespace UnityEditor
         /// Event that is triggered when the window's geometry changes, such as during a resize. Subscribers can use this
         /// event to adjust their layout or reposition themselves accordingly.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal event EventHandler OnWindowGeometryChanged;
 
         internal void SaveViewData()
@@ -172,7 +173,7 @@ namespace UnityEditor
             m_EnableViewDataPersistence = false;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void ClearPersistentViewData()
         {
             string editorPrefFileName = this.GetType().ToString();
@@ -191,7 +192,7 @@ namespace UnityEditor
         bool m_DisableInputEvents;
 
         // Dockarea we're inside.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [NonSerialized]
         internal HostView m_Parent;
 
@@ -220,14 +221,14 @@ namespace UnityEditor
         }
 
         // Make it available to UIBuilder and UIToolkitAuthoring tests
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void NotifyWindowGeometryChanged()
         {
             OnResized();
             OnWindowGeometryChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual void OnResized()  {}
 
         internal virtual void OnBackgroundViewResized(Rect pos) {}
@@ -289,7 +290,7 @@ namespace UnityEditor
 
         internal CustomYieldInstruction WaitUntilPresented() => new WaitUntil(() => m_IsPresented);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal GUIContent GetLocalizedTitleContent()
         {
             return GetLocalizedTitleContentFromType(GetType());
@@ -695,7 +696,7 @@ namespace UnityEditor
         // 'windowSize' is used for setting up initial size
         // 'locationPriorityOrder' is for manual popup direction, if null it uses default order: down, up, left or right
         // 'giveFocus' is for whether the window should immediately be given focus (default true)
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocation[] locationPriorityOrder, ShowMode mode, bool giveFocus)
         {
             // Setup position before bringing window live (otherwise the dropshadow on Windows will be placed in 0,0 first frame)
@@ -1164,7 +1165,6 @@ namespace UnityEditor
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void RepaintImmediately()
         {
             if (m_Parent && m_Parent.actualView == this)

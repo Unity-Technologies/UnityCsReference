@@ -19,7 +19,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     static partial class TopViewPermanence
     {
-        public const string k_EnableMultiplayerRoles = nameof(k_EnableMultiplayerRoles);
+        [AutoStaticsCleanupOnCodeReload] // last seen value for change detection; set again by InitializeOnLoad
+        static bool s_EnableMultiplayerRoles;
 
         [AutoStaticsCleanupOnCodeReload] // reset to false on reload, then set true by InitializeOnLoad
         public static bool Initialized; // Note: the constructor won't run without some data being in the static class
@@ -30,12 +31,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
         static void InitializeOnLoad()
         {
             Initialized = true;
-            SessionState.SetBool(k_EnableMultiplayerRoles, EditorMultiplayerManager.enableMultiplayerRoles);
+            s_EnableMultiplayerRoles = EditorMultiplayerManager.enableMultiplayerRoles;
             EditorApplication.update += () =>
             {
-                if (SessionState.GetBool(k_EnableMultiplayerRoles, false) != EditorMultiplayerManager.enableMultiplayerRoles)
+                if (s_EnableMultiplayerRoles != EditorMultiplayerManager.enableMultiplayerRoles)
                 {
-                    SessionState.SetBool(k_EnableMultiplayerRoles, EditorMultiplayerManager.enableMultiplayerRoles);
+                    s_EnableMultiplayerRoles = EditorMultiplayerManager.enableMultiplayerRoles;
                     EnableMultiplayerRolesEvent?.Invoke();
                 }
             };

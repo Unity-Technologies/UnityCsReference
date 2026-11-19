@@ -93,6 +93,19 @@ namespace UnityEngine
             return Internal_FormatDictionaryFieldUniqueIdentifierForActiveContext(dictionaryIdentifierTemplateUtf8) ?? string.Empty;
         }
 
+        // Store-key twin of the lookup helper above, used by the read sink
+        // (V2DictionaryElementSink), which creates cache entries so it cannot
+        // gate on HostHasIgnoredDictionaryEntries. Must format the same way
+        // as v1 (DictionaryField::SetArray) and the lookup helper, or
+        // ignored-row lookups mismatch. Empty return means the caller skips
+        // the ignored Store/Clear for this dictionary.
+        internal static string FormatDictionaryFieldUniqueIdentifierForStore(IntPtr dictionaryIdentifierTemplateUtf8)
+        {
+            if (s_IgnoredEntriesForDictionaries == null || dictionaryIdentifierTemplateUtf8 == IntPtr.Zero)
+                return string.Empty;
+            return Internal_FormatDictionaryFieldUniqueIdentifierForActiveContext(dictionaryIdentifierTemplateUtf8) ?? string.Empty;
+        }
+
         internal static bool HostHasIgnoredDictionaryEntries(EntityId entityId)
         {
             return s_IgnoredEntriesForDictionaries != null && s_IgnoredEntriesForDictionaries.HostHasIgnoredDictionaryEntries(entityId);

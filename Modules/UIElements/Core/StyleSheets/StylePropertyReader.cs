@@ -15,7 +15,7 @@ using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal struct StylePropertyValue
     {
         public StyleSheet sheet;
@@ -57,7 +57,7 @@ namespace UnityEngine.UIElements.StyleSheets
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class StylePropertyReader
     {
         // Strategy to create default cursor must be provided in the context of Editor or Runtime
@@ -70,8 +70,6 @@ namespace UnityEngine.UIElements.StyleSheets
         // limitation-tripping gradient is applied to many elements.
         [NoAutoStaticsCleanup] // one-shot warning flags; safe to persist across reload
         static bool s_WarnedRadialPositionUnit;
-        [NoAutoStaticsCleanup] // one-shot warning flags; safe to persist across reload
-        static bool s_WarnedPixelStopPosition;
 
         // Styles re-resolve on every hover/layout/animation change, so a missing asset baked into a
         // sheet would otherwise warn on each pass. A reimport reuses the sheet's EntityId and so
@@ -86,6 +84,26 @@ namespace UnityEngine.UIElements.StyleSheets
                 return;
 
             Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, format, url, sheet.name), sheet);
+        }
+
+        // Same per-restyle concern for a color stop that isn't a color, typically a var() resolving
+        // to another type: warn once per declaration instead of on every pass.
+        [NoAutoStaticsCleanup]
+        static HashSet<(EntityId sheet, int line)> s_WarnedInvalidColorStops;
+
+        void WarnInvalidColorStopOnce(StyleValueType valueType)
+        {
+            var sheet = m_Sheet;
+            if (sheet != null)
+            {
+                s_WarnedInvalidColorStops ??= new HashSet<(EntityId, int)>();
+                if (!s_WarnedInvalidColorStops.Add((sheet.GetEntityId(), property?.line ?? -1)))
+                    return;
+            }
+
+            Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
+                "{0} (line {1}): Unexpected value type '{2}' in gradient color-stop list; the stop is ignored.",
+                sheet != null && !string.IsNullOrEmpty(sheet.name) ? sheet.name : "inline style", property?.line ?? -1, valueType), sheet);
         }
 
         private List<StylePropertyValue> m_Values = new List<StylePropertyValue>();
@@ -725,7 +743,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
                 if (!TryReadStopColor(value, out var color))
                 {
-                    Debug.LogWarning($"Unexpected value type '{vt}' in gradient color-stop list");
+                    WarnInvalidColorStopOnce(vt);
                     cursor++;
                     continue;
                 }
@@ -749,16 +767,8 @@ namespace UnityEngine.UIElements.StyleSheets
                         }
                         else if (dim.unit == Dimension.Unit.Pixel)
                         {
-                            // Pixel-positioned stops can't be resolved against the element size at bake
-                            // time (the atlas is size-independent). Consume the token and treat the stop
-                            // as auto-distributed so the gradient still looks sensible.
-                            if (!s_WarnedPixelStopPosition)
-                            {
-                                s_WarnedPixelStopPosition = true;
-                                Debug.LogWarning(
-                                    "Pixel-positioned gradient stops (e.g. `red 10px`) aren't supported; " +
-                                    "the position is dropped and the stop is auto-distributed.");
-                            }
+                            position = dim.value;
+                            gotPosition = true;
                             cursor++;
                         }
                     }
@@ -801,18 +811,33 @@ namespace UnityEngine.UIElements.StyleSheets
                 while (next < stops.Count && !hasExplicitPosition[next]) next++;
                 if (next >= stops.Count) break; // shouldn't happen given anchoring above
                 int gap = next - prev;
+                // CSS moves a stop placed before an earlier one up to it before spreading, so the gap starts at the
+                // farthest stop so far. Comparing them needs one unit; a stop at 0 is at the same place in either.
+                bool sameUnit = true;
+                float start = float.NegativeInfinity;
+                for (int k = 0; k <= prev; k++)
+                {
+                    sameUnit &= stops[k].positionIsPercent == stops[next].positionIsPercent || stops[k].position == 0f;
+                    start = Mathf.Max(start, stops[k].position);
+                }
+                float end = Mathf.Max(start, stops[next].position);
                 for (int j = prev + 1; j < next; j++)
                 {
-                    float t = (float)(j - prev) / gap;
                     var s = stops[j];
-                    // Percent-positioned stops only; pixel positions stay as-authored.
-                    if (!hasExplicitPosition[j])
+                    if (sameUnit)
                     {
-                        s.position = Mathf.Lerp(stops[prev].position, stops[next].position, t);
-                        s.positionIsPercent = stops[prev].positionIsPercent && stops[next].positionIsPercent;
-                        stops[j] = s;
-                        hasExplicitPosition[j] = true;
+                        s.position = Mathf.Lerp(start, end, (float)(j - prev) / gap);
+                        s.positionIsPercent = stops[next].positionIsPercent;
                     }
+                    else
+                    {
+                        // Spreading between a pixel and a percentage neighbor needs the element's size.
+                        s.position = stops[prev].position;
+                        s.positionIsPercent = stops[prev].positionIsPercent;
+                        s.positionIsAuto = true;
+                    }
+                    stops[j] = s;
+                    hasExplicitPosition[j] = true;
                 }
                 i = next - 1;
             }
@@ -870,8 +895,9 @@ namespace UnityEngine.UIElements.StyleSheets
                         }
                         fraction = 0.5f;
                     }
-                    if (float.IsNaN(pendingX)) pendingX = fraction;
-                    else if (float.IsNaN(pendingY)) pendingY = fraction;
+                    // A second length is vertical (`center 25%`) unless a vertical keyword came first (`top 25%`).
+                    if (read == 0 || !float.IsNaN(pendingY)) pendingX = fraction;
+                    else pendingY = fraction;
                     cursor++;
                     read++;
                     continue;
@@ -1254,21 +1280,13 @@ namespace UnityEngine.UIElements.StyleSheets
                     {
                         if (isColor)
                         {
-                            args[providedArgs] = new FilterParameter()
-                            {
-                                type = FilterParameterType.Color,
-                                colorValue = ReadColor(index)
-                            };
+                            args[providedArgs] = new FilterParameter(ReadColor(index));
                         }
                         else
                         {
                             var dimValue = GetValue(index);
                             var dim = dimValue.sheet.ReadDimension(dimValue.handle);
-                            args[providedArgs] = new FilterParameter()
-                            {
-                                type = FilterParameterType.Float,
-                                floatValue = StyleProperty.ConvertDimensionToFilterFloat(dim)
-                            };
+                            args[providedArgs] = new FilterParameter(StyleProperty.ConvertDimensionToFilterFloat(dim), dim.unit);
                         }
                     }
 
@@ -1468,7 +1486,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         }
 
-        // CSS Grid. Reads one grid-line placement value: auto | <integer >= 1> | span [<n>].
+        // CSS Grid. Reads one grid-line placement value: auto | <non-zero integer> | span [<n>].
         public StyleGridLine ReadGridLine(int index)
         {
             if (IsKeyword(index, StyleValueKeyword.Auto))
@@ -1494,9 +1512,9 @@ namespace UnityEngine.UIElements.StyleSheets
             if (type == StyleValueType.Float)
             {
                 int line = (int)ReadFloat(index);
-                if (line >= 1)
+                if (line != 0)
                     return new StyleGridLine(GridLine.AtLine(line));
-                Debug.LogError($"Invalid grid line '{line}'; a line must be >= 1 (0 and negatives are invalid).");
+                Debug.LogError("Invalid grid line '0'; a line must not be 0.");
                 return new StyleGridLine(GridLine.Auto);
             }
 

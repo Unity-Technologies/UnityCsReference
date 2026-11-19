@@ -250,6 +250,6 @@ partial class VisualElementHeader : UISelectionObjectHeader
     {
         var entityId = m_StackingContextRoot?.GetSelectionObject<VisualElementSelection>()?.GetEntityId();
         if (entityId.HasValue)
-            Selection.activeEntityId = entityId.Value;
+            AuthoringContext.For(m_StackingContextRoot).Selection.ActiveEntityId = entityId.Value;
     }
 }

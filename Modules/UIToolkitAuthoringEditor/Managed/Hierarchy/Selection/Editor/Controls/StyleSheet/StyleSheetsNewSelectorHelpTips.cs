@@ -8,11 +8,13 @@ using UnityEngine.Bindings;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UxmlElement]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class StyleSheetsNewSelectorHelpTips : VisualElement
     {
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/StyleSheet/StyleSheetsNewSelectorHelpTips.uxml";
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal const string k_HelpTooltipLabel = "uss-selector-precedence-link";
 
         public StyleSheetsNewSelectorHelpTips()

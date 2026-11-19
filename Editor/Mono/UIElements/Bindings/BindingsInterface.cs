@@ -42,11 +42,11 @@ namespace UnityEditor.UIElements
         internal static readonly string prefabOverrideBarUssClassName = "unity-binding__prefab-override-bar";
         internal static readonly string prefabOverrideBarNotApplicableUssClassName = "unity-binding__prefab-override-bar-not-applicable";
         internal static readonly UniqueStyleString drivenUssClassName = new("unity-binding--driven");
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly UniqueStyleString animationAnimatedUssClassName = new("unity-binding--animation-animated");
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly UniqueStyleString animationRecordedUssClassName = new("unity-binding--animation-recorded");
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly UniqueStyleString animationCandidateUssClassName = new("unity-binding--animation-candidate");
         internal static readonly UniqueStyleString livePropertyUssClassName = new("unity-binding--live-property");
         internal static readonly string livePropertyBarName = "unity-binding-live-property-bar";
@@ -55,7 +55,6 @@ namespace UnityEditor.UIElements
 
         internal static readonly PropertyName s_DataSourceProperty = new PropertyName("unity-data-source");
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static readonly string s_SerializedBindingId = "--unity-serialized-object-bindings";
         internal static readonly string s_SerializedBindingContextUpdaterId = "--unity-serialized-object-bindings-context-updater";
 
@@ -125,19 +124,19 @@ namespace UnityEditor.UIElements
             bindingImpl.TrackPropertyValue(element, property, callback == null ? null : (e, p) => callback(p));
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void TrackPropertyValue(this VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback)
         {
             bindingImpl.TrackPropertyValue(element, property, callback);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void UntrackPropertyValue(this VisualElement element, SerializedProperty property)
         {
             bindingImpl.UntrackPropertyValue(element, property, null);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void UntrackPropertyValue(this VisualElement element, SerializedProperty property, Action<object, SerializedProperty> callback)
         {
             bindingImpl.UntrackPropertyValue(element, property, callback);

@@ -41,14 +41,25 @@ internal readonly struct StyleSheetsContext
     /// <summary>When true, the displayed stylesheets (and any selected rule) are read-only.</summary>
     public readonly bool IsReadOnly;
 
+    /// <summary>
+    /// The one style sheet displayed when it is edited on its own, over a preview of <see cref="Document"/>. The
+    /// document's own style sheets are not displayed then, and the list of style sheets cannot change.
+    /// </summary>
+    public readonly StyleSheet StandaloneStyleSheet;
+
     readonly ParentStyleSheet[] m_ParentStyleSheets;
 
-    public StyleSheetsContext(VisualTreeAsset document, ParentStyleSheet[] parentStyleSheets, bool isReadOnly = false)
+    public StyleSheetsContext(VisualTreeAsset document, ParentStyleSheet[] parentStyleSheets, bool isReadOnly = false,
+        StyleSheet standaloneStyleSheet = null)
     {
         Document = document;
         m_ParentStyleSheets = parentStyleSheets;
         IsReadOnly = isReadOnly;
+        StandaloneStyleSheet = standaloneStyleSheet;
     }
+
+    /// <summary>Whether style sheets can be added to the document or removed from it.</summary>
+    public bool CanChangeStyleSheets => !IsReadOnly && StandaloneStyleSheet == null && Document != null;
 
     /// <summary>The document whose stylesheets can be edited, or null when the display is read-only (or empty).</summary>
     public VisualTreeAsset EditedAsset => IsReadOnly ? null : Document;
@@ -63,7 +74,7 @@ internal readonly struct StyleSheetsContext
     /// </summary>
     public bool DisplaysSameContentAs(in StyleSheetsContext other)
     {
-        if (Document != other.Document || IsReadOnly != other.IsReadOnly)
+        if (Document != other.Document || IsReadOnly != other.IsReadOnly || StandaloneStyleSheet != other.StandaloneStyleSheet)
             return false;
 
         var parents = ParentStyleSheets;
@@ -89,11 +100,21 @@ internal readonly struct StyleSheetsContext
 internal static class StyleSheetsContextFactory
 {
     public static StyleSheetsContext FromStage(VisualElementEditingStage stage)
+        => stage == null ? StyleSheetsContext.None : FromSession(stage.GetOrCreateSession());
+
+    /// <summary>
+    /// Builds the context for the document a session edits: editable, with the style sheets it inherits when it
+    /// is edited in context.
+    /// </summary>
+    public static StyleSheetsContext FromSession(UIDocumentSession session)
     {
-        if (stage == null)
+        if (session == null || session.IsDisposed)
             return StyleSheetsContext.None;
 
-        return new StyleSheetsContext(stage.EditedVisualTreeAsset, CollectParents(stage.Context), isReadOnly: false);
+        if (session.StandaloneStyleSheet != null)
+            return new StyleSheetsContext(session.EditedVisualTreeAsset, [], isReadOnly: false, session.StandaloneStyleSheet);
+
+        return new StyleSheetsContext(session.EditedVisualTreeAsset, CollectParents(session.Document), isReadOnly: false);
     }
 
     /// <summary>

@@ -129,6 +129,9 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     /// </summary>
     public unsafe void MarkDirty()
     {
+        if (LayoutProcessor.isCalculatingLayout)
+            LayoutProcessor.RecordDirtiedDuringLayout(this);
+
         var handle = m_Handle;
         while (!handle.IsUndefined)
         {

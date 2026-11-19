@@ -35,5 +35,7 @@ namespace UnityEngine.TextCore
         public NativeGlyphKind kind;
         public int textRangeStart;
         public int textRangeLength;
+        // The quad is still generated; the caller hides it.
+        public bool isHiddenByVisibilityLimit;
     }
 }

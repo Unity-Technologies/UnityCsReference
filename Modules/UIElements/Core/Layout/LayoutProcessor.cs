@@ -4,6 +4,7 @@
 
 using Unity.Scripting.LifecycleManagement;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Profiling;
 
@@ -31,10 +32,25 @@ static partial class LayoutProcessor
     [AutoStaticsCleanupOnCodeReload]
     static ILayoutProcessor s_Processor = new LayoutProcessorNative();
 
+    [AutoStaticsCleanupOnCodeReload]
+    static int s_CalculateLayoutDepth;
+
+    // The end of a layout pass clears the dirty flag of every node it reached, so marks made during the pass are replayed after it.
+    [AutoStaticsCleanupOnCodeReload]
+    [IgnoreForUAL0015("Only filled during CalculateLayout and emptied before it returns, so no constructor can leave entries across a code reload")]
+    static readonly List<LayoutNode> s_DirtiedDuringLayout = new();
+
     public static ILayoutProcessor Processor
     {
         get => s_Processor;
         set => s_Processor = value ?? new LayoutProcessorNative();
+    }
+
+    internal static bool isCalculatingLayout => s_CalculateLayoutDepth > 0;
+
+    internal static void RecordDirtiedDuringLayout(LayoutNode node)
+    {
+        s_DirtiedDuringLayout.Add(node);
     }
 
     public static void CalculateLayout(
@@ -43,7 +59,26 @@ static partial class LayoutProcessor
         float parentHeight,
         LayoutDirection parentDirection)
     {
-        s_Processor.CalculateLayout(node, parentWidth, parentHeight, parentDirection);
+        s_CalculateLayoutDepth++;
+        try
+        {
+            s_Processor.CalculateLayout(node, parentWidth, parentHeight, parentDirection);
+        }
+        finally
+        {
+            if (--s_CalculateLayoutDepth == 0 && s_DirtiedDuringLayout.Count > 0)
+                ReplayDirtiedDuringLayout();
+        }
+    }
+
+    static void ReplayDirtiedDuringLayout()
+    {
+        foreach (var dirtied in s_DirtiedDuringLayout)
+        {
+            if (!dirtied.IsUndefined)
+                dirtied.MarkDirty();
+        }
+        s_DirtiedDuringLayout.Clear();
     }
 
     public static LayoutSize Measure(

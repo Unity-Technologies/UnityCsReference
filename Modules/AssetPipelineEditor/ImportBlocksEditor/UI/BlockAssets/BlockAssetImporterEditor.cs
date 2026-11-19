@@ -16,8 +16,15 @@ namespace UnityEditor.Experimental.AssetImporters.ImportBlocks
     [CanEditMultipleObjects]
     public class BlockAssetImporterEditor : ScriptedImporterEditor
     {
+        static readonly string k_DisabledMessage = L10n.Tr("Import Blocks are disabled. This asset can't be edited.", null);
+
+        protected override bool needsApplyRevert => ImportBlocksToggle.IsEnabled && base.needsApplyRevert;
+
         public override VisualElement CreateInspectorGUI()
         {
+            if (!ImportBlocksToggle.IsEnabled)
+                return new HelpBox(k_DisabledMessage, HelpBoxMessageType.Info);
+
             var root = new VisualElement();
             var styleSheet = UiHelpers.GetBlockItemStyleSheet();
             if (styleSheet != null)

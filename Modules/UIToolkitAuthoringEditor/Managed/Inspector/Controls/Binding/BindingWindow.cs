@@ -63,15 +63,18 @@ namespace Unity.UIToolkit.Editor
             var windowSize = new Vector2(k_WindowWidth, k_WindowHeight);
             var worldBound = Rect.zero;
 
-            if (sourceField != null)
+            if (sourceField?.panel != null)
             {
                 worldBound = sourceField.worldBound;
                 // Adjust the position to align with left edge of the field
                 worldBound.x -= k_WindowWidth + k_Spacing;
                 worldBound.y -= (k_WindowHeight - worldBound.height) / 2;
+                worldBound = EditorMenuExtensions.GUIToScreenRect(sourceField, worldBound);
             }
-
-            worldBound = GUIUtility.GUIToScreenRect(worldBound);
+            else if (sourceField != null)
+            {
+                worldBound.position = UnityEditor.Editor.GetCurrentMousePosition();
+            }
 
             // Calls the active Binding window
             if (s_Window != null)

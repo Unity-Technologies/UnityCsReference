@@ -9,25 +9,23 @@ namespace Unity.Localization.Editor;
 [AssetProviderEditor(typeof(ReferencedAssetProvider))]
 class ReferencedAssetProviderEditor : AssetProviderEditor
 {
+    internal override bool TracksChanges => true;
+
     protected override void RegisterTable(IAssetProvider provider, ResourceTableCollection collection, ResourceTable table)
     {
         if (provider is not ReferencedAssetProvider referenced)
             return;
-        referenced.RemoveAsset(table);
-        referenced.AddOwned(TableAddress(collection, table), table);
-        var guidAddress = GuidTableAddress(collection, table);
-        if (!string.IsNullOrEmpty(guidAddress))
-            referenced.AddOwned(guidAddress, table);
+        Changed |= referenced.SetOwnedAddresses(table, TableAddress(collection, table), GuidTableAddress(collection, table));
     }
 
     protected override void UnregisterTable(IAssetProvider provider, ResourceTableCollection collection, ResourceTable table)
     {
         if (provider is not ReferencedAssetProvider referenced)
             return;
-        referenced.Remove(TableAddress(collection, table));
+        Changed |= referenced.Remove(TableAddress(collection, table));
         var guidAddress = GuidTableAddress(collection, table);
         if (!string.IsNullOrEmpty(guidAddress))
-            referenced.Remove(guidAddress);
+            Changed |= referenced.Remove(guidAddress);
     }
 
     public override void ClearRegistrations(IAssetProvider provider)

@@ -155,7 +155,6 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
     /// answers itself there, and tests that script a specific response through an interaction context rely on
     /// the call still being made.
     /// </remarks>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [NoAutoStaticsCleanup]
     internal static bool PreventDialogsFromOpening { get; set; }
 
@@ -397,8 +396,12 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
     /// every walk. <paramref name="collectRoots"/> supplies the panel's root VisualTreeAssets (e.g. its scene
     /// panel components, or a stage's edited document).
     /// </summary>
+    /// <remarks>
+    /// <paramref name="collectStyleSheetRoots"/> supplies style sheets the panel uses that no document references,
+    /// such as a style sheet edited on its own over a preview document.
+    /// </remarks>
     internal void AttachPanel(Panel panel, object owner, Action<List<VisualTreeAsset>> collectRoots,
-        Func<UnityEngine.Object, UIAssetAccess> resolveAccess = null)
+        Func<UnityEngine.Object, UIAssetAccess> resolveAccess = null, Action<List<StyleSheet>> collectStyleSheetRoots = null)
     {
         if (panel == null)
             return;
@@ -406,7 +409,7 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
         if (m_PanelTrackers.ContainsKey(panel))
             return;
 
-        var tracker = new PanelDependencyTracker(this, panel, owner, collectRoots, resolveAccess);
+        var tracker = new PanelDependencyTracker(this, panel, owner, collectRoots, resolveAccess, collectStyleSheetRoots);
         m_PanelTrackers[panel] = tracker;
         tracker.Rewalk();
     }
@@ -471,6 +474,7 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
         return false;
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal void CollectDirtyAssetsHeldOnlyBy(Func<object, bool> isReleasingOwner, List<UnityEngine.Object> results)
     {
         if (m_Entries == null || results == null || isReleasingOwner == null)
@@ -541,7 +545,38 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
     /// <summary>Saves a single tracked asset (and, for a VisualTreeAsset, its dirty referenced stylesheets).</summary>
     public bool SaveAsset(UnityEngine.Object asset, object source = null)
     {
+        var succeeded = SaveAssetCore(asset, source ?? CommandSources.Registry);
+        // A clone drawn from the pre-save tree reads its inline styles against the reimported style sheet.
+        SettleViewsAfterSingleAssetChange();
+        return succeeded;
+    }
+
+    /// <summary>
+    /// Saves the dirty assets of <paramref name="assets"/> under one import batch, so saving a template does
+    /// not reimport its dirty dependents first. Assets a document save already settled are skipped.
+    /// </summary>
+    public bool SaveAssets(IReadOnlyList<UnityEngine.Object> assets, object source = null)
+    {
         source ??= CommandSources.Registry;
+        var succeeded = true;
+
+        using (new AssetDatabase.AssetEditingScope())
+        {
+            foreach (var asset in assets)
+            {
+                if (asset == null || !IsDirty(asset))
+                    continue;
+                succeeded &= SaveAssetCore(asset, source);
+            }
+        }
+
+        // Settled only once the batch has imported: a re-clone drawn before that keeps the pre-save tree.
+        SettleViewsAfterSingleAssetChange();
+        return succeeded;
+    }
+
+    bool SaveAssetCore(UnityEngine.Object asset, object source)
+    {
         return asset switch
         {
             VisualTreeAsset vta => SaveDocument(vta, source),
@@ -763,6 +798,14 @@ internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegis
 
     /// <summary>Saves every tracked asset that has unsaved changes.</summary>
     public bool SaveAll(object source = null)
+    {
+        var succeeded = SaveAllCore(source);
+        // A clone drawn from the pre-save tree reads its inline styles against the reimported style sheet.
+        SettleViewsAfterSingleAssetChange();
+        return succeeded;
+    }
+
+    bool SaveAllCore(object source)
     {
         source ??= CommandSources.Registry;
         if (m_Entries.Count == 0)

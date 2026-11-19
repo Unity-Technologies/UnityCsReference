@@ -30,7 +30,7 @@ namespace UnityEditor
 
     // Dragging
     // We want dragging to work from the mixer window to the inspector like the project browser, but also want
-    // custom dragging behavior (reparent the group sub assets) so we derive from AssetOrGameObjectTreeViewDragging
+    // custom dragging behavior (reparent the group sub assets) so we derive from AssetsTreeViewDragging
     // and override DoDrag.
 
     internal class AudioGroupTreeViewDragging : AssetsTreeViewDragging
@@ -121,7 +121,7 @@ namespace UnityEditor
 
         static public EntityId GetUniqueNodeID(AudioMixerGroupController group)
         {
-            return group.GetEntityId(); // alternative: group.groupID.GetHashCode();
+            return group.GetEntityId();
         }
 
         public override void FetchData()

@@ -52,15 +52,17 @@ namespace UnityEngineInternal.Input
         }
 
         /// <summary>
-        /// Hands every event that deferred devices hold to the input module, as a platform tick would.
+        /// Hands everything that deferred devices hold to the input module, as a platform tick would.
         /// </summary>
         /// <remarks>
-        /// Each deferred device holds a bounded number of events and merges or refuses what arrives once it is full,
-        /// so call it on the main thread, outside a consumer's update, at least once per frame. It sends each device's
-        /// events in publish order, merged across devices by their time.
+        /// Each deferred device holds what it reports, its registration and removal included, in one bounded queue and
+        /// merges or refuses what arrives once it is full, so call it on the main thread, outside a consumer's update, at
+        /// least once per frame. It replays each device's reports in order, merged across devices by their time within each publish path. In a
+        /// release mixing paths, the legacy devices' events reach the main buffer first, and the pipeline devices' arrive at its
+        /// next drain.
         /// </remarks>
         /// <returns>
-        /// The number of events the input module accepted. Read it as a count rather than against
+        /// The number of state events the input module accepted. Read it as a count rather than against
         /// <see cref="InputCommandResult.success"/>, which is also 1. <see cref="InputCommandResult.invalidState"/>
         /// off the main thread or inside a consumer's update, which releases nothing.
         /// <see cref="InputCommandResult.notSupported"/> when this build has no virtual devices.
@@ -79,7 +81,8 @@ namespace UnityEngineInternal.Input
         /// So <see cref="UnityEngine.Time.frameCount"/> in <paramref name="onReleased"/> reads the frame whose input
         /// update follows. On platforms that tick before the wait for the last presentation, state set from another
         /// thread during that wait is released one frame earlier than real input would be. Call on the main thread.
-        /// Runs in players and in Play mode.
+        /// Runs in players and in Play mode. The pipeline drains only in an input update, so with ProcessEventsInFixedUpdate
+        /// or ProcessEventsManually releases can fill a pipeline device's queue, and a state it refuses is lost.
         /// </remarks>
         /// <param name="onReleased">Called with the result of each <see cref="ReleaseDeferred"/>.</param>
         /// <returns>The scope. Disposing it removes only its own system from the player loop.</returns>

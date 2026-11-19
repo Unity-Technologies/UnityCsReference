@@ -159,8 +159,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             applyButton.SetEnabled(hasUnsavedChanges);
             cancelButton.SetEnabled(hasUnsavedChanges);
 
-            defaultContainer.SetEnabled(!m_SettingsProxy.isSignatureValidationDisabled);
-            advancedContainer.SetEnabled(!m_SettingsProxy.isSignatureValidationDisabled);
+            defaultContainer.SetEnabled(!m_SettingsProxy.isSignatureDisabled);
+            advancedContainer.SetEnabled(!m_SettingsProxy.isSignatureDisabled);
         }
 
         private VisualElementCache cache { get; }

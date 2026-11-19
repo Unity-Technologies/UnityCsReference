@@ -68,12 +68,13 @@ sealed class ComponentUxmlAttributesEditingContext : UxmlAttributesEditingContex
     // UxmlAsset would write the component's attributes onto the owner element node instead.
     internal override bool mirrorsAttributesToUxmlAsset => false;
 
-    // A component attribute binds through the ${component:<Type>}.<field> selector rather than an element
+    // A component attribute binds through the ${component:<identity>}.<field> selector rather than an element
     // property path, so validate the path against the component's data rather than the element property bag.
     internal override bool IsBindablePath(VisualElement element, BindingId bindingPath)
     {
         string path = bindingPath;
-        return !string.IsNullOrEmpty(path) && SerializedPropertyExtensions.TryGetComponentAttributeType(path, out _);
+        return !string.IsNullOrEmpty(path) &&
+               SerializedPropertyExtensions.TryGetComponentAttributeType(element, path, out _);
     }
 
     // A template-instance edit persists as a component override (a whole component UxmlSerializedData in the

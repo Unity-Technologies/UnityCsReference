@@ -207,7 +207,52 @@ namespace UnityEditorInternal
                 }
             };
 
+            listView.scrollView.contentContainer.RegisterCallback<ValidateCommandEvent, ListView>(ValidateRemoveSelected, listView);
+            listView.scrollView.contentContainer.RegisterCallback<ExecuteCommandEvent, ListView>(ExecuteRemoveSelected, listView);
+
             return listView;
+        }
+
+        static bool CanRemoveSelected(EventBase evt, ListView listView)
+        {
+            if (evt.target != listView.scrollView.contentContainer)
+                return false;
+
+            var commandName = ((ICommandEvent)evt).commandName;
+            return (commandName == EventCommandNames.Delete || commandName == EventCommandNames.SoftDelete)
+                && listView.allowRemove
+                && listView.selectedIndex >= 0
+                && listView.panel.GetCapturingElement(PointerId.mousePointerId) == null;
+        }
+
+        static void ValidateRemoveSelected(ValidateCommandEvent evt, ListView listView)
+        {
+            if (!CanRemoveSelected(evt, listView))
+                return;
+
+            evt.StopPropagation();
+            if (evt.imguiEvent != null)
+                evt.imguiEvent.Use();
+        }
+
+        static void ExecuteRemoveSelected(ExecuteCommandEvent evt, ListView listView)
+        {
+            if (!CanRemoveSelected(evt, listView))
+                return;
+
+            var indices = new List<int>(listView.selectedIndices);
+            indices.Sort();
+            var smallest = indices[0];
+
+            var remaining = listView.viewController.GetItemsCount() - indices.Count;
+            listView.viewController.RemoveItems(indices);
+
+            if (remaining > 0)
+                listView.SetSelection(Mathf.Clamp(smallest - 1, 0, remaining - 1));
+            else
+                listView.ClearSelection();
+
+            evt.StopPropagation();
         }
 
         private SerializedProperty GetArgument(SerializedProperty pListener)

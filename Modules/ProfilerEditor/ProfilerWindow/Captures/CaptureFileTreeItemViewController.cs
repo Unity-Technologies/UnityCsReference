@@ -24,6 +24,7 @@ namespace Unity.Profiling.Editor.UI
         const string k_UxmlChangeFPSField = "profiler-capture-file__meta-data__change_fps";
         const string k_UxmlMenuButton = "profiler-capture-file__menu-button";
         const string k_UssMenuButtonActive = "profiler-capture-file__menu-button--active";
+        const string k_UssRenaming = "profiler-capture-file--renaming";
 
         const string k_DeleteCaptureDialogTitle = "Delete Capture";
         const string k_DeleteCaptureDialogMessage = "Are you sure you want to permanently delete this profiler capture file?";
@@ -178,7 +179,7 @@ namespace Unity.Profiling.Editor.UI
                 readValue: () => Model.Name,
                 commit: TryRename,
                 validate: ValidateInput,
-                closed: HideRenameWarning);
+                closed: OnRenameClosed);
 
             m_FPSEditor = new InlineTextEditor(
                 m_ChangeFPSField,
@@ -275,6 +276,13 @@ namespace Unity.Profiling.Editor.UI
                 return;
 
             BeginEdit(m_RenameEditor);
+            View.AddToClassList(k_UssRenaming);
+        }
+
+        void OnRenameClosed()
+        {
+            HideRenameWarning();
+            View.RemoveFromClassList(k_UssRenaming);
         }
 
         void BeginEdit(InlineTextEditor fieldEdit)

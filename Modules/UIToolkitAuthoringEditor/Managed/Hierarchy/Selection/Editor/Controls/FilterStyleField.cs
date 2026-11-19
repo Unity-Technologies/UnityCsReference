@@ -13,7 +13,6 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UxmlElement]
     [UsedImplicitly]
     [MovedFrom("Unity.UI.Builder")]

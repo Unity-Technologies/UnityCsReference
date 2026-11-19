@@ -128,6 +128,14 @@ namespace UnityEditor
             s_CurrentEditorSharpness = sharpness;
         }
 
+        // Sharpness is stored per font and the raster flag depends on the current font.
+        internal static void OnEditorFontChanged()
+        {
+            s_CurrentEditorSharpness = null;
+            if (currentEditorTextRenderingMode != null)
+                SetEditorTextRenderingMode(currentEditorTextRenderingMode.Value);
+        }
+
         [VisibleToOtherModules("UnityEditor.CoreModule", "UnityEngine.UIElementsModule")]
         internal override float GetEditorTextSharpness()
         {

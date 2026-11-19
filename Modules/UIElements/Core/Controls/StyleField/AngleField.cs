@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a text field for entering Angle.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [UxmlElement(visibility = LibraryVisibility.Hidden)]
     internal partial class AngleField : TextValueField<Angle>, IValueField<Angle>
     {

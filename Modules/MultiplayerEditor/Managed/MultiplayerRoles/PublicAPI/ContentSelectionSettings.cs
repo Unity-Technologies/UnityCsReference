@@ -83,15 +83,6 @@ namespace Unity.Multiplayer.Editor
             // reload-surviving instance; registering here as well would invoke it twice per build.
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
-        ~ContentSelectionSettings()
-        {
-            // Kept for any handler registered against this instance directly; the per-code-load
-            // registration uses a static forwarder and is torn down with the code-loaded scope.
-            ContentSelectionBuildPreprocessor.OnPreprocessBuildCallback -= OnPreprocessBuild;
-        }
-#pragma warning restore UA5000
-
         private static void OnPackagesRegistered(PackageRegistrationEventArgs args)
         {
             foreach (var package in args.added)

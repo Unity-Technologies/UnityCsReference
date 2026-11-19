@@ -8,7 +8,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal class VariableEditingHandler
 {
     public static readonly string HiddenStyleClassName = "unity-inspector-hidden";

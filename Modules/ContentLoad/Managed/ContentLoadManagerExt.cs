@@ -22,6 +22,7 @@ namespace Unity.Loading
         struct ContentDirectoryRegistration
         {
             public string ContentDirectoryPath;
+            public Hash128 BuildManifestHash;
             public ContentDirectoryHandle ContentHandle;
             public List<CAHArtifactDirectoryHandle> CAHHandles;
             public List<ArchiveHandle> ArchiveHandles;
@@ -60,7 +61,7 @@ namespace Unity.Loading
             try
             {
                 MountAndRegisterArchives(ref registration);
-                manifest = LoadManifestFromDirectory(sanitizedPath);
+                manifest = LoadManifestFromDirectory(sanitizedPath, out registration.BuildManifestHash);
             }
             catch (Exception ex)
             {
@@ -100,13 +101,20 @@ namespace Unity.Loading
             s_RegistrationsByHandle.Remove(contentDirectory.m_Handle);
         }
 
-        static ContentManifest LoadManifestFromDirectory(string contentDirectoryPath)
+        internal static bool TryGetBuildManifestHash(ContentDirectoryHandle contentDirectory, out Hash128 buildManifestHash)
+        {
+            bool registered = s_RegistrationsByHandle.TryGetValue(contentDirectory.m_Handle, out ContentDirectoryRegistration registration);
+            buildManifestHash = registered ? registration.BuildManifestHash : default;
+            return registered;
+        }
+
+        static ContentManifest LoadManifestFromDirectory(string contentDirectoryPath, out Hash128 manifestHash)
         {
             string manifestHashPath = contentDirectoryPath + "/" + ManifestHashFileName;
 
             byte[] loaded = UnityFile.ReadAllBytes(manifestHashPath);
             string hashText = System.Text.Encoding.UTF8.GetString(loaded).Trim();
-            Hash128 manifestHash = Hash128.Parse(hashText);
+            manifestHash = Hash128.Parse(hashText);
 
             string vfsPath = CAHFileSystem.GetVFSPath(manifestHash);
 

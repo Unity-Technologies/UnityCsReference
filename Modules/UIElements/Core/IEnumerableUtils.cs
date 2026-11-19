@@ -9,7 +9,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class IEnumerableExtensions
     {
         internal static bool HasValues(this IEnumerable<string> collection)
@@ -38,7 +37,6 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static HashSet<TResult> UniqueSelect<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
         {
             var list = new HashSet<TResult>();

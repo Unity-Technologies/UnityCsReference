@@ -667,7 +667,7 @@ namespace UnityEngine
         ///        psr.renderMode = ParticleSystemRenderMode.Mesh;
         ///        psr.SetMeshes(new Mesh[] { Resources.GetBuiltinResource<Mesh>("Capsule.fbx"), Resources.GetBuiltinResource<Mesh>("Cube.fbx"), Resources.GetBuiltinResource<Mesh>("Sphere.fbx") });
         ///
-        ///        psr.sharedMaterial = new Material(Shader.Find("Particles/Standard Surface"));
+        ///        psr.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Particles/Lit"));
         ///    }
         ///
         ///    void Update()

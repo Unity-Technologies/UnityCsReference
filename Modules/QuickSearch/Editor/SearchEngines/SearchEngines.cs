@@ -38,12 +38,12 @@ namespace UnityEditor.Search
             m_SearchItemConverter = searchItemConverter;
         }
 
-#pragma warning disable UA5000 // Stops async results and disposes the context; sessions not ended via EndSession rely on the finalizer.
+#pragma warning disable UAC0045 // Stops async results and disposes the context; sessions not ended via EndSession rely on the finalizer.
         ~SearchApiSession()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public void StopAsyncResults()
         {
@@ -95,12 +95,12 @@ namespace UnityEditor.Search
 
         public Dictionary<Guid, SearchApiSession> searchSessions = new Dictionary<Guid, SearchApiSession>();
 
-#pragma warning disable UA5000 // Disposes the open sessions; engines are static registry singletons that are never disposed, so the finalizer is the fallback.
+#pragma warning disable UAC0045 // Disposes the open sessions; engines are static registry singletons that are never disposed, so the finalizer is the fallback.
         ~QuickSearchEngine()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public virtual void BeginSession(ISearchContext context)
         {

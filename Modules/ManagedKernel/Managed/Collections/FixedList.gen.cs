@@ -94,7 +94,7 @@ namespace Unity.Collections
         /// <summary>
         /// A property in order to display items in the Entity Inspector.
         /// </summary>
-        [CreateProperty] IEnumerable<T> Elements => this.ToArray();
+        [CreateProperty] readonly IEnumerable<T> Elements => this.ToArray();
 
         /// <summary>
         /// Whether the list is empty.
@@ -143,7 +143,7 @@ namespace Unity.Collections
         /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
-        public T* GetUnsafePtr() => (T*)buffer;
+        public readonly T* GetUnsafePtr() => (T*)buffer;
 
         /// <summary>
         /// Get a pointer to the data.
@@ -172,7 +172,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Span&lt;T&gt; view of this container.</returns>
         [WriteAccessRequired]
-        public Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
+        public readonly Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
 
         /// <summary>
         /// Returns ReadOnlySpan&lt;T&gt; view of this container.
@@ -215,7 +215,7 @@ namespace Unity.Collections
         /// <param name="index">An index.</param>
         /// <returns>A reference to the element at the index.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref T ElementAt(int index)
+        public readonly ref T ElementAt(int index)
         {
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
@@ -230,7 +230,7 @@ namespace Unity.Collections
         /// <remarks>
         /// Only the content of the list (the bytes of the elements) are included in the hash. Any bytes beyond the length are not part of the hash.</remarks>
         /// <returns>The hash code of this list.</returns>
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             unsafe
             {
@@ -496,7 +496,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>A managed array that is a copy of this list.</returns>
         [ExcludeFromBurstCompatTesting("Returns managed array")]
-        public T[] ToArray()
+        public readonly T[] ToArray()
         {
             var result = new T[Length];
             unsafe
@@ -513,7 +513,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array that is a copy of this list.</returns>
-        public NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
         {
             unsafe
             {
@@ -637,7 +637,7 @@ namespace Unity.Collections
         /// <summary>
         /// A property in order to display items in the Entity Inspector.
         /// </summary>
-        [CreateProperty] IEnumerable<T> Elements => this.ToArray();
+        [CreateProperty] readonly IEnumerable<T> Elements => this.ToArray();
 
         /// <summary>
         /// Whether this list is empty.
@@ -649,7 +649,7 @@ namespace Unity.Collections
             get => Length == 0;
         }
 
-        internal int LengthInBytes => Length * sizeof(T);
+        internal readonly int LengthInBytes => Length * sizeof(T);
 
         /// <summary>
         /// Returns a pointer to the first element of the list buffer.
@@ -696,7 +696,7 @@ namespace Unity.Collections
         /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
-        public T* GetUnsafePtr() => (T*)Buffer;
+        public readonly T* GetUnsafePtr() => (T*)Buffer;
 
         /// <summary>
         /// Get a pointer to the data.
@@ -725,7 +725,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Span&lt;T&gt; view of this container.</returns>
         [WriteAccessRequired]
-        public Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
+        public readonly Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
 
         /// <summary>
         /// Returns ReadOnlySpan&lt;T&gt; view of this container.
@@ -768,7 +768,7 @@ namespace Unity.Collections
         /// <param name="index">An index.</param>
         /// <returns>The list element at the index.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref T ElementAt(int index)
+        public readonly ref T ElementAt(int index)
         {
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
@@ -783,7 +783,7 @@ namespace Unity.Collections
         /// <remarks>
         /// Only the content of the list (the bytes of the elements) are included in the hash. Any bytes beyond the length are not part of the hash.</remarks>
         /// <returns>The hash code of this list.</returns>
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             unsafe
             {
@@ -1046,7 +1046,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>A managed array that is a copy of this list.</returns>
         [ExcludeFromBurstCompatTesting("Returns managed array")]
-        public T[] ToArray()
+        public readonly T[] ToArray()
         {
             var result = new T[Length];
             unsafe
@@ -1063,7 +1063,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array that is a copy of this list.</returns>
-        public NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
         {
             unsafe
             {
@@ -1113,7 +1113,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList32Bytes<T> other)
+        public readonly int CompareTo(FixedList32Bytes<T> other)
         {
             unsafe
             {
@@ -1138,7 +1138,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList32Bytes<T> other)
+        public readonly bool Equals(FixedList32Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -1183,7 +1183,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList64Bytes<T> other)
+        public readonly int CompareTo(FixedList64Bytes<T> other)
         {
             unsafe
             {
@@ -1208,7 +1208,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList64Bytes<T> other)
+        public readonly bool Equals(FixedList64Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -1294,7 +1294,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList128Bytes<T> other)
+        public readonly int CompareTo(FixedList128Bytes<T> other)
         {
             unsafe
             {
@@ -1319,7 +1319,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList128Bytes<T> other)
+        public readonly bool Equals(FixedList128Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -1405,7 +1405,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList512Bytes<T> other)
+        public readonly int CompareTo(FixedList512Bytes<T> other)
         {
             unsafe
             {
@@ -1430,7 +1430,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList512Bytes<T> other)
+        public readonly bool Equals(FixedList512Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -1516,7 +1516,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList4096Bytes<T> other)
+        public readonly int CompareTo(FixedList4096Bytes<T> other)
         {
             unsafe
             {
@@ -1541,7 +1541,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList4096Bytes<T> other)
+        public readonly bool Equals(FixedList4096Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -1598,7 +1598,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare for equality.</param>
         /// <returns>True if the list is equal to the object.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if(obj is FixedList32Bytes<T> aFixedList32Bytes) return Equals(aFixedList32Bytes);
             if(obj is FixedList64Bytes<T> aFixedList64Bytes) return Equals(aFixedList64Bytes);
@@ -1632,7 +1632,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -1659,13 +1659,13 @@ namespace Unity.Collections
             /// The current element.
             /// </summary>
             /// <value>The current element.</value>
-            public T Current
+            public readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_List[m_Index]; // Let FixedList32Bytes<T> indexer check for out of range.
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -1682,7 +1682,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Nothing because it always throws <see cref="NotImplementedException"/>.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -1692,7 +1692,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Nothing because it always throws <see cref="NotImplementedException"/>.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -1879,7 +1879,7 @@ namespace Unity.Collections
         /// <summary>
         /// A property in order to display items in the Entity Inspector.
         /// </summary>
-        [CreateProperty] IEnumerable<T> Elements => this.ToArray();
+        [CreateProperty] readonly IEnumerable<T> Elements => this.ToArray();
 
         /// <summary>
         /// Whether this list is empty.
@@ -1891,7 +1891,7 @@ namespace Unity.Collections
             get => Length == 0;
         }
 
-        internal int LengthInBytes => Length * sizeof(T);
+        internal readonly int LengthInBytes => Length * sizeof(T);
 
         /// <summary>
         /// Returns a pointer to the first element of the list buffer.
@@ -1938,7 +1938,7 @@ namespace Unity.Collections
         /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
-        public T* GetUnsafePtr() => (T*)Buffer;
+        public readonly T* GetUnsafePtr() => (T*)Buffer;
 
         /// <summary>
         /// Get a pointer to the data.
@@ -1967,7 +1967,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Span&lt;T&gt; view of this container.</returns>
         [WriteAccessRequired]
-        public Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
+        public readonly Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
 
         /// <summary>
         /// Returns ReadOnlySpan&lt;T&gt; view of this container.
@@ -2010,7 +2010,7 @@ namespace Unity.Collections
         /// <param name="index">An index.</param>
         /// <returns>The list element at the index.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref T ElementAt(int index)
+        public readonly ref T ElementAt(int index)
         {
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
@@ -2025,7 +2025,7 @@ namespace Unity.Collections
         /// <remarks>
         /// Only the content of the list (the bytes of the elements) are included in the hash. Any bytes beyond the length are not part of the hash.</remarks>
         /// <returns>The hash code of this list.</returns>
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             unsafe
             {
@@ -2288,7 +2288,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>A managed array that is a copy of this list.</returns>
         [ExcludeFromBurstCompatTesting("Returns managed array")]
-        public T[] ToArray()
+        public readonly T[] ToArray()
         {
             var result = new T[Length];
             unsafe
@@ -2305,7 +2305,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array that is a copy of this list.</returns>
-        public NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
         {
             unsafe
             {
@@ -2355,7 +2355,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList32Bytes<T> other)
+        public readonly int CompareTo(FixedList32Bytes<T> other)
         {
             unsafe
             {
@@ -2380,7 +2380,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList32Bytes<T> other)
+        public readonly bool Equals(FixedList32Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -2466,7 +2466,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList64Bytes<T> other)
+        public readonly int CompareTo(FixedList64Bytes<T> other)
         {
             unsafe
             {
@@ -2491,7 +2491,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList64Bytes<T> other)
+        public readonly bool Equals(FixedList64Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -2536,7 +2536,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList128Bytes<T> other)
+        public readonly int CompareTo(FixedList128Bytes<T> other)
         {
             unsafe
             {
@@ -2561,7 +2561,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList128Bytes<T> other)
+        public readonly bool Equals(FixedList128Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -2647,7 +2647,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList512Bytes<T> other)
+        public readonly int CompareTo(FixedList512Bytes<T> other)
         {
             unsafe
             {
@@ -2672,7 +2672,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList512Bytes<T> other)
+        public readonly bool Equals(FixedList512Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -2758,7 +2758,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList4096Bytes<T> other)
+        public readonly int CompareTo(FixedList4096Bytes<T> other)
         {
             unsafe
             {
@@ -2783,7 +2783,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList4096Bytes<T> other)
+        public readonly bool Equals(FixedList4096Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -2840,7 +2840,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare for equality.</param>
         /// <returns>True if the list is equal to the object.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if(obj is FixedList32Bytes<T> aFixedList32Bytes) return Equals(aFixedList32Bytes);
             if(obj is FixedList64Bytes<T> aFixedList64Bytes) return Equals(aFixedList64Bytes);
@@ -2874,7 +2874,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -2901,13 +2901,13 @@ namespace Unity.Collections
             /// The current element.
             /// </summary>
             /// <value>The current element.</value>
-            public T Current
+            public readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_List[m_Index]; // Let FixedList64Bytes<T> indexer check for out of range.
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -2924,7 +2924,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Nothing because it always throws <see cref="NotImplementedException"/>.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -2934,7 +2934,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Nothing because it always throws <see cref="NotImplementedException"/>.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -3121,7 +3121,7 @@ namespace Unity.Collections
         /// <summary>
         /// A property in order to display items in the Entity Inspector.
         /// </summary>
-        [CreateProperty] IEnumerable<T> Elements => this.ToArray();
+        [CreateProperty] readonly IEnumerable<T> Elements => this.ToArray();
 
         /// <summary>
         /// Whether this list is empty.
@@ -3133,7 +3133,7 @@ namespace Unity.Collections
             get => Length == 0;
         }
 
-        internal int LengthInBytes => Length * sizeof(T);
+        internal readonly int LengthInBytes => Length * sizeof(T);
 
         /// <summary>
         /// Returns a pointer to the first element of the list buffer.
@@ -3180,7 +3180,7 @@ namespace Unity.Collections
         /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
-        public T* GetUnsafePtr() => (T*)Buffer;
+        public readonly T* GetUnsafePtr() => (T*)Buffer;
 
         /// <summary>
         /// Get a pointer to the data.
@@ -3209,7 +3209,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Span&lt;T&gt; view of this container.</returns>
         [WriteAccessRequired]
-        public Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
+        public readonly Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
 
         /// <summary>
         /// Returns ReadOnlySpan&lt;T&gt; view of this container.
@@ -3252,7 +3252,7 @@ namespace Unity.Collections
         /// <param name="index">An index.</param>
         /// <returns>The list element at the index.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref T ElementAt(int index)
+        public readonly ref T ElementAt(int index)
         {
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
@@ -3267,7 +3267,7 @@ namespace Unity.Collections
         /// <remarks>
         /// Only the content of the list (the bytes of the elements) are included in the hash. Any bytes beyond the length are not part of the hash.</remarks>
         /// <returns>The hash code of this list.</returns>
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             unsafe
             {
@@ -3530,7 +3530,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>A managed array that is a copy of this list.</returns>
         [ExcludeFromBurstCompatTesting("Returns managed array")]
-        public T[] ToArray()
+        public readonly T[] ToArray()
         {
             var result = new T[Length];
             unsafe
@@ -3547,7 +3547,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array that is a copy of this list.</returns>
-        public NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
         {
             unsafe
             {
@@ -3597,7 +3597,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList32Bytes<T> other)
+        public readonly int CompareTo(FixedList32Bytes<T> other)
         {
             unsafe
             {
@@ -3622,7 +3622,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList32Bytes<T> other)
+        public readonly bool Equals(FixedList32Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -3708,7 +3708,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList64Bytes<T> other)
+        public readonly int CompareTo(FixedList64Bytes<T> other)
         {
             unsafe
             {
@@ -3733,7 +3733,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList64Bytes<T> other)
+        public readonly bool Equals(FixedList64Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -3819,7 +3819,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList128Bytes<T> other)
+        public readonly int CompareTo(FixedList128Bytes<T> other)
         {
             unsafe
             {
@@ -3844,7 +3844,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList128Bytes<T> other)
+        public readonly bool Equals(FixedList128Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -3889,7 +3889,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList512Bytes<T> other)
+        public readonly int CompareTo(FixedList512Bytes<T> other)
         {
             unsafe
             {
@@ -3914,7 +3914,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList512Bytes<T> other)
+        public readonly bool Equals(FixedList512Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -4000,7 +4000,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList4096Bytes<T> other)
+        public readonly int CompareTo(FixedList4096Bytes<T> other)
         {
             unsafe
             {
@@ -4025,7 +4025,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList4096Bytes<T> other)
+        public readonly bool Equals(FixedList4096Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -4082,7 +4082,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare for equality.</param>
         /// <returns>True if the list is equal to the object.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if(obj is FixedList32Bytes<T> aFixedList32Bytes) return Equals(aFixedList32Bytes);
             if(obj is FixedList64Bytes<T> aFixedList64Bytes) return Equals(aFixedList64Bytes);
@@ -4116,7 +4116,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -4143,13 +4143,13 @@ namespace Unity.Collections
             /// The current element.
             /// </summary>
             /// <value>The current element.</value>
-            public T Current
+            public readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_List[m_Index]; // Let FixedList128Bytes<T> indexer check for out of range.
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -4166,7 +4166,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Nothing because it always throws <see cref="NotImplementedException"/>.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -4176,7 +4176,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Nothing because it always throws <see cref="NotImplementedException"/>.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -4363,7 +4363,7 @@ namespace Unity.Collections
         /// <summary>
         /// A property in order to display items in the Entity Inspector.
         /// </summary>
-        [CreateProperty] IEnumerable<T> Elements => this.ToArray();
+        [CreateProperty] readonly IEnumerable<T> Elements => this.ToArray();
 
         /// <summary>
         /// Whether this list is empty.
@@ -4375,7 +4375,7 @@ namespace Unity.Collections
             get => Length == 0;
         }
 
-        internal int LengthInBytes => Length * sizeof(T);
+        internal readonly int LengthInBytes => Length * sizeof(T);
 
         /// <summary>
         /// Returns a pointer to the first element of the list buffer.
@@ -4422,7 +4422,7 @@ namespace Unity.Collections
         /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
-        public T* GetUnsafePtr() => (T*)Buffer;
+        public readonly T* GetUnsafePtr() => (T*)Buffer;
 
         /// <summary>
         /// Get a pointer to the data.
@@ -4451,7 +4451,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Span&lt;T&gt; view of this container.</returns>
         [WriteAccessRequired]
-        public Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
+        public readonly Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
 
         /// <summary>
         /// Returns ReadOnlySpan&lt;T&gt; view of this container.
@@ -4494,7 +4494,7 @@ namespace Unity.Collections
         /// <param name="index">An index.</param>
         /// <returns>The list element at the index.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref T ElementAt(int index)
+        public readonly ref T ElementAt(int index)
         {
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
@@ -4509,7 +4509,7 @@ namespace Unity.Collections
         /// <remarks>
         /// Only the content of the list (the bytes of the elements) are included in the hash. Any bytes beyond the length are not part of the hash.</remarks>
         /// <returns>The hash code of this list.</returns>
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             unsafe
             {
@@ -4772,7 +4772,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>A managed array that is a copy of this list.</returns>
         [ExcludeFromBurstCompatTesting("Returns managed array")]
-        public T[] ToArray()
+        public readonly T[] ToArray()
         {
             var result = new T[Length];
             unsafe
@@ -4789,7 +4789,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array that is a copy of this list.</returns>
-        public NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
         {
             unsafe
             {
@@ -4839,7 +4839,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList32Bytes<T> other)
+        public readonly int CompareTo(FixedList32Bytes<T> other)
         {
             unsafe
             {
@@ -4864,7 +4864,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList32Bytes<T> other)
+        public readonly bool Equals(FixedList32Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -4950,7 +4950,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList64Bytes<T> other)
+        public readonly int CompareTo(FixedList64Bytes<T> other)
         {
             unsafe
             {
@@ -4975,7 +4975,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList64Bytes<T> other)
+        public readonly bool Equals(FixedList64Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -5061,7 +5061,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList128Bytes<T> other)
+        public readonly int CompareTo(FixedList128Bytes<T> other)
         {
             unsafe
             {
@@ -5086,7 +5086,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList128Bytes<T> other)
+        public readonly bool Equals(FixedList128Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -5172,7 +5172,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList512Bytes<T> other)
+        public readonly int CompareTo(FixedList512Bytes<T> other)
         {
             unsafe
             {
@@ -5197,7 +5197,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList512Bytes<T> other)
+        public readonly bool Equals(FixedList512Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -5242,7 +5242,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList4096Bytes<T> other)
+        public readonly int CompareTo(FixedList4096Bytes<T> other)
         {
             unsafe
             {
@@ -5267,7 +5267,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList4096Bytes<T> other)
+        public readonly bool Equals(FixedList4096Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -5324,7 +5324,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare for equality.</param>
         /// <returns>True if the list is equal to the object.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if(obj is FixedList32Bytes<T> aFixedList32Bytes) return Equals(aFixedList32Bytes);
             if(obj is FixedList64Bytes<T> aFixedList64Bytes) return Equals(aFixedList64Bytes);
@@ -5358,7 +5358,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -5385,13 +5385,13 @@ namespace Unity.Collections
             /// The current element.
             /// </summary>
             /// <value>The current element.</value>
-            public T Current
+            public readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_List[m_Index]; // Let FixedList512Bytes<T> indexer check for out of range.
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -5408,7 +5408,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Nothing because it always throws <see cref="NotImplementedException"/>.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -5418,7 +5418,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Nothing because it always throws <see cref="NotImplementedException"/>.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -5605,7 +5605,7 @@ namespace Unity.Collections
         /// <summary>
         /// A property in order to display items in the Entity Inspector.
         /// </summary>
-        [CreateProperty] IEnumerable<T> Elements => this.ToArray();
+        [CreateProperty] readonly IEnumerable<T> Elements => this.ToArray();
 
         /// <summary>
         /// Whether this list is empty.
@@ -5617,7 +5617,7 @@ namespace Unity.Collections
             get => Length == 0;
         }
 
-        internal int LengthInBytes => Length * sizeof(T);
+        internal readonly int LengthInBytes => Length * sizeof(T);
 
         /// <summary>
         /// Returns a pointer to the first element of the list buffer.
@@ -5664,7 +5664,7 @@ namespace Unity.Collections
         /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
-        public T* GetUnsafePtr() => (T*)Buffer;
+        public readonly T* GetUnsafePtr() => (T*)Buffer;
 
         /// <summary>
         /// Get a pointer to the data.
@@ -5693,7 +5693,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Span&lt;T&gt; view of this container.</returns>
         [WriteAccessRequired]
-        public Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
+        public readonly Span<T> AsSpan() => new Span<T>(GetUnsafePtr(), Length);
 
         /// <summary>
         /// Returns ReadOnlySpan&lt;T&gt; view of this container.
@@ -5736,7 +5736,7 @@ namespace Unity.Collections
         /// <param name="index">An index.</param>
         /// <returns>The list element at the index.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref T ElementAt(int index)
+        public readonly ref T ElementAt(int index)
         {
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
@@ -5751,7 +5751,7 @@ namespace Unity.Collections
         /// <remarks>
         /// Only the content of the list (the bytes of the elements) are included in the hash. Any bytes beyond the length are not part of the hash.</remarks>
         /// <returns>The hash code of this list.</returns>
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             unsafe
             {
@@ -6014,7 +6014,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>A managed array that is a copy of this list.</returns>
         [ExcludeFromBurstCompatTesting("Returns managed array")]
-        public T[] ToArray()
+        public readonly T[] ToArray()
         {
             var result = new T[Length];
             unsafe
@@ -6031,7 +6031,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array that is a copy of this list.</returns>
-        public NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<T> ToNativeArray(AllocatorManager.AllocatorHandle allocator)
         {
             unsafe
             {
@@ -6081,7 +6081,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList32Bytes<T> other)
+        public readonly int CompareTo(FixedList32Bytes<T> other)
         {
             unsafe
             {
@@ -6106,7 +6106,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList32Bytes<T> other)
+        public readonly bool Equals(FixedList32Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -6192,7 +6192,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList64Bytes<T> other)
+        public readonly int CompareTo(FixedList64Bytes<T> other)
         {
             unsafe
             {
@@ -6217,7 +6217,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList64Bytes<T> other)
+        public readonly bool Equals(FixedList64Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -6303,7 +6303,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList128Bytes<T> other)
+        public readonly int CompareTo(FixedList128Bytes<T> other)
         {
             unsafe
             {
@@ -6328,7 +6328,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList128Bytes<T> other)
+        public readonly bool Equals(FixedList128Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -6414,7 +6414,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList512Bytes<T> other)
+        public readonly int CompareTo(FixedList512Bytes<T> other)
         {
             unsafe
             {
@@ -6439,7 +6439,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList512Bytes<T> other)
+        public readonly bool Equals(FixedList512Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -6525,7 +6525,7 @@ namespace Unity.Collections
         /// -1 denotes that this list should precede the other list in a sort.
         /// +1 denotes that this list should follow the other list in a sort.
         /// </returns>
-        public int CompareTo(FixedList4096Bytes<T> other)
+        public readonly int CompareTo(FixedList4096Bytes<T> other)
         {
             unsafe
             {
@@ -6550,7 +6550,7 @@ namespace Unity.Collections
         /// <remarks>Two lists are equal if their length and bytes are equal.</remarks>
         /// <param name="other">The list to compare for equality.</param>
         /// <returns>True if the two lists are equal.</returns>
-        public bool Equals(FixedList4096Bytes<T> other)
+        public readonly bool Equals(FixedList4096Bytes<T> other)
         {
             return CompareTo(other) == 0;
         }
@@ -6566,7 +6566,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare for equality.</param>
         /// <returns>True if the list is equal to the object.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if(obj is FixedList32Bytes<T> aFixedList32Bytes) return Equals(aFixedList32Bytes);
             if(obj is FixedList64Bytes<T> aFixedList64Bytes) return Equals(aFixedList64Bytes);
@@ -6600,7 +6600,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -6627,13 +6627,13 @@ namespace Unity.Collections
             /// The current element.
             /// </summary>
             /// <value>The current element.</value>
-            public T Current
+            public readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_List[m_Index]; // Let FixedList4096Bytes<T> indexer check for out of range.
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -6650,7 +6650,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Nothing because it always throws <see cref="NotImplementedException"/>.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -6660,7 +6660,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Nothing because it always throws <see cref="NotImplementedException"/>.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             throw new NotImplementedException();
         }

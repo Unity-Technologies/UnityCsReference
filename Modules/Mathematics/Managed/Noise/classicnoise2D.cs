@@ -76,7 +76,7 @@ namespace Unity.Mathematics
         {
             float4 Pi = floor(P.xyxy) + float4(0.0f, 0.0f, 1.0f, 1.0f);
             float4 Pf = frac(P.xyxy) - float4(0.0f, 0.0f, 1.0f, 1.0f);
-            Pi = fmod(Pi, rep.xyxy); // To create noise with explicit period
+            Pi = modPeriod(Pi, rep.xyxy); // To create noise with explicit period
             Pi = mod289(Pi); // To avoid truncation effects in permutation
             float4 ix = Pi.xzxz;
             float4 iy = Pi.yyww;

@@ -13,7 +13,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class UxmlSerializedDataDescription
     {
         private readonly List<UxmlSerializedAttributeDescription> m_SerializedAttributes = new();
@@ -91,7 +91,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool IsSupportedChild(Type type)
         {
             if (ReferenceEquals(m_UxmlSupportedChildTypes, s_DefaultSupportedChildren))

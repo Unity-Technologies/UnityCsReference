@@ -133,6 +133,16 @@ namespace UnityEditor
             return ClearManagedReferenceWithMissingTypeInternal(obj, id);
         }
 
+        [NativeMethod("GetMissingTypeFullyQualifiedNameAtPropertyPath")]
+        static extern string GetMissingTypeFullyQualifiedNameAtPropertyPathInternal(UnityObject obj, string propertyPath);
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static string GetMissingTypeFullyQualifiedNameAtPropertyPath(UnityObject obj, string propertyPath)
+        {
+            var fullyQualifiedName = GetMissingTypeFullyQualifiedNameAtPropertyPathInternal(obj, propertyPath);
+            return string.IsNullOrEmpty(fullyQualifiedName) ? null : fullyQualifiedName;
+        }
+
         internal static extern void SuppressMissingTypeWarning(string className);
     };
 }

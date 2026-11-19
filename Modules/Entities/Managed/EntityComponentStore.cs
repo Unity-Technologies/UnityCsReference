@@ -88,6 +88,7 @@ namespace Unity.Entities
     internal unsafe struct CompanionDeferredCommands : IDisposable
     {
         public UnsafeAppendBuffer CommandBuffer;
+        public UnsafeList<EntityId> PendingDestroyIds;
         public bool Empty => CommandBuffer.IsEmpty;
 
         public enum Command
@@ -99,11 +100,13 @@ namespace Unity.Entities
         public void Init()
         {
             CommandBuffer = new UnsafeAppendBuffer(1024, 16, Allocator.Persistent);
+            PendingDestroyIds = new UnsafeList<EntityId>(16, Allocator.Persistent);
         }
 
         public void Dispose()
         {
             CommandBuffer.Dispose();
+            PendingDestroyIds.Dispose();
         }
 
         public void Reset()
@@ -239,7 +242,7 @@ namespace Unity.Entities
         private const int kUnmanagedSharedComponentIndexFlag = 1 << 31;
 
         internal const int kDefaultAllocatorBudgetInBytes = 16 * 1024 * 1024;
-        [NoAutoStaticsCleanup] // DefaultWorldInitialization sets it before it creates worlds.
+        [NoAutoStaticsCleanup] // EntitiesInitialization sets it before any world is created.
         internal static int ArchetypeChunkAllocatorBudgetInBytes = kDefaultAllocatorBudgetInBytes;
 
         [NativeDisableUnsafePtrRestriction]
@@ -247,10 +250,16 @@ namespace Unity.Entities
 
         BlockAllocator m_ArchetypeChunkAllocator;
 
+        // The store only lives in memory it was allocated in, never in a copy, so its address doesn't change
+        internal EntityComponentStore* Self => (EntityComponentStore*)UnsafeUtility.AddressOf(ref this);
+
         internal int ArchetypeChunkAllocatorUsedBytes => m_ArchetypeChunkAllocator.AllocatedBytes;
         internal int ArchetypeChunkAllocatorBudgetBytes => m_ArchetypeChunkAllocator.BudgetInBytes;
 
+        // Indexed by Archetype.Slot. A slot is null once its archetype is deleted, until a new archetype reuses it.
         internal UnsafePtrList<Archetype> m_Archetypes;
+        internal UnsafeList<ArchetypeRef> m_ArchetypeCreationLog; // archetypes created since the queries last caught up
+        internal uint m_NextArchetypeVersion; // starts at 1, so a default ArchetypeRef is never a valid one
 
         ArchetypeListMap m_TypeLookup;
 
@@ -273,8 +282,6 @@ namespace Unity.Entities
         private UnsafeList<TypeIndex> m_UnmanagedSharedComponentTypes;
         private UnsafeHashMap<int, UnsafeList<SharedComponentInfo>> m_UnmanagedSharedComponentInfo;
         private UnsafeParallelMultiHashMap<ulong, int> m_HashLookup;
-
-        internal ChunkListChanges m_ChunkListChangesTracker;
 
         ulong m_WorldSequenceNumber;
         ulong m_NextChunkSequenceNumber;
@@ -307,6 +314,8 @@ namespace Unity.Entities
 
         StructuralChangesProfiler.Recorder* m_StructuralChangesRecorder;
         internal ref StructuralChangesProfiler.Recorder StructuralChangesRecorder => ref (*m_StructuralChangesRecorder);
+        // The package's EntityQueryProfilerRecording.Recorder, created on the store's first query record.
+        internal void* m_QueryProfilerRecorder;
 
         const int kMaximumEmptyChunksInPool = 16; // can't alloc forever
         const int kDefaultCapacity = 1024;
@@ -328,6 +337,8 @@ namespace Unity.Entities
             get => s_TotalChunkAddressSpaceInBytes.Data > 0 ? s_TotalChunkAddressSpaceInBytes.Data - 1 : DefaultChunkAddressSpaceInBytes;
             set => s_TotalChunkAddressSpaceInBytes.Data = value + 1;
         }
+
+        internal UnsafeHashMap<ComponentObjectStateKey, ComponentObjectState> m_ComponentObjectStates;
 
 
         public EntityNameStoreAccess m_NameStoreAccess;
@@ -421,6 +432,7 @@ namespace Unity.Entities
             UnsafeUtility.MemClear(entities, sizeof(EntityComponentStore));
 
             entities->m_NameStoreAccess = new EntityNameStoreAccess(entities);
+            entities->CreateComponentObjectStates();
             entities->m_GlobalSystemVersion = ChangeVersionUtility.InitialGlobalSystemVersion;
 
             entities->m_ComponentTypeOrderVersion = Memory.Unmanaged.Array.Allocate<int>(TypeManager.MaximumTypesCount, Allocator.Persistent);
@@ -432,6 +444,8 @@ namespace Unity.Entities
             entities->m_WorldSequenceNumber = worldSequenceNumber;
             entities->m_NextChunkSequenceNumber = worldSequenceNumber << 32;
             entities->m_Archetypes = new UnsafePtrList<Archetype>(0, Allocator.Persistent);
+            entities->m_ArchetypeCreationLog = new UnsafeList<ArchetypeRef>(0, Allocator.Persistent);
+            entities->m_NextArchetypeVersion = 1;
             entities->CompanionChangesTracker = new CompanionDeferredCommands();
             entities->CompanionChangesTracker.Init();
             entities->m_SharedComponentVersion = 0;
@@ -458,11 +472,9 @@ namespace Unity.Entities
             entities->m_SimulateComponentType = ComponentType.ReadWrite<Simulate>();
             entities->InitializeTypeManagerPointers();
 
-            entities->m_ChunkListChangesTracker = new ChunkListChanges();
-            entities->m_ChunkListChangesTracker.Init();
-
             entities->m_StructuralChangesRecorder = Memory.Unmanaged.Allocate<StructuralChangesProfiler.Recorder>(Allocator.Persistent);
             entities->m_StructuralChangesRecorder->Initialize(Allocator.Persistent);
+            entities->m_QueryProfilerRecorder = null;
 
             // Sanity check a few alignments
             // Buffer should be 16 byte aligned to ensure component data layout itself can guarantee being aligned
@@ -512,7 +524,7 @@ namespace Unity.Entities
             {
                 var archetype = m_Archetypes.Ptr[i];
 
-                var isGameObject = archetype->HasGameObjectEntities;
+                var mayHoldGameObjectIds = archetype->HasGameObjectEntities;
 
                 for (int c = 0; c != archetype->Chunks.Count; c++)
                 {
@@ -522,20 +534,10 @@ namespace Unity.Entities
 
                     var entityCount = chunk.Count;
 
-                    if (!isGameObject)
-                        s_entityStore.Data.DeallocateEntities((Entity*)chunk.Buffer, entityCount);
+                    if (mayHoldGameObjectIds)
+                        s_entityStore.Data.DeallocateOrDetachEntities((Entity*)chunk.Buffer, entityCount);
                     else
-                    {
-                        // GameObject entity ids are engine-owned and must survive World disposal currently.
-                        // Detach instead of deallocating. Skip stale entries (id already recycled
-                        // by the engine) so we never write an old version onto a reused slot.
-                        for (int entityIndex = 0; entityIndex < entityCount; entityIndex++)
-                        {
-                            var entity = ((Entity*)chunk.Buffer)[entityIndex];
-                            if (s_entityStore.Data.Exists(entity))
-                                s_entityStore.Data.SetEntityInChunk(entity, EntityInChunk.Null);
-                        }
-                    }
+                        s_entityStore.Data.DeallocateEntities((Entity*)chunk.Buffer, entityCount);
 
                     s_chunkStore.Data.FreeContiguousChunks(archetype->Chunks[c], 1);
                 }
@@ -543,7 +545,6 @@ namespace Unity.Entities
                 archetype->Chunks.Dispose();
                 archetype->ChunksWithEmptySlots.Dispose();
                 archetype->FreeChunksBySharedComponents.Dispose();
-                archetype->MatchingQueryData.Dispose();
             }
 
             var entitiesWithNames = m_NameStoreAccess.GetEntitiesWithNamesRO();
@@ -552,8 +553,10 @@ namespace Unity.Entities
                 EntityNameStorage.RemoveEntitiesFromNameMap(&e, 1);
             }
             m_NameStoreAccess.Dispose();
+            DisposeComponentObjectStates();
 
             m_Archetypes.Dispose();
+            m_ArchetypeCreationLog.Dispose();
 
             m_TypeLookup.Dispose();
             m_ArchetypeChunkAllocator.Dispose();
@@ -604,6 +607,8 @@ namespace Unity.Entities
             m_StructuralChangesRecorder->Dispose();
             Memory.Unmanaged.Free(m_StructuralChangesRecorder, Allocator.Persistent);
             m_StructuralChangesRecorder = null;
+            if (m_QueryProfilerRecorder != null)
+                EntityQueryProfiler.StoreDisposed(Self);
         }
 
         private void ResetSharedComponentData()
@@ -656,6 +661,7 @@ namespace Unity.Entities
             }
 
             m_NameStoreAccess.ResetEntitiesWithNames();
+            m_ComponentObjectStates.Clear();
         }
 
         public void FreeEntities(ChunkIndex chunk)
@@ -667,7 +673,7 @@ namespace Unity.Entities
             // We need to remove the Entity with name from the set
             m_NameStoreAccess.RemoveEntitiesFromEntitiesWithNames(entities, count);
             EntityNameStorage.RemoveEntitiesFromNameMap(entities, count);
-
+            RemoveComponentObjectStates(entities, count, GetArchetype(chunk), null);
         }
 
         public string GetName(Entity entity)
@@ -746,9 +752,14 @@ namespace Unity.Entities
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Archetype* GetArchetypeOrNull(Entity entity)
+        internal static Archetype* GetArchetypeOrNull(Entity entity) => GetArchetypeOrNull(s_entityStore.Data.GetEntityInChunk(entity));
+
+        // Chunk metadata exists only once the first world is created
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Archetype* GetArchetypeOrNull(EntityInChunk entityInChunk)
         {
-            return PerChunkArray.ChunkData[s_entityStore.Data.GetEntityInChunk(entity).Chunk].Archetype;
+            var chunkData = PerChunkArray.ChunkData;
+            return Hint.Likely(chunkData != null) ? chunkData[entityInChunk.Chunk].Archetype : null;
         }
 
         [BurstCompile]
@@ -784,6 +795,7 @@ namespace Unity.Entities
                     var data = (PerChunkData*)Memory.Unmanaged.Allocate(size, CollectionHelper.CacheLineSize, memoryLabel);
                     UnsafeUtility.MemClear(data, size);
                     StaticIdentifier.Ref.Data.m_PerChunkData = data;
+                    EntityComponentStoreBindings.Register();
                 }
             }
 
@@ -864,7 +876,7 @@ namespace Unity.Entities
                 return null;
 
             var archetype = GetArchetype(entityInChunk.Chunk);
-            return archetype->EntityComponentStore == (EntityComponentStore*)UnsafeUtility.AddressOf(ref this) ? archetype : null;
+            return archetype->EntityComponentStore == Self ? archetype : null;
         }
 
         // Null if the entity doesn't exist, in whichever world owns it
@@ -1132,6 +1144,8 @@ namespace Unity.Entities
 
                 CopyName(dstEntities[entityIndex], srcEntities[entityIndex]);
             }
+
+            MoveComponentObjectStates(srcComponentStore, srcEntities, dstEntities, entityCount, srcComponentStore->GetArchetype(chunk));
         }
 
         public void RemapChunk(ChunkIndex chunk, int count, ref NativeArray<EntityRemapUtility.EntityRemapInfo> entityRemapping)
@@ -1939,6 +1953,12 @@ namespace Unity.Entities
                 return kErrorAllocationFailed;
             }
 
+            // For native code, which finds chunks the same way as GetChunkPointer
+            internal long* Megachunks => (long*)UnsafeUtility.AddressOf(ref m_megachunk);
+            internal static int Log2ChunksPerMegachunk => log2ChunksPerMegachunk;
+            internal static int Log2MegachunksInUniverse => log2MegachunksInUniverse;
+            internal static int Log2ChunkSize => Log2ChunkSizeInBytesRoundedUpToPow2;
+
             internal Chunk* GetChunkPointer(int chunkIndex)
             {
                 var megachunkIndex = chunkIndex >> log2ChunksPerMegachunk;
@@ -2185,8 +2205,6 @@ namespace Unity.Entities
             Memory.Array.Copy(dstArchetype->EnableableTypeIndexInArchetype, (int*)enableableComponentIndexInArchetype, numEnableableComponents);
             dstArchetype->EntityCount = 0;
             dstArchetype->ChunksWithEmptySlots = new UnsafeList<ChunkIndex>(0, Allocator.Persistent);
-            dstArchetype->MatchingQueryData = new UnsafeList<IntPtr>(0, Allocator.Persistent);
-            dstArchetype->NextChangedArchetype = null;
             dstArchetype->InstantiateArchetype = null;
             dstArchetype->CopyArchetype = null;
             dstArchetype->MetaChunkArchetype = null;
@@ -2366,8 +2384,7 @@ namespace Unity.Entities
             dstArchetype->BufferEntityPatchCount = bufferEntityPatchCount;
             UnsafeUtility.MemClear(dstArchetype->QueryMaskArray, sizeof(byte) * 128);
 
-            // Update the list of all created archetypes
-            m_Archetypes.Add(dstArchetype);
+            AddArchetypeSlot(dstArchetype);
 
             dstArchetype->FreeChunksBySharedComponents = new ChunkListMap();
             dstArchetype->FreeChunksBySharedComponents.Init(dstArchetype, 16);
@@ -2419,6 +2436,51 @@ namespace Unity.Entities
             return false;
         }
 
+        void AddArchetypeSlot(Archetype* archetype)
+        {
+            var version = m_NextArchetypeVersion++;
+            archetype->Slot = m_Archetypes.Length;
+            archetype->Version = version;
+            m_Archetypes.Add(archetype);
+            m_ArchetypeCreationLog.Add(new ArchetypeRef { Slot = archetype->Slot, Version = version });
+        }
+
+        // Null when the reference is stale: its archetype was deleted, and its slot is now past the end, empty, or
+        // holds a newer archetype
+        internal Archetype* GetArchetype(ArchetypeRef archetypeRef)
+        {
+            CheckArchetypeRefWasHandedOut(archetypeRef);
+            if ((uint)archetypeRef.Slot >= (uint)m_Archetypes.Length)
+                return null;
+
+            var archetype = m_Archetypes.Ptr[archetypeRef.Slot];
+            return archetype != null && archetype->Version == archetypeRef.Version ? archetype : null;
+        }
+
+        // A reference this world never handed out comes from wrong code, not from a deleted archetype
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
+        void CheckArchetypeRefWasHandedOut(ArchetypeRef archetypeRef)
+        {
+            if (archetypeRef.Slot < 0 || archetypeRef.Version == 0 || archetypeRef.Version >= m_NextArchetypeVersion)
+                throw new ArgumentException("The archetype reference was never handed out by this world: its slot is negative, or its version is 0 or not handed out yet");
+        }
+
+        // The archetypes handed to queries must be the last ones in the creation log. The log can hold more:
+        // archetypes created outside of any structural change, which queries are not told about.
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
+        void CheckCreationLogEndsWith(UnsafePtrList<Archetype> newArchetypes)
+        {
+            var offset = m_ArchetypeCreationLog.Length - newArchetypes.Length;
+            if (offset < 0)
+                throw new InvalidOperationException("The archetype creation log is missing archetypes created during this structural change");
+
+            for (int i = 0; i < newArchetypes.Length; ++i)
+            {
+                if (GetArchetype(m_ArchetypeCreationLog.Ptr[offset + i]) != newArchetypes.Ptr[i])
+                    throw new InvalidOperationException("The archetype creation log does not match the archetypes created during this structural change");
+            }
+        }
+
         public int CountEntities()
         {
             int entityCount = 0;
@@ -2454,48 +2516,12 @@ namespace Unity.Entities
 
             Assert.AreEqual(m_ArchetypeTrackingVersion, changes.ArchetypeTrackingVersion);
             var changeList = new UnsafePtrList<Archetype>(m_Archetypes.Ptr + changes.StartIndex, m_Archetypes.Length - changes.StartIndex);
-            queries->AddAdditionalArchetypes(changeList);
+            CheckCreationLogEndsWith(changeList);
+            using (new EntityQueryProfiler.ArchetypeMatchingScope(Self, queries, changeList.Length))
+                queries->CatchUpQueryCache(Self);
+            m_ArchetypeCreationLog.Clear();
         }
 
-
-        internal struct ChunkListChanges
-        {
-            public Archetype* ArchetypeTrackingHead;
-
-            public void Init()
-            {
-                ArchetypeTrackingHead = null;
-            }
-
-            public void TrackArchetype(Archetype* archetype)
-            {
-                if (archetype->NextChangedArchetype == null)
-                {
-                    archetype->NextChangedArchetype = ArchetypeTrackingHead;
-                    ArchetypeTrackingHead = archetype;
-                }
-            }
-        }
-
-        public void InvalidateChunkListCacheForChangedArchetypes()
-        {
-            var archetype = m_ChunkListChangesTracker.ArchetypeTrackingHead;
-            while(archetype != null)
-            {
-                var matchingQueryCount = archetype->MatchingQueryData.Length;
-                for (int queryIndex = 0; queryIndex < matchingQueryCount; ++queryIndex)
-                {
-                    var queryData = (EntityQueryData*) archetype->MatchingQueryData.Ptr[queryIndex];
-                    queryData->InvalidateChunkCache();
-                }
-
-                var nextArchetype = archetype->NextChangedArchetype;
-                archetype->NextChangedArchetype = null;
-                archetype = nextArchetype;
-            }
-
-            m_ChunkListChangesTracker.ArchetypeTrackingHead = null;
-        }
 
         internal void IncrementSharedComponentVersions(Archetype* archetype, SharedComponentValues sharedComponentValues)
         {

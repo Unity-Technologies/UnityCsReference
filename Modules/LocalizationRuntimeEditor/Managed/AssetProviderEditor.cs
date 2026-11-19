@@ -189,6 +189,10 @@ public abstract class AssetProviderEditor
         return $"{shared.TableCollectionNameGuid}_{table.LocaleIdentifier.Code}";
     }
 
+    internal virtual bool TracksChanges => false;
+
+    internal bool Changed { get; set; }
+
     internal static bool IsLocaleEnabled(LocaleIdentifier id)
     {
         var settings = LocalizationEditorSettings.ActiveSettings;

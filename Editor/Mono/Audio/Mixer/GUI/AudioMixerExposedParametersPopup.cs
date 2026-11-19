@@ -12,7 +12,6 @@ namespace UnityEditor
 {
     internal partial class AudioMixerExposedParametersPopup : PopupWindowContent
     {
-        // Shows pop up
         internal static void Popup(AudioMixerController controller, GUIStyle style, params GUILayoutOption[] options)
         {
             GUIContent content = GetButtonContent(controller);
@@ -37,7 +36,6 @@ namespace UnityEditor
             return m_ButtonContent;
         }
 
-        //
         private readonly AudioMixerExposedParameterView m_ExposedParametersView;
 
         AudioMixerExposedParametersPopup(AudioMixerController controller)

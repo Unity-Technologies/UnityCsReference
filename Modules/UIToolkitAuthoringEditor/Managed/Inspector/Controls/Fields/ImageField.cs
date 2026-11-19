@@ -20,7 +20,6 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Field for image reference attributes that accepts Texture2D, Sprite, VectorImage, or RenderTexture.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class ImageField : BaseField<Object>
     {
         /// <summary>

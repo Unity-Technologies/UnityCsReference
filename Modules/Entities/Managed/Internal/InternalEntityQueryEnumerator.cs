@@ -40,8 +40,8 @@ namespace Unity.Entities.Internal
         byte               _UseEnableBitsForChunk;
         v128               _EnableBitMask;
         UnsafeChunkCacheIterator      _ChunkCacheIterator;
-        UnsafeCachedChunkList _CachedChunkList;
-        private int _CachedChunkListLength;
+        QueryChunkCursor _ChunkCursor;
+        EntityComponentStore* _EntityComponentStore;
 
         [NoAlias]
         ComponentDependencyManager* _DependencyManager;
@@ -66,22 +66,24 @@ namespace Unity.Entities.Internal
             _EnableBitMask = default;
 
             var impl = query._GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.Foreach, impl);
 
             _QueryHasFilterOrEnableable = impl->_Filter.RequiresMatchesFilter || impl->_QueryData->HasEnableableComponents == 1 ? (byte)1 : (byte)0;
             if (_QueryHasFilterOrEnableable == 1)
             {
                 _ChunkCacheIterator =
-                    new UnsafeChunkCacheIterator(impl->_Filter, impl->_QueryData->HasEnableableComponents != 0, impl->GetMatchingChunkCache(), impl->_QueryData->MatchingArchetypes.Ptr);
-                _CachedChunkList = default;
-                _CachedChunkListLength = -1;
+                    new UnsafeChunkCacheIterator(impl->_Filter, impl->_QueryData->HasEnableableComponents != 0, impl->GetQueryChunks());
+                _ChunkCursor = default;
+                _EntityComponentStore = null;
 
                 impl->SyncFilterTypes();
             }
             else
             {
                 _ChunkCacheIterator = default;
-                _CachedChunkList = impl->GetMatchingChunkCache();
-                _CachedChunkListLength = _CachedChunkList.Length;
+                var chunks = impl->GetQueryChunks();
+                _ChunkCursor = chunks.GetCursor();
+                _EntityComponentStore = chunks.EntityComponentStore;
             }
 
             _ChunkIndex = -1;
@@ -134,10 +136,11 @@ namespace Unity.Entities.Internal
         {
             if (_QueryHasFilterOrEnableable == 0)
             {
-                _ChunkIndex++;
+                var hasChunk = _ChunkCursor.MoveNext();
+                _ChunkIndex = _ChunkCursor.Index;
 
                 // If we have iterated through all the chunks
-                if (Hint.Unlikely(_ChunkIndex >= _CachedChunkListLength))
+                if (Hint.Unlikely(!hasChunk))
                 {
                     chunk = default;
                     movedToNewChunk = false;
@@ -147,7 +150,7 @@ namespace Unity.Entities.Internal
                     return false;
                 }
 
-                chunk = new ArchetypeChunk(_CachedChunkList.ChunkIndices[_ChunkIndex], _CachedChunkList.EntityComponentStore);
+                chunk = new ArchetypeChunk(_ChunkCursor.Chunk, _EntityComponentStore);
                 movedToNewChunk = true;
                 entityStartIndex = 0;
                 entityEndIndex = chunk.Count;
@@ -207,15 +210,16 @@ namespace Unity.Entities.Internal
             CheckDisposed();
             if (_QueryHasFilterOrEnableable == 0)
             {
-                _ChunkIndex++;
+                var hasChunk = _ChunkCursor.MoveNext();
+                _ChunkIndex = _ChunkCursor.Index;
 
-                if (Hint.Unlikely(_ChunkIndex >= _CachedChunkList.Length))
+                if (Hint.Unlikely(!hasChunk))
                 {
                     chunk = default;
                     return false;
                 }
 
-                chunk = new ArchetypeChunk(_CachedChunkList.ChunkIndices[_ChunkIndex], _CachedChunkList.EntityComponentStore);
+                chunk = new ArchetypeChunk(_ChunkCursor.Chunk, _EntityComponentStore);
                 IndexInChunk = 0;
                 _EndIndexInChunk = chunk.Count;
                 return true;

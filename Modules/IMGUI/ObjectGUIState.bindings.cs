@@ -24,12 +24,12 @@ namespace UnityEngine
             GC.SuppressFinalize(this);
         }
 
-#pragma warning disable UA5000 // Releases the native state; Internal_Destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Releases the native state; Internal_Destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
         ~ObjectGUIState()
         {
             Destroy();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         void Destroy()
         {

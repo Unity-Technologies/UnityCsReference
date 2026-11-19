@@ -19,7 +19,6 @@ namespace Unity.UIToolkit.Editor
 
     [UxmlElement]
     [UsedImplicitly]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class BackgroundPositionStyleField : BaseField<BackgroundPosition>
     {
         static readonly string FieldClassName = "unity-background-position-style-field";

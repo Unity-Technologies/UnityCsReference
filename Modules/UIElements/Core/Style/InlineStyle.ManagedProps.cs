@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements;
@@ -23,6 +24,18 @@ partial class InlineStyleAccess
     }
 
     StyleBackground GetStyleBackground(StylePropertyId id)
+    {
+        return CopyStoredValue(GetStoredStyleBackground(id));
+    }
+
+    internal static StyleBackground CopyStoredValue(StyleBackground stored)
+    {
+        if (stored.keyword == StyleKeyword.Undefined)
+            stored.value = stored.value.CopyWithOwnGradientStops();
+        return stored;
+    }
+
+    internal StyleBackground GetStoredStyleBackground(StylePropertyId id)
     {
         var inline = new StyleValueManaged();
         if (TryGetStyleValueManaged(id, ref inline))
@@ -70,7 +83,7 @@ partial class InlineStyleAccess
 
     bool SetStyleValue(StylePropertyId id, StyleBackground inlineValue)
     {
-        StyleBackground current = GetStyleBackground(id);
+        StyleBackground current = GetStoredStyleBackground(id);
 
         if (current == inlineValue)
             return false;
@@ -81,7 +94,7 @@ partial class InlineStyleAccess
         // Preserve the full Background struct so subsequent reads round-trip losslessly.
         // Note: When gradient is empty, use a code path that does not box.
         var bg = inlineValue.value;
-        sv.value = bg.gradient.IsEmpty() ? bg.GetSelectedImage() : bg;
+        sv.value = bg.gradient.IsEmpty() ? bg.GetSelectedImage() : bg.CopyWithOwnGradientStops();
         SetStyleValueManaged(sv);
 
         if (inlineValue.keyword == StyleKeyword.Null)
@@ -157,6 +170,18 @@ partial class InlineStyleAccess
 
     public StyleMaterialDefinition GetStyleMaterialDefinition(StylePropertyId id)
     {
+        return CopyStoredValue(GetStoredStyleMaterialDefinition(id));
+    }
+
+    internal static StyleMaterialDefinition CopyStoredValue(StyleMaterialDefinition stored)
+    {
+        if (stored.keyword == StyleKeyword.Undefined)
+            stored.value = new MaterialDefinition(stored.value);
+        return stored;
+    }
+
+    internal StyleMaterialDefinition GetStoredStyleMaterialDefinition(StylePropertyId id)
+    {
         if (TryGetObject(id, out object obj, out StyleKeyword keyword))
         {
             StyleMaterialDefinition styleMatDef = (MaterialDefinition)obj;
@@ -166,18 +191,30 @@ partial class InlineStyleAccess
         return StyleKeyword.Null;
     }
 
-
     private bool SetStyleValue(StylePropertyId id, StyleMaterialDefinition inlineValue)
     {
-        StyleMaterialDefinition current = GetStyleMaterialDefinition(id);
+        StyleMaterialDefinition current = GetStoredStyleMaterialDefinition(id);
 
         if (current == inlineValue)
             return false;
 
+        var materialDefinition = inlineValue.value;
+        var storedValues = current.keyword == StyleKeyword.Undefined ? current.value.propertyValues : null;
+        if (materialDefinition.propertyValues == null)
+            storedValues = null;
+        else if (storedValues == null)
+            storedValues = new List<MaterialPropertyValue>(materialDefinition.propertyValues);
+        else
+        {
+            storedValues.Clear();
+            storedValues.AddRange(materialDefinition.propertyValues);
+        }
+        materialDefinition.propertyValues = storedValues;
+
         var sv = new StyleValueManaged();
         sv.id = id;
         sv.keyword = inlineValue.keyword;
-        sv.value = inlineValue.value; // here we're voluntarily boxing the struct
+        sv.value = materialDefinition; // here we're voluntarily boxing the struct
         SetStyleValueManaged(sv);
 
         if (inlineValue.keyword == StyleKeyword.Null)

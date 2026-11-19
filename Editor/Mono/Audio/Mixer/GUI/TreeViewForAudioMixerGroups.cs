@@ -20,7 +20,6 @@ namespace UnityEditor
             Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(ulong), "EntityId should be 8 bytes");
             var ignoreController = InternalEditorUtility.GetObjectFromEntityId(EntityId.FromULong((ulong)data.userData)) as AudioMixerController;
 
-            // Create treeview
             var treeView = new TreeViewController<EntityId>(data.editorWindow, data.state);
             var treeGui = new GroupTreeViewGUI(treeView);
             var dataSource = new TreeViewDataSourceForMixers(treeView, ignoreController);
@@ -28,7 +27,6 @@ namespace UnityEditor
             treeView.deselectOnUnhandledMouseDown = false;
             treeView.Init(data.treeViewRect, dataSource, treeGui, null);
 
-            // Set
             data.objectTreeForSelector.SetTreeView(treeView);
         }
 
@@ -139,14 +137,13 @@ namespace UnityEditor
                 if (m_TreeView.isSearching)
                 {
                     Vector2 size =  base.GetTotalSize();
-                    size.x = 1;// GetMaxWidth (rows);
+                    size.x = 1;
                     return size;
                 }
 
                 if (m_RowRects.Count == 0)
                     return new Vector2(1, 1);
 
-                //float maxWidth = GUIClip.visibleRect.width; // GetMaxWidth (rows);
                 return new Vector2(1, m_RowRects[m_RowRects.Count - 1].yMax);
             }
 

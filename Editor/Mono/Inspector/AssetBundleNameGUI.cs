@@ -31,8 +31,9 @@ namespace UnityEditor
         private bool m_ShowAssetBundleNameTextField = false;
         private bool m_ShowAssetBundleVariantTextField = false;
 
-        public void OnAssetBundleNameGUI(IEnumerable<Object> assets)
+        public void OnAssetBundleNameGUI(InspectedAssets inspectedAssets)
         {
+            IEnumerable<Object> assets = inspectedAssets.assets;
             float oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 90f;
 
@@ -49,14 +50,14 @@ namespace UnityEditor
             if (m_ShowAssetBundleNameTextField)
                 AssetBundleTextField(bundleRect, id, assets, false);
             else
-                AssetBundlePopup(bundleRect, id, assets, false);
+                AssetBundlePopup(bundleRect, id, inspectedAssets, false);
 
             id = GUIUtility.GetControlID(kAssetBundleVariantFieldIdHash, FocusType.Passive, variantRect);
 
             if (m_ShowAssetBundleVariantTextField)
                 AssetBundleTextField(variantRect, id, assets, true);
             else
-                AssetBundlePopup(variantRect, id, assets, true);
+                AssetBundlePopup(variantRect, id, inspectedAssets, true);
 
             EditorGUIUtility.labelWidth = oldLabelWidth;
         }
@@ -90,16 +91,15 @@ namespace UnityEditor
             m_ShowAssetBundleVariantTextField = false;
         }
 
-        private void AssetBundlePopup(Rect rect, int id, IEnumerable<Object> assets, bool isVariant)
+        private void AssetBundlePopup(Rect rect, int id, InspectedAssets inspectedAssets, bool isVariant)
         {
+            IEnumerable<Object> assets = inspectedAssets.assets;
             List<string> displayedOptions = new List<string>();
             displayedOptions.Add("None");
             displayedOptions.Add("");  // separator
 
-            // Anyway to optimize this by caching GetAssetBundleNameFromAssets() and GetAllAssetBundleNames() when they actually change?
-            // As we can change the assetBundle name by script, the UI needs to detect this kind of change.
             bool mixedValue;
-            HashSet<string> assetBundleFromAssets = GetAssetBundlesFromAssets(assets, isVariant, out mixedValue);
+            HashSet<string> assetBundleFromAssets = inspectedAssets.GetAssetBundles(isVariant, out mixedValue);
 
             string[] assetBundles = isVariant ? AssetDatabase.GetAllAssetBundleVariants() : AssetDatabase.GetAllAssetBundleNamesWithoutVariant();
             if (assetBundles.Length > 0)
@@ -162,7 +162,7 @@ namespace UnityEditor
                 Debug.LogWarning("No Project Browser found to apply AssetBundle filter.");
         }
 
-        private HashSet<string> GetAssetBundlesFromAssets(IEnumerable<Object> assets, bool isVariant, out bool isMixed)
+        internal static HashSet<string> GetAssetBundlesFromAssets(IEnumerable<Object> assets, bool isVariant, out bool isMixed)
         {
             var assetBundles = new HashSet<string>();
             string lastAssetBundle = null;

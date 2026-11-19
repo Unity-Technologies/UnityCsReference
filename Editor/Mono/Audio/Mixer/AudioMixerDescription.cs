@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 
-//FIXME: change this to nested namespaces when we merge in trunk
 namespace UnityEditor.Audio
 {
     internal class MixerEffectDefinition
@@ -31,7 +30,6 @@ namespace UnityEditor.Audio
         }
 
         private readonly string m_EffectName;
-        //TODO: GUI callback
         private readonly MixerParameterDefinition[] m_Parameters;
     }
 

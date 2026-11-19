@@ -36,6 +36,7 @@ namespace UnityEditor.Profiling
         public const string k_LastImportPathPrefKey = k_SettingsPrefix + "LastImportPath";
         public const string k_ShouldOverrideScreenshotInterval = k_SettingsPrefix + "ShouldOverrideScreenshotInterval";
         public const string k_ScreenshotFrameInterval = k_SettingsPrefix + "ScreenshotFrameInterval";
+        public const string k_CompressSavedCapturesSettingKey = k_SettingsPrefix + "CompressSavedCaptures";
 
         public const int kMinFrameCount = 600;
         public const int kDefaultFrameCount = 2000;
@@ -209,6 +210,12 @@ namespace UnityEditor.Profiling
         {
             get { return (ProfilerEditorTargetMode)EditorPrefs.GetInt(k_DefaultTargetModeSettingKey, (int)ProfilerEditorTargetMode.Playmode); }
             set { EditorPrefs.SetInt(k_DefaultTargetModeSettingKey, (int)value); }
+        }
+
+        public static bool compressSavedCaptures
+        {
+            get { return EditorPrefs.GetBool(k_CompressSavedCapturesSettingKey, true); }
+            set { EditorPrefs.SetBool(k_CompressSavedCapturesSettingKey, value); }
         }
 
         public static string customConnectionID

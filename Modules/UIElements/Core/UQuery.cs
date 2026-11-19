@@ -1343,7 +1343,7 @@ namespace UnityEngine.UIElements
             return query.First() as T;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.LocalizationRuntimeEditorModule")]
+        [VisibleToOtherModules("UnityEditor.LocalizationRuntimeEditorModule")]
         internal static T MandatoryQ<T>(this VisualElement e, string name, string className = null) where T : VisualElement
         {
             var element = e.Q<T>(name, className);

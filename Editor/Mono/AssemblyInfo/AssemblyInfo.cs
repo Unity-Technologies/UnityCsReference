@@ -55,6 +55,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Profiler")]
 [assembly: InternalsVisibleTo("Unity.Modules.ProfilerEditor.MemorySnapshot.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.ProfilerEditor.MemorySnapshot.Tests.Playmode")]
+[assembly: InternalsVisibleTo("UnityEditor.JobsProfilerEditorModule")]
 [assembly: InternalsVisibleTo("Unity.Modules.JobsProfilerEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.UnityConnectEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.PS4")]
@@ -217,6 +218,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.ShaderGraph.Editor")]
 [assembly: InternalsVisibleTo("Unity.Testing.SRP.Universal.Foundation.Editor")]
+[assembly: InternalsVisibleTo("Universal2DEditorTests")]
 
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]
@@ -287,6 +289,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.GI.LightingExplorer.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.LightingSettings.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.BakedGI.SubScenes.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.LightBaker.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.BakedGI.SceneVisibility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.UVUnwrap.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.BakedGI.ColorSpace.Tests.Editor")]

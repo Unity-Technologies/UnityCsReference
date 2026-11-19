@@ -68,12 +68,10 @@ namespace UnityEngine
                     throw new ArgumentOutOfRangeException(nameof(valuesStart), valuesStart, "Mesh data array start index can't be negative.");
                 if (valuesCount < 0)
                     throw new ArgumentOutOfRangeException(nameof(valuesCount), valuesCount, "Mesh data array length can't be negative.");
-                if (valuesStart >= valuesArrayLength && valuesCount != 0)
+                if ((valuesStart >= valuesArrayLength && valuesCount != 0) || (valuesStart > valuesArrayLength && valuesCount == 0))
                     throw new ArgumentOutOfRangeException(nameof(valuesStart), valuesStart, "Mesh data array start is outside of array size.");
-                if (valuesStart + valuesCount > valuesArrayLength)
-                    throw new ArgumentOutOfRangeException(nameof(valuesCount), valuesStart + valuesCount, "Mesh data array start+count is outside of array size.");
-                if (values == null)
-                    valuesStart = 0;
+                if (valuesCount > valuesArrayLength - valuesStart)
+                    throw new ArgumentOutOfRangeException(nameof(valuesCount), (long)valuesStart + valuesCount, "Mesh data array start+count is outside of array size.");
                 SetArrayForChannelImpl(channel, format, dim, values, valuesArrayLength, valuesStart, valuesCount, flags);
             }
             else
@@ -88,10 +86,10 @@ namespace UnityEngine
                     throw new ArgumentOutOfRangeException(nameof(valuesStart), valuesStart, "Mesh data array start index can't be negative.");
                 if (valuesCount < 0)
                     throw new ArgumentOutOfRangeException(nameof(valuesCount), valuesCount, "Mesh data array length can't be negative.");
-                if (valuesStart >= valuesArrayLength && valuesCount != 0)
+                if ((valuesStart >= valuesArrayLength && valuesCount != 0) || (valuesStart > valuesArrayLength && valuesCount == 0))
                     throw new ArgumentOutOfRangeException(nameof(valuesStart), valuesStart, "Mesh data array start is outside of array size.");
-                if (valuesStart + valuesCount > valuesArrayLength)
-                    throw new ArgumentOutOfRangeException(nameof(valuesCount), valuesStart + valuesCount, "Mesh data array start+count is outside of array size.");
+                if (valuesCount > valuesArrayLength - valuesStart)
+                    throw new ArgumentOutOfRangeException(nameof(valuesCount), (long)valuesStart + valuesCount, "Mesh data array start+count is outside of array size.");
                 SetNativeArrayForChannelImpl(channel, format, dim, values, valuesArrayLength, valuesStart, valuesCount, flags);
             }
             else

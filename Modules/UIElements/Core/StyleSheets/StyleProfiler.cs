@@ -9,7 +9,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal interface IStyleProfiler
 {
     void BeginMatchingStyleSheet(StyleSheet styleSheet, SelectorAccelerationCacheEntry accelerationCacheEntry);
@@ -38,7 +37,7 @@ static class StyleProfilerStorage<TProfilerType> where TProfilerType : struct, I
     public static ref TProfilerType InstanceByRef => ref s_Instance;
 }
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+[VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 struct NoOpStyleProfiler : IStyleProfiler
 {
     public void BeginMatchingStyleSheet(StyleSheet styleSheet, SelectorAccelerationCacheEntry accelerationCacheEntry)

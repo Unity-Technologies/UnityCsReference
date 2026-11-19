@@ -1800,6 +1800,7 @@ namespace Unity.Entities
 
                 EntityNameStorage.Initialize();
                 TransformDependencyBridge.Initialize();
+                GameObjectComponentStoreBridge.RegisterGameObjectEntityTypes();
             }
             catch
             {
@@ -2833,7 +2834,6 @@ namespace Unity.Entities
         }
         const int k_InitialRegisteredTypeHandleCapacity = 1024;
 
-        [NoAutoStaticsCleanup]
         static readonly EntitiesProfilerMarker k_InitializeAllComponentTypesMarker = new EntitiesProfilerMarker(nameof(InitializeAllComponentTypes));
 
         // The component types InitializeAllComponentTypes registers. UnityEngineObjectType must be set first.
@@ -3656,7 +3656,7 @@ namespace Unity.Entities
             var isIEquatable = Array.Exists(type.GetInterfaces(), i => i.Name.Contains("IEquatable"));
             var isChunkSerializable = IsComponentChunkSerializable(type, category, hasEntityReferences, caches);
 
-            var typeIndex = CoreModuleLightShim.Hooks.GetComponentTypeId(type);
+            var typeIndex = CoreModuleLightShim.Hooks.GetComponentTypeId(type, category == TypeCategory.BufferData);
             if (typeIndex < 0)
                 throw new ArgumentException($"Can't find RuntimeTypeIndex for type {type}");
 

@@ -497,7 +497,7 @@ namespace UnityEditor.Search
             #pragma warning disable UAC2001 // Avoid Linq
             return SceneModeUtility.GetObjects(goRoots.ToArray(), true)
 #pragma warning restore UAC2001
-                .Where(o => (o.hideFlags & HideFlags.HideInHierarchy) != HideFlags.HideInHierarchy);
+                .Where(o => !SearchProviderUtils.IsSkippedObject(o, SearchProviderUtils.sceneSkippedGameObjectFlags));
         }
 
         internal static ISet<string> GetReferences(UnityEngine.Object obj, int level = 1)
@@ -918,19 +918,12 @@ namespace UnityEditor.Search
             }
         }
 
-        internal static string GetPropertyNamePrefix(UnityEngine.Object obj)
-        {
-            var objType = obj.GetType();
-            var isComponent = typeof(Component).IsAssignableFrom(objType);
-            return isComponent ? objType.Name + "." : null;
-        }
-
         internal static IEnumerable<string> EnumeratePropertyKeywords(IEnumerable<UnityEngine.Object> objs, Func<SerializedObject, IEnumerable<SerializedProperty>> nonVisiblePropertyIterator = null)
         {
             var templates = GetTemplates(objs);
             foreach (var obj in templates)
             {
-                var propertyPrefix = GetPropertyNamePrefix(obj);
+                var propertyPrefix = SearchProviderUtils.GetPropertyNamePrefix(obj);
                 using (var so = new SerializedObject(obj))
                 {
                     if (nonVisiblePropertyIterator != null)
@@ -1583,7 +1576,95 @@ namespace UnityEditor.Search
                 !prop.serializedObject.isValid ||
                 !prop.serializedObject.targetObject ||
                 prop.serializedObject.targetObject == null);
-            return valid && IsPropertyTypeSupported(prop);
+            return valid && IsPropertyTypeSupported(prop) && IsWithinAssetIndexLimits(prop);
+        }
+
+        static bool IsWithinAssetIndexLimits(SerializedProperty prop)
+        {
+            var assetPath = AssetDatabase.GetAssetPath(prop.serializedObject.targetObject);
+            if (string.IsNullOrEmpty(assetPath))
+                return true;
+            if (prop.serializedObject.targetObject is Component component && !IsComponentIndexedInAsset(component, assetPath))
+                return false;
+            if (prop.serializedObject.targetObject is GameObject gameObject && gameObject.transform.parent != null && !IsChildObjectIndexedInAsset(gameObject, assetPath))
+                return false;
+            if (prop.depth > k_MaxIndexedAssetPropertyDepth)
+                return false;
+            if (!IsIndexableAssetProperty(prop, GetIgnoredProperties()))
+                return false;
+            return prop.propertyType != SerializedPropertyType.String || (prop.stringValue.Length > 0 && prop.stringValue.Length <= k_MaxIndexedAssetStringLength);
+        }
+
+        const int k_MaxIndexedAssetPropertyDepth = 1;
+        const int k_MaxIndexedAssetStringLength = 64;
+
+        static bool IsIndexableAssetProperty(SerializedProperty prop, HashSet<string> ignoredProperties)
+        {
+            if (!ObjectIndexer.IsIndexableProperty(prop.propertyType) || prop.propertyPath[prop.propertyPath.Length - 1] == ']')
+                return false;
+            var fieldName = ObjectIndexer.GetFieldName(prop.displayName);
+            return !ignoredProperties.Contains(fieldName) && !ignoredProperties.Contains(prop.type);
+        }
+
+        static HashSet<string> ParseIgnoredProperties(string ignoredPropertiesSetting)
+        {
+            var ignoredProperties = new HashSet<string>();
+            foreach (var property in ignoredPropertiesSetting.Split(new char[] { ';', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var propertyName = property;
+                if (propertyName.StartsWith("m_"))
+                    propertyName = propertyName.Substring(2);
+                ignoredProperties.Add(propertyName.ToLowerInvariant());
+            }
+            return ignoredProperties;
+        }
+
+        [AutoStaticsCleanupOnCodeReload]
+        static string s_IgnoredPropertiesSetting;
+        [AutoStaticsCleanupOnCodeReload]
+        static HashSet<string> s_IgnoredProperties;
+        static HashSet<string> GetIgnoredProperties()
+        {
+            var ignoredPropertiesSetting = SearchSettings.ignoredProperties;
+            if (s_IgnoredProperties == null || !string.Equals(s_IgnoredPropertiesSetting, ignoredPropertiesSetting, StringComparison.Ordinal))
+            {
+                s_IgnoredPropertiesSetting = ignoredPropertiesSetting;
+                s_IgnoredProperties = ParseIgnoredProperties(ignoredPropertiesSetting);
+            }
+            return s_IgnoredProperties;
+        }
+
+        static bool IsComponentIndexedInAsset(Component component, string assetPath)
+        {
+            if (SearchProviderUtils.IsSkippedObject(component, SearchProviderUtils.assetSkippedComponentFlags))
+                return false;
+            if (component.transform.parent == null)
+                return component.GetType() != typeof(Transform);
+            if (component is Transform)
+                return false;
+            return IsChildObjectIndexedInAsset(component.gameObject, assetPath);
+        }
+
+        static bool IsChildObjectIndexedInAsset(GameObject gameObject, string assetPath)
+        {
+            if (!AreChildObjectsIndexedInAsset(assetPath))
+                return false;
+            if (SearchProviderUtils.IsSkippedObject(gameObject, SearchProviderUtils.assetSkippedGameObjectFlags))
+                return false;
+            if (PrefabUtility.IsPrefabAssetMissing(gameObject) || string.Equals(gameObject.tag, "noindex~", StringComparison.Ordinal))
+                return false;
+            for (var transform = gameObject.transform; transform; transform = transform.parent)
+            {
+                if ((transform.gameObject.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
+                    return false;
+            }
+            return true;
+        }
+
+        static bool AreChildObjectsIndexedInAsset(string assetPath)
+        {
+            return assetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase) &&
+                SupportsFindByInProject(null, db => db.settings.options.properties && db.settings.options.extended);
         }
 
         readonly static string[] kAsset_PropertyQueryProviders = new[] { Providers.AssetProvider.type };
@@ -1644,7 +1725,7 @@ namespace UnityEditor.Search
                     {
                         null => null,
                         float f => Utils.FormatFloatString(f),
-                        double d => d.ToString(Utils.k_DoubleQueryFormatter),
+                        double d => d.ToString(Utils.k_DoubleQueryFormatter, System.Globalization.CultureInfo.InvariantCulture),
                         _ => value.ToString()
                     };
             }
@@ -1664,7 +1745,7 @@ namespace UnityEditor.Search
         internal static string GetPropertyName(SerializedProperty prop, bool isAsset)
         {
             var propertyName = isAsset ? ObjectIndexer.GetFieldName(prop.displayName) : prop.propertyPath.Replace(" ", "").ToLowerInvariant();
-            var propertyPrefix = GetPropertyNamePrefix(prop.serializedObject.targetObject) ?? "";
+            var propertyPrefix = SearchProviderUtils.GetPropertyNamePrefix(prop.serializedObject.targetObject) ?? "";
             return $"{propertyPrefix}{propertyName}";
         }
 

@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 
 // Temporary until `IHierarchyEntityIdConverter` API is made fully public.
 [assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
+[assembly: InternalsVisibleTo("UnityEditor.UIBuilderModule")]
 
 // Tests
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Tests")]
@@ -20,6 +21,7 @@ using System.Runtime.CompilerServices;
 // External
 [assembly: InternalsVisibleTo("Unity.Entities.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 
 //Core package
 [assembly: InternalsVisibleTo("Unity.Entities.Editor")]

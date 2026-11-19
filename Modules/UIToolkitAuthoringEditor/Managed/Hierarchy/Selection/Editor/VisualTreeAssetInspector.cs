@@ -4,6 +4,7 @@
 
 using Unity.Properties;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -17,11 +18,15 @@ internal sealed partial class VisualTreeAssetInspector : VisualElement
     public const string UssClass = "unity-visual-tree-asset-inspector";
     public const string HeaderUssClass = UssClass + "__header";
     public const string AssetActionsViewUssClass = UssClass + "__asset-actions-view";
+    public const string CanvasSettingsUssClass = UssClass + "__canvas-settings";
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/VisualTreeAssetInspector.uxml";
 
     private VisualTreeAsset m_VisualTreeAsset;
     private PanelSettings m_PanelSettings;
+    private IPanelComponent m_PanelComponent;
+    private CanvasSettings m_CanvasSettings;
+    private InspectorElement m_CanvasSettingsElement;
 
     private readonly VisualTreeAssetHeader m_Header;
     private readonly VisualTreeAssetInspectorActionsView m_AssetActionsView;
@@ -38,6 +43,7 @@ internal sealed partial class VisualTreeAssetInspector : VisualElement
 
             m_Header.VisualTreeAsset = m_VisualTreeAsset;
             m_AssetActionsView.VisualTreeAsset = m_VisualTreeAsset;
+            RefreshCanvasSettings();
             NotifyPropertyChanged(VisualTreeAssetProperty);
         }
     }
@@ -57,6 +63,25 @@ internal sealed partial class VisualTreeAssetInspector : VisualElement
         }
     }
 
+    /// <summary>
+    /// The component the document is shown from, which picks the canvas when several viewports show the document.
+    /// </summary>
+    public IPanelComponent PanelComponent
+    {
+        get => m_PanelComponent;
+        set
+        {
+            m_PanelComponent = value;
+            RefreshCanvasSettings();
+        }
+    }
+
+    /// <summary>
+    /// The settings of the canvas a UI Viewport window shows the document on, or <see langword="null"/> when none
+    /// shows it.
+    /// </summary>
+    public CanvasSettings CanvasSettings => m_CanvasSettings;
+
     public VisualTreeAssetInspector()
     {
         AddToClassList(UssClass);
@@ -74,5 +99,40 @@ internal sealed partial class VisualTreeAssetInspector : VisualElement
         m_AssetActionsView = new VisualTreeAssetInspectorActionsView();
         m_AssetActionsView.AddToClassList(AssetActionsViewUssClass);
         m_Header.Q(className: VisualTreeAssetHeader.AssetPathRowUssClass).Add(m_AssetActionsView);
+
+        RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+        RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+    }
+
+    void OnAttachToPanel(AttachToPanelEvent evt)
+    {
+        UIViewportView.ContextChanged += OnViewportContextChanged;
+        RefreshCanvasSettings();
+    }
+
+    void OnDetachFromPanel(DetachFromPanelEvent evt)
+    {
+        UIViewportView.ContextChanged -= OnViewportContextChanged;
+    }
+
+    void OnViewportContextChanged(UIViewportView view) => RefreshCanvasSettings();
+
+    void RefreshCanvasSettings()
+    {
+        var settings = UIViewportWindow.FindCanvasSettings(m_VisualTreeAsset, m_PanelComponent);
+
+        // Compared by reference: a viewport switching documents destroys the settings the section still shows.
+        if (ReferenceEquals(settings, m_CanvasSettings))
+            return;
+
+        m_CanvasSettingsElement?.RemoveFromHierarchy();
+        m_CanvasSettingsElement = null;
+        m_CanvasSettings = settings;
+        if (settings == null)
+            return;
+
+        m_CanvasSettingsElement = new InspectorElement(settings);
+        m_CanvasSettingsElement.AddToClassList(CanvasSettingsUssClass);
+        Add(m_CanvasSettingsElement);
     }
 }

@@ -83,7 +83,6 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class EnumStringValueField : BaseEnumStringValueField<EnumField>
     {
         [NoAutoStaticsCleanup] // stateless accessor delegate, safe to persist
@@ -96,7 +95,6 @@ namespace Unity.UIToolkit.Editor
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class EnumFlagsStringValueField : BaseEnumStringValueField<EnumFlagsField>
     {
         [NoAutoStaticsCleanup] // stateless accessor delegate, safe to persist

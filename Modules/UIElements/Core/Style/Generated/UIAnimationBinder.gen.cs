@@ -15,7 +15,6 @@ namespace UnityEngine.UIElements
 {
     internal partial class UIAnimationBinder
     {
-        [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
         private static readonly int[] m_ChannelCount = new int[]
         {
             0, // Unknown
@@ -73,11 +72,11 @@ namespace UnityEngine.UIElements
             0, // GridAutoFlow
             0, // GridAutoRows
             0, // GridColumn
-            1, // GridColumnEnd
-            1, // GridColumnStart
+            2, // GridColumnEnd
+            2, // GridColumnStart
             0, // GridRow
-            1, // GridRowEnd
-            1, // GridRowStart
+            2, // GridRowEnd
+            2, // GridRowStart
             0, // GridTemplateColumns
             0, // GridTemplateRows
             2, // Height
@@ -147,7 +146,6 @@ namespace UnityEngine.UIElements
             2, // WordSpacing
             1 // ZIndex
         };
-        [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
         private static readonly PropertyType[] m_PropertyTypeMapping = new PropertyType[]
         {
             PropertyType.Int,
@@ -312,7 +310,7 @@ namespace UnityEngine.UIElements
             EntityId
         }
 
-        [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal enum AnimationChannelKind
         {
             Float,
@@ -320,7 +318,6 @@ namespace UnityEngine.UIElements
             PPtr
         }
 
-        [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
         private static readonly string[][] m_ChannelSuffixes = new string[][]
         {
             new string[]
@@ -553,11 +550,11 @@ namespace UnityEngine.UIElements
             }, // Ratio
             new string[]
             {
-                ""
+                ".placement",
+                ".value"
             }, // GridLine
             System.Array.Empty<string>() // EntityId
         };
-        [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
         private static readonly AnimationChannelKind[][] m_ChannelKinds = new AnimationChannelKind[][]
         {
             new AnimationChannelKind[]
@@ -790,6 +787,7 @@ namespace UnityEngine.UIElements
             }, // Ratio
             new AnimationChannelKind[]
             {
+                AnimationChannelKind.Int,
                 AnimationChannelKind.Int
             }, // GridLine
             System.Array.Empty<AnimationChannelKind>() // EntityId

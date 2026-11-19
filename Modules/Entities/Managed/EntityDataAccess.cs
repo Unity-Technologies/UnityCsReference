@@ -215,6 +215,7 @@ namespace Unity.Entities
             Unity.Entities.EntityQueryManager.Create(&self->m_EntityQueryManager, &self->m_DependencyManager);
 
             self->m_WorldUnmanaged = world.Unmanaged;
+            self->m_DependencyManager.QueryProfilerStore = &self->m_EntityComponentStore;
             TransformDependencyBridge.RegisterWorld(self);
 
             var managedGuts = new ManagedEntityDataAccess(world, new CompanionComponentStore(self->EntityComponentStore));
@@ -407,7 +408,10 @@ namespace Unity.Entities
             EntityComponentStore->AssertNoQueuedCompanionCommands();
 
             if (!m_DependencyManager.IsInTransaction)
+            {
                 m_DependencyManager.CompleteAllJobsAndInvalidateArrays();
+                EntityQueryManager->FreeUnusedCacheEntries();
+            }
         }
 
         public EntityComponentStore.ArchetypeChanges BeginStructuralChanges()
@@ -483,19 +487,7 @@ namespace Unity.Entities
             if (EntityComponentStore->m_Archetypes.Length - changes.StartIndex != 0)
                 EntityComponentStore->EndArchetypeChangeTracking(changes, EntityQueryManager);
 
-            if (EntityComponentStore->m_ChunkListChangesTracker.ArchetypeTrackingHead != null)
-                EntityComponentStore->InvalidateChunkListCacheForChangedArchetypes();
-
-            // Process deferred GameObject create/destroy callbacks that fired during this structural change 
-            // (e.g. companion GameObjects in the managed playback above) were deferred;
-            ProcessPendingGameObjectEntityChanges();
-        }
-
-        // Discard in Burst context (only happens during managed playback)
-        [BurstDiscard]
-        static void ProcessPendingGameObjectEntityChanges()
-        {
-            GameObjectComponentStoreBridge.ProcessPendingAfterStructuralChange();
+            PlaybackCompanionChanges();
         }
 
         internal void ResetSharedComponentReferences()
@@ -576,13 +568,9 @@ namespace Unity.Entities
         {
             if (!m_GameObjectOnlyArchetype.Valid)
             {
-                var types = stackalloc ComponentType[3]
-                {
-                    ComponentType.FromTypeIndex(TypeManager.GetTypeIndex<GameObjectComponentStoreBridge.IsGameObject>()),
-                    ComponentType.FromTypeIndex(TypeManager.GetTypeIndex<TransformRef>()),
-                    ComponentType.FromTypeIndex(TypeManager.GetTypeIndex<HasHierarchy>())
-                };
-                m_GameObjectOnlyArchetype = CreateArchetype(types, 3, true);
+                var types = stackalloc ComponentType[GameObjectComponentStoreBridge.k_GameObjectEntityTypeCount];
+                GameObjectComponentStoreBridge.GetGameObjectEntityTypes(types);
+                m_GameObjectOnlyArchetype = CreateArchetype(types, GameObjectComponentStoreBridge.k_GameObjectEntityTypeCount, true);
             }
 
             return m_GameObjectOnlyArchetype;
@@ -906,7 +894,7 @@ namespace Unity.Entities
         {
             if (queryImpl->IsEmptyIgnoreFilter || typeSet.Length == 0)
                 return;
-            EntityComponentStore->AssertCanAddComponents(queryImpl->_QueryData->MatchingArchetypes, typeSet);
+            EntityComponentStore->AssertCanAddComponents(queryImpl->GetRecords(), typeSet);
 
             if (StructuralChangesProfiler.Enabled)
                 StructuralChangesRecorder.Begin(StructuralChangesProfiler.StructuralChangeType.AddComponent, in m_WorldUnmanaged);
@@ -1866,7 +1854,7 @@ namespace Unity.Entities
             in SystemHandle originSystem = default)
         {
             Assert.IsTrue(componentType.IsSharedComponent);
-            EntityComponentStore->AssertNonEmptyArchetypesHaveComponent(queryImpl->_QueryData->MatchingArchetypes, componentType);
+            EntityComponentStore->AssertNonEmptyArchetypesHaveComponent(queryImpl->GetRecords(), componentType);
 
             if (StructuralChangesProfiler.Enabled)
                 StructuralChangesRecorder.Begin(StructuralChangesProfiler.StructuralChangeType.SetSharedComponent, in m_WorldUnmanaged);
@@ -1972,7 +1960,10 @@ namespace Unity.Entities
 
         private void PlaybackCompanionChangesMono()
         {
-            CompanionComponentStore.Playback(ref EntityComponentStore->CompanionChangesTracker);
+            if (EntityComponentStore->CompanionChangesTracker.Empty)
+                CompanionComponentStore.DestroyPendingCompanionGameObjects(ref EntityComponentStore->CompanionChangesTracker);
+            else
+                CompanionComponentStore.PlaybackCommands(ref EntityComponentStore->CompanionChangesTracker);
         }
 
         [BurstDiscard]
@@ -1984,7 +1975,7 @@ namespace Unity.Entities
 
         internal void PlaybackCompanionChanges()
         {
-            if (EntityComponentStore->CompanionChangesTracker.Empty)
+            if (EntityComponentStore->CompanionChangesTracker.Empty && EntityComponentStore->CompanionChangesTracker.PendingDestroyIds.IsEmpty)
                 return;
 
             bool monoDidIt = false;

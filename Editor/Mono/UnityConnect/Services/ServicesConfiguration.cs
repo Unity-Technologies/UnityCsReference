@@ -120,7 +120,9 @@ namespace UnityEditor.Connect
             PrepareAdsEnvironment(ConvertStringToServerEnvironment(UnityConnect.instance.GetEnvironment()));
             if (!string.IsNullOrEmpty(SessionState.GetString(k_ConfigJsonSessionStateKey, null)))
             {
-                LoadConfigurationsFromSessionState();
+                // The saved configuration can be partial, so the defaults must be loaded under it
+                LoadDefaultConfigurations();
+                TryLoadConfigurationsFromSessionState();
             }
         }
 
@@ -135,11 +137,7 @@ namespace UnityEditor.Connect
                 //So we always have some fallback entries if a config only overwrite some of the URLs.
                 LoadDefaultConfigurations();
 
-                if (!forceLoad && !string.IsNullOrEmpty(SessionState.GetString(k_ConfigJsonSessionStateKey, null)))
-                {
-                    LoadConfigurationsFromSessionState();
-                }
-                else
+                if (forceLoad || !TryLoadConfigurationsFromSessionState())
                 {
                     LoadConfigurationsFromCdn();
                 }
@@ -184,7 +182,14 @@ namespace UnityEditor.Connect
 
             while (m_AsyncUrlCallbacks.Count > 0)
             {
-                InvokeAsyncUrlCallback(m_AsyncUrlCallbacks.Dequeue());
+                try
+                {
+                    InvokeAsyncUrlCallback(m_AsyncUrlCallbacks.Dequeue());
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
             }
 
             StopProgress();
@@ -265,66 +270,83 @@ namespace UnityEditor.Connect
             LoadJsonConfiguration(hardCodedConfigs);
         }
 
-        void LoadConfigurationsFromSessionState()
+        bool TryLoadConfigurationsFromSessionState()
         {
             var sessionStateConfigJson = SessionState.GetString(k_ConfigJsonSessionStateKey, null);
-            if (sessionStateConfigJson != null)
+            if (string.IsNullOrEmpty(sessionStateConfigJson))
+                return false;
+
+            try
             {
                 LoadJsonConfiguration(sessionStateConfigJson);
-                BuildPaths();
             }
+            catch (Exception)
+            {
+                // A corrupt saved configuration must not block loading, so it is fetched again
+                SessionState.EraseString(k_ConfigJsonSessionStateKey);
+                return false;
+            }
+
+            BuildPaths();
+            return true;
         }
 
         void LoadConfigurationsFromCdn()
         {
+            if (m_GetServicesUrlsRequest != null)
+            {
+                try
+                {
+                    m_GetServicesUrlsRequest.Abort();
+                }
+                catch (Exception)
+                {
+                    // ignored, we try to abort (best effort) but no need to panic if it fails
+                }
+                m_GetServicesUrlsRequest = null;
+            }
+
             try
             {
-                if (m_GetServicesUrlsRequest != null)
-                {
-                    try
-                    {
-                        m_GetServicesUrlsRequest.Abort();
-                    }
-                    catch (Exception)
-                    {
-                        // ignored, we try to abort (best effort) but no need to panic if it fails
-                    }
-                    m_GetServicesUrlsRequest.Dispose();
-                    m_GetServicesUrlsRequest = null;
-                }
-
-                m_GetServicesUrlsRequest = new UnityWebRequest(string.Format(k_CdnConfigUrl, UnityConnect.instance.GetEnvironment()),
-                    UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
-                m_GetServicesUrlsRequest.suppressErrorsToConsole = true;
-                var operation = m_GetServicesUrlsRequest.SendWebRequest();
-                operation.completed += asyncOperation =>
-                {
-                    try
-                    {
-                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_GetServicesUrlsRequest))
-                        {
-                            LoadJsonConfiguration(m_GetServicesUrlsRequest.downloadHandler.text);
-                            SessionState.SetString(k_ConfigJsonSessionStateKey, m_GetServicesUrlsRequest.downloadHandler.text);
-                            BuildPaths();
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        //We fallback to hardcoded config
-                        BuildPaths();
-                    }
-                    finally
-                    {
-                        m_GetServicesUrlsRequest?.Dispose();
-                        m_GetServicesUrlsRequest = null;
-                    }
-                };
+                var request = new UnityWebRequest(string.Format(k_CdnConfigUrl, UnityConnect.instance.GetEnvironment()),
+                    UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer(), timeout = UnityConnectWebRequestUtils.k_RequestTimeoutSeconds };
+                request.suppressErrorsToConsole = true;
+                m_GetServicesUrlsRequest = request;
+                request.SendWebRequest().completed += _ => OnCdnRequestCompleted(request);
             }
             catch (Exception)
             {
                 //We fallback to hardcoded config
+                m_GetServicesUrlsRequest = null;
                 BuildPaths();
             }
+        }
+
+        void OnCdnRequestCompleted(UnityWebRequest request)
+        {
+            try
+            {
+                // A forced reload replaced this request, and the newer request finishes the load
+                if (request != m_GetServicesUrlsRequest)
+                    return;
+
+                m_GetServicesUrlsRequest = null;
+                if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(request))
+                {
+                    LoadJsonConfiguration(request.downloadHandler.text);
+                    SessionState.SetString(k_ConfigJsonSessionStateKey, request.downloadHandler.text);
+                }
+            }
+            catch (Exception)
+            {
+                //We fallback to the configuration already loaded
+            }
+            finally
+            {
+                request.Dispose();
+            }
+
+            BuildPaths();
         }
 
         void LoadJsonConfiguration(string json)

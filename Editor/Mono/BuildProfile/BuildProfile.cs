@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -208,7 +209,7 @@ namespace UnityEditor.Build.Profile
                 var lastCompiled = BuildProfileContext.instance.cachedEditorScriptingDefines;
                 
                 // Reload when actual changes happen, after cleaning has occurred
-                if (!ArrayUtility.ArrayEquals(m_ScriptingDefines, lastCompiled))
+                if (!ScriptingDefinesHelper.AreDefinesEquivalent(m_ScriptingDefines, lastCompiled))
                 {
                     BuildProfileModuleUtil.RequestScriptCompilation(this);
                 }
@@ -368,7 +369,7 @@ namespace UnityEditor.Build.Profile
             string[] lastCompiledDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
             string[] lastCompiledSDKPlatformDefines = BuildProfileContext.instance.cachedSDKPlatformDefines.defines;
             m_ScriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_ScriptingDefines);
-            if (ArrayUtility.ArrayEquals(m_ScriptingDefines, lastCompiledDefines) &&
+            if (ScriptingDefinesHelper.AreDefinesEquivalent(m_ScriptingDefines, lastCompiledDefines) &&
                 ArrayUtility.ArrayEquals(SDKPlatformCompilationUtil.GetActivePlatformEditorDefines(), lastCompiledSDKPlatformDefines))
             {
                 return;
@@ -630,6 +631,85 @@ namespace UnityEditor.Build.Profile
             {
                 length--;
                 Array.Copy(m_Scenes, index + 1, m_Scenes, index, length - index);
+            }
+        }
+
+        // Hashes the profile and its subassets without the platform build settings, which classic profiles keep in Library
+        internal string ComputeHashWithoutPlatformSettings()
+        {
+            var objects = new List<(long localId, UnityEngine.Object obj)>();
+            foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(this)))
+            {
+                if (obj != null && AssetDatabase.TryGetGUIDAndLocalFileIdentifier(obj, out string _, out long localId))
+                    objects.Add((localId, obj));
+            }
+            objects.Sort((a, b) => a.localId.CompareTo(b.localId));
+
+            var hash = new Hash128();
+            foreach (var (localId, obj) in objects)
+            {
+                hash.Append(localId.ToString());
+                using var serializedObject = new SerializedObject(obj);
+                var property = serializedObject.GetIterator();
+                var managedReferenceOrdinals = new Dictionary<long, int>();
+                var enterChildren = true;
+                while (property.Next(enterChildren))
+                    enterChildren = AppendPropertyToHash(ref hash, property, obj == this, managedReferenceOrdinals);
+            }
+
+            // Adaptive Performance reads this from the active profile to pick the settings it adds to the player data
+            hash.Append(m_PlatformBuildProfile != null && m_PlatformBuildProfile.adaptivePerformanceEnabled ? 1 : 0);
+            return hash.ToString();
+        }
+
+        // Returns whether the walk enters the property's children
+        static bool AppendPropertyToHash(ref Hash128 hash, SerializedProperty property, bool isProfile, Dictionary<long, int> managedReferenceOrdinals)
+        {
+            if (isProfile && property.depth == 0 && property.name == nameof(m_PlatformBuildProfile))
+                return false;
+
+            hash.Append(property.propertyPath);
+            switch (property.propertyType)
+            {
+                case SerializedPropertyType.Generic:
+                case SerializedPropertyType.ExposedReference:
+                    return true;
+
+                case SerializedPropertyType.ManagedReference:
+                {
+                    // The field itself only holds the reference id, the data is in its children.
+                    // Hash the order of first use instead of the id, so shared references count but new ids don't.
+                    var referenceId = property.managedReferenceId;
+                    if (!managedReferenceOrdinals.TryGetValue(referenceId, out int ordinal))
+                    {
+                        ordinal = managedReferenceOrdinals.Count;
+                        managedReferenceOrdinals.Add(referenceId, ordinal);
+                    }
+                    hash.Append(ordinal);
+                    hash.Append(property.managedReferenceFullTypename);
+                    return true;
+                }
+
+                case SerializedPropertyType.ObjectReference:
+                {
+                    // Instance ids change between sessions, so hash the asset identity instead
+                    var target = property.objectReferenceValue;
+                    if (target != null && AssetDatabase.TryGetGUIDAndLocalFileIdentifier(target, out string guid, out long localId))
+                    {
+                        hash.Append(guid);
+                        hash.Append(localId.ToString());
+                    }
+                    else
+                        hash.Append(target != null ? target.GetType().FullName : string.Empty);
+                    return false;
+                }
+
+                default:
+                {
+                    var contentHash = property.contentHash;
+                    hash.Append(ref contentHash);
+                    return false;
+                }
             }
         }
     }

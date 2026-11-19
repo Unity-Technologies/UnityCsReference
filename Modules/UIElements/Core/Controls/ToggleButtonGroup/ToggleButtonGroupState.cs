@@ -51,7 +51,6 @@ namespace UnityEngine.UIElements
         public int length
         {
             get => m_Length;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set => m_Length = value;
         }
 

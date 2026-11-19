@@ -113,6 +113,9 @@ namespace UnityEngine.Pool
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Release(T element)
         {
+            if (element == null)
+                return;
+
             if (m_CollectionCheck && (m_List.Count > 0 || m_FreshlyReleased != null))
             {
                 if (ReferenceEquals(element, m_FreshlyReleased)) {
@@ -130,6 +133,7 @@ namespace UnityEngine.Pool
                 CountAll++;
 
             m_ActionOnRelease?.Invoke(element);
+
             if(m_FreshlyReleased == null)
             {
                 m_FreshlyReleased = element;

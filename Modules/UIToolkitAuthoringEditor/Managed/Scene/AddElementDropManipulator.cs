@@ -119,6 +119,8 @@ sealed class AddElementDropManipulator : Manipulator
         if (EditedVisualTreeAsset == null)
             return;
 
+        var authoringContext = AuthoringContext.For(target);
+
         if (DragAndDrop.GetGenericData(LibraryItem.DragDataKey) is LibraryItem libraryItem)
         {
             var placement = ComputePlacement(evt.mousePosition, 1);
@@ -140,7 +142,8 @@ sealed class AddElementDropManipulator : Manipulator
             m_Indicator.Hide();
 
             var status = AddElementCommand.Execute(CommandSources.Scene, libraryItem.libraryType.type,
-                EditedVisualTreeAsset, placement.ParentVea, placement.Index, libraryItem.libraryType.variantName);
+                EditedVisualTreeAsset, placement.ParentVea, placement.Index, libraryItem.libraryType.variantName,
+                authoringContext);
             if (status != CommandExecutionStatus.Success)
             {
                 evt.StopPropagation();
@@ -149,11 +152,11 @@ sealed class AddElementDropManipulator : Manipulator
 
             // The command filed its selection request by asset alone; narrow it to the instance dropped into.
             // Resolved out of the canvas first: the Hierarchy scopes against the live tree, not this clone.
-            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(
+            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(authoringContext,
                 m_DropContext.ResolveAuthoritativeElement(placement.ParentElement));
 
             // A create the user asked for, so the new element opens its rename field.
-            UIToolkitStageUtility.RequestRenameOfPendingSelection();
+            UIToolkitStageUtility.RequestRenameOfPendingSelection(authoringContext);
 
             RequestRefresh?.Invoke();
             evt.StopPropagation();
@@ -182,7 +185,8 @@ sealed class AddElementDropManipulator : Manipulator
 
             var parentAsset = placement.ParentVea ?? EditedVisualTreeAsset.visualTree;
 
-            if (AddTemplatesToElementCommand.Execute(CommandSources.Viewport, parentAsset, placement.Index, vtas) !=
+            if (AddTemplatesToElementCommand.Execute(CommandSources.Viewport, parentAsset, placement.Index, vtas,
+                    authoringContext) !=
                 CommandExecutionStatus.Success)
             {
                 evt.StopPropagation();
@@ -192,7 +196,7 @@ sealed class AddElementDropManipulator : Manipulator
             // Same for the templates just added: the command's request names the assets it created, not the
             // instance they landed in. It is the command's own list rather than one rebuilt from the insert
             // index here, which does not survive a multi-document drop landing anywhere but the end.
-            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(
+            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(authoringContext,
                 m_DropContext.ResolveAuthoritativeElement(placement.ParentElement));
 
             RequestRefresh?.Invoke();

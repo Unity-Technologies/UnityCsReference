@@ -42,8 +42,19 @@ namespace UnityEditor
         [NativeProperty("VCAutomaticAdd")]
         public static extern bool AutomaticAdd { get; set; }
 
+        public static bool WorkOffline
+        {
+            get => Internal_WorkOffline;
+            set
+            {
+                Internal_WorkOffline = value;
+                // Working offline changes which assets version control reports as open for edit.
+                VersionControl.VersionControlManager.IncrementStatusVersion();
+            }
+        }
+
         [NativeProperty("VCWorkOffline")]
-        public static extern bool WorkOffline { get; set; }
+        static extern bool Internal_WorkOffline { get; set; }
 
         [NativeProperty("VCShowFailedCheckout")]
         public static extern bool showFailedCheckout { get; set; }

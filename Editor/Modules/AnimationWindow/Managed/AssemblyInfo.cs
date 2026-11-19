@@ -1,0 +1,24 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+
+using System.Runtime.CompilerServices;
+using UnityEngine;
+
+[assembly: InternalsVisibleTo("Unity.Timeline.Editor")]
+[assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")]
+
+
+// For AnimationClipBatchOperations
+[assembly: InternalsVisibleTo("Unity.Modules.Animation.Core.Tests.Playmode")]
+
+[assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
+[assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
+
+
+[assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Animation")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]

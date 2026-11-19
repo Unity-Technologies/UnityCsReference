@@ -27,13 +27,15 @@ namespace UnityEditorInternal.Profiling
 
         static readonly string k_GpuProfilingDisabled = L10n.Tr("GPU Profiling was not enabled so no data was gathered.", null);
 
+        static readonly string k_GpuProfilingNoSamples = L10n.Tr("No GPU samples were recorded for this frame. Some graphics APIs don't provide GPU markers with the Built-in Render Pipeline. The Universal or High Definition Render Pipeline may provide them.", null);
+
         static readonly string k_GpuProfilingNotSupportedWithEditorProfilingBefore2021_2 = L10n.Tr("GPU Profiling was not supported when profiling the Editor before 2021.2.", null);
         static readonly string k_GpuProfilingNotSupportedWithLegacyGfxJobs = L10n.Tr("GPU Profiling is currently not supported when using Graphics Jobs.", null);
         static readonly string k_GpuProfilingNotSupportedWithNativeGfxJobs = L10n.Tr("GPU Profiling is currently not supported when using Graphics Jobs.", null);
         static readonly string k_GpuProfilingNotSupportedByDevice = L10n.Tr("GPU Profiling is currently not supported by this device.", null);
-        static readonly string k_GpuProfilingNotSupportedByGraphicsAPI = L10n.Tr("GPU Profiling is currently not supported by the used graphics API.", null);
+        static readonly string k_GpuProfilingNotSupportedByGraphicsAPI = L10n.Tr("GPU Profiling is currently not supported by the graphics API in use.", null);
         static readonly string k_GpuProfilingNotSupportedDueToFrameTimingStatsAndDisjointTimerQuery = L10n.Tr("GPU Profiling is currently not supported on this device when PlayerSettings.enableFrameTimingStats is enabled. (<a playersettingslink=\"Project/Player\" playersettingssearchstring=\"Frame Timing Stats\">Click here to edit</a>)", null);
-        static readonly string k_GpuProfilingNotSupportedWithVulkan = L10n.Tr("GPU Profiling is currently not supported when using Vulkan.", null);
+        static readonly string k_GpuProfilingNotSupportedWithVulkan = L10n.Tr("GPU Profiling was not supported with Vulkan by the Unity version that recorded this capture.", null);
         static readonly string k_GpuProfilingNotSupportedWithMetal = L10n.Tr("GPU Profiling is currently not supported when using Metal.", null);
         static readonly string k_GpuProfilingNotSupportedWithOpenGLGPURecorders = L10n.Tr("GPU Profiling is currently not supported in OpenGL when PlayerSettings.\nenableOpenGLProfilerGPURecorders is enabled. (<a playersettingslink=\"Project/Player\" playersettingssearchstring=\"OpenGL: Profiler GPU Recorders\">Click here to edit</a>)", null);
         static readonly string k_PerformanceWarningMessage = L10n.Tr("Collecting GPU Profiler data causes overhead and reduces the accuracy of the CPU Module. Close this module if you don't need this data.\n\n" +
@@ -97,10 +99,7 @@ namespace UnityEditorInternal.Profiling
                     {
                         GpuProfilingStatisticsAvailabilityStates currentBit = (GpuProfilingStatisticsAvailabilityStates)(1 << i);
                         if (currentBit == GpuProfilingStatisticsAvailabilityStates.NotSupportedByGraphicsAPI
-                            && ((state & GpuProfilingStatisticsAvailabilityStates.NotSupportedWithMetal) != 0
-                                || (state & GpuProfilingStatisticsAvailabilityStates.NotSupportedWithVulkan) != 0
-                            )
-                        )
+                            && (state & (GpuProfilingStatisticsAvailabilityStates.NotSupportedWithMetal | GpuProfilingStatisticsAvailabilityStates.NotSupportedWithVulkan)) != 0)
                             continue; // no need to warn about the general case, when a more specific reason was given.
                         if (s_StatisticsAvailabilityStateReason.ContainsKey(currentBit))
                         {
@@ -114,6 +113,17 @@ namespace UnityEditorInternal.Profiling
                 s_StatisticsAvailabilityStateReason[state] = combinedReason;
             }
             return s_StatisticsAvailabilityStateReason[state];
+        }
+
+        internal static string GetDataAvailabilityMessage(int statisticsAvailabilityState)
+        {
+            var state = (GpuProfilingStatisticsAvailabilityStates)statisticsAvailabilityState;
+            if ((state & GpuProfilingStatisticsAvailabilityStates.Enabled) == 0)
+                return k_GpuProfilingDisabled;
+            if ((state & GpuProfilingStatisticsAvailabilityStates.Gathered) != 0)
+                return null;
+            var reason = GetStatisticsAvailabilityStateReason(statisticsAvailabilityState);
+            return string.IsNullOrEmpty(reason) ? k_GpuProfilingNoSamples : reason;
         }
 
         internal override void OnEnable()
@@ -131,14 +141,7 @@ namespace UnityEditorInternal.Profiling
             var selectedFrameIndex = (int)ProfilerWindow.selectedFrameIndex;
             if (selectedFrameIndex >= ProfilerDriver.firstFrameIndex && selectedFrameIndex <= ProfilerDriver.lastFrameIndex)
             {
-                GpuProfilingStatisticsAvailabilityStates state = (GpuProfilingStatisticsAvailabilityStates)ProfilerDriver.GetGpuStatisticsAvailabilityState(selectedFrameIndex);
-
-                if ((state & GpuProfilingStatisticsAvailabilityStates.Enabled) == 0)
-                    m_FrameDataHierarchyView.dataAvailabilityMessage = k_GpuProfilingDisabled;
-                else if ((state & GpuProfilingStatisticsAvailabilityStates.Gathered) == 0)
-                    m_FrameDataHierarchyView.dataAvailabilityMessage = GetStatisticsAvailabilityStateReason((int)state);
-                else
-                    m_FrameDataHierarchyView.dataAvailabilityMessage = null;
+                m_FrameDataHierarchyView.dataAvailabilityMessage = GetDataAvailabilityMessage((int)ProfilerDriver.GetGpuStatisticsAvailabilityState(selectedFrameIndex));
             }
             else
                 m_FrameDataHierarchyView.dataAvailabilityMessage = null;

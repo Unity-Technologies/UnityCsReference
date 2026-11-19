@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class StyleSelector
     {
         [SerializeField]
@@ -20,7 +20,6 @@ namespace UnityEngine.UIElements
             {
                 return m_Parts;
             }
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set
             {
                 m_Parts = value;
@@ -36,7 +35,6 @@ namespace UnityEngine.UIElements
             {
                 return m_PreviousRelationship;
             }
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set
             {
                 m_PreviousRelationship = value;

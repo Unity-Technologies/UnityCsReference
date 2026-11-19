@@ -53,7 +53,8 @@ internal static class FieldAffordanceController
             // We use the inline sheet to resolve the variable reference, but keep the variable sheet as the selector stylesheet.
             if (owningSheet != null && value.uxmlValue.inlineProperty.TryGetVariableReference(owningSheet, out var variableName))
             {
-                var varInfo = StyleVariableUtility.FindVariable(element, variableName, false);
+                var varInfo = StyleVariableUtility.FindVariable(element, variableName,
+                    EditorExtensionAuthoring.IsEnabledFor(element));
                 if (varInfo.IsValid())
                 {
                     fieldAffordanceData.inlineValue = variableName;

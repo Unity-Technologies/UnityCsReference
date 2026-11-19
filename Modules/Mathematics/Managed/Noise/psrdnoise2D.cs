@@ -109,8 +109,8 @@ namespace Unity.Mathematics
 
             // Wrap p0, p1 and p2 to the desired period before gradient hashing:
             // wrap points in (x,y), map to (u,v)
-            float3 xw = fmod(float3(p0.x, p1.x, p2.x), per.x);
-            float3 yw = fmod(float3(p0.y, p1.y, p2.y), per.y);
+            float3 xw = modPeriod(float3(p0.x, p1.x, p2.x), per.x);
+            float3 yw = modPeriod(float3(p0.y, p1.y, p2.y), per.y);
             float3 iuw = xw + 0.5f * yw;
             float3 ivw = yw;
 
@@ -215,8 +215,8 @@ namespace Unity.Mathematics
 
             // Wrap p0, p1 and p2 to the desired period before gradient hashing:
             // wrap points in (x,y), map to (u,v)
-            float3 xw = fmod(float3(p0.x, p1.x, p2.x), per.x);
-            float3 yw = fmod(float3(p0.y, p1.y, p2.y), per.y);
+            float3 xw = modPeriod(float3(p0.x, p1.x, p2.x), per.x);
+            float3 yw = modPeriod(float3(p0.y, p1.y, p2.y), per.y);
             float3 iuw = xw + 0.5f * yw;
             float3 ivw = yw;
 

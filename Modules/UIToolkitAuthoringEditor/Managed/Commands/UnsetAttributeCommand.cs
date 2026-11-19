@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -101,8 +100,7 @@ internal sealed class UnsetAttributeCommand : Command<UnsetAttributeCommand>
             templateAsset.serializedDataOverrides.Clear();
             UxmlSerializer.CreateSerializedDataOverrides(VisualTreeAsset);
 
-            var currentStage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
-            currentStage?.RequestRefresh();
+            AuthoringContext.For(VisualElement).Session?.RequestRefresh();
         }
         else
         {

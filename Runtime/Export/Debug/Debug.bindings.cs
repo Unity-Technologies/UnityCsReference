@@ -277,7 +277,12 @@ namespace UnityEngine
         public static void LogAssertionFormat(Object context, string format, params object[] args) { unityLogger.LogFormat(LogType.Assert, context, format, args); }
 
         // In the Build Settings dialog there is a check box called "Development Build".
-        public static extern bool isDebugBuild { get; }
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool isDebugBuildInternal { get; }
+
+        private static readonly bool k_IsDebugBuild = isDebugBuildInternal;
+
+        public static bool isDebugBuild => k_IsDebugBuild;
 
         [NativeMethod(ThrowsException = true)]
         internal static extern DiagnosticSwitch[] diagnosticSwitches { get; }

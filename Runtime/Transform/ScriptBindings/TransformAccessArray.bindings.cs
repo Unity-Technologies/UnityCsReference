@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
 using System.Runtime.InteropServices;
 
@@ -187,8 +188,12 @@ namespace UnityEngine.Jobs
         [NativeMethod(Name = "TransformAccessBindings::QueueTransformDispatch", IsThreadSafe = false, IsFreeFunction = true, ThrowsException = true)]
         private static extern void QueueTransformDispatch(ref UnsafeTransformAccess access);
 
+        public static void BatchQueueTransformDispatch(WorldUnmanaged ecsOwner, IntPtr hierarchyPtrs, int count) =>
+            BatchQueueTransformDispatch(&ecsOwner, hierarchyPtrs, count);
+
+        // The bindings generator can't marshal WorldUnmanaged
         [NativeMethod(Name = "TransformHierarchyBindings::BatchQueueTransformDispatch", IsThreadSafe = false, IsFreeFunction = true, ThrowsException = true)]
-        public static extern void BatchQueueTransformDispatch(ulong ecsOwner, IntPtr hierarchyPtrs, int count);
+        static extern void BatchQueueTransformDispatch(void* ecsOwner, IntPtr hierarchyPtrs, int count);
 
         public bool isValid => hierarchy != IntPtr.Zero;
 

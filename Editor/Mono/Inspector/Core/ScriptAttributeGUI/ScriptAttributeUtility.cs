@@ -15,7 +15,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal partial class ScriptAttributeUtility
     {
         readonly struct CustomPropertyDrawerContainer
@@ -406,7 +406,9 @@ namespace UnityEditor
         {
             //Try to gather SupportedOn from Serialized Object and rely on this instead of GraphicsSettings.currentRenderPipelineAssetType if exist
             var serializedObject = property.serializedObject;
-            var serializedObjectType = serializedObject.targetObject.GetType();
+            var serializedObjectType = serializedObject.GetTargetType();
+            if (serializedObjectType == null)
+                return GetDrawerTypeForType(type, GraphicsSettings.isScriptableRenderPipelineEnabled ? currentRenderPipelineAssetTypeArray : null, property.propertyType == SerializedPropertyType.ManagedReference);
             if (!k_SupportedRenderPipelinesForSerializedObject.TryGetValue(serializedObjectType, out var supportedOnRenderPipelineTypes))
             {
                 var supportedOn = serializedObjectType.GetCustomAttribute<SupportedOnRenderPipelineAttribute>();
@@ -546,8 +548,9 @@ namespace UnityEditor
 
         private static Type GetScriptTypeFromProperty(SerializedProperty property)
         {
-            if (property.serializedObject.targetObject != null)
-                return property.serializedObject.targetObject.GetType();
+            var targetType = property.serializedObject.GetTargetType();
+            if (targetType != null)
+                return targetType;
 
             // Fallback in case the targetObject has been destroyed but the property is still valid.
             SerializedProperty scriptProp = property.serializedObject.FindProperty("m_Script");
@@ -609,9 +612,7 @@ namespace UnityEditor
         // Precompiled regexes used by GetFieldInfoFromPropertyPath on cache misses to avoid pattern parsing
         // and string concatenation. The trailing-anchor variant is used for the end-of-path check;
         // the unanchored variant is used to strip all Array.data[x] segments out of the path.
-        [NoAutoStaticsCleanup]
         static readonly Regex k_ArrayDataAtEndRegex = new Regex(@"\.Array\.data\[[0-9]+\]$", RegexOptions.Compiled);
-        [NoAutoStaticsCleanup]
         static readonly Regex k_ArrayDataRegex = new Regex(@"\.Array\.data\[[0-9]+\]", RegexOptions.Compiled);
 
         private static FieldInfo GetFieldInfoFromPropertyPath(Type host, string path, out Type type)
@@ -686,7 +687,6 @@ namespace UnityEditor
             return fieldInfo;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static PropertyHandler GetHandler(SerializedProperty property)
         {
             if (property == null)
@@ -706,8 +706,9 @@ namespace UnityEditor
             FieldInfo field = null;
 
             // Determine if SerializedObject target is a script or a builtin type
+            // Data components have no Object target but are always reflectable structs
             Object target = property.serializedObject.targetObject;
-            if (NativeClassExtensionUtilities.ExtendsANativeType(target))
+            if (property.serializedObject.isTargetDataComponent || NativeClassExtensionUtilities.ExtendsANativeType(target))
             {
                 // For scripts, use reflection to get FieldInfo for the member the property represents
                 field = GetFieldInfoFromProperty(property, out propertyType);

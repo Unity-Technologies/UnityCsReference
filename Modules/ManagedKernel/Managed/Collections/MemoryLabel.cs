@@ -165,7 +165,7 @@ public readonly struct MemoryLabel
         internal Allocator allocator;
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        internal void CheckNativeToManaged()
+        internal readonly void CheckNativeToManaged()
         {
             if (!SupportsAllocator(allocator))
                 throw new ArgumentException("Only Allocator.Persistent and Allocator.Domain support allocating with a label");

@@ -218,6 +218,13 @@ namespace UnityEngine.UIElements
             return new Background { gradient = g };
         }
 
+        internal Background CopyWithOwnGradientStops()
+        {
+            var copy = this;
+            copy.m_Gradient = m_Gradient.CopyWithOwnStops();
+            return copy;
+        }
+
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static Background FromObject(object obj)
         {

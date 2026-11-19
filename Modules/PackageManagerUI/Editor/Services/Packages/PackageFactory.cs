@@ -24,6 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly IIOProxy m_IOProxy;
         private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
         private readonly IPackageProgressTracker m_PackageProgressTracker;
 
         public PackageFactory(
@@ -40,6 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             IUpmRegistryClient upmRegistryClient,
             IIOProxy ioProxy,
             IApplicationProxy application,
+            IInternalEditorUtilityProxy internalEditorUtilityProxy,
             IPackageProgressTracker packageProgressTracker)
         {
             m_UpmCache = RegisterDependency(upmCache);
@@ -55,6 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmRegistryClient = RegisterDependency(upmRegistryClient);
             m_IOProxy = RegisterDependency(ioProxy);
             m_ApplicationProxy = RegisterDependency(application);
+            m_InternalEditorUtilityProxy = RegisterDependency(internalEditorUtilityProxy);
             m_PackageProgressTracker = RegisterDependency(packageProgressTracker);
         }
 

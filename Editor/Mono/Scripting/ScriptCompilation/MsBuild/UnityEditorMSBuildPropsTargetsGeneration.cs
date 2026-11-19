@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using NiceIO;
 using Unity.AsmDefToCSProj;
+using UnityEditor.Build;
 using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
 using UnityEditor.Modules;
@@ -24,6 +26,8 @@ class UnityEditorMSBuildPropsTargetsGeneration
     private static PrecompiledAssemblyProviderCache s_assemblyProviderCache;
     [NoAutoStaticsCleanup] // value-type cache key paired with s_assemblyProviderCache, safe to persist across reload
     private static BuildTarget s_cachedBuildTarget;
+    [NoAutoStaticsCleanup] // value-type cache key paired with s_assemblyProviderCache, safe to persist across reload
+    private static ScriptingImplementation s_cachedScriptingBackend;
     [NoAutoStaticsCleanup] // lock object, safe to persist across reload
     private static readonly object s_cacheLock = new object();
 
@@ -38,9 +42,12 @@ class UnityEditorMSBuildPropsTargetsGeneration
 
     private static PrecompiledAssemblyProviderCache GetOrCreateCache(BuildTarget buildTarget)
     {
+        // Player module paths resolve to the variation of the active scripting backend
+        var scriptingBackend = PlayerSettings.GetScriptingBackend(NamedBuildTarget.FromActiveSettings(buildTarget));
+
         lock (s_cacheLock)
         {
-            if (s_assemblyProviderCache != null && s_cachedBuildTarget == buildTarget)
+            if (s_assemblyProviderCache != null && s_cachedBuildTarget == buildTarget && s_cachedScriptingBackend == scriptingBackend)
             {
                 return s_assemblyProviderCache;
             }
@@ -72,6 +79,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
 
             s_assemblyProviderCache = cache;
             s_cachedBuildTarget = buildTarget;
+            s_cachedScriptingBackend = scriptingBackend;
             return cache;
         }
     }
@@ -99,7 +107,48 @@ class UnityEditorMSBuildPropsTargetsGeneration
         UpdateRoslynAnalyzersProps(globalAnalyzers);
 
         PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath, EditorApplication.applicationBuildPipelinePath, MsBuildProjectCacheSettings.effectiveCacheFolder);
-        PropsGenerator.Instance.UpdateBuildConfigurationProperties(buildTarget.ToString(), CompilationPipeline.codeOptimization == CodeOptimization.Release);
+        PropsGenerator.Instance.UpdateBuildConfigurationProperties(buildTarget.ToString(), CompilationPipeline.codeOptimization == CodeOptimization.Release,
+            BeeScriptCompilation.GetCompilerMessagesCulture(), GetNoWarnCodes(buildTarget));
+    }
+
+    // Matches EditorCompilation.CreateScriptAssemblySettings; CS1701 and CS1702 are already in the .NET SDK's NoWarn.
+    static readonly string[] k_CommonWarningCodes = { "CS0169", "CS0649", "CS0282" };
+
+    internal static string[] GetNoWarnCodes(BuildTarget buildTarget)
+    {
+        var codes = new List<string>();
+        if (PlayerSettings.suppressCommonWarnings)
+            codes.AddRange(k_CommonWarningCodes);
+
+        var namedBuildTarget = NamedBuildTarget.FromTargetAndSubtarget(buildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(buildTarget));
+        foreach (var argument in PlayerSettings.GetAdditionalCompilerArguments(namedBuildTarget))
+            codes.AddRange(ParseNoWarnArgument(argument));
+
+        return codes.ToArray();
+    }
+
+    internal static IEnumerable<string> ParseNoWarnArgument(string argument)
+    {
+        if (string.IsNullOrWhiteSpace(argument))
+            yield break;
+
+        var trimmed = argument.Trim();
+        if (trimmed.Length < 2 || (trimmed[0] != '/' && trimmed[0] != '-'))
+            yield break;
+
+        var colon = trimmed.IndexOf(':');
+        if (colon < 0 || !string.Equals(trimmed.Substring(1, colon - 1), "nowarn", StringComparison.OrdinalIgnoreCase))
+            yield break;
+
+        foreach (var code in trimmed.Substring(colon + 1).Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var trimmedCode = code.Trim().Trim('"');
+            if (trimmedCode.Length == 0)
+                continue;
+
+            // csc reads a bare number as a CS diagnostic; MSBuild's NoWarn also covers analyzer IDs, so make it explicit.
+            yield return int.TryParse(trimmedCode, out var number) ? "CS" + number.ToString("D4") : trimmedCode;
+        }
     }
 
     private static void UpdateRoslynAnalyzersProps(string[] globalAnalyzers)
@@ -168,7 +217,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
     /// Updates deferrable props (defines, references, plugins, search paths) in parallel.
     /// Uses cached PrecompiledAssemblyProvider results to avoid repeated queries.
     /// </summary>
-    public static void UpdateDeferrablePropsInParallel(BuildTarget buildTarget, MSBuildCompilationOptions compilationOptions, string[] globalAnalyzers)
+    public static void UpdateDeferrablePropsInParallel(BuildTarget buildTarget, MSBuildCompilationOptions compilationOptions, string[] globalAnalyzers, bool buildingForEditor)
     {
         var cache = GetOrCreateCache(buildTarget);
 
@@ -183,9 +232,15 @@ class UnityEditorMSBuildPropsTargetsGeneration
                 .GetEditorAssembliesCompatibilityLevel());
         var editorOnlyCompatibleDefines = AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
             editorScriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility));
+        var playerApiCompatibility = GetPlayerApiCompatibility(buildTarget, subtarget);
+        var editorRuntimeCompatibleDefines = AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
+            editorScriptCompilationOptions, buildTarget, subtarget, playerApiCompatibility));
 
-        var playerAssembliesDefines = AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
-            scriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility));
+        // An editor build's options are not a player build's, so its player defines would differ and churn the file.
+        var playerAssembliesDefines = buildingForEditor
+            ? null
+            : AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
+                scriptCompilationOptions, buildTarget, subtarget, playerApiCompatibility));
 
         // Get search paths
         var searchPaths = BuildPlayerDataGenerator.GetStaticSearchPaths(buildTarget);
@@ -193,6 +248,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
         // `globalAnalyzers` was already resolved by the converter during SetAllScripts; nothing to do here.
         PropsGenerator.Instance.UpdateDeferrablePropsInParallel(
             editorOnlyCompatibleDefines,
+            editorRuntimeCompatibleDefines,
             playerAssembliesDefines,
             cache.EditorModulePaths,
             cache.PlayerModulePaths,
@@ -203,7 +259,9 @@ class UnityEditorMSBuildPropsTargetsGeneration
             searchPaths,
             globalAnalyzers,
             buildTarget.ToString(),
-            CompilationPipeline.codeOptimization == CodeOptimization.Release);
+            CompilationPipeline.codeOptimization == CodeOptimization.Release,
+            BeeScriptCompilation.GetCompilerMessagesCulture(),
+            GetNoWarnCodes(buildTarget));
     }
 
     private static string GetCurrentDotNETRuntimeId()
@@ -351,6 +409,52 @@ class UnityEditorMSBuildPropsTargetsGeneration
         File.WriteAllText(Path.Combine("Library", "MSBuild", "unitylocation.txt"), EditorApplication.applicationContentsPath);
     }
 
+    // Must match the UnityScriptUpdaterConfigFile default in Unity.Sdk's Sdk.targets.
+    private static readonly NPath k_ScriptUpdaterConfigPath = new NPath("Library/MSBuild/ScriptUpdater/unity.scriptupdater.json");
+
+    private const string k_WrittenScriptUpdaterConfigHashKey = "MsBuild.WrittenScriptUpdaterConfigHash";
+    private const string k_WrittenScriptUpdaterConfigTimestampKey = "MsBuild.WrittenScriptUpdaterConfigTimestamp";
+
+    // Mirrors ScriptUpdaterConfig in Unity.MSBuildScriptUpdater.
+    [Serializable]
+    class ScriptUpdaterConfig
+    {
+        public string dotnetPath;
+        public string scriptUpdaterDll;
+        public string editorContentsPath;
+        public string projectRoot;
+        public string configurationSourcesFilter;
+        public string[] attemptedAssemblies;
+    }
+
+    // Shared by every project in the build; Unity.Sdk passes this path to the script updater Csc task.
+    // Same program and arguments as UnityScriptUpdater uses in the Bee pipeline.
+    public static void UpdateScriptUpdaterConfig(string configurationSourcesFilter, IEnumerable<string> attemptedAssemblies)
+    {
+        var config = JsonUtility.ToJson(new ScriptUpdaterConfig
+        {
+            dotnetPath = NetCoreProgram.GetDotNetMuxerPath(),
+            scriptUpdaterDll = Path.GetFullPath(Path.Combine(EditorApplication.applicationBuildPipelinePath, "Compilation", "ApiUpdater", "ScriptUpdater.dll")),
+            editorContentsPath = EditorApplication.applicationContentsPath,
+            projectRoot = Path.GetFullPath(Directory.GetCurrentDirectory()),
+            configurationSourcesFilter = configurationSourcesFilter,
+            attemptedAssemblies = [ ..attemptedAssemblies ],
+        }, prettyPrint: true);
+
+        if (GetScriptUpdaterConfigTimestamp() == SessionState.GetString(k_WrittenScriptUpdaterConfigTimestampKey, null))
+            return;
+
+        var hash = Hash128.Compute(config).ToString();
+        if (hash == SessionState.GetString(k_WrittenScriptUpdaterConfigHashKey, null))
+            return;
+
+        k_ScriptUpdaterConfigPath.WriteAllText(config);
+        SessionState.SetString(k_WrittenScriptUpdaterConfigHashKey, hash);
+        SessionState.SetString(k_WrittenScriptUpdaterConfigTimestampKey, GetScriptUpdaterConfigTimestamp());
+    }
+
+    private static string GetScriptUpdaterConfigTimestamp() => k_ScriptUpdaterConfigPath.GetLastWriteTimeUtc().Ticks.ToString();
+
     private static void UpdateReferencesProps(BuildTarget buildTarget)
     {
         var editorBuildReferences = GetModulesAssemblyPaths(true, buildTarget);
@@ -458,10 +562,18 @@ class UnityEditorMSBuildPropsTargetsGeneration
         var editorOnlyCompatibleDefines = AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
             editorScriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility));
 
+        var playerApiCompatibility = GetPlayerApiCompatibility(buildTarget, subtarget);
+        var editorRuntimeCompatibleDefines = AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
+            editorScriptCompilationOptions, buildTarget, subtarget, playerApiCompatibility));
         var playerAssembliesDefines = AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
-            scriptCompilationOptions, buildTarget, subtarget, editorApiCompatibility));
+            scriptCompilationOptions, buildTarget, subtarget, playerApiCompatibility));
         PropsGenerator.Instance.UpdateDefinesProps(editorOnlyCompatibleDefines, playerAssembliesDefines);
+        PropsGenerator.Instance.UpdateEditorRuntimeApiDefines(editorOnlyCompatibleDefines, editorRuntimeCompatibleDefines);
     }
+
+    // Mirrors EditorCompilation.CreateScriptAssemblySettings: assemblies that are not editor-only use the player's level.
+    private static ApiCompatibilityLevel GetPlayerApiCompatibility(BuildTarget buildTarget, int subtarget)
+        => PlayerSettings.GetApiCompatibilityLevelWithoutIL2CPPForcing(NamedBuildTarget.FromTargetAndSubtarget(buildTarget, subtarget));
 
     // Mirrors EditorBuildRules.GetScriptAssemblies, which appends the C# language-version
     // defines to every assembly. The legacy pipeline adds these per-assembly; MSBU emits them

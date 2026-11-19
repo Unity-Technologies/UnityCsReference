@@ -159,13 +159,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var tagsToExclude = m_SettingsProxy.seeAllPackageVersions ? PackageTag.None :
                 m_SettingsProxy.enablePreReleasePackages ? PackageTag.Experimental : PackageTag.Experimental | PackageTag.PreRelease;
-            var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, changedSource != PackagesChangedSource.AddAndRemove, m_SettingsProxy.trustPolicyLevel, m_SettingsProxy.isSignatureValidationDisabled);
+            var versionList = new UpmVersionList(packageData, tagsToExclude, m_IOProxy, m_ApplicationProxy, m_InternalEditorUtilityProxy, changedSource != PackagesChangedSource.AddAndRemove, m_SettingsProxy.trustPolicyLevel, m_SettingsProxy.isSignatureDisabled);
             var primaryVersion = versionList.primary;
             if (primaryVersion == null)
                 return null;
             if (!primaryVersion.isFullyFetched)
                 m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
-            var package = CreatePackage(packageName, versionList, isDiscoverable: packageData.isDiscoverable, isDeprecated: packageData.isDeprecated, deprecationMessage: packageData.deprecationMessage, compliance: packageData.compliance);
+            var package = CreatePackage(packageName, versionList, isDiscoverable: packageData.isDiscoverable, isDeprecated: packageData.isLifecycleDeprecated, deprecationMessage: packageData.lifecycleDeprecationMessage, compliance: packageData.compliance);
             SetProgress(package, m_PackageProgressTracker.GetProgress(packageName));
             return package;
         }

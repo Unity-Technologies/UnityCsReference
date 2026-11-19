@@ -11,7 +11,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UsedImplicitly]
     [MovedFrom("Unity.UI.Builder")]
     [UxmlElement]
@@ -123,7 +122,6 @@ namespace Unity.UIToolkit.Editor
             };
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void UpdateSubFieldVisualInputTooltips(string minSizeTooltip, string maxSizeTooltip)
         {
             m_MinSizeField.visualInput.tooltip = minSizeTooltip;

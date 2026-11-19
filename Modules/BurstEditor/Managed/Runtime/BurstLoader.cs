@@ -132,23 +132,15 @@ namespace Unity.Burst.Editor
 
             EditorApplication.quitting += OnEditorApplicationQuitting;
 
-            if (!UnityEditor.Compilation.CompilationPipeline.IsUsingMSBuild())
-            {
-                UnityEditor.Compilation.CompilationPipeline.compilationStarted += OnCompilationStarted;
-                UnityEditor.Compilation.CompilationPipeline.compilationFinished += OnCompilationFinished;
+            UnityEditor.Compilation.CompilationPipeline.compilationStarted += OnCompilationStarted;
+            UnityEditor.Compilation.CompilationPipeline.compilationFinished += OnCompilationFinished;
 
-                // We use this internal event because it's the only way to get access to the ScriptAssembly.HasCompileErrors,
-                // which tells us whether C# compilation succeeded or failed for this assembly.
-                EditorCompilationInterface.Instance.assemblyCompilationFinished += OnAssemblyCompilationFinished;
+            // We use this internal event because it's the only way to get access to the ScriptAssembly.HasCompileErrors,
+            // which tells us whether C# compilation succeeded or failed for this assembly.
+            // MSBU synthesizes these events (batched at end-of-build) via FirePerAssemblyCompilationEvents.
+            EditorCompilationInterface.Instance.assemblyCompilationFinished += OnAssemblyCompilationFinished;
 
-                UnityEditor.Compilation.CompilationPipeline.assemblyCompilationNotRequired += OnAssemblyCompilationNotRequired;
-            }
-            else
-            {
-                // Under MSBU there are no per-assembly compilation events; instead the whole
-                // compilation reports once via buildFinished. See CompilationPipeline.ReportBuildFinished.
-                UnityEditor.Compilation.CompilationPipeline.buildFinished += OnBuildFinished;
-            }
+            UnityEditor.Compilation.CompilationPipeline.assemblyCompilationNotRequired += OnAssemblyCompilationNotRequired;
 
             EditorApplication.playModeStateChanged += EditorApplicationOnPlayModeStateChanged;
 
@@ -175,27 +167,23 @@ namespace Unity.Burst.Editor
             // Notify the JitCompilerService about a domain reload
             BurstCompiler.SetDefaultOptions();
 
-            // Burst learns about assemblies from the compilation events. OnAssemblyCompilationFinished ignores
-            // every assembly of a build that had a C# compile error though, because ScriptAssembly.HasCompileErrors
-            // is set for the whole build. The assemblies that did get built are still loaded by this domain, so in
-            // that case we have to tell Burst about them here, or all of their entry points are rejected as unknown.
-#pragma warning disable UAC2001 // The Banned API Analyzer produces compile errors for any new Linq code.
-            var assemblyNamesAndDefines = (IEnumerable<(string, string[])>)Array.Empty<(string, string[])>();
+            var packagesChanged = SessionState.GetBool(packagesChangedSessionKey, false);
+            BurstCompiler.DomainReload(Array.Empty<(string, string[])>(), packagesChanged);
+            SessionState.SetBool(packagesChangedSessionKey, false);
 
+            // OnAssemblyCompilationFinished ignores every assembly of a build that had a C# compile error, because
+            // ScriptAssembly.HasCompileErrors is set for the whole build. The assemblies that did get built are still
+            // loaded by this domain, so report them now or all of their entry points are rejected. Under MSBU
+            // NotifyBurstAboutAllEditorAssemblies already does this after every domain reload.
             if (SessionState.GetBool(assembliesDroppedSessionKey, false))
             {
                 SessionState.SetBool(assembliesDroppedSessionKey, false);
 
-                assemblyNamesAndDefines = UnityEditor.Compilation.CompilationPipeline
-                    .GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor)
-                    .Where(x => File.Exists(x.outputPath)) // If C# compilation fails, it won't exist on disk
-                    .Select(x => (x.name, x.defines));
+                if (!UnityEditor.Compilation.CompilationPipeline.IsUsingMSBuild())
+                {
+                    NotifyBurstAboutBuiltEditorAssemblies();
+                }
             }
-#pragma warning restore UAC2001
-
-            var packagesChanged = SessionState.GetBool(packagesChangedSessionKey, false);
-            BurstCompiler.DomainReload(assemblyNamesAndDefines, packagesChanged);
-            SessionState.SetBool(packagesChangedSessionKey, false);
 
             // Under MSBU, per-assembly compilation events (assemblyCompilationFinished /
             // assemblyCompilationNotRequired) do not fire on domain reloads, and buildFinished
@@ -475,7 +463,14 @@ namespace Unity.Burst.Editor
 
         private static void OnCompilationStarted(object value)
         {
-            _currentBuildKind = CurrentCompilationTaskShouldStart();
+            // MSBU does not populate the private Bee state CurrentCompilationTaskShouldStart() reflects
+            // into, so it reports IsForAssemblyBuilder on an MSBU editor compile. MsBuildCompilation only
+            // fires this event for editor compiles (see FirePerAssemblyCompilationEvents), so under MSBU
+            // the right answer is always IsForEditor.
+            if (UnityEditor.Compilation.CompilationPipeline.IsUsingMSBuild())
+                _currentBuildKind = CompilationTaskReason.IsForEditor;
+            else
+                _currentBuildKind = CurrentCompilationTaskShouldStart();
             if (_currentBuildKind != CompilationTaskReason.IsForEditor)
             {
                 if (IsDebugging)
@@ -527,6 +522,20 @@ namespace Unity.Burst.Editor
                 if (!string.IsNullOrEmpty(resolvedPath))
                 {
                     assemblyFolders.Add(resolvedPath);
+                }
+            }
+
+            // MSBU only reports assembly names to Burst, so references to plugin DLLs must be found by folder.
+            if (UnityEditor.Compilation.CompilationPipeline.IsUsingMSBuild())
+            {
+                foreach (var pluginPath in UnityEditor.Compilation.CompilationPipeline.GetPrecompiledAssemblyPaths(UnityEditor.Compilation.CompilationPipeline.PrecompiledAssemblySources.UserAssembly))
+                {
+                    var pluginFolder = Path.GetDirectoryName(pluginPath);
+                    if (!string.IsNullOrEmpty(pluginFolder))
+                    {
+                        // Plugin paths are project relative, and Burst only accepts absolute folders.
+                        assemblyFolders.Add(FileUtil.PathToAbsolutePath(pluginFolder));
+                    }
                 }
             }
 
@@ -594,6 +603,25 @@ namespace Unity.Burst.Editor
             BurstCompiler.NotifyAssemblyCompilationFinished(Path.GetFileNameWithoutExtension(assembly.Filename), assembly.Defines);
         }
 
+        private static void NotifyBurstAboutBuiltEditorAssemblies()
+        {
+            BurstCompiler.NotifyCompilationStarted(
+                GetAssemblyFolders(),
+                BurstAssemblyDisable.GetDisabledAssemblies(BurstAssemblyDisable.DisableType.Editor, ""));
+
+            foreach (var assembly in UnityEditor.Compilation.CompilationPipeline
+                .GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor))
+            {
+                // If C# compilation fails, the output won't exist on disk
+                if (File.Exists(assembly.outputPath))
+                {
+                    BurstCompiler.NotifyAssemblyCompilationFinished(assembly.name, assembly.defines);
+                }
+            }
+
+            BurstCompiler.NotifyCompilationFinished();
+        }
+
         private static void OnAssemblyCompilationNotRequired(string arg1)
         {
             if (_currentBuildKind!=CompilationTaskReason.IsForEditor)
@@ -621,6 +649,11 @@ namespace Unity.Burst.Editor
         // actually changed, so the extra notifications are cheap.
         private static void NotifyBurstAboutAllEditorAssemblies()
         {
+            // The bootstrap domain loads no script assemblies, and the plugin folders they reference are not known yet.
+            var scriptAssembliesDir = Path.GetFullPath("Library/ScriptAssemblies");
+            if (!IsAnyAssemblyLoadedFrom(scriptAssembliesDir))
+                return;
+
             var assemblyFolders = GetAssemblyFolders();
 
             BurstCompiler.NotifyCompilationStarted(
@@ -631,8 +664,7 @@ namespace Unity.Burst.Editor
             // CompilationPipeline.GetAssemblies(Editor) — under MSBU it returns empty at both
             // BurstLoader.Initialize time and afterAssemblyReload. Use NotifyAssemblyCompilationNotRequired
             // (not …Finished) — it registers the assembly with Burst without overwriting the
-            // defines the Burst server already learned from the last OnBuildFinished.
-            var scriptAssembliesDir = Path.GetFullPath("Library/ScriptAssemblies");
+            // defines the Burst server already learned from the last compile.
             if (Directory.Exists(scriptAssembliesDir))
             {
                 foreach (var dllPath in Directory.EnumerateFiles(scriptAssembliesDir, "*.dll"))
@@ -644,89 +676,22 @@ namespace Unity.Burst.Editor
             BurstCompiler.NotifyCompilationFinished();
         }
 
-        // Ported from neutron BurstLoader.cs OnBuildFinished. Called under MSBU via
-        // CompilationPipeline.buildFinished once the whole compile is done. It's the MSBU
-        // counterpart to OnCompilationStarted/OnAssemblyCompilationFinished/OnCompilationFinished
-        // which never fire under MSBU.
-        private static void OnBuildFinished(UnityEditor.Compilation.CompilationDoneResult result)
+        private static bool IsAnyAssemblyLoadedFrom(string directory)
         {
-            if (!result.IsForEditor)
+            foreach (var assembly in UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies())
             {
-                if (IsDebugging)
-                {
-                    UnityEngine.Debug.Log($"{DateTime.UtcNow} Burst - ignoring finished compilation because it's !IsForEditor");
-                }
-                return;
-            }
+                if (assembly.IsDynamic)
+                    continue;
 
-            var assemblyFolders = GetAssemblyFolders();
-
-            bool AssemblyExists(string assemblyName)
-            {
-                foreach (var assemblyFolder in assemblyFolders)
+                var assemblyPath = assembly.GetLoadedAssemblyPath();
+                if (!string.IsNullOrEmpty(assemblyPath) &&
+                    string.Equals(Path.GetDirectoryName(Path.GetFullPath(assemblyPath)), directory, StringComparison.OrdinalIgnoreCase))
                 {
-                    var assemblyPath = Path.Combine(assemblyFolder, assemblyName + ".dll");
-                    if (File.Exists(assemblyPath))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            // CompilationDoneResult has no per-assembly compile status — approximate Bee's HasCompileErrors guard with the whole-build bit.
-            var changedAssemblies = new Dictionary<string, IReadOnlyList<string>>();
-            if (result.IsSuccessful)
-            {
-                // Success: every DLL in AssemblyDefines is current, so notify all that exist on disk.
-                foreach (var kv in result.AssemblyDefines)
-                {
-                    if (AssemblyExists(kv.Key))
-                    {
-                        changedAssemblies.Add(kv.Key, kv.Value);
-                    }
-                }
-            }
-            else
-            {
-                // Failure: some DLLs on disk are stale, so only notify the ones MSBuild actually wrote (UpdatedFiles).
-                foreach (var path in result.UpdatedFiles)
-                {
-                    if (!path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    var name = Path.GetFileNameWithoutExtension(path);
-                    if (result.AssemblyDefines.TryGetValue(name, out var defines) && AssemblyExists(name))
-                    {
-                        changedAssemblies.Add(name, defines);
-                    }
+                    return true;
                 }
             }
 
-            BurstCompiler.NotifyCompilationStarted(
-                assemblyFolders,
-                BurstAssemblyDisable.GetDisabledAssemblies(BurstAssemblyDisable.DisableType.Editor, ""));
-
-            if (IsDebugging)
-            {
-                UnityEngine.Debug.Log($"{DateTime.UtcNow} Burst - compilation finished");
-            }
-
-            foreach (var assembly in changedAssemblies)
-            {
-                var defines = assembly.Value;
-                if (IsDebugging)
-                {
-                    UnityEngine.Debug.Log($"{DateTime.UtcNow} Burst - compilation finished for '{assembly.Key}' with '{string.Join(";", defines)}'");
-                }
-                var definesArr = new string[defines.Count];
-                for (var i = 0; i < defines.Count; i++)
-                {
-                    definesArr[i] = defines[i];
-                }
-                BurstCompiler.NotifyAssemblyCompilationFinished(assembly.Key, definesArr);
-            }
-
-            BurstCompiler.NotifyCompilationFinished();
+            return false;
         }
 
         private static bool TryGetOptionsFromMember(MemberInfo member, out string flagsOut)

@@ -4,9 +4,11 @@
 
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Bindings;
 
 namespace Unity.UIToolkit.Editor;
 
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 sealed class CanvasSettings : UISelectionObject
 {
     public delegate void CanvasSettingsChangedDelegate(CanvasSettings settings, Vector2 canvasSize, Vector2 offset, float zoomFactor);
@@ -22,6 +24,7 @@ sealed class CanvasSettings : UISelectionObject
     public static readonly ScaleMode DefaultScaleMode = ScaleMode.StretchToFill;
 
     [SerializeField] Vector2 m_CanvasSize = DefaultSize;
+    [SerializeField] bool m_MatchGameView;
     [SerializeField] Vector2 m_Offset = DefaultOffset;
     [SerializeField] float m_ZoomFactor = DefaultZoomFactor;
     [SerializeField] CanvasBackgroundType m_BackgroundType = DefaultBackgroundType;
@@ -30,6 +33,9 @@ sealed class CanvasSettings : UISelectionObject
     [SerializeField] Texture2D m_BackgroundImage = DefaultBackgroundImage;
     [SerializeField] float m_BackgroundImageOpacity = DefaultBackgroundOpacity;
     [SerializeField] ScaleMode m_BackgroundImageScaleMode = DefaultScaleMode;
+    // A scene camera cannot be referenced from the stored settings, so it is found again by name.
+    [SerializeField] string m_BackgroundCameraName;
+    [SerializeField] float m_BackgroundCameraOpacity = DefaultBackgroundOpacity;
 
     public event CanvasSettingsChangedDelegate CanvasSettingsChanged;
     public event CanvasBackgroundSettingsChangedDelegate CanvasBackgroundChanged;
@@ -49,6 +55,19 @@ sealed class CanvasSettings : UISelectionObject
     }
 
     public Vector2 ScaledSize => CanvasSize * ZoomFactor;
+
+    public bool MatchGameView
+    {
+        get => m_MatchGameView;
+        set
+        {
+            if (m_MatchGameView == value)
+                return;
+
+            m_MatchGameView = value;
+            SendCanvasChangedEvent();
+        }
+    }
 
     public Vector2 Offset
     {
@@ -147,6 +166,47 @@ sealed class CanvasSettings : UISelectionObject
         }
     }
 
+    public string BackgroundCameraName
+    {
+        get => m_BackgroundCameraName;
+        set
+        {
+            if (m_BackgroundCameraName == value)
+                return;
+            m_BackgroundCameraName = value;
+            SendCanvasBackgroundTypeChangedEvent();
+        }
+    }
+
+    public float BackgroundCameraOpacity
+    {
+        get => m_BackgroundCameraOpacity;
+        set
+        {
+            if (Mathf.Approximately(m_BackgroundCameraOpacity, value))
+                return;
+            m_BackgroundCameraOpacity = value;
+            SendCanvasBackgroundTypeChangedEvent();
+        }
+    }
+
+    /// <summary>
+    /// The enabled camera named <see cref="BackgroundCameraName"/>, or <see langword="null"/> when there is none.
+    /// </summary>
+    public Camera FindBackgroundCamera()
+    {
+        if (string.IsNullOrEmpty(m_BackgroundCameraName))
+            return null;
+
+        foreach (var camera in Camera.allCameras)
+        {
+            if (camera.name == m_BackgroundCameraName)
+                return camera;
+        }
+
+        return null;
+    }
+
     public void LoadStorage(string storageKey)
     {
         var storage = EditorUserSettings.GetConfigValue(storageKey);
@@ -164,6 +224,7 @@ sealed class CanvasSettings : UISelectionObject
     void ResetToDefaultValues()
     {
         CanvasSize = DefaultSize;
+        MatchGameView = false;
         Offset = DefaultOffset;
         ZoomFactor = DefaultZoomFactor;
         BackgroundType = DefaultBackgroundType;
@@ -172,6 +233,8 @@ sealed class CanvasSettings : UISelectionObject
         BackgroundImage = DefaultBackgroundImage;
         BackgroundImageOpacity = DefaultBackgroundOpacity;
         BackgroundImageScaleMode = DefaultScaleMode;
+        BackgroundCameraName = null;
+        BackgroundCameraOpacity = DefaultBackgroundOpacity;
     }
 
     internal void SendCanvasChangedEvent()

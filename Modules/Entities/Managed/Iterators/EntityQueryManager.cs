@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using Unity.Burst;
 using Unity.Burst.CompilerServices;
 using Unity.Collections;
@@ -22,8 +23,9 @@ namespace Unity.Entities
     [NativeContainer]
     internal struct EntityQuerySafetyHandles
     {
-        // All IJobChunk jobs have a EntityManager safety handle to ensure that BeforeStructuralChange throws an error if
-        // jobs without any other safety handles are still running (haven't been synced).
+        // All jobs that read a query's records (IJobChunk and the jobs behind the async EntityQuery methods) have an
+        // EntityManager safety handle to ensure that BeforeStructuralChange throws an error if they are still running
+        // (haven't been synced). A structural change can free the records of a disposed query.
         internal AtomicSafetyHandle m_Safety0;
         // Enableable components from query used to schedule job. To add more handles here, you must also increase
         // EntityQueryManager.MAX_ENABLEABLE_COMPONENTS_PER_QUERY.
@@ -64,7 +66,7 @@ namespace Unity.Entities
     [GenerateTestsForBurstCompatibility]
     internal unsafe struct EntityQueryManager
     {
-        [NoAutoStaticsCleanup] // DefaultWorldInitialization sets it before it creates worlds.
+        [NoAutoStaticsCleanup] // EntitiesInitialization sets it before any world is created.
         internal static int EntityQueryDataChunkAllocatorBudgetInBytes = EntityComponentStore.kDefaultAllocatorBudgetInBytes;
 
         private ComponentDependencyManager*    m_DependencyManager;
@@ -82,6 +84,407 @@ namespace Unity.Entities
         private TypeIndex m_systemInstanceTypeIndex;
         private TypeIndex m_chunkHeaderTypeIndex;
 
+        private UnsafeList<QueryCacheEntry> m_QueryCacheEntries;
+        private UntypedUnsafeParallelHashMap m_QueryCacheEntriesByHashUntyped;
+        private UnsafeList<QueryCombinedEntry> m_QueryCombinedEntries;
+        private MemoryLabel m_CacheLabel;
+        private MemoryLabel m_CacheRecordsLabel;
+        private byte m_HasUnusedCacheEntries; // set when an entry's last query goes away
+
+        internal QueryCacheEntry* GetCacheEntry(int index)
+        {
+            if (index >= 0 && index < m_QueryCacheEntries.Length && m_QueryCacheEntries.Ptr[index].DescriptionBlock != null)
+                return m_QueryCacheEntries.Ptr + index;
+            return null;
+        }
+
+        internal int QueryCacheEntryCount
+        {
+            get
+            {
+                var count = 0;
+                for (int e = 0; e < m_QueryCacheEntries.Length; ++e)
+                {
+                    if (m_QueryCacheEntries.Ptr[e].DescriptionBlock != null)
+                        ++count;
+                }
+                for (int e = 0; e < m_QueryCombinedEntries.Length; ++e)
+                {
+                    if (m_QueryCombinedEntries.Ptr[e].Entries != null)
+                        ++count;
+                }
+                return count;
+            }
+        }
+
+        internal QueryMemoryStats GetMemoryStats(EntityComponentStore* ecs)
+        {
+            var stats = new QueryMemoryStats
+            {
+                ArchetypeCount = ecs->m_Archetypes.Length,
+                QueryCount = m_EntityQueryDatas.Length,
+                BudgetBytes = m_EntityQueryDataChunkAllocator.AllocatedBytes,
+                ArchetypeSlotBytes = (long)ecs->m_Archetypes.Capacity * sizeof(Archetype*) +
+                    (long)ecs->m_ArchetypeCreationLog.Capacity * sizeof(ArchetypeRef),
+            };
+
+            for (var i = 0; i < ecs->m_Archetypes.Length; ++i)
+            {
+                var archetype = ecs->m_Archetypes.Ptr[i];
+                if (archetype->EntityCount == 0)
+                    stats.EmptyArchetypeCount++;
+            }
+
+            stats.CacheBytes = (long)m_QueryCacheEntries.Capacity * sizeof(QueryCacheEntry) +
+                (long)m_QueryCombinedEntries.Capacity * sizeof(QueryCombinedEntry);
+            for (var i = 0; i < m_QueryCacheEntries.Length; ++i)
+            {
+                var entry = m_QueryCacheEntries.Ptr + i;
+                if (entry->DescriptionBlock == null)
+                    continue;
+                stats.CacheEntryCount++;
+                stats.RecordCount += entry->Records.Length;
+                stats.CacheBytes += sizeof(QueryDescription*) + entry->Description->SizeInBytes +
+                    math.max(entry->Description->TypeCount, 1) + (long)entry->RequiredTypeCount * sizeof(ComponentType) +
+                    GetRecordBytes(entry->Records) + (long)entry->RunningTotals.Capacity * sizeof(int);
+            }
+            for (var i = 0; i < m_QueryCombinedEntries.Length; ++i)
+            {
+                var entry = m_QueryCombinedEntries.Ptr + i;
+                if (entry->Entries == null)
+                    continue;
+                stats.CombinedEntryCount++;
+                stats.RecordCount += entry->Records.Length;
+                stats.CacheBytes += (long)entry->EntryCount * sizeof(int) + (long)entry->RequiredTypeCount * sizeof(ComponentType) +
+                    GetRecordBytes(entry->Records) + (long)entry->RunningTotals.Capacity * sizeof(int);
+            }
+            return stats;
+        }
+
+        static long GetRecordBytes(in UnsafeMatchingArchetypePtrList records)
+        {
+            var bytes = records.AllocatedBytes;
+            for (var i = 0; i < records.Length; ++i)
+                bytes += records.Ptr[i]->AllocationSize;
+            return bytes;
+        }
+
+        internal QueryCombinedEntry* GetCombinedEntry(int index)
+        {
+            if (index >= 0 && index < m_QueryCombinedEntries.Length && m_QueryCombinedEntries.Ptr[index].Entries != null)
+                return m_QueryCombinedEntries.Ptr + index;
+            return null;
+        }
+
+        // Finds the world's cache entry for this description, or creates it with records for every existing archetype that matches.
+        int GetOrCreateCacheEntry(QueryDescription* description, EntityComponentStore* ecs)
+        {
+            ref var entriesByHash = ref UnsafeUtility.As<UntypedUnsafeParallelHashMap, UnsafeParallelMultiHashMap<uint, int>>(ref m_QueryCacheEntriesByHashUntyped);
+            if (entriesByHash.TryGetFirstValue(description->TypesHash, out var index, out var iterator))
+            {
+                do
+                {
+                    var existing = m_QueryCacheEntries.Ptr[index].Description;
+                    if (existing->SizeInBytes == description->SizeInBytes &&
+                        UnsafeUtility.MemCmp(existing, description, description->SizeInBytes) == 0)
+                        return index;
+                }
+                while (entriesByHash.TryGetNextValue(out index, ref iterator));
+            }
+
+            var entry = new QueryCacheEntry();
+            entry.DescriptionBlock = QueryDescription.AllocateCopy(description);
+            var copy = entry.Description;
+
+            var readOnly = (byte*)Memory.Unmanaged.Allocate(math.max(copy->TypeCount, 1), 1, m_CacheLabel);
+            UnsafeUtility.MemSet(readOnly, (byte)ComponentType.AccessMode.ReadOnly, copy->TypeCount);
+            ulong allBloomFilterMask = 0;
+            for (int i = 0; i < copy->AllCount; ++i)
+                allBloomFilterMask |= TypeManager.GetTypeInfo(copy->All[i]).BloomFilterMask;
+            entry.ArchetypeQuery = new ArchetypeQuery
+            {
+                All = copy->All, AllAccessMode = readOnly, AllCount = copy->AllCount, AllBloomFilterMask = allBloomFilterMask,
+                Any = copy->Any, AnyAccessMode = readOnly, AnyCount = copy->AnyCount,
+                None = copy->None, NoneAccessMode = readOnly, NoneCount = copy->NoneCount,
+                Disabled = copy->Disabled, DisabledAccessMode = readOnly, DisabledCount = copy->DisabledCount,
+                Absent = copy->Absent, AbsentAccessMode = readOnly, AbsentCount = copy->AbsentCount,
+                Present = copy->Present, PresentAccessMode = readOnly, PresentCount = copy->PresentCount,
+                Options = copy->Options,
+            };
+
+            var scratchSize = 2 * (copy->TypeCount + 1) * sizeof(ComponentType) + 64;
+            var scratchBuffer = stackalloc byte[scratchSize];
+            var scratchAllocator = new UnsafeScratchAllocator(scratchBuffer, scratchSize);
+            var requiredTypes = CalculateRequiredComponentsFromQuery(ref scratchAllocator, &entry.ArchetypeQuery, 1, out entry.RequiredTypeCount);
+            entry.RequiredTypes = (ComponentType*)CacheAllocate<ComponentType>(entry.RequiredTypeCount, requiredTypes);
+
+            entry.Records = new UnsafeMatchingArchetypePtrList(ecs);
+            for (int slot = 0; slot < ecs->m_Archetypes.Length; ++slot)
+            {
+                var archetype = ecs->m_Archetypes.Ptr[slot];
+                if (archetype != null && IsMatchingArchetype(archetype, &entry.ArchetypeQuery))
+                {
+                    CheckRecordInCreationOrder(entry.Records, archetype);
+                    entry.Records.Add(CreateRecord(archetype, ref entry.ArchetypeQuery, entry.RequiredTypes, entry.RequiredTypeCount));
+                }
+            }
+            entry.FirstUnseenVersion = ecs->m_NextArchetypeVersion;
+            entry.RunningTotals = new UnsafeList<int>(0, Allocator.Persistent);
+
+            for (index = 0; index < m_QueryCacheEntries.Length; ++index)
+            {
+                if (m_QueryCacheEntries.Ptr[index].DescriptionBlock == null)
+                    break;
+            }
+            if (index == m_QueryCacheEntries.Length)
+                m_QueryCacheEntries.Add(entry);
+            else
+                m_QueryCacheEntries.Ptr[index] = entry;
+            entriesByHash.Add(description->TypesHash, index);
+            return index;
+        }
+
+        void* CacheAllocate<T>(int count, void* source) where T : unmanaged
+        {
+            var bytes = count * sizeof(T);
+            if (bytes == 0)
+                return null;
+            var pointer = Memory.Unmanaged.Allocate(bytes, UnsafeUtility.AlignOf<T>(), m_CacheLabel);
+            UnsafeUtility.MemCpy(pointer, source, bytes);
+            return pointer;
+        }
+
+        // Builds the record of an archetype that matches archetypeQuery, with positions keyed by requiredComponents.
+        MatchingArchetype* CreateRecord(Archetype* archetype, ref ArchetypeQuery archetypeQuery, ComponentType* requiredComponents, int requiredComponentsCount)
+        {
+            var match = MatchingArchetype.Create(m_CacheRecordsLabel, archetype, archetypeQuery, requiredComponentsCount);
+            return FillRecord(match, ref archetypeQuery, requiredComponents, requiredComponentsCount);
+        }
+
+        // Adds records for the archetypes in the creation log. Runs at the end of every structural change that created archetypes.
+        internal void CatchUpQueryCache(EntityComponentStore* ecs)
+        {
+            var log = ecs->m_ArchetypeCreationLog;
+            for (int e = 0; e < m_QueryCacheEntries.Length; ++e)
+            {
+                var entry = m_QueryCacheEntries.Ptr + e;
+                if (entry->DescriptionBlock == null)
+                    continue;
+                for (int i = 0; i < log.Length; ++i)
+                {
+                    // An entry created during this structural change has already seen the archetypes created before it.
+                    if (log.Ptr[i].Version < entry->FirstUnseenVersion)
+                        continue;
+
+                    var archetype = ecs->GetArchetype(log.Ptr[i]);
+                    if (archetype != null && IsMatchingArchetype(archetype, &entry->ArchetypeQuery))
+                    {
+                        CheckRecordInCreationOrder(entry->Records, archetype);
+                        entry->Records.Add(CreateRecord(archetype, ref entry->ArchetypeQuery, entry->RequiredTypes, entry->RequiredTypeCount));
+                        if (entry->Mask.IsCreated())
+                            archetype->SetMask(entry->Mask);
+                    }
+                }
+                entry->FirstUnseenVersion = ecs->m_NextArchetypeVersion;
+            }
+
+            for (int e = 0; e < m_QueryCombinedEntries.Length; ++e)
+            {
+                var combined = m_QueryCombinedEntries.Ptr + e;
+                if (combined->Entries == null)
+                    continue;
+                for (int i = 0; i < log.Length; ++i)
+                {
+                    if (log.Ptr[i].Version < combined->FirstUnseenVersion)
+                        continue;
+
+                    var archetype = ecs->GetArchetype(log.Ptr[i]);
+                    if (archetype != null)
+                        AddCombinedRecordIfMatching(combined, archetype);
+                }
+                combined->FirstUnseenVersion = ecs->m_NextArchetypeVersion;
+            }
+        }
+
+        // Finds the world's combined entry for these description entries and combined types, or creates it with records
+        // for every existing archetype that matches. Few queries have several descriptions, so a linear search is enough.
+        int GetOrCreateCombinedEntry(int* entries, int entryCount, ComponentType* requiredComponents, int requiredComponentCount, EntityComponentStore* ecs)
+        {
+            // Records only depend on which combined types are excluded, so the other access modes don't take part in the key.
+            var requiredTypes = stackalloc ComponentType[requiredComponentCount];
+            for (int i = 0; i < requiredComponentCount; ++i)
+            {
+                requiredTypes[i] = requiredComponents[i];
+                if (requiredTypes[i].AccessModeType != ComponentType.AccessMode.Exclude)
+                    requiredTypes[i].AccessModeType = ComponentType.AccessMode.ReadOnly;
+            }
+
+            for (int e = 0; e < m_QueryCombinedEntries.Length; ++e)
+            {
+                var existing = m_QueryCombinedEntries.Ptr + e;
+                if (existing->Entries != null && existing->EntryCount == entryCount && existing->RequiredTypeCount == requiredComponentCount &&
+                    UnsafeUtility.MemCmp(existing->Entries, entries, sizeof(int) * entryCount) == 0 &&
+                    UnsafeUtility.MemCmp(existing->RequiredTypes, requiredTypes, sizeof(ComponentType) * requiredComponentCount) == 0)
+                    return e;
+            }
+
+            var combined = new QueryCombinedEntry
+            {
+                Entries = (int*)CacheAllocate<int>(entryCount, entries),
+                EntryCount = entryCount,
+                RequiredTypes = (ComponentType*)CacheAllocate<ComponentType>(requiredComponentCount, requiredTypes),
+                RequiredTypeCount = requiredComponentCount,
+                Records = new UnsafeMatchingArchetypePtrList(ecs),
+                RunningTotals = new UnsafeList<int>(0, Allocator.Persistent),
+            };
+            for (int slot = 0; slot < ecs->m_Archetypes.Length; ++slot)
+            {
+                var archetype = ecs->m_Archetypes.Ptr[slot];
+                if (archetype != null)
+                    AddCombinedRecordIfMatching(&combined, archetype);
+            }
+            combined.FirstUnseenVersion = ecs->m_NextArchetypeVersion;
+            for (int i = 0; i < entryCount; ++i)
+                m_QueryCacheEntries.Ptr[entries[i]].QueryCount++;
+
+            int index;
+            for (index = 0; index < m_QueryCombinedEntries.Length; ++index)
+            {
+                if (m_QueryCombinedEntries.Ptr[index].Entries == null)
+                    break;
+            }
+            if (index == m_QueryCombinedEntries.Length)
+                m_QueryCombinedEntries.Add(combined);
+            else
+                m_QueryCombinedEntries.Ptr[index] = combined;
+            return index;
+        }
+
+        void AddCombinedRecordIfMatching(QueryCombinedEntry* combined, Archetype* archetype)
+        {
+            for (int i = 0; i < combined->EntryCount; ++i)
+            {
+                var entry = m_QueryCacheEntries.Ptr + combined->Entries[i];
+                if (IsMatchingArchetype(archetype, &entry->ArchetypeQuery))
+                {
+                    CheckRecordInCreationOrder(combined->Records, archetype);
+                    combined->Records.Add(CreateRecord(archetype, ref entry->ArchetypeQuery, combined->RequiredTypes, combined->RequiredTypeCount));
+                    if (combined->Mask.IsCreated())
+                        archetype->SetMask(combined->Mask);
+                    return;
+                }
+            }
+        }
+
+        internal int* CreateCacheEntries(QueryDescription** descriptions, int descriptionCount, ComponentType* requiredComponents, int requiredComponentCount, EntityComponentStore* ecs)
+        {
+            var memoryLabel = Memory.CreateLabel("Entities", "Query.EntityQuery", Allocator.Persistent);
+            var slotCount = descriptionCount > 1 ? descriptionCount + 1 : descriptionCount;
+            var cacheEntries = (int*)Memory.Unmanaged.Allocate(sizeof(int) * slotCount, 4, memoryLabel);
+            for (int i = 0; i < descriptionCount; ++i)
+            {
+                cacheEntries[i] = GetOrCreateCacheEntry(descriptions[i], ecs);
+                m_QueryCacheEntries.Ptr[cacheEntries[i]].QueryCount++;
+            }
+            if (descriptionCount > 1)
+            {
+                cacheEntries[descriptionCount] = GetOrCreateCombinedEntry(cacheEntries, descriptionCount, requiredComponents, requiredComponentCount, ecs);
+                m_QueryCombinedEntries.Ptr[cacheEntries[descriptionCount]].QueryCount++;
+            }
+            return cacheEntries;
+        }
+
+        // Takes a reference to the cache entry of the builder's only description, for a native EntityQuery
+        internal int AcquireCacheEntry(EntityQueryBuilder builder, EntityComponentStore* ecs)
+        {
+            builder.FinalizeQueryInternal();
+            var buffer = stackalloc byte[2048];
+            var scratchAllocator = new UnsafeScratchAllocator(buffer, 2048);
+            var archetypeQuery = CreateArchetypeQueries(ref scratchAllocator, builder);
+            var descriptions = QueryDescription.Allocate(archetypeQuery, 1);
+            var index = GetOrCreateCacheEntry(descriptions[0], ecs);
+            m_QueryCacheEntries.Ptr[index].QueryCount++;
+            QueryDescription.Free(descriptions);
+            return index;
+        }
+
+        internal void ReleaseCacheEntry(int index)
+        {
+            if (--m_QueryCacheEntries.Ptr[index].QueryCount == 0)
+                m_HasUnusedCacheEntries = 1;
+        }
+
+        // The entries stay until the next structural change, so a query recreated before then finds them again.
+        internal void ReleaseCacheEntries(int* cacheEntries, int descriptionCount)
+        {
+            for (int i = 0; i < descriptionCount; ++i)
+            {
+                if (--m_QueryCacheEntries.Ptr[cacheEntries[i]].QueryCount == 0)
+                    m_HasUnusedCacheEntries = 1;
+            }
+            if (descriptionCount > 1 && --m_QueryCombinedEntries.Ptr[cacheEntries[descriptionCount]].QueryCount == 0)
+                m_HasUnusedCacheEntries = 1;
+
+            var memoryLabel = Memory.CreateLabel("Entities", "Query.EntityQuery", Allocator.Persistent);
+            Memory.Unmanaged.Free(cacheEntries, memoryLabel);
+        }
+
+        // Frees the entries no query uses. Only call it when no job can be reading records, such as at the start of a
+        // structural change. Entries with a mask stay, since nothing tells when the mask is no longer used.
+        internal void FreeUnusedCacheEntries()
+        {
+            if (m_HasUnusedCacheEntries == 0)
+                return;
+            m_HasUnusedCacheEntries = 0;
+
+            // Combined entries first, so the description entries they release are freed in the same pass.
+            for (int e = 0; e < m_QueryCombinedEntries.Length; ++e)
+            {
+                var combined = m_QueryCombinedEntries.Ptr + e;
+                if (combined->Entries == null || combined->QueryCount != 0 || combined->Mask.IsCreated())
+                    continue;
+                for (int i = 0; i < combined->EntryCount; ++i)
+                    m_QueryCacheEntries.Ptr[combined->Entries[i]].QueryCount--;
+                FreeCombinedEntry(combined);
+            }
+
+            for (int e = 0; e < m_QueryCacheEntries.Length; ++e)
+            {
+                var entry = m_QueryCacheEntries.Ptr + e;
+                if (entry->DescriptionBlock == null || entry->QueryCount != 0 || entry->Mask.IsCreated())
+                    continue;
+                ref var entriesByHash = ref UnsafeUtility.As<UntypedUnsafeParallelHashMap, UnsafeParallelMultiHashMap<uint, int>>(ref m_QueryCacheEntriesByHashUntyped);
+                entriesByHash.Remove(entry->Description->TypesHash, e);
+                FreeCacheEntry(entry);
+            }
+        }
+
+        void FreeRecords(UnsafeMatchingArchetypePtrList records)
+        {
+            for (int i = 0; i < records.Length; ++i)
+                Memory.Unmanaged.Free(records.Ptr[i], m_CacheRecordsLabel);
+            records.Dispose();
+        }
+
+        void FreeCacheEntry(QueryCacheEntry* entry)
+        {
+            FreeRecords(entry->Records);
+            entry->RunningTotals.Dispose();
+            Memory.Unmanaged.Free(entry->ArchetypeQuery.AllAccessMode, m_CacheLabel);
+            Memory.Unmanaged.Free(entry->RequiredTypes, m_CacheLabel);
+            QueryDescription.Free(entry->DescriptionBlock);
+            *entry = default;
+        }
+
+        void FreeCombinedEntry(QueryCombinedEntry* combined)
+        {
+            FreeRecords(combined->Records);
+            combined->RunningTotals.Dispose();
+            Memory.Unmanaged.Free(combined->Entries, m_CacheLabel);
+            Memory.Unmanaged.Free(combined->RequiredTypes, m_CacheLabel);
+            *combined = default;
+        }
+
 
 
         public static void Create(EntityQueryManager* queryManager, ComponentDependencyManager* dependencyManager)
@@ -96,6 +499,13 @@ namespace Unity.Entities
             queryManager->m_prefabTypeIndex = TypeManager.GetTypeIndex<Prefab>();
             queryManager->m_systemInstanceTypeIndex = TypeManager.GetTypeIndex<SystemInstance>();
             queryManager->m_chunkHeaderTypeIndex = TypeManager.GetTypeIndex<ChunkHeader>();
+            queryManager->m_QueryCacheEntries = new UnsafeList<QueryCacheEntry>(0, Allocator.Persistent);
+            ref var entriesByHash = ref UnsafeUtility.As<UntypedUnsafeParallelHashMap, UnsafeParallelMultiHashMap<uint, int>>(ref queryManager->m_QueryCacheEntriesByHashUntyped);
+            entriesByHash = new UnsafeParallelMultiHashMap<uint, int>(256, Allocator.Persistent);
+            queryManager->m_QueryCombinedEntries = new UnsafeList<QueryCombinedEntry>(0, Allocator.Persistent);
+            queryManager->m_CacheLabel = Memory.CreateLabel("Entities", "Query.Cache", Allocator.Persistent);
+            queryManager->m_CacheRecordsLabel = Memory.CreateLabel("Entities", "Query.CacheRecords", Allocator.Persistent);
+            queryManager->m_HasUnusedCacheEntries = 0;
 
         }
 
@@ -108,11 +518,21 @@ namespace Unity.Entities
         {
             ref var entityQueryCache = ref UnsafeUtility.As<UntypedUnsafeParallelHashMap, UnsafeParallelMultiHashMap<int, int>>(ref m_EntityQueryDataCacheUntyped);
             entityQueryCache.Dispose();
-            for (var g = 0; g < m_EntityQueryDatas.Length; ++g)
-            {
-                m_EntityQueryDatas.Ptr[g]->Dispose();
-            }
             m_EntityQueryDatas.Dispose();
+            for (int e = 0; e < m_QueryCacheEntries.Length; ++e)
+            {
+                if (m_QueryCacheEntries.Ptr[e].DescriptionBlock != null)
+                    FreeCacheEntry(m_QueryCacheEntries.Ptr + e);
+            }
+            m_QueryCacheEntries.Dispose();
+            ref var entriesByHash = ref UnsafeUtility.As<UntypedUnsafeParallelHashMap, UnsafeParallelMultiHashMap<uint, int>>(ref m_QueryCacheEntriesByHashUntyped);
+            entriesByHash.Dispose();
+            for (int e = 0; e < m_QueryCombinedEntries.Length; ++e)
+            {
+                if (m_QueryCombinedEntries.Ptr[e].Entries != null)
+                    FreeCombinedEntry(m_QueryCombinedEntries.Ptr + e);
+            }
+            m_QueryCombinedEntries.Dispose();
             //@TODO: Need to wait for all job handles to be completed..
             m_EntityQueryDataChunkAllocator.Dispose();
         }
@@ -648,6 +1068,8 @@ namespace Unity.Entities
 
         public EntityQuery CreateEntityQuery(EntityDataAccess* access, EntityQueryBuilder query)
         {
+            int createdQueryId = -1;
+            using var creationScope = new EntityQueryProfiler.CreationScope(access->EntityComponentStore, &createdQueryId);
             query.FinalizeQueryInternal();
 
             var buffer = stackalloc byte[2048];
@@ -656,20 +1078,22 @@ namespace Unity.Entities
 
             var indexData = query._builderDataPtr->_indexData;
             var outRequiredComponents = CalculateRequiredComponentsFromQuery(ref scratchAllocator, archetypeQuery, indexData.Length, out var outRequiredComponentsCount);
-            return CreateEntityQuery(access, archetypeQuery, indexData.Length, outRequiredComponents, outRequiredComponentsCount);
+            var result = CreateEntityQuery(access, archetypeQuery, indexData.Length, outRequiredComponents, outRequiredComponentsCount);
+            createdQueryId = result.__impl->_QueryData->QueryDataIndex;
+            return result;
         }
 
         public EntityQuery CreateEntityQuery(EntityDataAccess* access, ComponentType* inRequiredComponents, int inRequiredComponentsCount)
         {
+            int createdQueryId = -1;
+            using var creationScope = new EntityQueryProfiler.CreationScope(access->EntityComponentStore, &createdQueryId);
             var buffer = stackalloc byte[1024];
             var scratchAllocator = new UnsafeScratchAllocator(buffer, 1024);
             var archetypeQueries = CreateArchetypeQueries(ref scratchAllocator, inRequiredComponents, inRequiredComponentsCount);
-            var outRequiredComponents = (ComponentType*)scratchAllocator.Allocate<ComponentType>(inRequiredComponentsCount + 1);
-            outRequiredComponents[0] = ComponentType.ReadWrite<Entity>();
-            for (int i = 0; i != inRequiredComponentsCount; i++)
-                SortingUtilities.InsertSorted(outRequiredComponents + 1, i, inRequiredComponents[i]);
-            var outRequiredComponentsCount = inRequiredComponentsCount + 1;
-            return CreateEntityQuery(access, archetypeQueries, 1, outRequiredComponents, outRequiredComponentsCount);
+            var outRequiredComponents = CalculateRequiredComponentsFromQuery(ref scratchAllocator, archetypeQueries, 1, out var outRequiredComponentsCount);
+            var result = CreateEntityQuery(access, archetypeQueries, 1, outRequiredComponents, outRequiredComponentsCount);
+            createdQueryId = result.__impl->_QueryData->QueryDataIndex;
+            return result;
         }
 
         bool Matches(EntityQueryData* queryData, ArchetypeQuery* archetypeQueries, int archetypeQueryCount,
@@ -728,6 +1152,8 @@ namespace Unity.Entities
 
             if (queryData == null)
             {
+                if (EntityQueryProfiler.ShouldRecord)
+                    EntityQueryProfiler.MarkCreationBuilt(access->EntityComponentStore);
                 // Validate input archetype queries
                 bool queryIgnoresEnabledBits =
                     (archetypeQueries[0].Options & EntityQueryOptions.IgnoreComponentEnabledState) != 0;
@@ -848,25 +1274,14 @@ namespace Unity.Entities
                     queryData->ArchetypeQueries[i].PresentAccessMode = (byte*)ChunkAllocate<byte>(queryData->ArchetypeQueries[i].PresentCount, archetypeQueries[i].PresentAccessMode);
                 }
 
-                var ecs = access->EntityComponentStore;
-
-                queryData->MatchingArchetypes = new UnsafeMatchingArchetypePtrList(access->EntityComponentStore);
-                queryData->CreateMatchingChunkCache(access->EntityComponentStore);
-
-                queryData->EntityQueryMask = new EntityQueryMask();
-
-                for (var i = 0; i < ecs->m_Archetypes.Length; ++i)
-                {
-                    var archetype = ecs->m_Archetypes.Ptr[i];
-                    AddArchetypeIfMatching(archetype, queryData);
-                }
-
+                queryData->QueryDataIndex = m_EntityQueryDatas.Length;
                 entityQueryCache.Add(hash, m_EntityQueryDatas.Length);
                 m_EntityQueryDatas.Add(queryData);
-                queryData->InvalidateChunkCache();
             }
 
-            return EntityQuery.Construct(queryData, access);
+            var descriptions = QueryDescription.Allocate(archetypeQueries, archetypeQueryCount);
+            var cacheEntries = CreateCacheEntries(descriptions, archetypeQueryCount, requiredComponents, requiredComponentCount, access->EntityComponentStore);
+            return EntityQuery.Construct(queryData, access, descriptions, archetypeQueryCount, cacheEntries);
         }
 
         internal static bool CanMatchGameObjects(in ArchetypeQuery archetypeQuery)
@@ -961,54 +1376,74 @@ namespace Unity.Entities
             }
         }
 
-        public void AddAdditionalArchetypes(UnsafePtrList<Archetype> archetypeList)
+        [ExcludeFromBurstCompatTesting("Returns managed string")]
+        internal string GetQueryDescriptionForProfiler(int queryDataIndex)
         {
-            for (int i = 0; i < archetypeList.Length; i++)
+            if (queryDataIndex < 0 || queryDataIndex >= m_EntityQueryDatas.Length)
+                return string.Empty;
+
+            var queryData = m_EntityQueryDatas.Ptr[queryDataIndex];
+            var description = new StringBuilder();
+            for (var i = 0; i < queryData->ArchetypeQueryCount; ++i)
             {
-                for (var g = 0; g < m_EntityQueryDatas.Length; ++g)
-                {
-                    var grp = m_EntityQueryDatas.Ptr[g];
-                    AddArchetypeIfMatching(archetypeList.Ptr[i], grp);
-                }
+                ref var archetypeQuery = ref queryData->ArchetypeQueries[i];
+                if (i > 0)
+                    description.Append(" | ");
+
+                var start = description.Length;
+                AppendTypesForProfiler(description, "All", archetypeQuery.All, archetypeQuery.AllAccessMode, archetypeQuery.AllCount);
+                AppendTypesForProfiler(description, "Any", archetypeQuery.Any, archetypeQuery.AnyAccessMode, archetypeQuery.AnyCount);
+                AppendTypesForProfiler(description, "None", archetypeQuery.None, null, archetypeQuery.NoneCount);
+                AppendTypesForProfiler(description, "Disabled", archetypeQuery.Disabled, archetypeQuery.DisabledAccessMode, archetypeQuery.DisabledCount);
+                AppendTypesForProfiler(description, "Absent", archetypeQuery.Absent, null, archetypeQuery.AbsentCount);
+                AppendTypesForProfiler(description, "Present", archetypeQuery.Present, archetypeQuery.PresentAccessMode, archetypeQuery.PresentCount);
+                if (description.Length == start)
+                    description.Append("<Universal>");
+                if (archetypeQuery.Options != EntityQueryOptions.Default)
+                    description.Append(" Options(").Append(archetypeQuery.Options).Append(')');
             }
+            return description.ToString();
         }
 
-        // This method is called when either a new Archetype or a new EntityQuery is created. If the archetype
-        // matches any of the query's ArchetypeQuery elements, we add a new MatchingArchetype element to the query
-        // corresponding to this archetype.
-        void AddArchetypeIfMatching(Archetype* archetype, EntityQueryData* query)
+        [ExcludeFromBurstCompatTesting("Takes managed StringBuilder")]
+        static void AppendTypesForProfiler(StringBuilder description, string label, TypeIndex* types, byte* accessModes, int count)
         {
-            // TODO(DOTS-8787): Problems can occur if the archetype matches more than one of the query's ArchetypeQuery array.
-            int firstMatchingArchetypeQueryIndex = -1;
-            for (int i = 0; i != query->ArchetypeQueryCount; i++)
-            {
-                if (IsMatchingArchetype(archetype, query->ArchetypeQueries + i))
-                {
-                    firstMatchingArchetypeQueryIndex = i;
-                    break;
-                }
-            }
-            if (firstMatchingArchetypeQueryIndex == -1)
+            if (count == 0)
                 return;
-            ref var archetypeQuery = ref query->ArchetypeQueries[firstMatchingArchetypeQueryIndex];
 
-            var match = MatchingArchetype.Create(ref m_EntityQueryDataChunkAllocator, archetype,
-                archetypeQuery, query->RequiredComponentsCount);
+            if (description.Length > 0 && description[description.Length - 1] != ' ')
+                description.Append(' ');
+            description.Append(label).Append('(');
+            for (var i = 0; i < count; ++i)
+            {
+                if (i > 0)
+                    description.Append(", ");
+
+                // Drop the namespace, but not the dots inside generic arguments.
+                var typeName = TypeManager.GetTypeInfo(types[i]).DebugTypeName.ToString();
+                var nameEnd = 0;
+                while (nameEnd < typeName.Length && typeName[nameEnd] != '<' && typeName[nameEnd] != '[' && typeName[nameEnd] != '`')
+                    ++nameEnd;
+                var nameStart = nameEnd > 0 ? typeName.LastIndexOf('.', nameEnd - 1) + 1 : 0;
+                description.Append(typeName, nameStart, typeName.Length - nameStart);
+                if (accessModes != null && accessModes[i] == (byte)ComponentType.AccessMode.ReadOnly)
+                    description.Append(" [RO]");
+            }
+            description.Append(')');
+        }
+
+        // Builds the MatchingArchetype record of an archetype that matches archetypeQuery, with positions keyed by requiredComponents.
+        MatchingArchetype* FillRecord(MatchingArchetype* match, ref ArchetypeQuery archetypeQuery, ComponentType* requiredComponents, int requiredComponentsCount)
+        {
+            var archetype = match->Archetype;
             var typeIndexInArchetypeArray = match->IndexInArchetype;
 
-            match->Archetype->SetMask(query->EntityQueryMask);
-
-            query->MatchingArchetypes.Add(match);
-
-            // Add back pointer from archetype to query data
-            archetype->MatchingQueryData.Add((IntPtr)query);
-
             var typeComponentIndex = 0;
-            for (var component = 0; component < query->RequiredComponentsCount; ++component)
+            for (var component = 0; component < requiredComponentsCount; ++component)
             {
-                if (query->RequiredComponents[component].AccessModeType != ComponentType.AccessMode.Exclude)
+                if (requiredComponents[component].AccessModeType != ComponentType.AccessMode.Exclude)
                 {
-                    typeComponentIndex = ChunkDataUtility.GetNextIndexInTypeArray(archetype, query->RequiredComponents[component].TypeIndex, typeComponentIndex);
+                    typeComponentIndex = ChunkDataUtility.GetNextIndexInTypeArray(archetype, requiredComponents[component].TypeIndex, typeComponentIndex);
                     Assert.AreNotEqual(-1, typeComponentIndex);
                     typeIndexInArchetypeArray[component] = typeComponentIndex;
                 }
@@ -1089,6 +1524,8 @@ namespace Unity.Entities
 
             // Absent types aren't handled because they're not present in the archetype at all, by definition.
             // Present types aren't handled because we don't care if they're enabled or not, by definition.
+
+            return match;
         }
 
         static bool IsMatchingArchetype(Archetype* archetype, EntityQueryData* query)
@@ -1228,6 +1665,35 @@ namespace Unity.Entities
             return true;
         }
 
+        // Records are in archetype creation order, so a binary search on the creation number finds an archetype's record.
+        public static int FindRecordIndex(in UnsafeMatchingArchetypePtrList records, Archetype* archetype)
+        {
+            var ptrs = records.Ptr;
+            var version = archetype->Version;
+            int low = 0;
+            int high = records.Length - 1;
+            while (low <= high)
+            {
+                int middle = (low + high) >> 1;
+                var middleArchetype = ptrs[middle]->Archetype;
+                if (middleArchetype->Version < version)
+                    low = middle + 1;
+                else if (middleArchetype->Version > version)
+                    high = middle - 1;
+                else
+                    return middleArchetype == archetype ? middle : -1;
+            }
+
+            return -1;
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
+        static void CheckRecordInCreationOrder(in UnsafeMatchingArchetypePtrList records, Archetype* archetype)
+        {
+            if (records.Length > 0 && records.Ptr[records.Length - 1]->Archetype->Version >= archetype->Version)
+                throw new InvalidOperationException("Query cache records must stay in archetype creation order");
+        }
+
         public static int FindMatchingArchetypeIndexForArchetype(ref UnsafeMatchingArchetypePtrList matchingArchetypes,
             Archetype* archetype)
         {
@@ -1249,11 +1715,8 @@ namespace Unity.Entities
                 throw new Exception("You have reached the limit of 1024 unique EntityQueryMasks, and cannot generate any more.");
         }
 
-        public EntityQueryMask GetEntityQueryMask(EntityQueryData* query, EntityComponentStore* ecStore)
+        EntityQueryMask AllocateEntityQueryMask(UnsafeMatchingArchetypePtrList records, EntityComponentStore* ecStore)
         {
-            if (query->EntityQueryMask.IsCreated())
-                return query->EntityQueryMask;
-
             ThrowIfEntityQueryMasksIsGreaterThanLimit(m_EntityQueryMasksAllocated);
 
             var mask = new EntityQueryMask(
@@ -1263,16 +1726,32 @@ namespace Unity.Entities
 
             m_EntityQueryMasksAllocated++;
 
-            int archetypeCount = query->MatchingArchetypes.Length;
-            var ptrs = query->MatchingArchetypes.Ptr;
+            int archetypeCount = records.Length;
+            var ptrs = records.Ptr;
             for (var i = 0; i < archetypeCount; ++i)
             {
                 ptrs[i]->Archetype->QueryMaskArray[mask.Index] |= mask.Mask;
             }
 
-            query->EntityQueryMask = mask;
-
             return mask;
+        }
+
+        // The mask belongs to the query's cache entry, so every query with the same entry shares it. An entry with a
+        // mask is never freed.
+        public EntityQueryMask GetEntityQueryMask(int* cacheEntries, int descriptionCount, EntityComponentStore* ecStore)
+        {
+            if (descriptionCount == 1)
+            {
+                var entry = GetCacheEntry(cacheEntries[0]);
+                if (!entry->Mask.IsCreated())
+                    entry->Mask = AllocateEntityQueryMask(entry->Records, ecStore);
+                return entry->Mask;
+            }
+
+            var combined = GetCombinedEntry(cacheEntries[descriptionCount]);
+            if (!combined->Mask.IsCreated())
+                combined->Mask = AllocateEntityQueryMask(combined->Records, ecStore);
+            return combined->Mask;
         }
     }
 
@@ -1353,6 +1832,31 @@ namespace Unity.Entities
         public static MatchingArchetype* Create(ref BlockAllocator allocator, Archetype* archetype, in ArchetypeQuery archetypeQuery,
             int queryRequiredComponentCount)
         {
+            var header = CreateHeader(archetype, archetypeQuery, queryRequiredComponentCount);
+            return CopyHeader((MatchingArchetype*)allocator.Allocate(header.AllocationSize, 8), header);
+        }
+
+        public static MatchingArchetype* Create(MemoryLabel label, Archetype* archetype, in ArchetypeQuery archetypeQuery,
+            int queryRequiredComponentCount)
+        {
+            var header = CreateHeader(archetype, archetypeQuery, queryRequiredComponentCount);
+            return CopyHeader((MatchingArchetype*)Memory.Unmanaged.Allocate(header.AllocationSize, 8, label), header);
+        }
+
+        // The arrays after the header aren't part of it, so only its fields are copied.
+        static MatchingArchetype* CopyHeader(MatchingArchetype* match, in MatchingArchetype header)
+        {
+            match->Archetype = header.Archetype;
+            match->RequiredComponentCount = header.RequiredComponentCount;
+            match->EnableableComponentsCount_All = header.EnableableComponentsCount_All;
+            match->EnableableComponentsCount_None = header.EnableableComponentsCount_None;
+            match->EnableableComponentsCount_Any = header.EnableableComponentsCount_Any;
+            match->EnableableComponentsCount_Disabled = header.EnableableComponentsCount_Disabled;
+            return match;
+        }
+
+        static MatchingArchetype CreateHeader(Archetype* archetype, in ArchetypeQuery archetypeQuery, int queryRequiredComponentCount)
+        {
             // If the archetype matches any of the non-enableable Any types in this archetypeQuery, we don't need to do
             // any per-entity checks on the enableable Any types. Force the count to zero in this case.
             //
@@ -1389,20 +1893,21 @@ namespace Unity.Entities
             var enableableAnyCount = archetypeMatchesNonEnableableAnyTypes
                 ? 0 : CalculateMatchingArchetypeEnableableTypeIntersectionCount(archetype, archetypeQuery.Any, archetypeQuery.AnyCount);
             var enableableDisabledCount = CalculateMatchingArchetypeEnableableTypeIntersectionCount(archetype, archetypeQuery.Disabled, archetypeQuery.DisabledCount);
-            var totalEnableableTypeCount = enableableAllCount + enableableNoneCount + enableableAnyCount + enableableDisabledCount;
-            var match = (MatchingArchetype*)allocator.Allocate(GetAllocationSize(queryRequiredComponentCount, totalEnableableTypeCount), 8);
-            match->Archetype = archetype;
-
-            match->RequiredComponentCount = queryRequiredComponentCount;
-            match->EnableableComponentsCount_All = enableableAllCount;
-            match->EnableableComponentsCount_None = enableableNoneCount;
-            match->EnableableComponentsCount_Any = enableableAnyCount;
-            match->EnableableComponentsCount_Disabled = enableableDisabledCount;
-
-            return match;
+            return new MatchingArchetype
+            {
+                Archetype = archetype,
+                RequiredComponentCount = queryRequiredComponentCount,
+                EnableableComponentsCount_All = enableableAllCount,
+                EnableableComponentsCount_None = enableableNoneCount,
+                EnableableComponentsCount_Any = enableableAnyCount,
+                EnableableComponentsCount_Disabled = enableableDisabledCount,
+            };
         }
 
-        private static int GetAllocationSize(int requiredComponentsCount, int enableableComponentCount)
+        internal int AllocationSize => GetAllocationSize(RequiredComponentCount,
+            EnableableComponentsCount_All + EnableableComponentsCount_None + EnableableComponentsCount_Any + EnableableComponentsCount_Disabled);
+
+        internal static int GetAllocationSize(int requiredComponentsCount, int enableableComponentCount)
         {
             return sizeof(MatchingArchetype) +
                    sizeof(int) * (requiredComponentsCount-1) +
@@ -1454,8 +1959,13 @@ namespace Unity.Entities
         [NativeDisableUnsafePtrRestriction]
         private UnsafeList<IntPtr>* ListData;
 
+        // Allocated with the list and never moved, so the native EntityQuery keeps it
+        public UnsafeList<IntPtr>* List => ListData;
+
         public MatchingArchetype** Ptr { get => (MatchingArchetype**)ListData->Ptr; }
         public int Length { get => ListData->Length; }
+
+        public long AllocatedBytes { get => sizeof(UnsafeList<IntPtr>) + (long)ListData->Capacity * sizeof(IntPtr); }
 
         public void Dispose() { UnsafeList<IntPtr>.Destroy(ListData); }
         public void Add(void* t) { ListData->Add((IntPtr)t); }
@@ -1567,234 +2077,7 @@ namespace Unity.Entities
         }
     }
 
-    [NoAlias]
-    [BurstCompile]
-    unsafe struct UnsafeCachedChunkList
-    {
-        [NoAlias,NativeDisableUnsafePtrRestriction]
-        internal UnsafeList<ChunkIndex>* MatchingChunks;
-
-        [NoAlias,NativeDisableUnsafePtrRestriction]
-        internal UnsafeList<int>* PerChunkMatchingArchetypeIndex;
-
-        [NoAlias,NativeDisableUnsafePtrRestriction]
-        internal UnsafeList<int>* ChunkIndexInArchetype;
-
-        [NoAlias,NativeDisableUnsafePtrRestriction]
-        internal EntityComponentStore* EntityComponentStore;
-
-        internal int CacheValid; // must not be a bool, for Burst compatibility
-
-        internal ChunkIndex* ChunkIndices { get => MatchingChunks->Ptr; }
-        public int Length { get => MatchingChunks->Length; }
-        public bool IsCacheValid { get => CacheValid != 0; }
-
-        internal UnsafeCachedChunkList(EntityComponentStore* entityComponentStore)
-        {
-            EntityComponentStore = entityComponentStore;
-            MatchingChunks = UnsafeList<ChunkIndex>.Create(0, Allocator.Persistent);
-            PerChunkMatchingArchetypeIndex = UnsafeList<int>.Create(0, Allocator.Persistent);
-            ChunkIndexInArchetype = UnsafeList<int>.Create(0, Allocator.Persistent);
-            CacheValid = 0;
-        }
-
-        internal void Append(ChunkIndex* t, int addChunkCount, int matchingArchetypeIndex)
-        {
-            MatchingChunks->AddRange(new UnsafeList<ChunkIndex>(t, addChunkCount));
-            for (int i = 0; i < addChunkCount; ++i)
-            {
-                PerChunkMatchingArchetypeIndex->Add(matchingArchetypeIndex);
-                ChunkIndexInArchetype->Add(i);
-            }
-        }
-
-        internal void Dispose()
-        {
-            if (MatchingChunks != null)
-                UnsafeList<ChunkIndex>.Destroy(MatchingChunks);
-            if (PerChunkMatchingArchetypeIndex != null)
-                UnsafeList<int>.Destroy(PerChunkMatchingArchetypeIndex);
-            if (ChunkIndexInArchetype != null)
-                UnsafeList<int>.Destroy(ChunkIndexInArchetype);
-        }
-
-        internal void Invalidate()
-        {
-            CacheValid = 0;
-        }
-
-        [BurstCompile]
-        internal static void Rebuild(ref UnsafeCachedChunkList cache, in EntityQueryData queryData)
-        {
-            cache.MatchingChunks->Clear();
-            cache.PerChunkMatchingArchetypeIndex->Clear();
-            cache.ChunkIndexInArchetype->Clear();
-
-            int archetypeCount = queryData.MatchingArchetypes.Length;
-            var ptrs = queryData.MatchingArchetypes.Ptr;
-            for (int matchingArchetypeIndex = 0; matchingArchetypeIndex < archetypeCount; ++matchingArchetypeIndex)
-            {
-                var archetype = ptrs[matchingArchetypeIndex]->Archetype;
-                if (archetype->EntityCount > 0)
-                    archetype->Chunks.AddToCachedChunkList(ref cache, matchingArchetypeIndex);
-            }
-
-            cache.CacheValid = 1;
-        }
-
-        // Expensive debug validation, to make sure cached data is consistent with the associated query.
-        // Throws an ArgumentException if anything's wrong, including if the cache.IsCacheValid flag is clear.
-        // The forceCheckInvalidCache allows the validity flag check to skipped, e.g. by unit tests that want to
-        // make sure this method actually detects the expected inconsistencies in a known invalid cache.
-        internal static void AssertIsConsistent(in UnsafeCachedChunkList cache, in EntityQueryData queryData, bool forceCheckInvalidCache)
-        {
-            // If the input cache doesn't even think it's valid, its contents are definitely not guaranteed to be consistent.
-            // Allow the caller to skip this check and check a known invalid cache any, for unit testing purposes
-            if (!forceCheckInvalidCache && !cache.IsCacheValid)
-            {
-                throw new ArgumentException($"Can't check an invalid cache for consistency. Did you call queryData.GetMatchingChunkCache() to access this cache?");
-            }
-            // The cache's lists must all be the same length
-            if (cache.ChunkIndexInArchetype->Length != cache.Length)
-            {
-                // This indicates an error in the cache update logic; every chunk in the cache must have a valid entry in the ChunkIndexInArchetype list.
-                throw new ArgumentException($"query chunk cache inconsistency: ChunkIndexInArchetypeLength={cache.ChunkIndexInArchetype->Length}, cache length={cache.Length}");
-            }
-            if (cache.PerChunkMatchingArchetypeIndex->Length != cache.Length)
-            {
-                // This indicates an error in the cache update logic; every chunk in the cache must have a valid entry in the PerChunkMatchingArchetypeIndex list.
-                throw new ArgumentException($"query chunk cache inconsistency: PerChunkMatchingArchetypeIndex={cache.PerChunkMatchingArchetypeIndex->Length}, cache length={cache.Length}");
-            }
-
-            // count the expected number of chunks in all matching archetypes
-            int archetypeCount = queryData.MatchingArchetypes.Length;
-            var matchingArchetypes = queryData.MatchingArchetypes.Ptr;
-            int matchingArchetypeChunkCount = 0;
-            for (int archetypeIndex = 0; archetypeIndex < archetypeCount; ++archetypeIndex)
-            {
-                var archetype = matchingArchetypes[archetypeIndex]->Archetype;
-                matchingArchetypeChunkCount += archetype->Chunks.Count;
-            }
-            // If this fails, a cache that thinks it's valid definitely contains the wrong number of chunks.
-            // This would indicate an error in the cache update logic.
-            // However, instead of failing immediately, let's keep going and see if we can log more data about the missing/extra
-            // chunk in the loop below. This same check appears at the end of the function, in case nothing else fires.
-            //if (matchingArchetypeChunkCount != cache.Length)
-            //{
-            //    //throw new ArgumentException($"query chunk cache inconsistency: {archetypeCount} matching archetypes contain {matchingArchetypeChunkCount} chunks, but cache only contains {cache.MatchingChunks->Length} chunks");
-            //}
-
-            // Iterate over chunks in matching archetypes, and make sure they're at the correct location in the cache
-            var chunkCounter = 0;
-            for (int archetypeIndex = 0; archetypeIndex < archetypeCount; ++archetypeIndex)
-            {
-                var archetype = matchingArchetypes[archetypeIndex]->Archetype;
-                int archetypeChunkCount = archetype->Chunks.Count;
-                for (int chunkIndex = 0; chunkIndex < archetypeChunkCount; ++chunkIndex)
-                {
-                    if (chunkCounter >= cache.Length)
-                    {
-                        // This should *never* happen; it should have been caught in the check just above this loop.
-                        // This would indicate that either the matching archetypes or the chunk cache are being modified
-                        // concurrently with this consistency check.
-                        throw new ArgumentException($"query chunk cache inconsistency: matching archetype chunk {chunkCounter} exceeds chunk cache length {cache.Length}");
-                    }
-
-                    var chunk = cache.MatchingChunks->Ptr[chunkCounter];
-                    if (chunk != archetype->Chunks[chunkIndex])
-                    {
-                        // This means the chunk may actually be in the cache, but not at the index we expect it to be.
-                        // This may indicate that the chunk cache update logic is iterating over matching archetypes/chunks in a different
-                        // order than this consistency check.
-                        throw new ArgumentException(@$"query chunk cache inconsistency: cached chunk at index {chunkCounter} should be at chunkIndex={chunkIndex} of archetype {archetypeIndex}.
-Archetype has {archetypeChunkCount} chunks and {archetype->EntityCount} entities, with types {archetype->ToString()}.
-Query matches {archetypeCount} archetypes.");
-                    }
-                    if (chunk.SequenceNumber != archetype->Chunks[chunkIndex].SequenceNumber)
-                    {
-                        // Chunk* comparisons are not sufficient, because chunk allocations are pooled. The chunk may have
-                        // been freed and reallocated into a new archetype.
-                        // This would indicate that some operation is not invalidating the appropriate query caches.
-                        throw new ArgumentException(@$"query chunk cache inconsistency: cached chunk at index {chunkCounter} has a different sequence number {chunk.SequenceNumber} than chunk in matching archetype with sequence number {archetype->Chunks[chunkIndex].SequenceNumber}.
-Archetype has {archetypeChunkCount} chunks and {archetype->EntityCount} entities, with types {archetype->ToString()}.
-Query matches {archetypeCount} archetypes.");
-                    }
-                    if (cache.ChunkIndexInArchetype->Ptr[chunkCounter] != chunk.ListIndex)
-                    {
-                        // This chunk in the cache corresponds to the correct chunk in the archetype, but
-                        // its entry in ChunkIndexInArchetype is incorrect.
-                        // This would indicate that the cache's ChunkIndexInArchetype list is not being updated correctly when the
-                        // cache is updated.
-                        throw new ArgumentException(@$"query chunk cache inconsistency: cached chunk at index {chunkCounter} thinks it should be at index {cache.ChunkIndexInArchetype->Ptr[chunkCounter]} in archetype {archetypeIndex}'s chunk list, but it's actually at index {chunk.ListIndex}.
-Archetype has {archetypeChunkCount} chunks and {archetype->EntityCount} entities, with types {archetype->ToString()}.
-Query matches {archetypeCount} archetypes.");
-                    }
-                    if (cache.PerChunkMatchingArchetypeIndex->Ptr[chunkCounter] != archetypeIndex)
-                    {
-                        // This chunk in the cache corresponds to the correct chunk in the archetype, but
-                        // its entry in PerChunkMatchingArchetypeIndex is incorrect.
-                        // This would indicate that the cache's PerChunkMatchingArchetypeIndex list is not being updated correctly when the
-                        // cache is updated.
-                        throw new ArgumentException(@$"query chunk cache inconsistency: cached chunk at index {chunkCounter} thinks it should be in matching archetype {cache.PerChunkMatchingArchetypeIndex->Ptr[chunkCounter]}, but it's actually in archetype {archetypeIndex}.
-Archetype has {archetypeChunkCount} chunks and {archetype->EntityCount} entities, with types {archetype->ToString()}.
-Query matches {archetypeCount} archetypes.");
-                    }
-                    chunkCounter += 1;
-                }
-            }
-            // Iterate over chunks in the cache, and make sure they're in the correct location in the matching archetypes.
-            for (int cacheChunkIndex = 0; cacheChunkIndex < cache.Length; ++cacheChunkIndex)
-            {
-                var chunk = cache.MatchingChunks->Ptr[cacheChunkIndex];
-                int expectedArchetypeIndex = cache.PerChunkMatchingArchetypeIndex->Ptr[cacheChunkIndex];
-                int expectedChunkIndexInArchetype = cache.ChunkIndexInArchetype->Ptr[cacheChunkIndex];
-                if (expectedArchetypeIndex < 0 || expectedArchetypeIndex >= archetypeCount)
-                {
-                    // This indicates objectively invalid data in the cache's PerChunkMatchingArchetypeIndex array.
-                    // Be especially concerned about negative numbers; that would be a pretty clear sign of a memory stomp.
-                    throw new ArgumentException(@$"query chunk cache inconsistency: matching archetype index {expectedArchetypeIndex} for cached chunk {cacheChunkIndex} is out of range.
-Query matches {archetypeCount} archetypes.");
-                }
-                var archetype = matchingArchetypes[expectedArchetypeIndex]->Archetype;
-                if (expectedChunkIndexInArchetype < 0 || expectedChunkIndexInArchetype >= archetype->Chunks.Count)
-                {
-                    // This indicates objectively invalid data in the cache's ChunkIndexInArchetype array.
-                    // Be especially concerned about negative numbers; that would be a pretty clear sign of a memory stomp.
-                    throw new ArgumentException(@$"query chunk cache inconsistency: chunk index in archetype {expectedChunkIndexInArchetype} for cached chunk {cacheChunkIndex} is out of range. Archetype {expectedArchetypeIndex} contains {archetype->Chunks.Count} chunks.
-Archetype has {archetype->Chunks.Count} chunks and {archetype->EntityCount} entities, with types {archetype->ToString()}.
-Query matches {archetypeCount} archetypes.");
-                }
-                if (archetype->Chunks[expectedChunkIndexInArchetype] != chunk)
-                {
-                    // This means there's a chunk in the cache that didn't come from the query's matching archetypes.
-                    // That would either be due to an error in the cache update logic, or the matching archetypes changing
-                    // without invalidating the cache.
-                    throw new ArgumentException(@$"query chunk cache inconsistency: cached chunk {cacheChunkIndex} not found at expected chunk index {expectedChunkIndexInArchetype} of expected matching archetype {expectedArchetypeIndex}.
-Archetype has {archetype->Chunks.Count} chunks and {archetype->EntityCount} entities, with types {archetype->ToString()}.
-Query matches {archetypeCount} archetypes.");
-                }
-                if (archetype->Chunks[expectedChunkIndexInArchetype].SequenceNumber != chunk.SequenceNumber)
-                {
-                    // Chunk* comparisons are not sufficient, because chunk allocations are pooled. The chunk may have
-                    // been freed and reallocated into a new archetype.
-                    // This would indicate that some operation is not invalidating the appropriate query caches.
-                    throw new ArgumentException(@$"query chunk cache inconsistency: cached chunk {cacheChunkIndex} has a different sequence number {chunk.SequenceNumber} than chunk in matching archetype with sequence number {archetype->Chunks[expectedChunkIndexInArchetype].SequenceNumber}.
-Archetype has {archetype->Chunks.Count} chunks and {archetype->EntityCount} entities, with types {archetype->ToString()}.
-Query matches {archetypeCount} archetypes.");
-                }
-            }
-
-            // All chunks in cache are accounted for.
-            if (chunkCounter != cache.Length)
-            {
-                // This should *never* happen; we've already checked twice that these counts match.
-                // This would indicate that the chunk cache is being modified concurrently with this consistency check.
-                throw new ArgumentException($"query chunk cache inconsistency: we checked {chunkCounter} chunks from matching archetypes, but chunk cache length is {cache.Length}.");
-            }
-        }
-    }
-
-    unsafe struct EntityQueryData : IDisposable
+    unsafe struct EntityQueryData
     {
         //@TODO: better name or remove entirely...
         public ComponentType*       RequiredComponents;
@@ -1812,50 +2095,9 @@ Query matches {archetypeCount} archetypes.");
         public ArchetypeQuery*      ArchetypeQueries;
         public int                  ArchetypeQueryCount;
 
-        public EntityQueryMask      EntityQueryMask;
-
-        public UnsafeMatchingArchetypePtrList MatchingArchetypes;
-        private UnsafeCachedChunkList MatchingChunkCache; // Direct access to this field is not thread-safe; use the helper methods on EntityQueryData instead.
-
         public byte HasEnableableComponents; // 0 = no, 1 = yes
 
-        internal void CreateMatchingChunkCache(EntityComponentStore* ecs)
-        {
-            MatchingChunkCache = new UnsafeCachedChunkList(ecs);
-        }
-
-        internal void RebuildMatchingChunkCache()
-        {
-            UnsafeCachedChunkList.Rebuild(ref MatchingChunkCache, this);
-        }
-
-        // This method should *only* be called by EntityQueryImpl.GetMatchingChunkCache(), which includes some critical
-        // thread-safety and cache validity checks. Using this return value directly in any other context is not guaranteed
-        // to return a valid, up-to-date cache!
-        internal UnsafeCachedChunkList UnsafeGetMatchingChunkCache()
-        {
-            return MatchingChunkCache;
-        }
-
-        internal void CheckChunkListCacheConsistency(bool forceCheckInvalidCache)
-        {
-            UnsafeCachedChunkList.AssertIsConsistent(MatchingChunkCache, this, forceCheckInvalidCache);
-        }
-
-        internal void InvalidateChunkCache()
-        {
-            MatchingChunkCache.Invalidate();
-        }
-
-        internal bool IsChunkCacheValid()
-        {
-            return MatchingChunkCache.IsCacheValid;
-        }
-
-        public void Dispose()
-        {
-            MatchingArchetypes.Dispose();
-            MatchingChunkCache.Dispose();
-        }
+        // Index in the EntityQueryManager's list; the profiler uses it to identify the query within its world.
+        public int QueryDataIndex;
     }
 }

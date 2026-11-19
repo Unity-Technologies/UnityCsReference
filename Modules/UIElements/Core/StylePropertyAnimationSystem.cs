@@ -11,7 +11,7 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IStylePropertyAnimationSystem
     {
         bool StartTransition(VisualElement owner, StylePropertyId prop, float startValue, float endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
@@ -55,7 +55,7 @@ namespace UnityEngine.UIElements
         void Update(double updateTimeInSeconds);
     }
 
-    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class StylePropertyAnimationSystem : IStylePropertyAnimationSystem
     {
         [Flags]
@@ -1536,11 +1536,7 @@ namespace UnityEngine.UIElements
                 switch (a.type)
                 {
                     case FilterParameterType.Float:
-                        return new FilterParameter()
-                        {
-                            type = FilterParameterType.Float,
-                            floatValue = Mathf.Lerp(a.floatValue, b.floatValue, t)
-                        };
+                        return new FilterParameter(Mathf.Lerp(a.floatValue, b.floatValue, t), b.unit);
                     case FilterParameterType.Color:
                         return new FilterParameter()
                         {
@@ -1791,14 +1787,15 @@ namespace UnityEngine.UIElements
 
             private static BackgroundGradientStop LerpStop(BackgroundGradientStop a, BackgroundGradientStop b, float t)
             {
-                // Mixed px/% positions can't be blended without resolving against the
+                // Mixed px/% or auto positions can't be blended without resolving against the
                 // element size, so the position steps at the midpoint instead.
-                bool sameUnits = a.positionIsPercent == b.positionIsPercent;
+                bool sameUnits = a.positionIsPercent == b.positionIsPercent && !a.positionIsAuto && !b.positionIsAuto;
                 return new BackgroundGradientStop
                 {
                     color = Color.Lerp(a.color, b.color, t),
                     position = sameUnits ? Mathf.Lerp(a.position, b.position, t) : (t < 0.5f ? a.position : b.position),
                     positionIsPercent = t < 0.5f ? a.positionIsPercent : b.positionIsPercent,
+                    positionIsAuto = !sameUnits && (t < 0.5f ? a.positionIsAuto : b.positionIsAuto),
                 };
             }
 
@@ -2416,7 +2413,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class EmptyStylePropertyAnimationSystem : IStylePropertyAnimationSystem
     {
         public bool StartTransition(VisualElement owner, StylePropertyId prop, float startValue, float endValue, int durationMs, int delayMs, Func<float, float> easingCurve)

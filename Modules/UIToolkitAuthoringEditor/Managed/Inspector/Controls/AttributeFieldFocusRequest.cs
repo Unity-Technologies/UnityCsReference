@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.Scripting.LifecycleManagement;
-using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -58,7 +57,7 @@ static partial class AttributeFieldFocusRequest
         if (element == null || s_Element != element || s_InspectorPanel != inspectorPanel || s_Path != path)
             return false;
 
-        var stillSelected = Selection.activeObject is VisualElementSelection selection
+        var stillSelected = AuthoringContext.For(element).Selection.ActiveObject is VisualElementSelection selection
             && selection.Element == element;
 
         // Spent either way, so a request the user navigated away from cannot fire if they come back.

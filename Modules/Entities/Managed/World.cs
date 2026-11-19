@@ -14,6 +14,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Core;
 using Unity.Profiling;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 using Assert = UnityEngine.Assertions.AssertCore;
 using Debug = Unity.Scripting.LowLevel.Debug;
 using ProfilerMarker = Unity.Entities.EntitiesProfilerMarker;
@@ -130,7 +131,9 @@ namespace Unity.Entities
     public unsafe partial class World : IDisposable
     {
         [NoAutoStaticsCleanup] // DefaultWorldInitialization disposes every world as code unloads.
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static readonly List<World> s_AllWorlds = new List<World>();
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static readonly SharedStatic<FixedList512Bytes<WorldUnmanaged>> s_ActiveWorldsStack = SharedStatic<FixedList512Bytes<WorldUnmanaged>>.GetOrCreate<ActiveWorldsStackIdentifier>();
         internal struct ActiveWorldsStackIdentifier { }
 
@@ -522,6 +525,7 @@ namespace Unity.Entities
             }
         }
 
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static void DisposeAll()
         {
             s_ActiveWorldsStack.Data.Clear();

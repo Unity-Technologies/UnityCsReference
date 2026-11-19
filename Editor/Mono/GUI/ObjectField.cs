@@ -20,14 +20,12 @@ namespace UnityEditor
         const float k_NullObjectReferenceOpacity = 0.7f;
 
         [Flags]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal enum ObjectFieldValidatorOptions
         {
             None = 0,
             ExactObjectTypeValidation = (1 << 0)
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal delegate Object ObjectFieldValidator(Object[] references, System.Type objType, SerializedProperty property, ObjectFieldValidatorOptions options);
 
         // Takes object directly, no SerializedProperty.

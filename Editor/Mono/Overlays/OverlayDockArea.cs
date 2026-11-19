@@ -148,4 +148,43 @@ namespace UnityEditor.Overlays
             yield return m_BottomRightAnchored;
         }
     }
+
+    // Dropping over the Unity logo docks at the start of the left section
+    sealed class MainToolbarDockArea : OverlayDockArea
+    {
+        const string k_UnityLogoName = "ToolbarProductCaption";
+
+        readonly OverlayContainerInsertDropZone m_UnityLogoDropZone;
+
+        public MainToolbarDockArea(VisualElement parent)
+        {
+            name = "MainToolbarDockArea";
+            pickingMode = PickingMode.Ignore;
+            style.position = Position.Absolute;
+
+            var container = parent.Q<MainToolbarOverlayContainer>();
+            m_UnityLogoDropZone = new OverlayContainerInsertDropZone(container, OverlayContainerSection.BeforeSpacer, OverlayContainerDropZone.Placement.Start);
+            m_UnityLogoDropZone.StretchToParentSize();
+            Add(m_UnityLogoDropZone);
+
+            parent.Q(k_UnityLogoName).RegisterCallback<GeometryChangedEvent>(evt => MatchUnityLogo((VisualElement)evt.target));
+        }
+
+        void MatchUnityLogo(VisualElement unityLogo)
+        {
+            if (parent == null)
+                return;
+
+            var rect = parent.WorldToLocal(unityLogo.worldBound);
+            style.left = rect.x;
+            style.top = rect.y;
+            style.width = rect.width;
+            style.height = rect.height;
+        }
+
+        public override IEnumerable<OverlayDropZoneBase> GetDropZones()
+        {
+            yield return m_UnityLogoDropZone;
+        }
+    }
 }

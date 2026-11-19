@@ -836,7 +836,7 @@ namespace Unity.Entities
             if (chunk.Count < archetype->ChunkCapacity)
                 archetype->EmptySlotTrackingRemoveChunk(chunk);
 
-            archetype->RemoveFromChunkList(chunk, ref entityComponentStore->m_ChunkListChangesTracker);
+            archetype->RemoveFromChunkList(chunk);
             entityComponentStore->SetArchetype(chunk, null);
 
             entityComponentStore->FreeChunk(chunk);
@@ -1074,8 +1074,7 @@ namespace Unity.Entities
             if (Hint.Likely(dstArchetype != srcArchetype))
             {
                 //Change version is overriden below
-                dstArchetype->AddToChunkList(srcChunk, dstSharedComponentValues, 0,
-                    ref entityComponentStore->m_ChunkListChangesTracker);
+                dstArchetype->AddToChunkList(srcChunk, dstSharedComponentValues, 0);
                 int chunkIndexInDstArchetype = srcChunk.ListIndex;
 
                 // For unchanged components: Copy versions from src to dst archetype
@@ -1090,7 +1089,7 @@ namespace Unity.Entities
                 MoveEnabledBits(srcArchetype, chunkIndexInSrcArchetype, dstArchetype, chunkIndexInDstArchetype, count);
 
                 srcChunk.ListIndex = chunkIndexInSrcArchetype;
-                srcArchetype->RemoveFromChunkList(srcChunk, ref entityComponentStore->m_ChunkListChangesTracker);
+                srcArchetype->RemoveFromChunkList(srcChunk);
                 srcChunk.ListIndex = chunkIndexInDstArchetype;
 
                 srcArchetype->EntityCount -= count;
@@ -1153,7 +1152,7 @@ namespace Unity.Entities
 
             int chunkIndexInSrcArchetype = chunk.ListIndex;
 
-            dstArchetype->AddToChunkList(chunk, sharedComponentValues, globalSystemVersion, ref entityComponentStore->m_ChunkListChangesTracker);
+            dstArchetype->AddToChunkList(chunk, sharedComponentValues, globalSystemVersion);
             var chunkIndexInDstArchetype = chunk.ListIndex;
 
             // Since we're not getting a clean chunk, we need to initialize the new bits here
@@ -1161,7 +1160,7 @@ namespace Unity.Entities
             MoveEnabledBits(srcArchetype, chunkIndexInSrcArchetype, dstArchetype, chunkIndexInDstArchetype, count);
 
             chunk.ListIndex = chunkIndexInSrcArchetype;
-            srcArchetype->RemoveFromChunkList(chunk, ref entityComponentStore->m_ChunkListChangesTracker);
+            srcArchetype->RemoveFromChunkList(chunk);
             chunk.ListIndex = chunkIndexInDstArchetype;
 
             entityComponentStore->SetArchetype(chunk, dstArchetype);
@@ -1228,7 +1227,8 @@ namespace Unity.Entities
             int allocatedIndex;
             var allocatedCount = AllocateIntoChunk(archetype, chunk, count, out allocatedIndex);
             entityComponentStore->AllocateEntities(archetype, chunk, allocatedIndex, allocatedCount, entities);
-            ReplicateComponents(entityComponentStore->GetArchetype(src.Chunk), src.Chunk, src.IndexInChunk, archetype, chunk, allocatedIndex, allocatedCount);
+            var srcArchetype = entityComponentStore->GetArchetype(src.Chunk);
+            ReplicateComponents(srcArchetype, src.Chunk, src.IndexInChunk, archetype, chunk, allocatedIndex, allocatedCount);
 
             // Add Entities in Chunk. ChangeVersion:Yes OrderVersion:Yes
             var chunkListIndex = chunk.ListIndex;
@@ -1237,6 +1237,7 @@ namespace Unity.Entities
 
             for (var i = 0; i < allocatedCount; ++i)
                 entityComponentStore->CopyName(entities[i], srcEntity);
+            entityComponentStore->CopyComponentObjectStates(srcArchetype->EntityComponentStore, srcEntity, entities, allocatedCount, archetype);
 
             var sharedComponentValues = archetype->Chunks.GetSharedComponentValues(chunkListIndex);
             entityComponentStore->IncrementSharedComponentVersions(archetype, sharedComponentValues);
@@ -1260,7 +1261,8 @@ namespace Unity.Entities
             var entityInChunkStart = (Entity*)chunk.Buffer + allocatedIndex;
             UnsafeUtility.MemCpy(entityInChunkStart, existingEntities, allocatedCount * sizeof(Entity));
 
-            ReplicateComponents(entityComponentStore->GetArchetype(src.Chunk), src.Chunk, src.IndexInChunk, archetype, chunk, allocatedIndex, allocatedCount);
+            var srcArchetype = entityComponentStore->GetArchetype(src.Chunk);
+            ReplicateComponents(srcArchetype, src.Chunk, src.IndexInChunk, archetype, chunk, allocatedIndex, allocatedCount);
 
             // Add Entities in Chunk. ChangeVersion:Yes OrderVersion:Yes
             var chunkListIndex = chunk.ListIndex;
@@ -1269,6 +1271,7 @@ namespace Unity.Entities
 
             for (var i = 0; i < allocatedCount; ++i)
                 entityComponentStore->CopyName(existingEntities[i], srcEntity);
+            entityComponentStore->CopyComponentObjectStates(srcArchetype->EntityComponentStore, srcEntity, existingEntities, allocatedCount, archetype);
 
             var sharedComponentValues = archetype->Chunks.GetSharedComponentValues(chunkListIndex);
             entityComponentStore->IncrementSharedComponentVersions(archetype, sharedComponentValues);
@@ -1425,6 +1428,8 @@ namespace Unity.Entities
                     var dstCompanionLinkPtr = (EntityId*)(dstBuffer + dstOffsets[dstCompanionLinkIndex] + sizeof(EntityId) * dstBaseIndex);
                     var dstCompanionLinkTransformPtr = (EntityId*)(dstBuffer + dstOffsets[dstCompanionLinkTransformIndex] + sizeof(EntityId) * dstBaseIndex);
 
+                    // Each companion is cloned with its new entity's id, so the entity is the companion GameObject's entity
+                    UnsafeUtility.MemCpy(dstCompanionLinkPtr, (Entity*)dstBuffer + dstBaseIndex, sizeof(EntityId) * count);
                     CompanionGameObjectBindings.InstantiateCompanionGameObjects(srcCompanionLinkPtr[0], dstCompanionLinkPtr, dstCompanionLinkTransformPtr, count);
 
                     newCompanionLinkIds = dstCompanionLinkPtr;
@@ -1525,7 +1530,7 @@ namespace Unity.Entities
         {
             var entityComponentStore = archetype->EntityComponentStore;
             var globalSystemVersion = entityComponentStore->GlobalSystemVersion;
-            archetype->AddToChunkList(chunk, sharedComponentIndices, globalSystemVersion, ref entityComponentStore->m_ChunkListChangesTracker);
+            archetype->AddToChunkList(chunk, sharedComponentIndices, globalSystemVersion);
             archetype->EntityCount += chunk.Count;
 
             InitializeBitsForNewChunk(archetype, chunk.ListIndex);
@@ -1565,7 +1570,7 @@ namespace Unity.Entities
                 }
             }
 
-            archetype->AddToChunkList(chunk, sharedComponentValues, globalSystemVersion, ref entityComponentStore->m_ChunkListChangesTracker);
+            archetype->AddToChunkList(chunk, sharedComponentValues, globalSystemVersion);
 
             InitializeBitsForNewChunk(archetype, chunk.ListIndex);
 

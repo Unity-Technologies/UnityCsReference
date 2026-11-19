@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements.StyleSheets
 {
     // Each struct represents on match for a visual element against a complex
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal readonly struct SelectorMatchRecord : IEquatable<SelectorMatchRecord>
     {
         public readonly StyleSheet sheet;

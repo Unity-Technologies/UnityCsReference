@@ -705,6 +705,12 @@ namespace UnityEngine.UIElements
     {
     }
 
+    // static void M(ref T self, VisualElement owner); runs from the style pass after the [StyleProperty] field sync.
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    internal class OnComponentStyleResolvedAttribute : Attribute
+    {
+    }
+
     /// <summary>
     /// Declares a static method of a <see cref="VisualElementComponentAttribute"/> struct that runs when
     /// <see cref="VisualElement.RemoveComponent{T}"/> removes the component from an element.
@@ -785,6 +791,18 @@ namespace UnityEngine.UIElements
     /// still alive, and it receives that element, so it may read its own state, touch the element, and add
     /// or remove components. It is skipped on element teardown and on garbage collection, so it is not
     /// guaranteed to run.
+    /// </para>
+    /// <para>
+    /// A component that declares this method has a single owner and is created in place. Create it with the
+    /// <see cref="UxmlCreateInstanceMethodAttribute">[UxmlCreateInstanceMethod]</see> factory, by passing a fresh
+    /// value to <see cref="VisualElement.AddComponent{T}"/>, or by calling
+    /// <see cref="VisualElement.GetOrAddComponent{T}"/> and setting its fields through the reference it
+    /// returns. To replace it, remove it and add a new one:
+    /// that frees the old resources first. Writing a whole new value over the stored component, or adding a
+    /// copy of a component that is already in use, loses or double-frees the resources, and the
+    /// <c>UITKSG054</c> diagnostic reports both as errors. In the wider ownership vocabulary — owned,
+    /// borrowed, shared, transferred — Unity enforces only <em>owned</em>, because that is the case it can
+    /// see in your source; the rest is naming and documentation guidance.
     /// </para>
     /// <para>
     /// Rule of thumb: if you allocated it, free it in <c>[ReleaseComponentResources]</c>. If you want to

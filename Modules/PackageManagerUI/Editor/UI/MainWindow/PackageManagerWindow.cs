@@ -235,10 +235,7 @@ namespace UnityEditor.PackageManager.UI
 
                 // There is a flickering effect on the project browser if we don't repaint it before showing the modal.
                 FindWindow<ProjectBrowser>()?.RepaintImmediately();
-                var version = package.versions.installed;
-                ServicesContainer.instance.Resolve<IUnityConnectProxy>().ParseOrganizationInfosAsync((organizationInfo) => {
-                    ServicesContainer.instance.Resolve<IModalManager>().ShowExportModal(version, organizationInfo);
-                });
+                ServicesContainer.instance.Resolve<IModalManager>().ShowExportModal(package.versions.installed);
             });
         }
 

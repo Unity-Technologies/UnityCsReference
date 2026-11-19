@@ -372,7 +372,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <param name="numBits">Number of bits to get (must be between 1 and 64).</param>
         /// <exception cref="ArgumentException">Thrown if pos is out of bounds or if numBits is not between 1 and 64.</exception>
         /// <returns>A ulong which has bits copied from this array.</returns>
-        public ulong GetBits(int pos, int numBits = 1)
+        public readonly ulong GetBits(int pos, int numBits = 1)
         {
             CheckArgsUlong(pos, numBits);
             return Bitwise.GetBits(Ptr, Length, pos, numBits);
@@ -384,7 +384,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <param name="pos">Index of the bit to test.</param>
         /// <returns>True if the bit at the index is 1.</returns>
         /// <exception cref="ArgumentException">Thrown if `pos` is out of bounds.</exception>
-        public bool IsSet(int pos)
+        public readonly bool IsSet(int pos)
         {
             CheckArgs(pos, 1);
             return Bitwise.IsSet(Ptr, pos);
@@ -514,7 +514,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <param name="pos">Index of the bit at which to start searching.</param>
         /// <param name="numBits">Number of contiguous 0 bits to look for.</param>
         /// <returns>The index of the first occurrence in this array of `numBits` contiguous 0 bits. Range is pos up to (but not including) the length of this array. Returns int.MaxValue if no occurrence is found.</returns>
-        public int Find(int pos, int numBits)
+        public readonly int Find(int pos, int numBits)
         {
             var count = Length - pos;
             CheckArgsPosCount(pos, count, numBits);
@@ -530,7 +530,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <param name="numBits">Number of contiguous 0 bits to look for.</param>
         /// <param name="count">Number of indexes to consider as the return value.</param>
         /// <returns>The index of the first occurrence in this array of `numBits` contiguous 0 bits. Range is pos up to (but not including) `pos + count`. Returns int.MaxValue if no occurrence is found.</returns>
-        public int Find(int pos, int count, int numBits)
+        public readonly int Find(int pos, int count, int numBits)
         {
             CheckArgsPosCount(pos, count, numBits);
             return Bitwise.Find(Ptr, pos, count, numBits);
@@ -802,7 +802,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckArgs(int pos, int numBits)
+        readonly void CheckArgs(int pos, int numBits)
         {
             if (pos < 0
                 || pos >= Length
@@ -813,7 +813,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckArgsPosCount(int begin, int count, int numBits)
+        readonly void CheckArgsPosCount(int begin, int count, int numBits)
         {
             if (begin < 0 || begin >= Length)
             {
@@ -832,7 +832,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckArgsUlong(int pos, int numBits)
+        readonly void CheckArgsUlong(int pos, int numBits)
         {
             CheckArgs(pos, numBits);
 

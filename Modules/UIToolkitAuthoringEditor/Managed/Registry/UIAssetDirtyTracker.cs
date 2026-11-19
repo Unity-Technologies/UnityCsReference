@@ -24,10 +24,13 @@ namespace Unity.UIToolkit.Editor;
 /// serialized.
 /// </remarks>
 [Serializable]
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 struct AssetBaseline
 {
     public GlobalObjectId AssetId;
+
+    // Resolves an asset that is not saved anywhere, which the GlobalObjectId cannot name. Valid until the editor quits.
+    public EntityId EntityId;
+
     public Hash128 Hash;
 
     [NonSerialized] public int LastDirtyCount;
@@ -132,6 +135,7 @@ sealed class UIAssetDirtyTracker
         m_Baselines[entityId] = new AssetBaseline
         {
             AssetId = GlobalObjectId.GetGlobalObjectIdSlow(asset),
+            EntityId = entityId,
             Hash = ComputeContentHash(asset),
             LastDirtyCount = EditorUtility.GetDirtyCount(entityId),
             LastResult = false,
@@ -171,16 +175,30 @@ sealed class UIAssetDirtyTracker
     {
         var asset = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(serialized.AssetId);
         if (asset == null)
+            asset = ResolveInMemoryAsset(serialized.EntityId);
+        if (asset == null)
             return;
 
         var entityId = asset.GetEntityId();
         m_Baselines[entityId] = new AssetBaseline
         {
             AssetId = serialized.AssetId,
+            EntityId = entityId,
             Hash = serialized.Hash,
             LastDirtyCount = EditorUtility.GetDirtyCount(entityId),
             LastResult = EditorUtility.IsDirty(asset) && ComputeContentHash(asset) != serialized.Hash,
         };
+    }
+
+    // An asset that only lives in memory, such as a document that was never saved, keeps its entity id across a
+    // domain reload. A persistent asset is never resolved this way: its GlobalObjectId already names it.
+    static UnityEngine.Object ResolveInMemoryAsset(EntityId entityId)
+    {
+        if (entityId == EntityId.None)
+            return null;
+
+        var asset = EditorUtility.EntityIdToObject(entityId);
+        return asset is VisualTreeAsset or StyleSheet && !EditorUtility.IsPersistent(asset) ? asset : null;
     }
 
     /// <summary>Copies the current baselines into <paramref name="results"/> for serialization. Clears it first.</summary>
@@ -195,6 +213,7 @@ sealed class UIAssetDirtyTracker
     /// The asset's exported on-disk text — exactly what a save would write. UXML for a VisualTreeAsset, USS
     /// for a StyleSheet; null for an unsupported type.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static string ComputeContentText(UnityEngine.Object asset)
     {
         switch (asset)

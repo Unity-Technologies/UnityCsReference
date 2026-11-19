@@ -54,8 +54,8 @@ namespace UnityEngine.UIElements
                 {
                     if (nativePanelSettings != null)
                     {
-                        RemoveVisualTreeAssetTracker();
                         RemoveFromHierarchy();
+                        RemoveVisualTreeAssetTracker();
                     }
 
                     nativePanelSettings = value;
@@ -568,9 +568,7 @@ namespace UnityEngine.UIElements
 
         internal volatile List<CommandList>[] commandLists;
 
-        internal extern void AddDrawCallData(int safeFrameIndex, Material mat, uint textureSlotCount, uint forceRenderType, IntPtr serializedCommandsPtr, int commandCount, CommandListState state);
-        internal extern void ResetDrawCallData(int safeFrameIndex);
-        internal extern void ResetAllDrawCallData();
+        internal extern void AddDrawCallData(Material mat, uint textureSlotCount, uint forceRenderType, IntPtr serializedCommandsPtr, int commandCount, CommandListState state);
         internal extern void ClearDrawCallData();
 
         #endregion
@@ -650,8 +648,9 @@ namespace UnityEngine.UIElements
 
             if (rootVisualElement != null)
             {
-                RemoveVisualTreeAssetTracker();
+                // Detaching stops tracking the subtree's assets through the tracker, so unregister it afterwards
                 RemoveFromHierarchy();
+                RemoveVisualTreeAssetTracker();
             }
 
             UIElementsRuntimeUtility.RemovePanelRenderer(this);
@@ -672,9 +671,9 @@ namespace UnityEngine.UIElements
                 return;
 
             // Detach from the previous owner (parent or PanelSettings) while parentUI still identifies it.
+            RemoveFromHierarchy();
             // The new owner may be on another panel; AddRootVisualElementToTree registers the tracker again.
             RemoveVisualTreeAssetTracker();
-            RemoveFromHierarchy();
             requiresReinsertion = true;
         }
 
@@ -729,7 +728,7 @@ namespace UnityEngine.UIElements
             bool rootReleased = rootVisualElement is { resourcesReleased: true };
 
             if (rootVisualElement != null && (visualTreeAssetChanged || rootReleased))
-                panelSettings?.DetachPanelComponent(this);
+                RemoveFromHierarchy();
 
             if (visualTreeAssetChanged || rootVisualElement == null || rootReleased)
             {
@@ -863,8 +862,8 @@ namespace UnityEngine.UIElements
                 panelSettings?.DetachPanelComponent(this);
 
             // UUM-146244: If the PanelSettings was already destroyed DetachPanelComponent call above short-circuited
-            // and the root is still parented into the panel's visual tree. Detach it directly so the subsequent ReleaseResources
-            // check in OnPanelRendererCleanup doesn't throw.
+            // and the root is still parented into the panel's visual tree. Detach it directly so a subsequent
+            // ReleaseRootVisualElement doesn't throw.
             if (m_RootVisualElement != null && m_RootVisualElement.parent != null)
                 m_RootVisualElement.RemoveFromHierarchy();
         }
@@ -948,7 +947,8 @@ namespace UnityEngine.UIElements
 
         void SetupVisualTreeAssetTracker()
         {
-            if (rootVisualElement == null || panelSettings == null)
+            // Refused contents must not register on or revive the panel; reattaching registers them
+            if (rootVisualElement == null || panelSettings == null || panelSettings.RefusesPrefabStageContents(gameObject))
                 return;
 
             var liveReloadSystem = panelSettings.panel.liveReloadSystem;
@@ -980,6 +980,45 @@ namespace UnityEngine.UIElements
         }
 
         void IPanelComponent.OnLiveReloadOptionChanged() => ((IPanelComponent)this).HandleLiveReload();
+
+        void SetupVisualTreeAssetTrackersInSubtree()
+        {
+            SetupVisualTreeAssetTracker();
+            if (m_ChildrenContent == null)
+                return;
+
+            foreach (var child in m_ChildrenContent.m_AttachedPanelComponents)
+            {
+                if (child is PanelRenderer childRenderer && childRenderer != null)
+                    childRenderer.SetupVisualTreeAssetTrackersInSubtree();
+            }
+        }
+
+        void RemoveVisualTreeAssetTrackersInSubtree()
+        {
+            RemoveVisualTreeAssetTracker();
+            if (m_ChildrenContent == null)
+                return;
+
+            foreach (var child in m_ChildrenContent.m_AttachedPanelComponents)
+            {
+                if (child is PanelRenderer childRenderer && childRenderer != null)
+                    childRenderer.RemoveVisualTreeAssetTrackersInSubtree();
+            }
+        }
+
+        // Child roots stay in this tree across panel disposal, and a parent's live reload reinserts rather than rebuilds them
+        void IPanelComponent.ReattachRootVisualElement()
+        {
+            SetupVisualTreeAssetTrackersInSubtree();
+            AddRootVisualElementToTree();
+        }
+
+        void IPanelComponent.DetachRootVisualElement()
+        {
+            RemoveFromHierarchy();
+            RemoveVisualTreeAssetTrackersInSubtree();
+        }
 
         #endregion
 
@@ -1288,7 +1327,8 @@ namespace UnityEngine.UIElements
 
         void UpdateIsWorldSpaceRootFlag(PanelSettings settings, PanelRenderer parent)
         {
-            bool isWorldSpacePanel = !(settings?.panel?.isFlat ?? true);
+            // Reading settings.panel creates the panel, which would revive a disposed one for a detached renderer
+            bool isWorldSpacePanel = settings != null && settings.isInitialized && !settings.panel.isFlat;
             bool isWorldSpaceRootUIDocument;
 
             if (isWorldSpacePanel)
@@ -1398,7 +1438,7 @@ namespace UnityEngine.UIElements
         #endregion
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [Icon("UIToolkit/Icons/TemplateContainer.png")]
     internal class PanelRendererRootElement : TemplateContainer, IPanelComponentRootElement
     {

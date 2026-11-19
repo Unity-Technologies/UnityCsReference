@@ -89,6 +89,12 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         private TextInfoOverlay.DisplayOption m_ShowTextMetrics = TextInfoOverlay.DisplayOption.None;
 
+        [SerializeField]
+        bool m_ShowMagnifier;
+
+        [SerializeField]
+        int m_MagnifierZoom = 8;
+
 
 
         public DebuggerSelection selection { get; } = new DebuggerSelection();
@@ -167,6 +173,24 @@ namespace UnityEditor.UIElements.Debugger
                 m_ShowWireframe = value;
                 onStateChange?.Invoke();
             }
+        }
+
+        public bool showMagnifier
+        {
+            get { return m_ShowMagnifier; }
+            set
+            {
+                if (m_ShowMagnifier == value)
+                    return;
+                m_ShowMagnifier = value;
+                onStateChange?.Invoke();
+            }
+        }
+
+        public int magnifierZoom
+        {
+            get { return m_MagnifierZoom; }
+            set { m_MagnifierZoom = value; }
         }
 
         public bool showTextureAtlasViewer
@@ -327,6 +351,7 @@ namespace UnityEditor.UIElements.Debugger
         private ToolbarToggle m_RepaintOverlayToggle;
         private ToolbarToggle m_BreakBatchesToggle;
         private ToolbarToggle m_ShowWireframeToggle;
+        ToolbarToggle m_MagnifierToggle;
         private ToolbarButton m_TextureAtlasViewerButton;
         private ToolbarButton m_CaptureElementButton;
         private EnumField m_ShowTextMetrics;
@@ -334,6 +359,8 @@ namespace UnityEditor.UIElements.Debugger
         private DebuggerTreeView m_TreeViewContainer;
         private StylesDebugger m_StylesDebuggerContainer;
         ScrollView m_ScrollView;
+        TwoPaneSplitView m_MagnifierSplitView;
+        PixelMagnifier m_Magnifier;
 
         private DebuggerContext m_Context;
         private RepaintOverlayPainter m_RepaintOverlay;
@@ -434,6 +461,14 @@ namespace UnityEditor.UIElements.Debugger
             m_ShowWireframeToggle.RegisterValueChangedCallback(e => { m_Context.showWireframe = e.newValue; });
             m_Toolbar.Add(m_ShowWireframeToggle);
 
+            var magnifierIcon = EditorGUIUtility.TrIconContent("ViewToolZoom", "Magnifier: show the selected element's pixels at an integer zoom", null);
+            m_MagnifierToggle = new ToolbarToggle { name = "magnifierToggle", tooltip = magnifierIcon.tooltip };
+            var magnifierIconImage = new Image { image = magnifierIcon.image };
+            magnifierIconImage.AddToClassList("unity-debugger-magnifier-toggle__icon");
+            m_MagnifierToggle.Q(className: Toggle.inputUssClassName).Add(magnifierIconImage);
+            m_MagnifierToggle.RegisterValueChangedCallback(e => m_Context.showMagnifier = e.newValue);
+            m_Toolbar.Add(m_MagnifierToggle);
+
             m_TextureAtlasViewerButton = new ToolbarButton { name = "textureAtlasViewerButton", text = "Texture Atlas Viewer" };
             m_TextureAtlasViewerButton.clicked += () => { TextureAtlasViewerWindow.ShowWindow(); };
             m_TextureAtlasViewerButton.style.flexShrink = 0;
@@ -453,7 +488,7 @@ namespace UnityEditor.UIElements.Debugger
 
 
 
-            m_ScrollView = new ScrollView();
+            m_ScrollView = new ScrollView { name = "detailsScrollView" };
             m_ScrollView.Add(m_StylesDebuggerContainer = new StylesDebugger(m_Context.selection));
 
             m_ScrollView.Add(new TextDebugger(m_Context.selection));
@@ -462,7 +497,11 @@ namespace UnityEditor.UIElements.Debugger
             m_ScrollView.Add(new RenderDataDebuggerTab(m_Context.selection));
             m_ScrollView.Add(new PanelTab(m_Context.selection, ()=>GetRepaintUpdater(context.selection.panel) ));
 
-            splitter.Add(m_ScrollView);
+            m_Magnifier = new PixelMagnifier(m_Context);
+            m_MagnifierSplitView = new TwoPaneSplitView(1, 200, TwoPaneSplitViewOrientation.Vertical) { viewDataKey = "magnifierSplitView" };
+            m_MagnifierSplitView.Add(m_ScrollView);
+            m_MagnifierSplitView.Add(m_Magnifier);
+            splitter.Add(m_MagnifierSplitView);
 
 
             DebuggerEventDispatchUtilities.s_GlobalPanelDebug = this;
@@ -879,8 +918,14 @@ namespace UnityEditor.UIElements.Debugger
         internal class TextDebugger : DebuggerFoldout
         {
 
+            const string k_FontAssetRowClassName = "unity-debugger-font-asset-row";
+            const string k_FontAssetFieldClassName = k_FontAssetRowClassName + "__field";
+
+            static readonly GUIContent k_CheckerboardIcon = EditorGUIUtility.TrIconContent("CheckerFloor", "Debug: checkerboard pattern in this font asset's atlas", null);
+
             TextField m_GenerationSettings;
-            ObjectField m_fontAsset;
+            Foldout m_FontAssetsFoldout;
+            readonly List<UnityEngine.TextCore.Text.FontAsset> m_FontAssets = new();
             ObjectField m_textSettings;
             TextField m_CacheInfo;
             TextField m_UnicodeResult;
@@ -902,9 +947,7 @@ namespace UnityEditor.UIElements.Debugger
 
                 Add(m_GenerationSettings = new TextField("Generation Settings") { isReadOnly = true, multiline = true });
 
-                #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-                Add(m_fontAsset = new ObjectField("Font Asset") { allowSceneObjects = false });
-                #pragma warning restore UAL0015
+                Add(m_FontAssetsFoldout = new Foldout { text = "Font Assets", value = true });
 
                 Add(m_textSettings = new ObjectField("Text Settings") { allowSceneObjects = false, pseudoStates = PseudoStates.Disabled });
                 Add(m_CacheInfo = new TextField("Measurement Info") { isReadOnly = true, multiline = true });
@@ -983,6 +1026,39 @@ namespace UnityEditor.UIElements.Debugger
                 m_LinkInfoText.value = BuildLinkInfoString(textElement.uitkTextHandle);
             }
 
+            void RefreshFontAssets()
+            {
+                m_FontAssetsFoldout.Clear();
+                foreach (var fontAsset in m_FontAssets)
+                    m_FontAssetsFoldout.Add(CreateFontAssetRow(fontAsset));
+            }
+
+            static VisualElement CreateFontAssetRow(UnityEngine.TextCore.Text.FontAsset fontAsset)
+            {
+                var row = new VisualElement();
+                row.AddToClassList(k_FontAssetRowClassName);
+
+                #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+                var field = new ObjectField(fontAsset.atlasRenderMode.ToString()) { allowSceneObjects = false, value = fontAsset };
+                #pragma warning restore UAL0015
+                field.AddToClassList(k_FontAssetFieldClassName);
+                row.Add(field);
+
+                var checkerboardButton = new Button { iconImage = k_CheckerboardIcon.image as Texture2D, tooltip = k_CheckerboardIcon.tooltip };
+                var checkerboardToggle = new ToggleButtonGroup { allowEmptySelection = true };
+                checkerboardToggle.Add(checkerboardButton);
+                checkerboardToggle.SetValueWithoutNotify(new ToggleButtonGroupState(fontAsset.isCheckerboardDebugEnabled ? 1UL : 0UL, 1));
+                checkerboardToggle.SetEnabled(fontAsset.canDebugCheckerboard);
+                checkerboardToggle.RegisterValueChangedCallback(evt =>
+                {
+                    fontAsset.SetCheckerboardDebugEnabled(evt.newValue[0]);
+                    UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+                });
+                row.Add(checkerboardToggle);
+
+                return row;
+            }
+
 
             protected override void Refresh()
             {
@@ -995,7 +1071,8 @@ namespace UnityEditor.UIElements.Debugger
                     else if(textElement == null)
                         m_GenerationSettings.text = "No Text Element selected";
 
-                    m_fontAsset.value = null;
+                    m_FontAssets.Clear();
+                    RefreshFontAssets();
                     m_textSettings.value = null;
                     m_CacheInfo.text = null;
                     m_UnicodeResult.text = null;
@@ -1020,7 +1097,8 @@ namespace UnityEditor.UIElements.Debugger
                     }
 
                     var textSettings = TextUtilities.GetTextSettingsFrom(textElement);
-                    m_fontAsset.value = textElement.cachedFontAsset ?? textSettings?.GetFontAsset();
+                    handle.GetUsedFontAssets(m_FontAssets);
+                    RefreshFontAssets();
                     m_textSettings.value = textSettings;
                     m_CacheInfo.text = handle.ATGMeasuredWidth.HasValue ? $"Measured:{handle.ATGMeasuredWidth} Rounded:{handle.ATGRoundedWidth} PixelPerPoint:{handle.LastPixelPerPoint}" : "No cache";
                     m_UnicodeResult.text = StringToHex(textElement.text);
@@ -1044,14 +1122,18 @@ namespace UnityEditor.UIElements.Debugger
                         var settings = UnityEngine.TextCore.Text.TextHandle.settings;
                         m_GenerationSettings.text = settings.ToString();
 
-                        m_fontAsset.value = settings.fontAsset;
+                        m_FontAssets.Clear();
+                        if (settings.fontAsset != null)
+                            m_FontAssets.Add(settings.fontAsset);
+                        RefreshFontAssets();
                         m_textSettings.value = settings.textSettings;
 
                     }
                     else
                     {
                         m_GenerationSettings.text = "Failed to get Text Generation Settings";
-                        m_fontAsset.value = null;
+                        m_FontAssets.Clear();
+                        RefreshFontAssets();
                         m_textSettings.value = null;
                     }
 
@@ -1272,6 +1354,16 @@ namespace UnityEditor.UIElements.Debugger
             m_BreakBatchesToggle?.SetValueWithoutNotify(m_Context.breakBatches);
             m_ShowWireframeToggle?.SetValueWithoutNotify(m_Context.showWireframe);
             m_ShowTextMetrics?.SetValueWithoutNotify( m_Context.showTextMetrics);
+            m_MagnifierToggle?.SetValueWithoutNotify(m_Context.showMagnifier);
+
+            if (m_Magnifier != null)
+            {
+                if (m_Context.showMagnifier)
+                    m_MagnifierSplitView.UnCollapse();
+                else
+                    m_MagnifierSplitView.CollapseChild(1);
+                m_Magnifier.SetActive(m_Context.showMagnifier);
+            }
 
             ApplyToPanel(m_Context);
 

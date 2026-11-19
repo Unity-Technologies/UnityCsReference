@@ -17,7 +17,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     [StructLayout(LayoutKind.Sequential)]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal partial class ContainerWindow : ScriptableObject
     {
         MonoReloadableIntPtr m_WindowPtr;
@@ -175,7 +175,7 @@ namespace UnityEditor
                 Save();
 
                 // System windows that come from the OS (like a context menu from search) need theming
-                SetBackgroundColor(skinBackgroundColor);
+                ApplySkinColors();
 
                 //  only set focus if mode is a popupMenu.
                 Internal_BringLiveAfterCreation(true, giveFocus, false);
@@ -195,6 +195,41 @@ namespace UnityEditor
         private static readonly Color lightSkinColor = new Color(0.922f, 0.922f, 0.922f, 1.0f);
         private static readonly Color darkSkinColor = new Color(0.078f, 0.0784f, 0.0784f, 1.0f);
         static Color skinBackgroundColor => EditorGUIUtility.isProSkin ? darkSkinColor : lightSkinColor;
+
+        // Fallback title bar and menu colors for when the theme style variables have not resolved yet
+        private static readonly Color lightTitleBarColor = new Color32(165, 165, 165, 255);
+        private static readonly Color lightTitleBarTextColor = new Color32(17, 17, 17, 255);
+        private static readonly Color darkTitleBarColor = new Color32(40, 40, 40, 255);
+        private static readonly Color darkTitleBarTextColor = new Color32(198, 198, 198, 255);
+        private static readonly Color lightHighlightColor = new Color32(187, 187, 187, 255);
+        private static readonly Color darkHighlightColor = new Color32(66, 66, 66, 255);
+
+        void ApplySkinColors()
+        {
+            SetBackgroundColor(skinBackgroundColor);
+
+            if (Application.platform != RuntimePlatform.WindowsEditor)
+                return;
+
+            if (!TryGetNativeThemeColors(out var titleBarColor, out var titleBarTextColor, out var highlightColor))
+            {
+                bool isDarkSkin = EditorGUIUtility.isProSkin;
+                titleBarColor = isDarkSkin ? darkTitleBarColor : lightTitleBarColor;
+                titleBarTextColor = isDarkSkin ? darkTitleBarTextColor : lightTitleBarTextColor;
+                highlightColor = isDarkSkin ? darkHighlightColor : lightHighlightColor;
+            }
+
+            SetNativeThemeColors(titleBarColor, titleBarTextColor, highlightColor);
+        }
+
+        // SVC keeps the first value it reads, which is unresolved early in startup and stale after a skin switch
+        static bool TryGetNativeThemeColors(out Color background, out Color text, out Color highlight)
+        {
+            background = new SVC<Color>("--unity-colors-app_toolbar-background").value;
+            text = new SVC<Color>("--unity-colors-default-text").value;
+            highlight = new SVC<Color>("--unity-colors-app_toolbar_button-background-hover").value;
+            return background.a != 0f && text.a != 0f && highlight.a != 0f;
+        }
 
         // Show the editor window.
         public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus)
@@ -234,7 +269,7 @@ namespace UnityEditor
 
                 Internal_SetTitle(m_Title);
 
-                SetBackgroundColor(skinBackgroundColor);
+                ApplySkinColors();
 
                 Internal_BringLiveAfterCreation(displayImmediately, setFocus, initialMaximizedState);
 
@@ -281,7 +316,7 @@ namespace UnityEditor
         {
             if (m_RootView)
                 m_RootView.Initialize(this);
-            SetBackgroundColor(skinBackgroundColor);
+            ApplySkinColors();
         }
 
         public void SetMinMaxSizes(Vector2 min, Vector2 max)

@@ -37,7 +37,6 @@ namespace UnityEngine.UIElements
             m_IsNone = false;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Scale Initial()
         {
             return new Scale(Vector3.one);
@@ -94,7 +93,7 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public bool Equals(Scale other)
         {
-            return other == this;
+            return m_Scale.Equals(other.m_Scale);
         }
 
         /// <undoc/>

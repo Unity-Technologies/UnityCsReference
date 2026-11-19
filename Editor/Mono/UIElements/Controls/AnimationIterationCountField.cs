@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
     /// "infinite" toggle button.
     /// </summary>
     [UxmlElement]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class AnimationIterationCountField : TextValueField<AnimationIterationCount>
     {
         /// <summary>

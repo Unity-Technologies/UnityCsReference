@@ -17,12 +17,15 @@ internal class VisualTreeAssetSelectionEditor : UnityEditor.Editor
         // Intentionally left empty to override the header.
     }
 
+    public override bool UseDefaultMargins() => false;
+
     public override VisualElement CreateInspectorGUI()
     {
         var inspector = new VisualTreeAssetInspector
         {
             VisualTreeAsset = VisualElementSceneViewOverlay.IsAlive(Target.PanelComponent) ? Target.PanelComponent.visualTreeAsset : null,
-            PanelSettings = Target.PanelSettings
+            PanelSettings = Target.PanelSettings,
+            PanelComponent = Target.PanelComponent,
         };
 
         var binding = new DataBinding

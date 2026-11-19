@@ -30,8 +30,8 @@ namespace Unity.Entities
                 TypeManager.GetTypeIndex<EntityJobsOnGameObjectTransforms>(), TypeManager.GetTypeIndex<NativeJobsOnGameObjectTransforms>());
         }
 
-        // 0 is reserved by native code for "no owner", and sequence numbers start at 0.
-        internal static ulong GetOwner(EntityComponentStore* store) => store->WorldSequenceNumber + 1;
+        internal static WorldUnmanaged GetOwner(EntityComponentStore* store) =>
+            EntityDataAccess.FromEntityComponentStore(store)->m_WorldUnmanaged;
 
         internal static void RegisterWorld(EntityDataAccess* access)
         {

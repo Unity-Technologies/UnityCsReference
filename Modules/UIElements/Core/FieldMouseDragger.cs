@@ -74,6 +74,7 @@ namespace UnityEngine.UIElements
                 OnDragElementPointerAndKeyDown = new(
                     EventCallback.Create<PointerDownEvent, FieldMouseDragger<T>>(static (e, self) => self.UpdateValueOnPointerDown(e), arg, CallbackOptions.TrickleDown),
                     EventCallback.Create<PointerUpEvent, FieldMouseDragger<T>>(static (e, self) => self.UpdateValueOnPointerUp(e), arg),
+                    EventCallback.Create<PointerCancelEvent, FieldMouseDragger<T>>(static (e, self) => self.UpdateValueOnPointerCancel(e), arg),
                     EventCallback.Create<KeyDownEvent, FieldMouseDragger<T>>(static (e, self) => self.UpdateValueOnKeyDown(e), arg)
                 );
             }
@@ -159,32 +160,46 @@ namespace UnityEngine.UIElements
             ProcessUpEvent(evt, evt.pointerId);
         }
 
+        private void UpdateValueOnPointerCancel(PointerCancelEvent evt)
+        {
+            if (dragging && m_DragElement.HasPointerCapture(evt.pointerId))
+                RevertDrag(evt.pointerId);
+        }
+
         private void ProcessUpEvent(EventBase evt, int pointerId)
         {
             if (dragging)
-            {
-                dragging = false;
-                m_DragElement.UnregisterCallback<PointerMoveEvent>(UpdateValueOnPointerMove);
-                m_DragElement.ReleasePointer(pointerId);
-                if (evt is IMouseEvent)
-                    m_DragElement.panel.ProcessPointerCapture(PointerId.mousePointerId);
-
-                (m_DragElement.panel as BaseVisualElementPanel)?.uiElementsBridge?.SetWantsMouseJumping(0);
-                m_DrivenField.StopDragging();
-            }
+                EndDrag(pointerId, evt is IMouseEvent);
         }
 
         private void UpdateValueOnKeyDown(KeyDownEvent evt)
         {
             if (dragging && evt.keyCode == KeyCode.Escape)
+                RevertDrag(PointerId.mousePointerId);
+        }
+
+        private void RevertDrag(int pointerId)
+        {
+            m_DrivenField.value = startValue;
+            if (m_DrivenField is TextValueField<T> textValueField)
             {
-                dragging = false;
-                m_DrivenField.value = startValue;
-                m_DrivenField.StopDragging();
-                IPanel panel = evt.elementTarget?.panel;
-                panel.ReleasePointer(PointerId.mousePointerId);
-                (panel as BaseVisualElementPanel)?.uiElementsBridge?.SetWantsMouseJumping(0);
+                // A delayed field changes only its text while dragging, so the value setter above leaves it stale
+                textValueField.forceUpdateDisplay = true;
+                textValueField.SetValueWithoutNotify(startValue);
             }
+            EndDrag(pointerId, false);
+        }
+
+        private void EndDrag(int pointerId, bool processMouseCapture)
+        {
+            dragging = false;
+            m_DragElement.UnregisterCallback<PointerMoveEvent>(UpdateValueOnPointerMove);
+            m_DragElement.ReleasePointer(pointerId);
+            if (processMouseCapture)
+                m_DragElement.panel.ProcessPointerCapture(PointerId.mousePointerId);
+
+            (m_DragElement.panel as BaseVisualElementPanel)?.uiElementsBridge?.SetWantsMouseJumping(0);
+            m_DrivenField.StopDragging();
         }
     }
 }

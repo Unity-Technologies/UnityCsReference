@@ -240,8 +240,7 @@ sealed class AudioContainerWindowState
         if (m_PreviewAudioSource == null)
         {
             // Create a hidden game object in the scene with an AudioSource for editor previewing purposes.
-            // The preview object is created on play and destroyed on stop.
-            // This means that this object is a hidden part of the user's scene during play/pause.
+            // It stays hidden in the user's scene until the window is closed or suspended, or play mode changes.
             var gameObject = new GameObject
             {
                 name = previewAudioSourceName,

@@ -301,7 +301,7 @@ namespace UnityEditor
             {
                 EntityId entityId = parentItem.children[idx].id;
 
-                // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
+                // Use same name compare as when we sort in the backend
                 string propertyPath = AssetDatabase.GetAssetPath(entityId);
                 if (EditorUtility.NaturalCompare(Path.GetFileNameWithoutExtension(propertyPath), newName) > 0)
                     break;
@@ -500,10 +500,9 @@ namespace UnityEditor
 
         public void BeginCreateNewMixer()
         {
-            //int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile
             ClearRenameAndNewItemState();
 
-            // Use resouce file to store instanceID for output group so we can use that for the newly created audiomixer
+            // Use resource file to store the output group entity ID so we can use that for the newly created audiomixer
             string resourceFileData = string.Empty;
             var selectedItem = GetSelectedItem();
             if (selectedItem != null && selectedItem.mixer.outputAudioMixerGroup != null)

@@ -14,7 +14,6 @@ namespace Unity.UIToolkit.Editor
     /// A field for editing <see cref="TransformOrigin"/> values with X, Y, and Z components,
     /// including a visual selector for picking preset origin positions.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UxmlElement]
     internal partial class TransformOriginStyleField : BaseField<TransformOrigin>
     {

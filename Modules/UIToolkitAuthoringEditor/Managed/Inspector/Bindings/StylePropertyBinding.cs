@@ -18,7 +18,6 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal enum TrackedPropertyType
 {
     MarkOverride,
@@ -26,7 +25,6 @@ internal enum TrackedPropertyType
     StopTracking,
 }
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal interface ITrackablePropertyProvider
 {
     event Action<ITrackablePropertyProvider, string, TrackedPropertyType> OnTrackedPropertyChanged;
@@ -235,6 +233,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
 
     private readonly Dictionary<BindingInfoKey, State> m_State = new ();
     private UpdateFlags m_UpdateFlags;
+    private int m_FocusUndoGroup = -1;
     private string m_StyleProperty;
     private string m_StylePropertyCSharpName;
     private StylePropertyId stylePropertyId;
@@ -301,6 +300,10 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             new CallbackContext(this, context.targetElement, context.bindingId),
             TrickleDown.TrickleDown);
 
+        context.targetElement.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+        context.targetElement.RegisterCallback<FocusInEvent>(OnFocusIn);
+        context.targetElement.RegisterCallback<FocusOutEvent>(OnFocusOut);
+
         SetupVariableEditingHandler(context.targetElement);
     }
 
@@ -310,6 +313,10 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         OnTrackedPropertyChanged?.Invoke(this, styleProperty, TrackedPropertyType.StopTracking);
         UnregisterCallbacks(this, stylePropertyId, context.targetElement);
         context.targetElement.UnregisterCallback<TooltipEvent, CallbackContext>(OnTooltipEvent, TrickleDown.TrickleDown);
+        context.targetElement.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+        context.targetElement.UnregisterCallback<FocusInEvent>(OnFocusIn);
+        context.targetElement.UnregisterCallback<FocusOutEvent>(OnFocusOut);
+        m_FocusUndoGroup = -1;
         m_State.Remove(new BindingInfoKey(context.targetElement, context.bindingId));
     }
 
@@ -329,7 +336,51 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         return Update(context.bindingId, stylePropertyId, ctx, targetElement);
     }
 
+    void OnPointerDown(PointerDownEvent evt)
+    {
+        if (m_FocusUndoGroup < 0 || !IsInLabel(evt.target as VisualElement, evt.currentTarget as VisualElement))
+            return;
+
+        Undo.IncrementCurrentGroup();
+        m_FocusUndoGroup = Undo.GetCurrentGroup();
+    }
+
+    static bool IsInLabel(VisualElement element, VisualElement root)
+    {
+        for (; element != null && element != root; element = element.parent)
+        {
+            if (element.ClassListContains(BaseField<int>.labelUssClassName))
+                return true;
+        }
+        return false;
+    }
+
+    void OnFocusIn(FocusInEvent evt)
+    {
+        if (m_FocusUndoGroup >= 0)
+            return;
+
+        Undo.IncrementCurrentGroup();
+        m_FocusUndoGroup = Undo.GetCurrentGroup();
+    }
+
+    void OnFocusOut(FocusOutEvent evt)
+    {
+        if (m_FocusUndoGroup < 0)
+            return;
+
+        m_FocusUndoGroup = -1;
+        Undo.IncrementCurrentGroup();
+    }
+
     static void ProcessChange<T>(T value, StyleInspectorElement.AuthoringContext authoringContext, StylePropertyBinding binding, Action<StyleProperty, StyleSheet, T> setter)
+    {
+        ProcessChangeCore(value, authoringContext, binding, setter);
+        if (binding.m_FocusUndoGroup >= 0)
+            Undo.CollapseUndoOperations(binding.m_FocusUndoGroup);
+    }
+
+    static void ProcessChangeCore<T>(T value, StyleInspectorElement.AuthoringContext authoringContext, StylePropertyBinding binding, Action<StyleProperty, StyleSheet, T> setter)
     {
         var styleDiff = authoringContext.StyleDiff;
         switch (styleDiff.currentContextType)
@@ -663,14 +714,14 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         if (hasInlineValue)
             extractOneLabel += "/" + k_NewClassText;
         menu.AppendAction(extractOneLabel,
-            _ => OpenNewClassWindow(field, vea, vta, ussPropertyName),
+            _ => OpenNewClassWindow(AuthoringContext.For(ve), field, vea, vta, ussPropertyName),
             _ => hasInlineValue ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
         var extractAllLabel = k_ExtractAllInlineStylesText;
         if (hasAnyInlineValue)
             extractAllLabel += "/" + k_NewClassText;
         menu.AppendAction(extractAllLabel,
-            _ => OpenNewClassWindow(field, vea, vta, null),
+            _ => OpenNewClassWindow(AuthoringContext.For(ve), field, vea, vta, null),
             _ => hasAnyInlineValue ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
         var matchingSelectors = authoringContext.StyleDiff.matchRecords;
@@ -716,17 +767,22 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         }
     }
 
-    void OpenNewClassWindow(VisualElement field, VisualElementAsset vea, VisualTreeAsset vta, string propertyName)
+    void OpenNewClassWindow(AuthoringContext context, VisualElement field, VisualElementAsset vea, VisualTreeAsset vta,
+        string propertyName)
     {
-        var screenRect = GUIUtility.GUIToScreenRect(field.worldBound);
-        NewClassWindow.Open(screenRect, className => ExtractInlineStylesToNewClass(vea, vta, className, propertyName)).ShowModal();
+        var screenRect = field.panel != null
+            ? EditorMenuExtensions.GUIToScreenRect(field, field.worldBound)
+            : new Rect(UnityEditor.Editor.GetCurrentMousePosition(), Vector2.zero);
+        NewClassWindow.Open(screenRect,
+            className => ExtractInlineStylesToNewClass(context, vea, vta, className, propertyName)).ShowModal();
     }
 
-    void ExtractInlineStylesToNewClass(VisualElementAsset vea, VisualTreeAsset vta, string className, string propertyName)
+    void ExtractInlineStylesToNewClass(AuthoringContext context, VisualElementAsset vea, VisualTreeAsset vta,
+        string className, string propertyName)
     {
         using var _ = UICommandQueue.BeginGroup(ExtractInlineStylesToNewClassCommand.CommandUndoName);
 
-        var activeStyleSheet = GetActiveStyleSheetQuery.Get();
+        var activeStyleSheet = GetActiveStyleSheetQuery.Get(context);
         if (activeStyleSheet == null)
         {
             var ussPath = StyleSheetAssetUtilities.DisplaySaveFileDialogForUSS();
@@ -734,7 +790,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 return;
 
             CreateStyleSheetCommand.Execute(CommandSources.Inspector, vta, ussPath);
-            activeStyleSheet = GetActiveStyleSheetQuery.Get();
+            activeStyleSheet = GetActiveStyleSheetQuery.Get(context);
         }
 
         if (activeStyleSheet == null)
@@ -809,7 +865,8 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             if (rule != null)
             {
                 menu.AppendAction(k_GoToSelectorText,
-                    _ => RequestSelectionQuery<StyleRule>.Execute(CommandSources.Inspector, rule),
+                    _ => RequestSelectionQuery<StyleRule>.Execute(
+                        AuthoringContext.For(authoringContext.StyleDiff.currentTarget), CommandSources.Inspector, rule),
                     _ => authoringContext.IsReadOnly ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
             }
         }

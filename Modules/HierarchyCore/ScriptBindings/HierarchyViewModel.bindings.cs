@@ -96,7 +96,7 @@ namespace Unity.Hierarchy
         /// This count excludes container nodes (such as scenes) that are visible only because they contain matching descendants.
         /// The count is computed during filtering and is available after the view model finishes updating.
         /// </remarks>
-        internal extern int SearchMatchCount { [NativeMethod("GetSearchMatchCount")] get; }
+        internal extern int SearchMatchCount { [NativeMethod("GetSearchMatchCount", IsThreadSafe = true)] get; }
 
         internal ReadOnlyNativeVector<HierarchyFlattenedNode> FlattenedNodes
         {
@@ -185,12 +185,12 @@ namespace Unity.Hierarchy
             QueryParser = new DefaultHierarchySearchQueryParser();
         }
 
-#pragma warning disable UA5000 // Releases the native handle; destroy is thread-safe, and handler-state cleanup is skipped on the finalizer path.
+#pragma warning disable UAC0045 // Releases the native handle; destroy is thread-safe, and handler-state cleanup is skipped on the finalizer path.
         ~HierarchyViewModel()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         /// <summary>
         /// Disposes this object and releases its memory.

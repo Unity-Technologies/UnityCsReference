@@ -26,6 +26,7 @@ using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 using Debug = UnityEngine.Debug;
 using ViewController = Unity.Profiling.Editor.UI.ViewController;
 
@@ -94,7 +95,7 @@ namespace UnityEditor
             public static readonly GUIContent saveProfilingData = L10n.IconContent("SaveAs", "Save current profiling information to a binary file", null);
             public static readonly GUIContent loadWindowTitle = L10n.TextContent("Load Window", null, null, null);
             public static readonly GUIContent loadProfilingData = L10n.IconContent("Import", "Load binary profiling information from a file. Shift click to append to the existing data", null);
-            public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files", null), "data,raw", L10n.Tr("All files", null), "*" };
+            public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files", null), "data,raw,zst", L10n.Tr("All files", null), "*" };
 
             public static readonly GUIContent optionsButtonContent = L10n.IconContent("_Menu", "Additional Options", null);
             public static readonly GUIContent helpButtonContent = L10n.IconContent("_Help", "Open Manual (in a web browser)", null);
@@ -279,6 +280,7 @@ namespace UnityEditor
         internal event Action frameDataViewAboutToBeDisposed = delegate {};
         public event Action<long> SelectedFrameIndexChanged;
 
+        [VisibleToOtherModules("UnityEditor.NetworkProfilerModule")]
         internal event Action<bool> recordingStateChanged = delegate {};
         internal event Action<bool> deepProfileChanged = delegate {};
         internal event Action<ProfilerMemoryRecordMode> memoryRecordingModeChanged = delegate {};
@@ -394,6 +396,7 @@ namespace UnityEditor
             return IsSetToRecord() && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || ProfilerDriver.profileEditor || !ProfilerDriver.IsConnectionEditor());
         }
 
+        [VisibleToOtherModules("UnityEditor.NetworkProfilerModule")]
         internal bool IsSetToRecord()
         {
             return m_Recording;
@@ -1497,7 +1500,7 @@ namespace UnityEditor
                     using (var iter = new ProfilerFrameDataIterator())
                     {
                         iter.SetRoot(frameIndex, k_MainThreadIndex);
-                        if (threadIndex >= iter.GetThreadCount(frameIndex))
+                        if (threadIndex >= iter.GetThreadCount(frameIndex) && threadIndex != iter.GetGpuThreadIndex(frameIndex))
                             threadIndex = k_MainThreadIndex;
                     }
                 }
@@ -1623,7 +1626,7 @@ namespace UnityEditor
             var filePath = $"{ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath}/{prodNameSanitised}_{dateString}.data";
 
             EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, filePath);
-            if (ProfilerDriver.SaveProfile(filePath))
+            if (ProfilerDriver.SaveProfileWithCompression(filePath, ProfilerUserSettings.compressSavedCaptures))
             {
                 // Saving the .data was successful, now save the bottleneck data and screenshot
                 // Make sure we're up to date, ready to write out the highlights file.
@@ -2167,6 +2170,7 @@ namespace UnityEditor
 
         void ProfilerModulesDropdownWindow.IResponder.OnRestoreDefaultModules()
         {
+            var previouslySelectedModule = selectedModule;
             DeselectSelectedModuleIfNecessary();
 
             int index = m_AllModules.Count - 1;
@@ -2194,6 +2198,15 @@ namespace UnityEditor
 
             // Restore the Bottleneck/Highlights view to its default visible state.
             SetBottleneckViewVisible(true);
+
+            // The details view was closed above, so reselect a module unless the Bottlenecks view is showing (UUM-117802).
+            if (m_SelectedModuleIndex == k_NoModuleSelected && m_BottlenecksDetailsViewController == null)
+            {
+                if (previouslySelectedModule != null && m_AllModules.Contains(previouslySelectedModule) && previouslySelectedModule.active)
+                    SelectModule(previouslySelectedModule);
+                else
+                    SelectFirstActiveModule();
+            }
 
             Repaint();
 

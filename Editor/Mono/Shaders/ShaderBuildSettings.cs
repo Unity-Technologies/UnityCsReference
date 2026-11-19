@@ -512,6 +512,15 @@ namespace UnityEditor.Shaders
             return sections.Length > 0 && sections[0] == identifier;
         }
 
+        internal static bool DefinesHaveSameIdentifier(string define, string otherDefine)
+        {
+            if (string.IsNullOrEmpty(define) || string.IsNullOrEmpty(otherDefine))
+                return false;
+
+            var sections = define.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+            return sections.Length > 0 && DefineHasIdentifier(otherDefine, sections[0]);
+        }
+
         internal static bool IsConstantDefineDuplicate(string[] defines, uint numInternalDefines, string identifier, int index, out string msg)
         {
             msg = "";
@@ -830,7 +839,7 @@ namespace UnityEditor.Shaders
             }
         }
 
-        static bool IsAllDefaultRow(ShaderCompilerSettings row)
+        internal static bool IsAllDefaultRow(ShaderCompilerSettings row)
         {
             return row.compilerToolchainOverride == ShaderCompilerToolchain.Default
                 && row.optimizationLevel == ShaderOptimizationLevel.Default

@@ -14,6 +14,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const int k_FixedWindowWidth = 360;
         private const int k_ExportWindowHeight = 180;
         private const int k_SignInWindowHeight = 100;
+        private const int k_ClosedNetworkHelpBoxHeight = 55;
+        private static readonly string k_ClosedNetworkMessage = L10n.Tr("This package won't be signed because Closed network environment is enabled in Project Settings.", null);
         private OrganizationInfo[] m_OrganizationInfos;
 
         private readonly IPackageVersion m_VersionToExport;
@@ -23,13 +25,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IUnityConnectProxy m_UnityConnectProxy;
         private readonly IUpmClient m_UpmClient;
         private readonly IIOProxy m_IOProxy;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
 
-        public ExportWindowContent(IApplicationProxy applicationProxy, IIOProxy ioProxy, IResourceLoader resourceLoader, IUnityConnectProxy unityConnectProxy, IUpmClient upmClient, IPackageVersion version)
+        public ExportWindowContent(IApplicationProxy applicationProxy, IIOProxy ioProxy, IResourceLoader resourceLoader, IUnityConnectProxy unityConnectProxy, IUpmClient upmClient, IProjectSettingsProxy settingsProxy, IPackageVersion version)
         {
             m_ApplicationProxy = applicationProxy;
             m_IOProxy = ioProxy;
             m_UnityConnectProxy = unityConnectProxy;
             m_UpmClient = upmClient;
+            m_SettingsProxy = settingsProxy;
 
             m_VersionToExport = version;
             windowTitle = L10n.Tr("Export Package", null);
@@ -39,6 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             styleSheets.Add(resourceLoader.packageManagerCommonStyleSheet);
             styleSheets.Add(resourceLoader.exportWindowStyleSheet);
+            closedNetworkHelpBox.text = k_ClosedNetworkMessage;
             cancelButton.clicked += Close;
             signInOkButton.clicked += Close;
             exportButton.clicked += OnExportButtonClicked;
@@ -53,7 +58,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override void OnBeforeShowModal()
         {
             m_UpmClient.onPackOperation += OnPackOperation;
-            
+
             Refresh();
         }
 
@@ -82,36 +87,53 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void Refresh()
         {
-            var showSignInContainer = m_UnityConnectProxy.isUserInfoReady && !m_UnityConnectProxy.isUserLoggedIn;
+            // Signing in is only needed to sign the package, which is skipped in a closed network environment with a bypass entitlement
+            var isSignatureDisabled = m_SettingsProxy.isSignatureDisabled;
+            var showSignInContainer = !isSignatureDisabled && m_UnityConnectProxy.isUserInfoReady && !m_UnityConnectProxy.isUserLoggedIn;
             UIUtils.SetElementDisplay(signInContainer, showSignInContainer);
             UIUtils.SetElementDisplay(exportContainer, !showSignInContainer);
-            SetWindowSize(k_FixedWindowWidth, showSignInContainer ? k_SignInWindowHeight : k_ExportWindowHeight);
             if (showSignInContainer)
+            {
+                SetWindowSize(k_FixedWindowWidth, k_SignInWindowHeight);
                 return;
+            }
+
+            UIUtils.SetElementDisplay(closedNetworkHelpBox, isSignatureDisabled);
+            SetWindowSize(k_FixedWindowWidth, isSignatureDisabled ? k_ExportWindowHeight + k_ClosedNetworkHelpBoxHeight : k_ExportWindowHeight);
 
             packageDisplayNameLabel.text = m_VersionToExport.displayName;
             packageVersionLabel.text = m_VersionToExport.version.ToString();
             packageTechnicalNameLabel.text = m_VersionToExport.name;
 
-            var orgNames = System.Array.ConvertAll(m_OrganizationInfos, p => p.name);
-            if (orgNames.Length > 0)
+            var choices = new List<string>();
+            var value = L10n.Tr("Select Organization", null);
+
+            if (isSignatureDisabled)
             {
-                packageOrganizationDropdown.choices = [.. orgNames];
-                if (orgNames.Length == 1)
-                {
-                    packageOrganizationDropdown.index = 0;
-                    packageOrganizationDropdown.value = orgNames[0];
-                }
-                else
-                    packageOrganizationDropdown.value = L10n.Tr("Select Organization", null);
+                // The dropdown will be disabled later, we use the default value and choices.
+            }
+            else if (m_OrganizationInfos.Length == 0)
+            {
+                value = L10n.Tr("No Organizations Found", null);
             }
             else
             {
-                packageOrganizationDropdown.choices = new List<string>() { L10n.Tr("No Organizations Found", null) };
-                packageOrganizationDropdown.value = L10n.Tr("No Organizations Found", null);
+                foreach (var orgInfo in m_OrganizationInfos)
+                {
+                    choices.Add(orgInfo.name);
+                }
+                if (m_OrganizationInfos.Length == 1)
+                {
+                    packageOrganizationDropdown.index = 0;
+                    value = choices[0];
+                }
             }
-            packageOrganizationDropdown.SetEnabled(orgNames.Length > 0);
-            exportButton.SetEnabled(orgNames.Length > 0 && packageOrganizationDropdown.index > -1);
+
+            packageOrganizationDropdown.choices = choices;
+            packageOrganizationDropdown.value = value;
+            organizationLabel.SetEnabled(!isSignatureDisabled);
+            packageOrganizationDropdown.SetEnabled(m_OrganizationInfos.Length > 0 && !isSignatureDisabled);
+            exportButton.SetEnabled(isSignatureDisabled || (m_OrganizationInfos.Length > 0 && packageOrganizationDropdown.index > -1));
         }
 
         private void SetWindowSize(int width, int height)
@@ -152,8 +174,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return;
             }
 
-            var selectedIndex = packageOrganizationDropdown.index;
-            var orgKey = m_OrganizationInfos[selectedIndex].foreignKey;
+            var orgKey = m_SettingsProxy.isSignatureDisabled ? null : m_OrganizationInfos[packageOrganizationDropdown.index].foreignKey;
 
             m_UpmClient.Pack(m_VersionToExport.name, m_VersionToExport.localPath, m_ExportPath, orgKey);
             Close();
@@ -172,6 +193,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement exportContainer => cache.Get<VisualElement>("exportContainer");
         private Label packageDisplayNameLabel => cache.Get<Label>("packageDisplayNameLabel");
         private Label packageVersionLabel => cache.Get<Label>("packageVersionLabel");
+        private ExtendedHelpBox closedNetworkHelpBox => cache.Get<ExtendedHelpBox>("closedNetworkHelpBox");
+        private Label organizationLabel => cache.Get<Label>("organizationLabel");
         private DropdownField packageOrganizationDropdown => cache.Get<DropdownField>("packageOrganizationDropdown");
         private Label packageTechnicalNameLabel => cache.Get<Label>("packageTechnicalNameLabel");
         private Button cancelButton => cache.Get<Button>("cancelButton");

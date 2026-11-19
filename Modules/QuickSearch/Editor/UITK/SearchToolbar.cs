@@ -5,11 +5,13 @@
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class SearchToolbar : UIElements.Toolbar, ISearchElement
     {
         private static readonly string openSaveSearchesIconTooltip = L10n.Tr("Toggle Saved Searches Panel", null);

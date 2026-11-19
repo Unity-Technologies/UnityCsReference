@@ -38,6 +38,9 @@ namespace UnityEditor.Build.Profile
         [IgnoreForUAL0015("Singleton cache reloaded or recreated on demand by the instance getter")]
         static BuildProfileContext s_Instance;
 
+        [NonSerialized]
+        BuildProfile m_LastActiveProfile;
+
         bool m_Initializing;
 
         /// <summary>
@@ -114,13 +117,19 @@ namespace UnityEditor.Build.Profile
             set
             {
                 var prev = EditorUserBuildSettings.activeBuildProfile;
+                var prevWasDeleted = prev == null && WasLastActiveProfileDestroyed();
                 var prevDefines = BuildDefines.GetBuildProfileScriptDefines();
                 var prevSDKPlatformDefines = SDKPlatformCompilationUtil.GetActivePlatformEditorDefines();
+                var compiledProfile = value != null && value.platformBuildProfile != null ? value : prev;
+                var prevPlayerSettingsCompilerInputs = GetPlayerSettingsCompilerInputs(compiledProfile);
 
                 if (value == null || value.platformBuildProfile == null)
                 {
                     prev?.UpdateGlobalManagerPlayerSettings(activeWillBeRemoved: true);
+                    if (prevWasDeleted)
+                        BuildProfile.TrySetProjectSettingsAssetAsGlobalManagerPlayerSettings();
                     EditorUserBuildSettings.activeBuildProfile = null;
+                    SetLastActiveProfile(null);
 
                     activeProfileChanged?.Invoke(prev, null);
                     OnActiveProfileChangedForSettingExtension(prev, null);
@@ -128,8 +137,10 @@ namespace UnityEditor.Build.Profile
 
                     var defines = BuildDefines.GetBuildProfileScriptDefines();
                     var sdkPlatformDefines = SDKPlatformCompilationUtil.GetActivePlatformEditorDefines();
-                    if (!ArrayUtility.ArrayEquals(prevDefines, defines) ||
-                        !ArrayUtility.ArrayEquals(prevSDKPlatformDefines, sdkPlatformDefines))
+                    if (prevWasDeleted ||
+                        !ScriptingDefinesHelper.AreDefinesEquivalent(prevDefines, defines) ||
+                        !ArrayUtility.ArrayEquals(prevSDKPlatformDefines, sdkPlatformDefines) ||
+                        HavePlayerSettingsCompilerInputsChanged(prevPlayerSettingsCompilerInputs, compiledProfile))
                         BuildProfileModuleUtil.RequestScriptCompilation(null);
 
                     return;
@@ -155,6 +166,7 @@ namespace UnityEditor.Build.Profile
                 }
 
                 EditorUserBuildSettings.activeBuildProfile = value;
+                SetLastActiveProfile(value);
 
                 OnActiveProfileChangedForSettingExtension(prev, value);
                 value.UpdateGlobalManagerPlayerSettings();
@@ -162,10 +174,49 @@ namespace UnityEditor.Build.Profile
                 EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
                 value.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(value.scriptingDefines);
 
-                if (!ArrayUtility.ArrayEquals(prevDefines, value.scriptingDefines) ||
-                    !ArrayUtility.ArrayEquals(prevSDKPlatformDefines, SDKPlatformCompilationUtil.GetActivePlatformEditorDefines()))
+                if (prevWasDeleted ||
+                    !ScriptingDefinesHelper.AreDefinesEquivalent(prevDefines, value.scriptingDefines) ||
+                    !ArrayUtility.ArrayEquals(prevSDKPlatformDefines, SDKPlatformCompilationUtil.GetActivePlatformEditorDefines()) ||
+                    HavePlayerSettingsCompilerInputsChanged(prevPlayerSettingsCompilerInputs, compiledProfile))
                     BuildProfileModuleUtil.RequestScriptCompilation(value);
             }
+        }
+
+        // A deleted asset's objects are unloaded without OnDisable, so its settings can no longer be compared.
+        static bool WasLastActiveProfileDestroyed()
+        {
+            var lastActiveProfile = s_Instance != null ? s_Instance.m_LastActiveProfile : null;
+            return !ReferenceEquals(lastActiveProfile, null) && lastActiveProfile == null;
+        }
+
+        static void SetLastActiveProfile(BuildProfile profile)
+        {
+            if (s_Instance != null)
+                s_Instance.m_LastActiveProfile = profile;
+        }
+
+        static void OnProjectChanged()
+        {
+            if (activeProfile == null && WasLastActiveProfileDestroyed())
+                activeProfile = null;
+        }
+
+        // Swapping the active player settings override does not trigger a script recompile by itself.
+        static (string defines, string[] compilerArguments) GetPlayerSettingsCompilerInputs(BuildProfile profile)
+        {
+            if (profile == null)
+                return (string.Empty, Array.Empty<string>());
+
+            var namedBuildTarget = NamedBuildTarget.FromTargetAndSubtarget(profile.buildTarget, (int)profile.subtarget);
+            return (PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget), PlayerSettings.GetAdditionalCompilerArguments(namedBuildTarget));
+        }
+
+        static bool HavePlayerSettingsCompilerInputsChanged(
+            (string defines, string[] compilerArguments) previous, BuildProfile profile)
+        {
+            var current = GetPlayerSettingsCompilerInputs(profile);
+            return !ScriptingDefinesHelper.AreDefinesEquivalent(previous.defines, current.defines) ||
+                !ArrayUtility.ArrayEquals(previous.compilerArguments, current.compilerArguments);
         }
 
         [VisibleToOtherModules]
@@ -201,7 +252,7 @@ namespace UnityEditor.Build.Profile
         {
             var defines = BuildDefines.GetBuildProfileScriptDefines();
 
-            if (!ArrayUtility.ArrayEquals(defines, instance.cachedEditorScriptingDefines))
+            if (!ScriptingDefinesHelper.AreDefinesEquivalent(defines, instance.cachedEditorScriptingDefines))
             {
                 bool isAutomatedEnvironment = Application.isBatchMode || BuildPipeline.isBuildingPlayer;
 
@@ -436,9 +487,8 @@ namespace UnityEditor.Build.Profile
 
         /// <summary>
         /// List of missing platforms modules that are not installed, don't have a classic platform profile,
-        /// and can be shown in the Build Settings window.
+        /// and can be shown in the Build Profile window.
         /// </summary>
-        /// <see cref="BuildPlayerWindow.ActiveBuildTargetsGUI"/>
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal List<GUID> GetMissingKnownPlatformModules()
         {
@@ -544,6 +594,7 @@ namespace UnityEditor.Build.Profile
             SyncActiveProfileToFallback();
 
             EditorApplication.quitting -= SyncActiveProfileToFallback;
+            EditorApplication.projectChanged -= OnProjectChanged;
         }
 
         void OnEnable()
@@ -567,6 +618,9 @@ namespace UnityEditor.Build.Profile
                 EditorUserBuildSettings.isBuildProfileAvailable = true;
                 EditorApplication.quitting -= SyncActiveProfileToFallback;
                 EditorApplication.quitting += SyncActiveProfileToFallback;
+                EditorApplication.projectChanged -= OnProjectChanged;
+                EditorApplication.projectChanged += OnProjectChanged;
+                m_LastActiveProfile = activeProfile;
 
                 if (classicPlatformProfiles == null)
                     classicPlatformProfiles = new List<BuildProfile>();

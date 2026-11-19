@@ -2,14 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 sealed class PreviewThemeState
 {
+    // Built-in editor themes have no usable asset GUID; they are stored under these keys instead.
+    internal const string EditorThemeKeyPrefix = "editor-theme:";
+
     readonly string m_SessionKey;
 
     public PreviewThemeState(string sessionKey)
@@ -25,22 +31,46 @@ sealed class PreviewThemeState
 
     internal void Clear() => SessionState.EraseString(m_SessionKey);
 
-    public ThemeStyleSheet SelectedTheme
+    public StyleSheet SelectedTheme
     {
-        get
+        get => FromKey(SessionState.GetString(m_SessionKey, string.Empty));
+        set => SessionState.SetString(m_SessionKey, ToKey(value));
+    }
+
+    /// <summary>
+    /// The theme chosen for a document previewed in <paramref name="contextType"/>. A theme chosen for the other
+    /// context type, before the document switched, counts as none.
+    /// </summary>
+    public StyleSheet GetSelectedTheme(ContextType contextType)
+    {
+        var theme = SelectedTheme;
+        return theme != null && ThemeUtility.GetContextTypeForTheme(theme) == contextType ? theme : null;
+    }
+
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    internal static string ToKey(StyleSheet theme)
+    {
+        if (theme == null)
+            return string.Empty;
+        if (ThemeUtility.TryGetEditorCanvasTheme(theme, out var editorTheme))
+            return EditorThemeKeyPrefix + editorTheme;
+        return AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(theme));
+    }
+
+    internal static StyleSheet FromKey(string key)
+    {
+        if (string.IsNullOrEmpty(key))
+            return null;
+
+        if (key.StartsWith(EditorThemeKeyPrefix, StringComparison.Ordinal))
         {
-            var guid = SessionState.GetString(m_SessionKey, string.Empty);
-            if (string.IsNullOrEmpty(guid))
-                return null;
-            var path = AssetDatabase.GUIDToAssetPath(guid);
-            return string.IsNullOrEmpty(path) ? null : AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(path);
+            return Enum.TryParse<CanvasTheme>(key.Substring(EditorThemeKeyPrefix.Length), out var editorTheme) &&
+                ThemeUtility.IsEditorCanvasTheme(editorTheme)
+                ? ThemeUtility.GetStyleSheetForTheme(editorTheme, null)
+                : null;
         }
-        set
-        {
-            var guid = value != null
-                ? AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(value))
-                : string.Empty;
-            SessionState.SetString(m_SessionKey, guid);
-        }
+
+        var path = AssetDatabase.GUIDToAssetPath(key);
+        return string.IsNullOrEmpty(path) ? null : AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(path);
     }
 }

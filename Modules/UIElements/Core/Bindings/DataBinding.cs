@@ -58,7 +58,6 @@ namespace UnityEngine.UIElements
         private static MethodInfo s_UpdateUIMethodInfo;
         internal static MethodInfo updateUIMethod => s_UpdateUIMethodInfo ??= CacheReflectionInfo();
 
-        [NoAutoStaticsCleanup]
         internal static readonly UniqueStyleString textElementInnerInputFieldUssClassNameUnique =
             new("unity-text-element--inner-input-field-component");
 

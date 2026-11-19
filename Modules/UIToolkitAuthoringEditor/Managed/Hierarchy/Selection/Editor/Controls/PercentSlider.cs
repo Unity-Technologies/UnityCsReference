@@ -11,7 +11,6 @@ using UnityEngine.UIElements;
 namespace Unity.UIToolkit.Editor
 {
     [UxmlElement]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class PercentSlider : BaseField<float>, IValueField<float>
     {
         static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/Controls/PercentSlider.uxml";

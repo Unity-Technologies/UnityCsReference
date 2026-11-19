@@ -161,10 +161,10 @@ internal class FontAssetFactory
         fontAsset.IsEditorFont = true;
         fontAsset.isMultiAtlasTexturesEnabled = true;
 
-        // When the checkerboard switch is enabled, the font atlas texture should be bilinear filtered so that we can see the pattern being blurrred when not perfectly aligned.
+        // When checkerboard debugging is enabled, the font atlas texture should be bilinear filtered so that we can see the pattern being blurrred when not perfectly aligned.
         // The text could be rendered with point filtering all the time for bitmap fonts otherwise.
 
-        fontAsset.atlasTexture.filterMode = TextGenerator.EnableCheckerboardPattern ? FilterMode.Bilinear : FilterMode.Point;
+        fontAsset.atlasTexture.filterMode = fontAsset.isCheckerboardDebugEnabled ? FilterMode.Bilinear : FilterMode.Point;
     }
 
     public static void SetHideFlags(FontAsset fontAsset, bool persistent = true)

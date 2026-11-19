@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
@@ -137,6 +138,7 @@ namespace UnityEditor.Search
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     abstract class SearchElement : VisualElement, ISearchElement
     {
         private const string ussBasePath = "StyleSheets/QuickSearch";
@@ -401,6 +403,7 @@ namespace UnityEditor.Search
             viewState.globalEventManager.UnregisterGlobalEventHandler(eventHandler);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void AppendStyleSheets(VisualElement ve)
         {
             if (!ve.HasStyleSheetPath(ussPath))

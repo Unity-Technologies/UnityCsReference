@@ -52,6 +52,7 @@ namespace UnityEngine.Rendering
         [NativeName("Warmup")] extern public JobHandle WarmUp(JobHandle dependency, bool traceCacheMisses);
         [NativeName("WarmupProgressively")] extern public JobHandle WarmUpProgressively(int count, JobHandle dependency, bool traceCacheMisses);
         extern public int totalGraphicsStateCount { get; }
+        extern public int computeVariantCount { get; }
         extern public int completedWarmupCount { get; }
         extern public bool isWarmedUp { [NativeName("IsWarmedUp")] get; }
 
@@ -98,6 +99,21 @@ namespace UnityEngine.Rendering
         [NativeName("ContainsVariant")] extern private bool ContainsVariantByMaterial(Material mat, PassIdentifier passId, GlobalKeyword[] globalKeywords);
 
         extern public void ClearVariants();
+
+        extern private void GetComputeVariants([Out] ComputeShaderVariant[] results);
+        public void GetComputeVariants(List<ComputeShaderVariant> results)
+        {
+            if (results == null)
+                throw new ArgumentNullException(nameof(results), "The result compute shader variant list cannot be null.");
+            results.Clear();
+            NoAllocHelpers.EnsureListElemCount(results, computeVariantCount);
+            GetComputeVariants(NoAllocHelpers.ExtractArrayFromList(results));
+        }
+
+        extern public bool AddComputeVariant(ComputeShader shader, int kernelIndex, LocalKeyword[] keywords);
+        extern public bool RemoveComputeVariant(ComputeShader shader, int kernelIndex, LocalKeyword[] keywords);
+        extern public bool ContainsComputeVariant(ComputeShader shader, int kernelIndex, LocalKeyword[] keywords);
+
         extern public bool AddGraphicsStateForVariant(Shader shader, PassIdentifier passId, LocalKeyword[] keywords, GraphicsState setup);
         extern public bool RemoveGraphicsStatesForVariant(Shader shader, PassIdentifier passId, LocalKeyword[] keywords);
         extern public bool CopyGraphicsStatesForVariant(Shader srcShader, PassIdentifier srcPassId, LocalKeyword[] srcKeywords,

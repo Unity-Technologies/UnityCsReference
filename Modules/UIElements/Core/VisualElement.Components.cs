@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.Unmanaged;
 
 namespace UnityEngine.UIElements
@@ -90,7 +90,67 @@ namespace UnityEngine.UIElements
         /// </summary>
         public void MarkDirtyStyles()
         {
+            componentStyleSyncPending = true;
             IncrementVersion(VersionChangeType.StyleSheet);
+        }
+
+        internal bool hasComponentStyleSync => GetFlag(VisualElementFlags.HasComponentStyleSync);
+
+        internal bool componentStyleSyncPending
+        {
+            get => GetFlag(VisualElementFlags.ComponentStyleSyncPending);
+            set => SetFlag(VisualElementFlags.ComponentStyleSyncPending, value);
+        }
+
+        internal void RegisterComponentStyleSync(RuntimeTypeHandle typeHandle, Action<VisualElement> sync)
+        {
+            var index = FindComponentIndex(typeHandle);
+            if (index < 0)
+                return;
+
+            m_ComponentTypeSet.records[index].styleSync = sync;
+            SetFlag(VisualElementFlags.HasComponentStyleSync, true);
+        }
+
+        internal void UnregisterComponentStyleSync(RuntimeTypeHandle typeHandle)
+        {
+            var types = m_ComponentTypeSet.types;
+            var records = m_ComponentTypeSet.records;
+            var stillSynced = false;
+            for (var i = 0; i < types.Length; i++)
+            {
+                if (!types[i].Equals(typeHandle) && records[i].styleSync != null)
+                {
+                    stillSynced = true;
+                    break;
+                }
+            }
+
+            SetFlag(VisualElementFlags.HasComponentStyleSync, stillSynced);
+        }
+
+        internal void InvokeComponentStyleSyncs()
+        {
+            var set = m_ComponentTypeSet;
+            var types = set.types;
+            for (var i = 0; i < types.Length; i++)
+            {
+                if (!ReferenceEquals(set, m_ComponentTypeSet) && FindComponentIndex(types[i]) < 0)   // a sync removed this component
+                    continue;
+
+                var sync = set.records[i].styleSync;
+                if (sync == null)
+                    continue;
+
+                try
+                {
+                    sync(this);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
         }
 
         /// <summary>
@@ -104,6 +164,39 @@ namespace UnityEngine.UIElements
         public void NotifyComponentChanged(in BindingId property)
         {
             NotifyPropertyChanged(property);
+            NotifyComponentSelectorAliases(property);
+        }
+
+        // A binding matches a change by exact id, but one field can be bound as "${component:Name}.f" or
+        // "${component:Ns.Name}.f"; publish every spelling that resolves to the same attached component.
+        void NotifyComponentSelectorAliases(in BindingId property)
+        {
+            var types = m_ComponentTypeSet.types;
+            if (types.Length == 0 || !ComponentBindingSelector.TrySplit(property, out var identity, out var fieldPath))
+                return;
+
+            // An ambiguous id can't tell which component changed; forwarding it would push unchanged siblings
+            // through their ToSource bindings.
+            if (ResolveComponentIndexByIdentity(identity, out var index) != ComponentIdentityResolution.Resolved)
+                return;
+
+            var type = Type.GetTypeFromHandle(types[index]);
+            if (!string.Equals(identity, type.FullName, StringComparison.Ordinal))
+                NotifyPropertyChanged(ComponentBindingSelector.Format(type, true, fieldPath));
+            if (!string.Equals(identity, type.Name, StringComparison.Ordinal) && !IsShortComponentNameAmbiguous(type.Name))
+                NotifyPropertyChanged(ComponentBindingSelector.Format(type, false, fieldPath));
+        }
+
+        bool IsShortComponentNameAmbiguous(string shortName)
+        {
+            var types = m_ComponentTypeSet.types;
+            var count = 0;
+            for (var i = 0; i < types.Length; i++)
+            {
+                if (string.Equals(Type.GetTypeFromHandle(types[i]).Name, shortName, StringComparison.Ordinal) && ++count > 1)
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -482,6 +575,7 @@ namespace UnityEngine.UIElements
         {
             // The only place these clear: nothing removes a private component individually.
             m_Flags &= ~VisualElementFlags.PrivateComponentMask;
+            m_Flags &= ~VisualElementFlags.HasComponentStyleSync;
 
             var slots = m_ComponentSlots;
             if (slots == null)
@@ -539,40 +633,81 @@ namespace UnityEngine.UIElements
             return -1;
         }
 
-        // Warn-once per clashing short name, so an ambiguous binding doesn't spam every update.
-        [AutoStaticsCleanupOnCodeReload]
-        static readonly System.Collections.Generic.HashSet<string> s_AmbiguousComponentNamesWarned =
-            new System.Collections.Generic.HashSet<string>();
+        // The outcome of matching a "${component:<identity>}.field" selector against the element's own
+        // attached components, which are the resolution scope shared by the runtime and the editor.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal enum ComponentIdentityResolution
+        {
+            NotFound,
+            Resolved,
+            Ambiguous,
+        }
 
-        // Resolves a component by short type name for "${component:TypeName}.field" bindings. Two attached
-        // components sharing a short name (different namespaces) are ambiguous, so report unresolved and
-        // warn once rather than silently picking one.
-        internal bool TryResolveComponentHandleByName(string shortTypeName, out RuntimeTypeHandle handle)
+        // Resolves a binding selector identity against the attached components. A namespace-qualified name
+        // outranks a short one, so adding a clashing component elsewhere can't steal a qualified selector.
+        internal ComponentIdentityResolution ResolveComponentIndexByIdentity(string identity, out int index)
+        {
+            index = -1;
+
+            var types = m_ComponentTypeSet.types;
+            var bestRank = 0;
+            var matchCount = 0;
+            for (var i = 0; i < types.Length; i++)
+            {
+                var rank = ComponentBindingSelector.MatchRank(Type.GetTypeFromHandle(types[i]), identity);
+                if (rank == 0 || rank < bestRank)
+                    continue;
+
+                if (rank > bestRank)
+                {
+                    bestRank = rank;
+                    matchCount = 1;
+                    index = i;
+                    continue;
+                }
+
+                matchCount++;
+            }
+
+            if (matchCount == 0)
+                return ComponentIdentityResolution.NotFound;
+
+            if (matchCount > 1)
+            {
+                index = -1;
+                return ComponentIdentityResolution.Ambiguous;
+            }
+
+            return ComponentIdentityResolution.Resolved;
+        }
+
+        // Runtime entry point for "${component:<identity>}.field" bindings. An ambiguous identity reports
+        // unresolved and warns once rather than silently picking one of the clashing components.
+        internal bool TryResolveComponentHandleByIdentity(string identity, out RuntimeTypeHandle handle)
         {
             handle = default;
 
-            var types = m_ComponentTypeSet.types;
-            var matchIndex = -1;
-            for (var i = 0; i < types.Length; i++)
-            {
-                if (Type.GetTypeFromHandle(types[i]).Name != shortTypeName)
-                    continue;
+            var resolution = ResolveComponentIndexByIdentity(identity, out var index);
+            if (resolution == ComponentIdentityResolution.Ambiguous)
+                ComponentBindingSelector.WarnAmbiguous(identity);
 
-                if (matchIndex >= 0)
-                {
-                    if (s_AmbiguousComponentNamesWarned.Add(shortTypeName))
-                        Debug.LogWarning($"[UI Toolkit] The component data binding selector '${{component:{shortTypeName}}}' is ambiguous: more than one component named '{shortTypeName}' is attached to this element. The binding is skipped. Give the component types distinct names.");
-                    return false;
-                }
-
-                matchIndex = i;
-            }
-
-            if (matchIndex < 0)
+            if (resolution != ComponentIdentityResolution.Resolved)
                 return false;
 
-            handle = types[matchIndex];
+            handle = m_ComponentTypeSet.types[index];
             return true;
+        }
+
+        // Editor entry point: the same owner-aware resolution, answering with the component type so the
+        // authoring code can look up its serialized-data description.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal ComponentIdentityResolution ResolveComponentTypeByIdentity(string identity, out Type type)
+        {
+            var resolution = ResolveComponentIndexByIdentity(identity, out var index);
+            type = resolution == ComponentIdentityResolution.Resolved
+                ? Type.GetTypeFromHandle(m_ComponentTypeSet.types[index])
+                : null;
+            return resolution;
         }
 
         // Debugger support: non-generic entry points for the editor UI Toolkit Debugger, which introspects a
@@ -655,6 +790,7 @@ namespace UnityEngine.UIElements
             // A debug write changes the bytes but fires no invalidation on its own: repaint for painter
             // components, and a style re-resolve to re-apply [StyleProperty] values. Bindings are handled by
             // the caller's NotifyComponentChanged.
+            componentStyleSyncPending = true;
             IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
         }
 

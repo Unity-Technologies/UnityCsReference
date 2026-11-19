@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEngine.UIElements
 {
@@ -18,6 +17,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The style value.
         /// </summary>
+        /// <remarks>
+        /// A list read from <see cref="VisualElement.style"/> is a copy. To change the style, modify the list and assign it back.
+        /// The element stores its own copy of an assigned list, so later changes to that list have no effect until it is assigned again.
+        /// </remarks>
         public List<T> value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default; }
@@ -76,12 +79,16 @@ namespace UnityEngine.UIElements
             if (ReferenceEquals(list1, list2))
                 return true;
 
-            if (list1 == null || list2 == null)
+            if (list1 == null || list2 == null || list1.Count != list2.Count)
                 return false;
 
-#pragma warning disable UAC2014 // Avoid Linq
-            return list1.Count == list2.Count && list1.SequenceEqual(list2);
-#pragma warning restore UAC2014
+            var comparer = EqualityComparer<T>.Default;
+            for (var i = 0; i < list1.Count; ++i)
+            {
+                if (!comparer.Equals(list1[i], list2[i]))
+                    return false;
+            }
+            return true;
         }
 
         /// <undoc/>

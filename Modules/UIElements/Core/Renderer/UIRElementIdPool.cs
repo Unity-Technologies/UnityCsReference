@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements.UIR
         int m_HighWater = 1;
 
         public int highWater => m_HighWater;
+        public int liveCount => m_HighWater - 1 - m_Free.Count;
 
         public bool Acquire(out ushort id)
         {

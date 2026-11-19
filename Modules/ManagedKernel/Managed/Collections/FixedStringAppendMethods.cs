@@ -341,10 +341,11 @@ namespace Unity.Collections
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
             where T2 : unmanaged, INativeList<byte>, IUTF8Bytes
         {
-            fs.Length = 0;
-            var fe = Append(ref fs, input);
-            if (fe != FormatError.None)
+            ref var inputRef = ref UnsafeUtilityExtensions.AsRef(input);
+            var inputLength = inputRef.Length;
+            if (!fs.TryResize(inputLength, NativeArrayOptions.UninitializedMemory))
                 return CopyError.Truncation;
+            UnsafeUtility.MemMove(fs.GetUnsafePtr(), inputRef.GetUnsafePtr(), inputLength);
             return CopyError.None;
         }
 
@@ -383,7 +384,13 @@ namespace Unity.Collections
         /// <param name="s">The string to append.</param>
         /// <returns>FormatError.None if successful. Returns FormatError.Overflow if the capacity of the destination string is exceeded.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public unsafe static FormatError Append<T>(ref this T fs, string s)
+        public static FormatError Append<T>(ref this T fs, string s)
+            where T : unmanaged, INativeList<byte>, IUTF8Bytes
+        {
+            return AppendString(ref fs, s, false);
+        }
+
+        static FormatError AppendString<T>(ref T fs, string s, bool replace)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             // We don't know how big the expansion from UTF16 to UTF8 will be, so we account for worst case:
@@ -395,25 +402,25 @@ namespace Unity.Collections
             if (worstCaseCapacity > int.MaxValue)
                 return FormatError.Overflow;
             if (worstCaseCapacity > k_MaxStackAllocBytes)
-                return AppendOnHeap(ref fs, s, (int)worstCaseCapacity);
-            return AppendOnStack(ref fs, s, (int)worstCaseCapacity);
+                return AppendOnHeap(ref fs, s, (int)worstCaseCapacity, replace);
+            return AppendOnStack(ref fs, s, (int)worstCaseCapacity, replace);
         }
 
         // Keep the stackalloc alone in here - see ConvertToStringOnStack for why.
-        static FormatError AppendOnStack<T>(ref T fs, string s, int worstCaseCapacity)
+        static FormatError AppendOnStack<T>(ref T fs, string s, int worstCaseCapacity, bool replace)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             byte* utf8Bytes = stackalloc byte[worstCaseCapacity];
-            return AppendUtf16(ref fs, s, utf8Bytes, worstCaseCapacity);
+            return AppendUtf16(ref fs, s, utf8Bytes, worstCaseCapacity, replace);
         }
 
-        static FormatError AppendOnHeap<T>(ref T fs, string s, int worstCaseCapacity)
+        static FormatError AppendOnHeap<T>(ref T fs, string s, int worstCaseCapacity, bool replace)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             var utf8Bytes = (byte*)Memory.Unmanaged.Allocate(worstCaseCapacity, UnsafeUtility.AlignOf<byte>(), Allocator.Persistent);
             try
             {
-                return AppendUtf16(ref fs, s, utf8Bytes, worstCaseCapacity);
+                return AppendUtf16(ref fs, s, utf8Bytes, worstCaseCapacity, replace);
             }
             finally
             {
@@ -421,7 +428,7 @@ namespace Unity.Collections
             }
         }
 
-        static FormatError AppendUtf16<T>(ref T fs, string s, byte* utf8Buffer, int utf8Capacity)
+        static FormatError AppendUtf16<T>(ref T fs, string s, byte* utf8Buffer, int utf8Capacity, bool replace)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
             int utf8Len;
@@ -435,7 +442,12 @@ namespace Unity.Collections
                 }
             }
 
-            return fs.Append(utf8Buffer, utf8Len);
+            if (!replace)
+                return fs.Append(utf8Buffer, utf8Len);
+            if (!fs.TryResize(utf8Len, NativeArrayOptions.UninitializedMemory))
+                return FormatError.Overflow;
+            UnsafeUtility.MemCpy(fs.GetUnsafePtr(), utf8Buffer, utf8Len);
+            return FormatError.None;
         }
 
         /// <summary>
@@ -453,9 +465,7 @@ namespace Unity.Collections
         public static CopyError CopyFrom<T>(ref this T fs, string s)
             where T : unmanaged, INativeList<byte>, IUTF8Bytes
         {
-            fs.Length = 0;
-            var fe = Append(ref fs, s);
-            if (fe != FormatError.None)
+            if (AppendString(ref fs, s, true) != FormatError.None)
                 return CopyError.Truncation;
             return CopyError.None;
         }

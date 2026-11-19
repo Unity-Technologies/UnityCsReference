@@ -379,9 +379,9 @@ namespace UnityEngine.NVIDIA
             }
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Frees the unmanaged buffer; the render thread may still read it after owner teardown, so the finalizer is the only safe release.
         ~NativeData() { Dispose(false); }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
     }
 
     internal class NativeStr : IDisposable
@@ -417,9 +417,9 @@ namespace UnityEngine.NVIDIA
             }
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Frees the unmanaged string; owners never Dispose it, so the finalizer is the only release.
         ~NativeStr() { Dispose(false); }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
     }
 
     #endregion

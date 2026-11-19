@@ -8,7 +8,6 @@ using System.IO;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal;
@@ -47,15 +46,17 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     private readonly IUpmClient m_UpmClient;
     private readonly IIOProxy m_IOProxy;
     private readonly IDateTimeProxy m_DateTimeProxy;
+    private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
 
     public PackageCreator(IUpmClient upmClient, IUpmCache upmCache, IUnityConnectProxy unityConnectProxy,
-        IIOProxy ioProxy, IDateTimeProxy dateTimeProxy)
+        IIOProxy ioProxy, IDateTimeProxy dateTimeProxy, IInternalEditorUtilityProxy internalEditorUtilityProxy)
     {
         m_UpmClient = RegisterDependency(upmClient);
         m_UpmCache = RegisterDependency(upmCache);
         m_UnityConnectProxy = RegisterDependency(unityConnectProxy);
         m_IOProxy = RegisterDependency(ioProxy);
         m_DateTimeProxy = RegisterDependency(dateTimeProxy);
+        m_InternalEditorUtilityProxy = RegisterDependency(internalEditorUtilityProxy);
     }
 
     // Since namespace has a stricter rule than package name, if we can sanitize a string to be used as a namespace,
@@ -248,7 +249,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
 
     private Dictionary<string, string> CreateTemplateVariables(string packageTechnicalName, string displayName, string rootNamespace)
     {
-        var fullVersion = InternalEditorUtility.GetFullUnityVersion();
+        var fullVersion = m_InternalEditorUtilityProxy.GetFullUnityVersion();
         var versionParts = fullVersion.Split(' ')[0].Split('.');
 
         var majorMinor = $"{versionParts[0]}.{versionParts[1]}";

@@ -7,9 +7,14 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     [NativeHeader("Editor/Mono/EditorDialogEvents.bindings.h")]
+    [NativeHeader("Editor/Src/Dialogs/OpenDialogRegistry.h")]
     public static partial class EditorDialogEvents
     {
-        [StaticAccessor(nameof(EditorDialogEvents), StaticAccessorType.DoubleColon)]
-        static extern int GetNextDialogEventId();
+        // Managed modals go in the native registry too, since it is read off the main thread.
+        [FreeFunction("OpenDialogRegistry::AddManagedModalWindow")]
+        static extern int AddToOpenDialogRegistry(string title);
+
+        [FreeFunction("OpenDialogRegistry::Remove")]
+        static extern void RemoveFromOpenDialogRegistry(int registryId);
     }
 }

@@ -5,23 +5,16 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
-using UnityEditor.SceneManagement;
 using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
 internal class Clipboard
 {
-    public static Clipboard GetClipboardForStage()
-    {
-        switch (StageUtility.GetCurrentStage())
-        {
-            case VisualElementEditingStage uiStage:
-                return uiStage.Clipboard;
-        }
-
-        return s_Clipboard;
-    }
+    /// <summary>
+    /// The clipboard of <paramref name="context"/>: its document session's, or a shared one when it edits no document.
+    /// </summary>
+    public static Clipboard For(AuthoringContext context) => context.Session?.Clipboard ?? s_Clipboard;
 
     // Fallback clipboard singleton with no rebuild path; must persist across code reloads.
     [NoAutoStaticsCleanup]

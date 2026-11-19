@@ -28,7 +28,6 @@ namespace UnityEngine.UIElements
     }
 
     // Update phases, the order of the enum define the updater order
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum VisualTreeUpdatePhase
     {
         ViewData,
@@ -220,7 +219,6 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface IVisualTreeUpdater : IDisposable
     {
         // For UI Test Framework.

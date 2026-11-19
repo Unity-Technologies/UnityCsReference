@@ -8,14 +8,12 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class FilterListChangedEvent : EventBase<FilterListChangedEvent>
     {
         public List<FilterFunction> newFilterList;
         public bool refreshField;
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class FilterFunctionReorderedEvent : EventBase<FilterFunctionReorderedEvent>
     {
         public int fromIndex;

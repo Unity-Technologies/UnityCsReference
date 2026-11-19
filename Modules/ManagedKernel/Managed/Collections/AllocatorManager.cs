@@ -297,8 +297,8 @@ namespace Unity.Collections
         [StructLayout(LayoutKind.Sequential)]
         public struct AllocatorHandle : IAllocator, IEquatable<AllocatorHandle>, IComparable<AllocatorHandle>
         {
-            internal ref TableEntry TableEntry => ref SharedStatics.TableEntry.Ref.Data.ElementAt(Index);
-            internal bool IsInstalled => ((SharedStatics.IsInstalled.Ref.Data.ElementAt(Index>>6) >> (Index&63)) & 1) != 0;
+            internal readonly ref TableEntry TableEntry => ref SharedStatics.TableEntry.Ref.Data.ElementAt(Index);
+            internal readonly bool IsInstalled => ((SharedStatics.IsInstalled.Ref.Data.ElementAt(Index>>6) >> (Index&63)) & 1) != 0;
 
             internal void IncrementVersion()
             {
@@ -332,16 +332,16 @@ namespace Unity.Collections
                 TableEntry = tableEntry;
             }
 
-            internal ref ushort OfficialVersion => ref SharedStatics.Version.Ref.Data.ElementAt(Index);
-            internal ref UnsafeList<AllocatorHandle> ChildAllocators => ref SharedStatics.ChildAllocators.Ref.Data.ElementAt(Index);
-            internal ref AllocatorHandle Parent => ref SharedStatics.Parent.Ref.Data.ElementAt(Index);
-            internal ref int IndexInParent => ref SharedStatics.IndexInParent.Ref.Data.ElementAt(Index);
+            internal readonly ref ushort OfficialVersion => ref SharedStatics.Version.Ref.Data.ElementAt(Index);
+            internal readonly ref UnsafeList<AllocatorHandle> ChildAllocators => ref SharedStatics.ChildAllocators.Ref.Data.ElementAt(Index);
+            internal readonly ref AllocatorHandle Parent => ref SharedStatics.Parent.Ref.Data.ElementAt(Index);
+            internal readonly ref int IndexInParent => ref SharedStatics.IndexInParent.Ref.Data.ElementAt(Index);
 
-            internal bool IsCurrent => (Version == 0) || (Version == OfficialVersion);
-            internal bool IsValid => (Index < FirstUserIndex) || (IsInstalled && IsCurrent);
+            internal readonly bool IsCurrent => (Version == 0) || (Version == OfficialVersion);
+            internal readonly bool IsValid => (Index < FirstUserIndex) || (IsInstalled && IsCurrent);
 
-            internal ref Spinner ChildSpinLock => ref SharedStatics.ChildSpinLock.Ref.Data.ElementAt(Index);
-            internal ref UnsafeList<AtomicSafetyHandle> ChildSafetyHandles => ref SharedStatics.ChildSafetyHandles.Ref.Data.ElementAt(Index);
+            internal readonly ref Spinner ChildSpinLock => ref SharedStatics.ChildSpinLock.Ref.Data.ElementAt(Index);
+            internal readonly ref UnsafeList<AtomicSafetyHandle> ChildSafetyHandles => ref SharedStatics.ChildSafetyHandles.Ref.Data.ElementAt(Index);
 
             /// <summary>
             ///   <para>Determines if the handle is still valid, because we intend to release it if it is.</para>
@@ -426,7 +426,7 @@ namespace Unity.Collections
                 return false;
             }
 
-            internal bool NeedsUseAfterFreeTracking()
+            internal readonly bool NeedsUseAfterFreeTracking()
             {
                 if (IsValid == false)
                     return false;
@@ -570,7 +570,7 @@ namespace Unity.Collections
             /// The <see cref="Index"/> cast to int.
             /// </summary>
             /// <value>The <see cref="Index"/> cast to int.</value>
-            public int Value => Index;
+            public readonly int Value => Index;
 
             /// <summary>
             /// Allocates a block from this allocator.
@@ -579,7 +579,7 @@ namespace Unity.Collections
             /// <param name="block">Outputs the allocated block.</param>
             /// <param name="items">The number of values to allocate for.</param>
             /// <returns>0 if successful. Otherwise, returns the error code from the allocator function.</returns>
-            public int TryAllocateBlock<T>(out Block block, int items) where T : unmanaged
+            public readonly int TryAllocateBlock<T>(out Block block, int items) where T : unmanaged
             {
                 block = new Block
                 {
@@ -598,7 +598,7 @@ namespace Unity.Collections
             /// <param name="items">The number of values to allocate for.</param>
             /// <returns>The allocated block.</returns>
             /// <exception cref="ArgumentException">Thrown if the allocator is not valid or if the allocation failed.</exception>
-            public Block AllocateBlock<T>(int items) where T : unmanaged
+            public readonly Block AllocateBlock<T>(int items) where T : unmanaged
             {
                 CheckValid(this);
                 var error = TryAllocateBlock<T>(out Block block, items);
@@ -617,14 +617,14 @@ namespace Unity.Collections
             /// For internal use only.
             /// </summary>
             /// <value>For internal use only.</value>
-            public TryFunction Function => default;
+            public readonly TryFunction Function => default;
 
             /// <summary>
             /// Tries to allocate the block with this allocator.
             /// </summary>
             /// <param name="block">The block to allocate.</param>
             /// <returns>0 if successful. Otherwise, returns an error code.</returns>
-            public int Try(ref Block block)
+            public readonly int Try(ref Block block)
             {
                 block.Range.Allocator = this;
                 var error = AllocatorManager.Try(ref block);
@@ -635,13 +635,13 @@ namespace Unity.Collections
             /// This handle.
             /// </summary>
             /// <value>This handle.</value>
-            public AllocatorHandle Handle { get { return this; } set { this = value; } }
+            public AllocatorHandle Handle { readonly get { return this; } set { this = value; } }
 
             /// <summary>
             /// Retrieve the Allocator associated with this allocator handle.
             /// </summary>
             /// <value>The Allocator retrieved.</value>
-            public Allocator ToAllocator
+            public readonly Allocator ToAllocator
             {
                 get
                 {
@@ -657,13 +657,13 @@ namespace Unity.Collections
             /// </summary>
             /// <remarks>The AllocatorHandle is a custom allocator if its Index is larger or equal to `FirstUserIndex`.</remarks>
             /// <value>True if this AllocatorHandle is a custom allocator.</value>
-            public bool IsCustomAllocator { get { return this.Index >= FirstUserIndex; } }
+            public readonly bool IsCustomAllocator { get { return this.Index >= FirstUserIndex; } }
 
             /// <summary>
             /// Check whether this allocator will automatically dispose allocations.
             /// </summary>
             /// <value>True if allocations made by this AllocatorHandle are not automatically disposed.</value>
-            public bool IsAutoDispose { get { return ((SharedStatics.IsAutoDispose.Ref.Data.ElementAt(Index >> 6) >> (Index & 63)) & 1) != 0; } }
+            public readonly bool IsAutoDispose { get { return ((SharedStatics.IsAutoDispose.Ref.Data.ElementAt(Index >> 6) >> (Index & 63)) & 1) != 0; } }
 
             /// <summary>
             /// Dispose the allocator.
@@ -681,7 +681,7 @@ namespace Unity.Collections
             /// </summary>
             /// <param name="obj">Object containing an <seealso cref="Unity.Collections.AllocatorManager.AllocatorHandle"/>.</param>
             /// <returns>Returns true if both handles are for the same allocator instance at the same version, otherwise false.</returns>
-            public override bool Equals(object obj)
+            public readonly override bool Equals(object obj)
             {
                 if (obj is AllocatorHandle)
                     return Value == ((AllocatorHandle) obj).Value;
@@ -698,7 +698,7 @@ namespace Unity.Collections
             /// <param name="other"><seealso cref="Unity.Collections.AllocatorManager.AllocatorHandle"/> to compare against.</param>
             /// <returns>Returns true if both handles are for the same allocator instance at the same version, otherwise false.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool Equals(AllocatorHandle other)
+            public readonly bool Equals(AllocatorHandle other)
             {
                 return Value == other.Value;
             }
@@ -709,7 +709,7 @@ namespace Unity.Collections
             /// <param name="other"><seealso cref="Unity.Collections.Allocator"/> to compare against.</param>
             /// <returns>Returns true if both handles are for the same allocator instance at the same version, otherwise false.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool Equals(Allocator other)
+            public readonly bool Equals(Allocator other)
             {
                 return ToAllocator == other;
             }
@@ -719,7 +719,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>A unique hash code.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override int GetHashCode()
+            public readonly override int GetHashCode()
             {
                 return Value;
             }
@@ -802,7 +802,7 @@ namespace Unity.Collections
             /// <param name="other">The other <seealso cref="Unity.Collections.AllocatorManager.AllocatorHandle"/> to compare to</param>
             /// <returns>Difference between <seealso cref="Unity.Collections.AllocatorManager.AllocatorHandle"/> values</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int CompareTo(AllocatorHandle other)
+            public readonly int CompareTo(AllocatorHandle other)
             {
                 return Value - other.Value;
             }
@@ -921,14 +921,14 @@ namespace Unity.Collections
             /// </summary>
             /// <remarks>The actual allocation size may be larger due to alignment.</remarks>
             /// <value>Number of bytes requested for this block.</value>
-            public long Bytes => (long) BytesPerItem * Range.Items;
+            public readonly long Bytes => (long) BytesPerItem * Range.Items;
 
             /// <summary>
             /// Number of bytes allocated for this block.
             /// </summary>
             /// <remarks>The requested allocation size may be smaller. Any excess is due to alignment</remarks>
             /// <value>Number of bytes allocated for this block.</value>
-            public long AllocatedBytes => (long) BytesPerItem * AllocatedItems;
+            public readonly long AllocatedBytes => (long) BytesPerItem * AllocatedItems;
 
             /// <summary>
             /// The alignment.
@@ -940,7 +940,7 @@ namespace Unity.Collections
             /// <value>The alignment.</value>
             public int Alignment
             {
-                get => 1 << Log2Alignment;
+                readonly get => 1 << Log2Alignment;
                 set => Log2Alignment = (byte)(32 - math.lzcnt(math.max(1, value) - 1));
             }
 
@@ -994,14 +994,14 @@ namespace Unity.Collections
             }
 
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-            void CheckFailedToAllocate(int error)
+            readonly void CheckFailedToAllocate(int error)
             {
                 if (error != 0)
                     throw new ArgumentException($"Error {error}: Failed to Allocate {this}");
             }
 
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-            void CheckFailedToFree(int error)
+            readonly void CheckFailedToFree(int error)
             {
                 if (error != 0)
                     throw new ArgumentException($"Error {error}: Failed to Free {this}");
@@ -1164,9 +1164,9 @@ namespace Unity.Collections
         [BurstCompile]
         internal struct StackAllocator : IAllocator, IDisposable
         {
-            public AllocatorHandle Handle { get { return m_handle; } set { m_handle = value; } }
-            public Allocator ToAllocator { get { return m_handle.ToAllocator; } }
-            public bool IsCustomAllocator { get { return m_handle.IsCustomAllocator; } }
+            public AllocatorHandle Handle { readonly get { return m_handle; } set { m_handle = value; } }
+            public readonly Allocator ToAllocator { get { return m_handle.ToAllocator; } }
+            public readonly bool IsCustomAllocator { get { return m_handle.IsCustomAllocator; } }
 
             internal AllocatorHandle m_handle;
 
@@ -1220,7 +1220,7 @@ namespace Unity.Collections
                 return ((StackAllocator*)allocatorState)->Try(ref block);
             }
 
-            public TryFunction Function => Try;
+            public readonly TryFunction Function => Try;
 
             public void Dispose()
             {
@@ -1234,11 +1234,11 @@ namespace Unity.Collections
         [BurstCompile]
         internal struct SlabAllocator : IAllocator, IDisposable
         {
-            public AllocatorHandle Handle { get { return m_handle; } set { m_handle = value; } }
+            public AllocatorHandle Handle { readonly get { return m_handle; } set { m_handle = value; } }
 
-            public Allocator ToAllocator { get { return m_handle.ToAllocator; } }
+            public readonly Allocator ToAllocator { get { return m_handle.ToAllocator; } }
 
-            public bool IsCustomAllocator { get { return m_handle.IsCustomAllocator; } }
+            public readonly bool IsCustomAllocator { get { return m_handle.IsCustomAllocator; } }
 
             internal AllocatorHandle m_handle;
 
@@ -1248,17 +1248,17 @@ namespace Unity.Collections
             internal long budgetInBytes;
             internal long allocatedBytes;
 
-            public long BudgetInBytes => budgetInBytes;
+            public readonly long BudgetInBytes => budgetInBytes;
 
-            public long AllocatedBytes => allocatedBytes;
+            public readonly long AllocatedBytes => allocatedBytes;
 
             internal int SlabSizeInBytes
             {
-                get => 1 << Log2SlabSizeInBytes;
+                readonly get => 1 << Log2SlabSizeInBytes;
                 set => Log2SlabSizeInBytes = (byte)(32 - math.lzcnt(math.max(1, value) - 1));
             }
 
-            internal int Slabs => (int)(Storage.Bytes >> Log2SlabSizeInBytes);
+            internal readonly int Slabs => (int)(Storage.Bytes >> Log2SlabSizeInBytes);
 
             internal void Initialize(Block storage, int slabSizeInBytes, long budget)
             {
@@ -1326,7 +1326,7 @@ namespace Unity.Collections
                 return ((SlabAllocator*)allocatorState)->Try(ref block);
             }
 
-            public TryFunction Function => Try;
+            public readonly TryFunction Function => Try;
 
             public void Dispose()
             {
@@ -1355,7 +1355,7 @@ namespace Unity.Collections
         internal struct Array32768<T> : IIndexable<T> where T : unmanaged
         {
             internal Array4096<T> f0, f1, f2, f3, f4, f5, f6, f7;
-            public int Length { get { return 32768; } set {} }
+            public int Length { readonly get { return 32768; } set {} }
             public ref T ElementAt(int index)
             {
                 unsafe { fixed(Array4096<T>* p = &f0) { return ref UnsafeUtility.AsRef<T>((T*)p + index); } }
@@ -1738,7 +1738,7 @@ namespace Unity.Collections
         /// <summary>
         /// Get the custom allocator.
         /// </summary>
-        public ref T Allocator => ref UnsafeUtility.AsRef<T>(m_allocator);
+        public readonly ref T Allocator => ref UnsafeUtility.AsRef<T>(m_allocator);
 
         /// <summary>
         /// Allocate the custom allocator from backingAllocator and register it.

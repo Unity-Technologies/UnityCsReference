@@ -30,7 +30,7 @@ namespace Unity.Collections
     internal struct Long1024 : IIndexable<long>
     {
         internal Long512 f0,f1;
-        public int Length { get { return 1024;} set {} }
+        public int Length { readonly get { return 1024;} set {} }
         public ref long ElementAt(int index)
         {
             unsafe { fixed(Long512* p = &f0) {

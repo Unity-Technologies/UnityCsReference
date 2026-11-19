@@ -90,8 +90,8 @@ class ClassPillDragManipulator : MouseManipulator
         // since we support dragging out of the window.
         if (isValidNode)
         {
-            Handler.Window?.HierarchyView?.SetSelection(new[] { hierarchyItem.Node });
-            Handler.Window?.GlobalSelectionHandler?.SyncGlobalSelectionFromViewModel();
+            Handler.View?.HierarchyView?.SetSelection(new[] { hierarchyItem.Node });
+            Handler.View?.SyncSelectionFromViewModel();
         }
 
         evt.StopPropagation();
@@ -107,7 +107,7 @@ class ClassPillDragManipulator : MouseManipulator
         if (hierarchyItem?.Node == null || hierarchyItem.Node == HierarchyNode.Null)
             return;
 
-        Handler.Window?.HierarchyView?.SetSelection(new[] { hierarchyItem.Node });
-        Handler.Window?.GlobalSelectionHandler?.SyncGlobalSelectionFromViewModel();
+        Handler.View?.HierarchyView?.SetSelection(new[] { hierarchyItem.Node });
+        Handler.View?.SyncSelectionFromViewModel();
     }
 }

@@ -5,6 +5,7 @@
 #nullable enable
 using System;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Internal;
 using UnityEngine.Scripting;
 
 namespace UnityEngine

@@ -646,7 +646,7 @@ namespace UnityEngine
 
     internal sealed partial class GUIClip
     {
-        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal struct ParentClipScope : IDisposable
         {
             private bool m_Disposed;

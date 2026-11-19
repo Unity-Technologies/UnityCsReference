@@ -6,66 +6,77 @@ using System.Collections.Generic;
 using Unity.Hierarchy.Editor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 static class UIToolkitStageUtility
 {
     /// <summary>
-    /// Asks for the elements of <paramref name="assets"/> to be selected once they exist.
+    /// Asks for the elements of <paramref name="assets"/> to be selected in <paramref name="context"/> once they
+    /// exist.
     /// </summary>
     /// <remarks>
     /// An asset does not name an element on its own: a document instantiated twice clones each of its assets
     /// twice. Any caller that knows which of those instances it just edited has to follow this with
-    /// <see cref="ScopePendingSelectionRequestsTo"/>, or the selection lands on whichever clone comes first.
+    /// <see cref="ScopePendingSelectionRequestsTo(AuthoringContext, VisualElement)"/>, or the selection lands on
+    /// whichever clone comes first.
     /// </remarks>
-    public static void RequestSelectionOnNextUpdate(IList<VisualElementAsset> assets)
+    public static void RequestSelectionOnNextUpdate(AuthoringContext context, IList<VisualElementAsset> assets)
     {
-        if (TryGetElementHandler(out var handler))
+        if (TryGetElementHandler(context, out var handler))
             handler.RequestSelectionOnNextUpdate(new List<VisualElementAsset>(assets));
     }
 
     /// <inheritdoc cref="VisualElementNodeHandler.RequestRenameOfPendingSelection"/>
-    public static void RequestRenameOfPendingSelection()
+    public static void RequestRenameOfPendingSelection(AuthoringContext context)
     {
-        if (TryGetElementHandler(out var handler))
+        if (TryGetElementHandler(context, out var handler))
             handler.RequestRenameOfPendingSelection();
     }
 
     /// <inheritdoc cref="VisualElementNodeHandler.RequestFocusOfPendingSelection"/>
-    public static void RequestFocusOfPendingSelection(BindingId attributePath, IPanel inspectorPanel)
+    public static void RequestFocusOfPendingSelection(AuthoringContext context, BindingId attributePath, IPanel inspectorPanel)
     {
-        if (TryGetElementHandler(out var handler))
+        if (TryGetElementHandler(context, out var handler))
             handler.RequestFocusOfPendingSelection(attributePath, inspectorPanel);
     }
 
-    /// <inheritdoc cref="VisualElementNodeHandler.ScopePendingSelectionRequestsTo"/>
-    public static void ScopePendingSelectionRequestsTo(VisualElement parent)
+    /// <inheritdoc cref="VisualElementNodeHandler.ScopePendingSelectionRequestsTo(VisualElement)"/>
+    public static void ScopePendingSelectionRequestsTo(AuthoringContext context, VisualElement parent)
     {
-        if (TryGetElementHandler(out var handler))
+        if (TryGetElementHandler(context, out var handler))
             handler.ScopePendingSelectionRequestsTo(parent);
     }
 
     /// <inheritdoc cref="VisualElementNodeHandler.ScopePendingSelectionRequestsTo(IReadOnlyList{VisualElement})"/>
-    public static void ScopePendingSelectionRequestsTo(IReadOnlyList<VisualElement> parents)
+    public static void ScopePendingSelectionRequestsTo(AuthoringContext context, IReadOnlyList<VisualElement> parents)
     {
-        if (TryGetElementHandler(out var handler))
+        if (TryGetElementHandler(context, out var handler))
             handler.ScopePendingSelectionRequestsTo(parents);
     }
 
     /// <summary>
-    /// The handler holding the visual element rows, taken from the first hierarchy window that has one.
+    /// The handler holding the visual element rows of <paramref name="context"/>. For
+    /// <see cref="AuthoringContext.Global"/>, the one of the first hierarchy window that has one.
     /// </summary>
     /// <remarks>
-    /// Only the first is used: the handler changes the editor selection, which every other hierarchy mirrors.
-    /// Windows are skipped rather than stopped at, because <see cref="Resources.FindObjectsOfTypeAll"/> also
-    /// returns windows that were never shown in this session — those have no hierarchy of their own yet, let
+    /// Only the first window is used: the handler changes the editor selection, which every other hierarchy
+    /// mirrors. Windows are skipped rather than stopped at, because <see cref="Resources.FindObjectsOfTypeAll"/>
+    /// also returns windows that were never shown in this session — those have no hierarchy of their own yet, let
     /// alone handlers on it, and stopping at one would drop the request.
     /// </remarks>
-    static bool TryGetElementHandler(out VisualElementNodeHandler handler)
+    static bool TryGetElementHandler(AuthoringContext context, out VisualElementNodeHandler handler)
     {
         handler = null;
+
+        if (!context.IsGlobal)
+        {
+            handler = context.ElementHandler;
+            return handler != null;
+        }
 
         var windows = Resources.FindObjectsOfTypeAll<HierarchyWindow>();
         if (windows == null || windows.Length == 0)
@@ -94,9 +105,10 @@ static class UIToolkitStageUtility
     /// <paramref name="stageDocument"/>. Call right after entering the stage to carry a Main Stage
     /// selection into it; repeated instances resolve to the carried one.
     /// </summary>
-    public static void RequestSelectionOnNextUpdate(VisualElement originElement, VisualTreeAsset stageDocument)
+    public static void RequestSelectionOnNextUpdate(AuthoringContext context, VisualElement originElement,
+        VisualTreeAsset stageDocument)
     {
-        if (TryGetElementHandler(out var handler))
+        if (TryGetElementHandler(context, out var handler))
             handler.RequestSelectionOnNextUpdate(originElement, stageDocument);
     }
 
@@ -110,11 +122,4 @@ static class UIToolkitStageUtility
         element?.visualElementAsset != null
             ? VisualElementEditFlags.FullyEditable
             : VisualElementEditFlags.None;
-
-    public static VisualElementEditFlags GetEditFlags(VisualElement element)
-    {
-        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
-            return stage.Context.GetElementEditFlags(element);
-        return GetMainStageEditFlags(element);
-    }
 }

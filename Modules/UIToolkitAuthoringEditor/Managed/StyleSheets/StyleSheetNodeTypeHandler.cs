@@ -11,7 +11,6 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
-using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -290,7 +289,6 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
 
     readonly NodeMappings m_Mappings = new();
     protected readonly StyleSheetEditorExporter m_Exporter = new();
-    [NoAutoStaticsCleanup] // immutable export-options, safe to persist
     internal static readonly StyleSheetExporter.UssExportOptions s_ExportOptions = new()
     {
         ignoreSelectorPrefixList = new[] { "__unity" }
@@ -302,6 +300,8 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
     readonly HashSet<StyleSheet> m_NewlyAddedStyleSheets = new();
     readonly HashSet<HierarchyNode> m_HighlightedNodes = new();
     StyleRule m_HoveredRule;
+    AuthoringContext m_Context = AuthoringContext.Global;
+    bool m_Initialized;
 
     internal StyleRule HoveredRule
     {
@@ -312,13 +312,37 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
                 return;
             m_HoveredRule = value;
             if (m_HoveredRule != null)
-                HighlightUtility.RequestHighlights(m_HoveredRule, CommandSources.StyleSheets);
+                HighlightUtility.RequestHighlights(m_Context, m_HoveredRule, CommandSources.StyleSheets);
             else
-                HighlightUtility.ClearHighlights();
+                HighlightUtility.ClearHighlights(m_Context);
         }
     }
 
     protected HashSet<StyleSheet> NewlyAddedStyleSheets => m_NewlyAddedStyleSheets;
+
+    /// <summary>
+    /// The context the hierarchy belongs to: highlights are exchanged on it, and the selection objects created
+    /// for its rows belong to it.
+    /// </summary>
+    internal AuthoringContext Context
+    {
+        get => m_Context;
+        set
+        {
+            value ??= AuthoringContext.Global;
+            if (m_Context == value)
+                return;
+
+            if (m_Initialized)
+                m_Context.Messages.UnregisterHandlerForCategory(CommandCategory.Highlight, ProcessHighlightElementsCommand);
+            HoveredRule = null;
+            m_Context = value;
+            m_StyleSheetSelectionHandler.Context = value;
+            m_StyleRuleSelectionHandler.Context = value;
+            if (m_Initialized)
+                m_Context.Messages.RegisterHandlerForCategory(CommandCategory.Highlight, ProcessHighlightElementsCommand);
+        }
+    }
 
     DragPreviewWindow DragPreviewWindow;
 
@@ -342,7 +366,7 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
 
     protected IStyleRuleSelectionHandler SelectionHandler => m_StyleRuleSelectionHandler;
 
-    public StyleSheetsWindow Window { get; set; }
+    public StyleSheetsView View { get; set; }
 
     // Tracks drag start time to filter spurious IMGUI events during editor initialization
     long m_DragStartTime;
@@ -715,7 +739,8 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
     protected override void Initialize()
     {
         base.Initialize();
-        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Highlight, ProcessHighlightElementsCommand);
+        m_Context.Messages.RegisterHandlerForCategory(CommandCategory.Highlight, ProcessHighlightElementsCommand);
+        m_Initialized = true;
         UIAssetRegistry.instance.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
     }
 
@@ -733,7 +758,8 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
         base.Dispose(disposing);
 
         HoveredRule = null;
-        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Highlight, ProcessHighlightElementsCommand);
+        m_Context.Messages.UnregisterHandlerForCategory(CommandCategory.Highlight, ProcessHighlightElementsCommand);
+        m_Initialized = false;
 
         var registry = UIAssetRegistry.LiveInstance;
         if (registry != null)
@@ -766,7 +792,7 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
         if (node.Rule == null)
         {
             item.RowContainer.AddToClassList(StyleRuleHeaderUssClassName);
-            item.RowContainer.EnableInClassList(StyleRuleHeaderActiveUssClassName, !node.IsReadOnly && node.StyleSheet == Window?.ActiveStyleSheet);
+            item.RowContainer.EnableInClassList(StyleRuleHeaderActiveUssClassName, !node.IsReadOnly && node.StyleSheet == View?.ActiveStyleSheet);
 
             return;
         }
@@ -952,7 +978,7 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
         if (DragPreviewWindow != null)
             ClosePreviewWindow();
 
-        DragPreviewWindow = DragPreviewWindow.Show(new ClassPill { text = sourcePill.text, canBeRemoved = sourcePill.canBeRemoved }, sourcePill.layout);
+        DragPreviewWindow = DragPreviewWindow.Show(new ClassPill { text = sourcePill.text, canBeRemoved = sourcePill.canBeRemoved }, sourcePill.layout.size);
         m_DragStartTime = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
 
         // The globalEventHandler doesn't dispatch the expected IMGUI events, therefore we take advantage of the update loop to update the position.

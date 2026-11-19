@@ -258,13 +258,27 @@ namespace UnityEditor
                     PrefabUtility.GetCorrespondingConnectedObjectFromSource(comp.gameObject) != null &&
                     PrefabUtility.GetCorrespondingObjectFromSource(comp) == null)
                 {
-                    // Ensure colored margin here for component body doesn't overlap colored margin from InspectorTitlebar,
-                    // and extends down to exactly touch the separator line between/after components.
-                    EditorGUI.DrawOverrideBackgroundApplicable(new Rect(position.x, position.y + 3 + adjust,
-                        position.width,
-                        position.height - 2));
+                    DrawAddedBackground(position, adjust);
                 }
             }
+        }
+
+        // A data component has no Object, so its editor is checked by EntityId.
+        internal static void DrawAddedComponentBackground(Rect position, Editor editor)
+        {
+            if (!editor.isDataComponentEditor)
+                DrawAddedComponentBackground(position, editor.targets);
+            else if (EditorGUI.ShouldDrawDataComponentOverrideBackground(editor, Event.current))
+                DrawAddedBackground(position, 0);
+        }
+
+        static void DrawAddedBackground(Rect position, float adjust)
+        {
+            // Ensure colored margin here for component body doesn't overlap colored margin from InspectorTitlebar,
+            // and extends down to exactly touch the separator line between/after components.
+            EditorGUI.DrawOverrideBackgroundApplicable(new Rect(position.x, position.y + 3 + adjust,
+                position.width,
+                position.height - 2));
         }
     }
 }

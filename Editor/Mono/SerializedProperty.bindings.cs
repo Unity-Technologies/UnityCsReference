@@ -137,15 +137,14 @@ namespace UnityEditor
         }
 
         // This is so the garbage collector won't clean up SerializedObject behind the scenes.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal SerializedObject m_SerializedObject;
         internal string m_CachedLocalizedDisplayName = "";
         string m_CachedTooltip;
 
         internal SerializedProperty() {}
-#pragma warning disable UA5000 // Releases the native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Releases the native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
         ~SerializedProperty() { Dispose(); }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         // [[SerializedObject]] this property belongs to (RO).
         public SerializedObject serializedObject { get { return m_SerializedObject; } }
@@ -214,7 +213,7 @@ namespace UnityEditor
 
         internal string localizedDisplayName
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 if (!this.isValidDisplayNameCache)
@@ -1473,7 +1472,6 @@ namespace UnityEditor
         internal extern object GetStructValueInternal(string assemblyName, string nameSpace, string className);
 
         // exposed for public access via boxedValue
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal object structValue
         {
             get

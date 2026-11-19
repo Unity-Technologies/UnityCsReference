@@ -111,22 +111,22 @@ namespace Unity.Mathematics
         /// <param name="rhs">Right hand side half value to use in comparison.</param>
         /// <returns>True if the half value is bitwise equivalent to the input, false otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(half rhs) { return value == rhs.value; }
+        public readonly bool Equals(half rhs) { return value == rhs.value; }
 
         /// <summary>Returns true if the half is equal to a given half, false otherwise.</summary>
         /// <param name="o">Right hand side object to use in comparison.</param>
         /// <returns>True if the object is of type half and is bitwise equivalent, false otherwise.</returns>
-        public override bool Equals(object o) { return o is half converted && Equals(converted); }
+        public readonly override bool Equals(object o) { return o is half converted && Equals(converted); }
 
         /// <summary>Returns a hash code for the half.</summary>
         /// <returns>The computed hash code of the half.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() { return (int)value; }
+        public readonly override int GetHashCode() { return (int)value; }
 
         /// <summary>Returns a string representation of the half.</summary>
         /// <returns>The string representation of the half.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override string ToString()
+        public readonly override string ToString()
         {
             return math.f16tof32(value).ToString();
         }
@@ -136,7 +136,7 @@ namespace Unity.Mathematics
         /// <param name="formatProvider">The format provider to use during string formatting.</param>
         /// <returns>The string representation of the half.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             return math.f16tof32(value).ToString(format, formatProvider);
         }

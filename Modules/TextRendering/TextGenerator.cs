@@ -164,12 +164,12 @@ namespace UnityEngine
 #pragma warning restore UAL0015
         }
 
-#pragma warning disable UA5000 // Frees the native generator; Destroy is thread-safe and the editor-only instance list removal is benign.
+#pragma warning disable UAC0045 // Frees the native generator; Destroy is thread-safe and the editor-only instance list removal is benign.
         ~TextGenerator()
         {
             ((IDisposable)this).Dispose();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         void IDisposable.Dispose()
         {

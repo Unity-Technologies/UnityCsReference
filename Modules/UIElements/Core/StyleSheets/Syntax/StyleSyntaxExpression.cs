@@ -6,7 +6,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets.Syntax
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class Expression
     {
         public ExpressionType type;
@@ -31,7 +30,6 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum ExpressionType
     {
         Unknown,
@@ -40,7 +38,6 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
         Combinator // any combinator
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum DataType
     {
         None,

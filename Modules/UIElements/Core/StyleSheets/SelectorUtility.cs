@@ -9,7 +9,6 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class SelectorUtility
     {
         private const string k_DescendantSymbol = ">";

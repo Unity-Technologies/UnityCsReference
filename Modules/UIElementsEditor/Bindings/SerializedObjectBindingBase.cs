@@ -11,7 +11,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements.Bindings;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+[VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSourceProvider, IDataSourceViewHashProvider
 {
     [NoAutoStaticsCleanup]

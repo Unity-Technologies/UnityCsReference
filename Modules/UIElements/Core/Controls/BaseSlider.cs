@@ -282,10 +282,14 @@ namespace UnityEngine.UIElements
 
         public override void SetValueWithoutNotify(TValueType newValue)
         {
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
+
             // Clamp the value around the real lowest and highest range values.
             var clampedValue = clamped ? GetClampedValue(newValue) : newValue;
 
-            base.SetValueWithoutNotify(clampedValue);
+            using (IgnoreValidation())
+                base.SetValueWithoutNotify(clampedValue);
             onSetValueWithoutNotify?.Invoke(clampedValue);
             UpdateDragElementPosition();
             UpdateTextFieldValue();
@@ -855,10 +859,12 @@ namespace UnityEngine.UIElements
             Callbacks.OnLabelOrDragPointerDownStartEditing.Register(labelElement);
             Callbacks.OnLabelOrDragPointerDownStartEditing.Register(dragContainer);
             Callbacks.OnDragPointerUpEndEditing.Register(dragContainer);
+            Callbacks.OnDragPointerCancelEndEditing.Register(dragContainer);
         }
 
         internal override void UnregisterEditingCallbacks()
         {
+            Callbacks.OnDragPointerCancelEndEditing.Unregister(dragContainer);
             Callbacks.OnDragPointerUpEndEditing.Unregister(dragContainer);
             Callbacks.OnLabelOrDragPointerDownStartEditing.Unregister(dragContainer);
             Callbacks.OnLabelOrDragPointerDownStartEditing.Unregister(labelElement);
@@ -886,6 +892,14 @@ namespace UnityEngine.UIElements
             public static readonly EventCallbackDefinition<VisualElement> OnDragPointerUpEndEditing =
                 EventCallback.Create<PointerUpEvent, VisualElement>(
                     static (e, dragContainer) => GetBaseSlider(dragContainer)?.EndEditing(e));
+
+            [NoAutoStaticsCleanup]
+            public static readonly EventCallbackDefinition<VisualElement> OnDragPointerCancelEndEditing =
+                EventCallback.Create<PointerCancelEvent, VisualElement>(static (e, dragContainer) =>
+                {
+                    if (dragContainer.HasPointerCapture(e.pointerId))
+                        GetBaseSlider(dragContainer)?.EndEditing(e);
+                }, CallbackOptions.TrickleDown);
 
             [NoAutoStaticsCleanup]
             public static readonly EventCallbackGroup<BaseSlider<TValueType>> OnKeyFocusNavigation = new(

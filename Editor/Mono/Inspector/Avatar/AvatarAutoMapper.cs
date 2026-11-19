@@ -161,7 +161,6 @@ namespace UnityEditor
             new BoneMappingItem((int)HumanBodyBones.RightHand,     -3,     1, 2, 0.0f, new Vector3(3, 0, 1), Side.Right, true, false, kIndexFingerKeywords),
         };
 
-        [NoAutoStaticsCleanup]
         private static readonly BoneMappingItem[] s_LeftMappingDataHand = new BoneMappingItem[]
         {
             new BoneMappingItem(-2,                                        -1,                                         1, 2, 0.0f, Side.None),
@@ -185,7 +184,6 @@ namespace UnityEditor
             new BoneMappingItem((int)HumanBodyBones.LeftLittleIntermediate, (int)HumanBodyBones.LeftLittleDistal,       1, 1, 0.0f, Side.None, false, true),
         };
 
-        [NoAutoStaticsCleanup]
         private static readonly BoneMappingItem[] s_RightMappingDataHand = new BoneMappingItem[]
         {
             new BoneMappingItem(-2,                                        -1,                                         1, 2, 0.0f, Side.None),

@@ -7,14 +7,12 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal enum PropertyTrackingType
     {
         Register,
         Unregister
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class TrackPropertyEvent : EventBase<TrackPropertyEvent>
     {
         static TrackPropertyEvent()

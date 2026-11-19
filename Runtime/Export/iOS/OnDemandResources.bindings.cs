@@ -33,9 +33,9 @@ namespace UnityEngine.iOS
         }
 
         private OnDemandResourcesRequest(IntPtr ptr) : base(ptr) {}
-#pragma warning disable UA5000 // Frees the native request; DestroyFromScript is thread-safe and the base AsyncOperation also has a finalizer.
+#pragma warning disable UAC0045 // Frees the native request; DestroyFromScript is thread-safe and the base AsyncOperation also has a finalizer.
         ~OnDemandResourcesRequest()         { Dispose(); }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         new internal static class BindingsMarshaller
         {

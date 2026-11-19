@@ -11,6 +11,7 @@ using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Assemblies;
 using UnityEngine.Bindings;
+using UnityEngine.Internal;
 using UnityEngine.LowLevel;
 
 namespace Unity.Entities
@@ -41,10 +42,6 @@ namespace Unity.Entities
             public Type ExecuteAlwaysType => typeof(ExecuteAlways);
 
             public bool IsPlaying => Application.isPlaying;
-
-            public long ArchetypeAllocatorBudget => EntitiesMemorySetup.GetArchetypeAllocatorBudget();
-
-            public long QueryAllocatorBudget => EntitiesMemorySetup.GetQueryAllocatorBudget();
 
             public unsafe bool ReadFile(string path, ReadCommand* commands, uint commandCount, AssetLoadingSubsystem subsystem)
             {
@@ -81,10 +78,7 @@ namespace Unity.Entities
             public void MarkEntityIdsAsRoot(IntPtr entityIds, int count, IntPtr state) =>
                 ResourcesAPIInternal.EntitiesAssetGC.MarkEntityIdsAsRoot(entityIds, count, state);
 
-            public void AssignTransformHierarchyToGameObjectEntity(EntityId gameObjectId) =>
-                TransformHierarchy.AssignTransformHierarchyToGameObjectEntity(gameObjectId);
-
-            public int GetComponentTypeId(Type type) => TypeManagerV2.GetComponentTypeId(type.TypeHandle);
+            public int GetComponentTypeId(Type type, bool isBuffer) => TypeManagerV2.GetComponentTypeId(type.TypeHandle, isBuffer);
 
             public unsafe int CopyEntityComponentTypeHandles(IntPtr* handles, int capacity) =>
                 TypeManagerV2.CopyEntityComponentTypeHandles((IntPtr)handles, capacity);

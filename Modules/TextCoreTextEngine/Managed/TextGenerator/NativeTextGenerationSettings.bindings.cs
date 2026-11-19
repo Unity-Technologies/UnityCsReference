@@ -33,6 +33,8 @@ namespace UnityEngine.TextCore
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal VerticalAlignment verticalAlignment;
 
+        internal int verticalOffset;    // Encoded in Fixed Point, Y down.
+
         public PreProcessFlags preProcessFlags;
         public int fontSize;        // Encoded in Fixed Point.
 
@@ -68,6 +70,13 @@ namespace UnityEngine.TextCore
         // Emit vertex positions with Y up (Y negated) instead of the default Y-down UI convention.
         public bool flipYAxis;
 
+        public bool isEditable;
+
+        internal bool applyVisibilityLimits;
+        internal int maxVisibleCharacters;  // Grapheme clusters.
+        internal int maxVisibleWords;
+        internal int maxVisibleLines;
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal unsafe void SetTextBuffer(Unity.Collections.NativeArray<char> buffer, int length)
         {
@@ -100,6 +109,7 @@ namespace UnityEngine.TextCore
             wordWrapEnabled = tgs.wordWrapEnabled;
             horizontalAlignment = tgs.horizontalAlignment;
             verticalAlignment = tgs.verticalAlignment;
+            verticalOffset = tgs.verticalOffset;
             color = tgs.color;
             fontAsset = tgs.fontAsset;
             textSettings = tgs.textSettings;
@@ -119,6 +129,11 @@ namespace UnityEngine.TextCore
             pixelsPerPointFixed64 = tgs.pixelsPerPointFixed64;
             minContentMeasure = tgs.minContentMeasure;
             flipYAxis = tgs.flipYAxis;
+            isEditable = tgs.isEditable;
+            applyVisibilityLimits = tgs.applyVisibilityLimits;
+            maxVisibleCharacters = tgs.maxVisibleCharacters;
+            maxVisibleWords = tgs.maxVisibleWords;
+            maxVisibleLines = tgs.maxVisibleLines;
         }
 
         public override string ToString()
@@ -136,6 +151,7 @@ namespace UnityEngine.TextCore
                 $"{nameof(languageDirection)}: {languageDirection}\n" +
                 $"{nameof(horizontalAlignment)}: {horizontalAlignment}\n" +
                 $"{nameof(verticalAlignment)}: {verticalAlignment}\n" +
+                $"{nameof(verticalOffset)}: {verticalOffset}\n" +
                 $"{nameof(color)}: {color}\n" +
                 $"{nameof(fontStyle)}: {fontStyle}\n" +
                 $"{nameof(fontWeight)}: {fontWeight}\n" +
@@ -149,7 +165,12 @@ namespace UnityEngine.TextCore
                 $"{nameof(disableAdvancedFontFeatures)}: {disableAdvancedFontFeatures}\n" +
                 $"{nameof(richTextEnabled)}: {richTextEnabled}\n" +
                 $"{nameof(minContentMeasure)}: {minContentMeasure}\n" +
-                $"{nameof(flipYAxis)}: {flipYAxis}\n";
+                $"{nameof(flipYAxis)}: {flipYAxis}\n" +
+                $"{nameof(isEditable)}: {isEditable}\n" +
+                $"{nameof(applyVisibilityLimits)}: {applyVisibilityLimits}\n" +
+                $"{nameof(maxVisibleCharacters)}: {maxVisibleCharacters}\n" +
+                $"{nameof(maxVisibleWords)}: {maxVisibleWords}\n" +
+                $"{nameof(maxVisibleLines)}: {maxVisibleLines}\n";
         }
 
         // TODO : It's not ideal to have GetHashCode both in C# and C++. We would ideally keep only C++, but because of the string marshalling involved this is too costly for IMGUI.
@@ -178,12 +199,18 @@ namespace UnityEngine.TextCore
             hash.Add(languageDirection);
             hash.Add(horizontalAlignment);
             hash.Add(verticalAlignment);
+            hash.Add(verticalOffset);
             hash.Add(bestFit);
             hash.Add(disableAdvancedFontFeatures);
             hash.Add(color);
             hash.Add(richTextEnabled);
             hash.Add(minContentMeasure);
             hash.Add(flipYAxis);
+            hash.Add(isEditable);
+            hash.Add(applyVisibilityLimits);
+            hash.Add(maxVisibleCharacters);
+            hash.Add(maxVisibleWords);
+            hash.Add(maxVisibleLines);
             return hash.ToHashCode();
         }
 
@@ -201,6 +228,7 @@ namespace UnityEngine.TextCore
                 && vertexPadding == other.vertexPadding
                 && horizontalAlignment == other.horizontalAlignment
                 && verticalAlignment == other.verticalAlignment
+                && verticalOffset == other.verticalOffset
                 && preProcessFlags == other.preProcessFlags
                 && fontSize == other.fontSize
                 && bestFit == other.bestFit
@@ -218,7 +246,12 @@ namespace UnityEngine.TextCore
                 && hoveredTag == other.hoveredTag
                 && pixelsPerPointFixed64 == other.pixelsPerPointFixed64
                 && minContentMeasure == other.minContentMeasure
-                && flipYAxis == other.flipYAxis;
+                && flipYAxis == other.flipYAxis
+                && isEditable == other.isEditable
+                && applyVisibilityLimits == other.applyVisibilityLimits
+                && maxVisibleCharacters == other.maxVisibleCharacters
+                && maxVisibleWords == other.maxVisibleWords
+                && maxVisibleLines == other.maxVisibleLines;
         }
     }
 
@@ -245,7 +278,13 @@ namespace UnityEngine.TextCore
         ///<summary>Text is centered vertically within the layout area.</summary>
         Middle,
         ///<summary>Text is aligned to the bottom of the layout area.</summary>
-        Bottom
+        Bottom,
+        ///<summary>The baseline of the first line is centered vertically within the layout area.</summary>
+        Baseline,
+        ///<summary>The glyph geometry is centered vertically within the layout area.</summary>
+        Midline,
+        ///<summary>The middle of the first line's cap height is centered vertically within the layout area.</summary>
+        Capline
     }
 
     /// <summary>

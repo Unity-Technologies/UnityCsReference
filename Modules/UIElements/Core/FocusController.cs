@@ -219,7 +219,6 @@ namespace UnityEngine.UIElements
             focusController?.Blur(this);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void BlurImmediately()
         {
             focusController?.Blur(this, dispatchMode: DispatchMode.Immediate);
@@ -415,7 +414,6 @@ namespace UnityEngine.UIElements
 
         TextElement m_SelectedTextElement;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal TextElement selectedTextElement
         {
             get => m_SelectedTextElement;
@@ -511,7 +509,7 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal Focusable GetLeafFocusedElement()
         {
             if (m_FocusedElements.Count > 0)
@@ -532,7 +530,7 @@ namespace UnityEngine.UIElements
 
         private Focusable m_LastFocusedElement;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal Focusable m_LastPendingFocusedElement;
         private int m_PendingFocusCount = 0;
 
@@ -552,7 +550,7 @@ namespace UnityEngine.UIElements
             m_LastPendingFocusedElement = null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool IsPendingFocus(Focusable f)
         {
             // Search for f in pending focused hierarchy
@@ -579,7 +577,7 @@ namespace UnityEngine.UIElements
                 m_LastFocusedElement.Focus();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void BlurLastFocusedElement()
         {
             // Unselect selected TextElement when panel loses focus
@@ -595,7 +593,6 @@ namespace UnityEngine.UIElements
         }
 
         // Do the focus change for real, no questions asked. This will not trigger any events.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void DoFocusChange(Focusable f)
         {
             m_FocusedElements.Clear();

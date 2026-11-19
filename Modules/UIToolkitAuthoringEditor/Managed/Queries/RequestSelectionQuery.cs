@@ -15,10 +15,10 @@ class RequestSelectionQuery<T> : Command<RequestSelectionQuery<T>>
         return cmd;
     }
 
-    public static void Execute(object source, T toSelect)
+    public static void Execute(AuthoringContext context, object source, T toSelect)
     {
         using var command = GetPooled(source, toSelect);
-        UICommandQueue.Execute(command);
+        context.Messages.Execute(command);
     }
 
     public T ToSelect { get; private set; }

@@ -6,7 +6,6 @@ using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using Unity.PlayMode.Editor;
-using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
@@ -41,7 +40,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             public bool UseExistingBuild;
         }
 
-        [NoAutoStaticsCleanup] // constant default; same value across reloads
         internal static readonly UserSettings DefaultUserSettings = new UserSettings { UseExistingBuild = false };
 
         [Serializable]
@@ -247,6 +245,48 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var userSettings = GetUserSettings(DefaultUserSettings);
             var userSettingsProperty = GetUserSettingsSerializedProperty(DefaultUserSettings);
             return new LocalPlayerInstanceStatusElement(instance, Settings, userSettings, userSettingsProperty);
+        }
+
+        protected internal override VisualElement CreateTitleBarUI(ControllerRuntime instance)
+        {
+            // Android players run on a device and server players have no window, so there is nothing to focus.
+            if (instance == null
+                || !ProcessWindowUtility.IsSupported
+                || Settings.BuildProfile == null
+                || InternalUtilities.IsAndroidBuildTarget(Settings.BuildProfile)
+                || InternalUtilities.IsServerProfile(Settings.BuildProfile))
+                return null;
+
+            var focusButton = new VisualElement();
+            focusButton.AddToClassList("focus-icon");
+            focusButton.AddToClassList("icon");
+            focusButton.RegisterCallback<MouseDownEvent>(evt =>
+            {
+                evt.StopImmediatePropagation();
+            }, TrickleDown.TrickleDown);
+            focusButton.RegisterCallback<ClickEvent>(evt =>
+            {
+                if (!TryFocusPlayerWindow(instance))
+                    MppmLog.Debug($"Cannot focus \"{instance.Name}\" because its player is not running.");
+                evt.StopImmediatePropagation();
+            });
+
+            return focusButton;
+        }
+
+        internal static bool TryFocusPlayerWindow(ControllerRuntime instance)
+        {
+            // The process id output outlives the player, and the OS may reuse it, so only trust it while the Run stage is active.
+            if (!instance.IsActive() || !instance.HasReachedRunStage())
+                return false;
+
+            foreach (var node in instance.GetExecutionGraph().GetNodes(ExecutionStage.Start))
+            {
+                if (node is StartProcessNode startProcessNode)
+                    return ProcessWindowUtility.TryBringToFront(startProcessNode.ProcessId.GetValue<int>());
+            }
+
+            return false;
         }
 
         internal override bool NeedsTearDown(ControllerRuntime instance, out string reason)

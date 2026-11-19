@@ -79,6 +79,8 @@ namespace UnityEditor.Search
                 searchEngineContext = selectContext,
                 pickerType = SearchPickerType.AdvancedSearchPicker };
             s_Window = SearchService.ShowPicker(viewState) as SearchWindow;
+            AssemblyReloadEvents.beforeAssemblyReload -= ClosePickerBeforeAssemblyReload;
+            AssemblyReloadEvents.beforeAssemblyReload += ClosePickerBeforeAssemblyReload;
 
             // Notify the window is shown like in the legacy ObjectSelector
             ObjectSelector.InvokeWindowShown(s_Window);
@@ -86,10 +88,24 @@ namespace UnityEditor.Search
 
         static void EndSession(in AdvancedObjectSelectorParameters parameters)
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= ClosePickerBeforeAssemblyReload;
             if ((parameters.context.endSessionModes & ObjectSelectorSearchEndSessionModes.CloseSelector) != 0)
             {
                 s_Window?.Close();
             }
+            s_Window = null;
+        }
+
+        // The picker's callbacks do not survive a domain reload, so a restored picker could not return a selection.
+        // The ObjectSelector notifies its owner on reload, so the picker closes without invoking its callback.
+        static void ClosePickerBeforeAssemblyReload()
+        {
+            AssemblyReloadEvents.beforeAssemblyReload -= ClosePickerBeforeAssemblyReload;
+            if (s_Window == null)
+                return;
+
+            s_Window.selectCallback = null;
+            s_Window.Close();
             s_Window = null;
         }
 

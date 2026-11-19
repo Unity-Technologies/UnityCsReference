@@ -9,7 +9,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class VariablesListItem : VisualElement
     {
         public static readonly string k_NameFieldName = "item-name-field";

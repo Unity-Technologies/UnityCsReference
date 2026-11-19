@@ -18,6 +18,14 @@ namespace UnityEditor.VersionControl
         [AutoStaticsCleanupOnCodeReload]
         static VersionControlDescriptor[] s_Descriptors;
 
+        [NoAutoStaticsCleanup] // only compared for change, so it must never return to a value a consumer has seen
+        static int s_StatusVersion;
+
+        // Moves whenever version control status may have changed; state derived from status is current while it holds still.
+        internal static int statusVersion => s_StatusVersion;
+
+        internal static void IncrementStatusVersion() => s_StatusVersion++;
+
         public static VersionControlDescriptor[] versionControlDescriptors => s_Descriptors ?? (s_Descriptors = GetDescriptors());
 
         public static VersionControlObject activeVersionControlObject
@@ -141,6 +149,7 @@ namespace UnityEditor.VersionControl
                 Debug.LogError($"Failed to activate version control system '{name}': {ex}");
                 return false;
             }
+            IncrementStatusVersion();
             return true;
         }
 
@@ -161,6 +170,7 @@ namespace UnityEditor.VersionControl
             }
             activeVersionControlObject = null;
             UnityObject.DestroyImmediate(vco);
+            IncrementStatusVersion();
         }
 
         [RequiredByNativeCode]

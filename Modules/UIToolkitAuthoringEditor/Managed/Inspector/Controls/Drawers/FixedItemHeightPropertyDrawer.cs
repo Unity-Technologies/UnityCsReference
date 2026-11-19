@@ -47,23 +47,17 @@ namespace UnityEditor.UIElements
 
         static void OnFixedItemHeightValueChanged(ChangeEvent<int> evt, SerializedProperty valueProperty, IntegerField field)
         {
-            var undoMessage = $"Modified {valueProperty.name}";
-            if (valueProperty.serializedObject.targetObject.name != string.Empty)
-                undoMessage += $" in {valueProperty.serializedObject.targetObject.name}";
-
-            Undo.RegisterCompleteObjectUndo(valueProperty.serializedObject.targetObject, undoMessage);
-
             if (evt.newValue < 1)
             {
                 SetNegativeFixedItemHeightHelpBoxEnabled(true, field);
                 field.SetValueWithoutNotify(1);
                 valueProperty.floatValue = 1f;
-                valueProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                valueProperty.serializedObject.ApplyModifiedProperties();
                 return;
             }
 
             valueProperty.floatValue = evt.newValue;
-            valueProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            valueProperty.serializedObject.ApplyModifiedProperties();
         }
 
         static void OnFixedHeightValueChangedImmediately(InputEvent evt, BaseField<int> field)

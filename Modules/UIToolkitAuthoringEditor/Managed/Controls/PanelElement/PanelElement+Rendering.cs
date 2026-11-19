@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Scripting.LifecycleManagement;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Experimental.Rendering;
@@ -15,8 +17,8 @@ sealed partial class PanelElement
     static readonly Vector2Int k_InitialSize = new (100, 100);
 
     PanelSettings m_PanelSettings;
-    ThemeStyleSheet m_ThemeOverride;
-    ThemeStyleSheet m_AppliedTheme;
+    StyleSheet m_ThemeOverride;
+    StyleSheet m_AppliedTheme;
 
     Vector2Int m_SubPanelSize = k_InitialSize;
     Vector2 m_Offset = Vector2.zero;
@@ -26,7 +28,14 @@ sealed partial class PanelElement
     ColorSpace m_PreviousColorSpace = QualitySettings.activeColorSpace;
     bool m_IsRenderTextureDirty = true;
     RenderTexture m_RenderTexture;
+    RenderTexture m_DisplayTexture;
     bool m_RenderRequested;
+
+    const string k_CopyShaderName = "Hidden/UIR/CopyRegion";
+    static readonly int k_ColorConversionId = Shader.PropertyToID("_ColorConversion");
+
+    [NoAutoStaticsCleanup] // persist the cached material; nulling it would orphan the native HideAndDontSave object
+    static Material s_CopyMaterial;
 
     public PanelSettings PanelSettings
     {
@@ -40,7 +49,7 @@ sealed partial class PanelElement
         }
     }
 
-    public ThemeStyleSheet ThemeStyleSheet
+    public StyleSheet Theme
     {
         get => m_ThemeOverride;
         set
@@ -55,19 +64,45 @@ sealed partial class PanelElement
         }
     }
 
+    /// <summary>
+    /// The theme the sub-panel uses: <see cref="Theme"/>, else the theme of the panel settings.
+    /// </summary>
+    public StyleSheet AppliedTheme => m_AppliedTheme;
+
+    /// <summary>
+    /// Sets <see cref="ContextType"/> and <see cref="Theme"/> together. A sub-panel that the context type
+    /// replaces is created with <paramref name="theme"/>, so its content is not cloned with the old theme first.
+    /// </summary>
+    public void SetContextTypeAndTheme(ContextType contextType, StyleSheet theme)
+    {
+        if (m_ContextType != contextType && IsCreated)
+        {
+            m_ThemeOverride = theme;
+            ContextType = contextType;
+            return;
+        }
+
+        ContextType = contextType;
+        Theme = theme;
+    }
+
     void UpdateAppliedTheme()
     {
         var resolved = m_ThemeOverride ?? (m_PanelSettings ? m_PanelSettings.themeStyleSheet : null);
         if (m_AppliedTheme == resolved)
             return;
 
-        if (m_AppliedTheme && subRootVisualElement != null)
-            subRootVisualElement.styleSheets.Remove(m_AppliedTheme);
+        // On the visual tree, like a runtime panel's theme: dropdown menus open at the visual tree, outside the sub-root.
+        var themeRoot = SubPanel?.visualTree;
+        if (m_AppliedTheme && themeRoot != null)
+            themeRoot.styleSheets.Remove(m_AppliedTheme);
 
         m_AppliedTheme = resolved;
 
-        if (m_AppliedTheme && subRootVisualElement != null)
-            subRootVisualElement.styleSheets.Insert(0, m_AppliedTheme);
+        if (m_AppliedTheme && themeRoot != null)
+            themeRoot.styleSheets.Insert(0, m_AppliedTheme);
+
+        ThemeChanged?.Invoke(this);
     }
 
     public Vector2Int SubPanelSize
@@ -141,6 +176,12 @@ sealed partial class PanelElement
         }
     }
 
+    // What a host editor panel shows. Editor sub-panels store gamma-encoded colors, like editor windows; in a Linear
+    // project an editor panel encodes again what it samples from a non-sRGB texture, so it shows an sRGB copy instead.
+    public RenderTexture DisplayTexture => m_DisplayTexture != null ? m_DisplayTexture : m_RenderTexture;
+
+    bool NeedsDisplayTexture => m_ContextType == ContextType.Editor && QualitySettings.activeColorSpace == ColorSpace.Linear;
+
     public float SubPanelPixelsPerPoint
     {
         get => SubPanel.pixelsPerPoint;
@@ -179,7 +220,27 @@ sealed partial class PanelElement
         if (SubPanel == null)
             return;
         SubPanel.TickSchedulingUpdaters();
-        if (SubPanel.isDirty || m_RenderRequested || (RenderTexture != null && !RenderTexture.IsCreated()))
+        if (!NeedsRender)
+            return;
+
+        // Editor content may hold IMGUI, which only draws inside the host's repaint: ask for one instead.
+        if (SubPanel is EditorAuthoringPanel { isInHostRepaint: false, hostPanel: not null })
+        {
+            m_RenderRequested = true;
+            ((IEditorAuthoringPanelHost)this).hostElement.MarkDirtyRepaint();
+            return;
+        }
+
+        RenderSubPanel();
+    }
+
+    bool NeedsRender => SubPanel.isDirty || m_RenderRequested ||
+        (RenderTexture != null && !RenderTexture.IsCreated()) ||
+        (m_DisplayTexture != null && !m_DisplayTexture.IsCreated());
+
+    void OnHostRepainting()
+    {
+        if (SubPanel != null && NeedsRender)
             RenderSubPanel();
     }
 
@@ -249,11 +310,15 @@ sealed partial class PanelElement
         runtimePanel.Root.style.scale = Vector2.one * (ScaleFactor * SubPanelPixelsPerPoint);
         runtimePanel.Root.style.transformOrigin = new TransformOrigin(0, 0);
         runtimePanel.Root.style.translate = Offset * SubPanelPixelsPerPoint;
+
+        // Panel settings that were applied before may have set a clear color.
+        runtimePanel.Root.style.backgroundColor = StyleKeyword.Null;
         if (runtimePanel.panelRenderer != null)
         {
             runtimePanel.panelRenderer.forceGammaRendering = false;
             runtimePanel.panelRenderer.vertexBudget = 0;
             runtimePanel.panelRenderer.textureSlotCount = TextureSlotCount.Eight;
+            runtimePanel.panelRenderer.filterTextureBudget = FilterTextureBudget.Automatic;
         }
 
         runtimePanel.targetTexture = m_RenderTexture;
@@ -277,6 +342,24 @@ sealed partial class PanelElement
         UpdateAppliedTheme();
     }
 
+    // Editor panels have no PanelSettings: the panel settings only matter for runtime sub-panels.
+    void ApplyDefaultSettingsToEditorPanel(EditorSubPanel editorPanel)
+    {
+        Assert.IsNotNull(editorPanel);
+        editorPanel.scale = 1.0f / SubPanelPixelsPerPoint;
+        editorPanel.visualTree.SetSize(SubPanelSize);
+        editorPanel.Root.SetSize(Size);
+        editorPanel.Root.style.scale = Vector2.one * (ScaleFactor * SubPanelPixelsPerPoint);
+        editorPanel.Root.style.transformOrigin = new TransformOrigin(0, 0);
+        editorPanel.Root.style.translate = Offset * SubPanelPixelsPerPoint;
+        editorPanel.targetTexture = m_RenderTexture;
+        editorPanel.clearSettings = new PanelClearSettings { clearDepthStencil = true, clearColor = true, color = Color.clear };
+
+        if (editorPanel.dataBindingManager != null)
+            editorPanel.dataBindingManager.logLevel = BindingLogLevel.None;
+        UpdateAppliedTheme();
+    }
+
     void ApplyPanelSettings(PanelSettings panelSettings)
     {
         UpdateRenderTexture();
@@ -287,10 +370,11 @@ sealed partial class PanelElement
                     ApplyPanelSettingsToRuntimePanel(runtimePanel, panelSettings);
                 else
                     ApplyDefaultSettingsToRuntimePanel(runtimePanel);
-
                 break;
-            // case PanelElement.EditorPanel editorPanel:
-            //     break;
+
+            case EditorSubPanel editorPanel:
+                ApplyDefaultSettingsToEditorPanel(editorPanel);
+                break;
         }
     }
 
@@ -304,7 +388,7 @@ sealed partial class PanelElement
         if (m_IsRenderTextureDirty || RenderTexture == null || m_PreviousColorSpace != QualitySettings.activeColorSpace)
         {
             CreateRenderTexture();
-            style.backgroundImage = Background.FromRenderTexture(RenderTexture);
+            style.backgroundImage = Background.FromRenderTexture(DisplayTexture);
             m_IsRenderTextureDirty = false;
         }
 
@@ -321,6 +405,14 @@ sealed partial class PanelElement
         return colorSpace == ColorSpace.Linear ? GraphicsFormat.R8G8B8A8_SRGB : GraphicsFormat.R8G8B8A8_UNorm;
     }
 
+    // Editor panels always render gamma-encoded colors, whatever the project color space.
+    GraphicsFormat GetSubPanelGraphicsFormat()
+    {
+        return m_ContextType == ContextType.Editor
+            ? GetRenderTextureGraphicsFormat(ColorSpace.Gamma)
+            : GetRenderTextureGraphicsFormat();
+    }
+
     void CreateRenderTexture()
     {
         try
@@ -333,11 +425,13 @@ sealed partial class PanelElement
                     Object.DestroyImmediate(RenderTexture);
                     RenderTexture = null;
                 }
+
+                DisposeDisplayTexture();
             }
             else
             {
                 var depthStencilFormat = GraphicsFormatUtility.GetDepthStencilFormat(24, 8);
-                var descriptor = new RenderTextureDescriptor(m_SubPanelSize.x, m_SubPanelSize.y, GetRenderTextureGraphicsFormat(), depthStencilFormat);
+                var descriptor = new RenderTextureDescriptor(m_SubPanelSize.x, m_SubPanelSize.y, GetSubPanelGraphicsFormat(), depthStencilFormat);
 
                 if (RenderTexture == null)
                 {
@@ -349,25 +443,93 @@ sealed partial class PanelElement
                     RenderTexture.descriptor = descriptor;
                     RenderTexture.Create();
                 }
+
+                UpdateDisplayTexture();
                 m_RenderRequested = true;
             }
         }
         finally
         {
-            switch (SubPanel)
-            {
-                case RuntimePanel runtimePanel:
-                    runtimePanel.targetTexture = RenderTexture;
-                    break;
-                // case PanelElement.EditorPanel editorPanel:
-                //     editorPanel.targetTexture = RenderTexture;
-                //     break;
-            }
+            if (SubPanelContent != null)
+                SubPanelContent.TargetTexture = RenderTexture;
         }
+    }
+
+    void UpdateDisplayTexture()
+    {
+        if (!NeedsDisplayTexture)
+        {
+            DisposeDisplayTexture();
+            return;
+        }
+
+        var descriptor = new RenderTextureDescriptor(m_SubPanelSize.x, m_SubPanelSize.y, GetRenderTextureGraphicsFormat(), GraphicsFormat.None);
+        if (m_DisplayTexture == null)
+        {
+            m_DisplayTexture = new RenderTexture(descriptor);
+        }
+        else
+        {
+            m_DisplayTexture.Release();
+            m_DisplayTexture.descriptor = descriptor;
+            m_DisplayTexture.Create();
+        }
+    }
+
+    void CopyToDisplayTexture()
+    {
+        if (m_DisplayTexture != null && RenderTexture != null)
+            CopyStoredColors(RenderTexture, m_DisplayTexture);
+    }
+
+    /// <summary>
+    /// Copies the bytes stored in <paramref name="source"/> to <paramref name="target"/>, whatever the sRGB
+    /// conversions of their sampling and storing: the colors keep their encoding.
+    /// </summary>
+    internal static void CopyStoredColors(RenderTexture source, RenderTexture target)
+    {
+        var isLinear = QualitySettings.activeColorSpace == ColorSpace.Linear;
+        var sourceDecodes = isLinear && source.sRGB;
+        var targetEncodes = isLinear && target.sRGB;
+
+        if (s_CopyMaterial == null)
+            s_CopyMaterial = new Material(Shader.Find(k_CopyShaderName)) { hideFlags = HideFlags.HideAndDontSave };
+
+        // The shader conversion cancels the decode of the sampling against the encode of the store.
+        float colorConversion;
+        if (sourceDecodes == targetEncodes)
+            colorConversion = 0f;
+        else if (targetEncodes)
+            colorConversion = -1f;
+        else
+            colorConversion = 1f;
+        s_CopyMaterial.SetFloat(k_ColorConversionId, colorConversion);
+
+        var previous = RenderTexture.active;
+        try
+        {
+            Graphics.Blit(source, target, s_CopyMaterial, 0);
+        }
+        finally
+        {
+            RenderTexture.active = previous;
+        }
+    }
+
+    void DisposeDisplayTexture()
+    {
+        if (m_DisplayTexture == null)
+            return;
+
+        m_DisplayTexture.Release();
+        Object.DestroyImmediate(m_DisplayTexture);
+        m_DisplayTexture = null;
     }
 
     void DisposeRenderTexture()
     {
+        DisposeDisplayTexture();
+
         if (RenderTexture == null)
             return;
 

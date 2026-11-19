@@ -42,7 +42,6 @@ internal enum RectangleSelectionMode
     FullyContained = 1,
 }
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static partial class UIToolkitAuthoringSettings
 {
     private const string k_DisplayOptions = "UIAuthoring.DisplayOptions";

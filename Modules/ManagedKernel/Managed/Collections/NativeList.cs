@@ -102,7 +102,7 @@ namespace Unity.Collections
         /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
-        public T* GetUnsafePtr()
+        public readonly T* GetUnsafePtr()
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
             return m_ListData->Ptr;
@@ -145,7 +145,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Span&lt;T&gt; view of this container.</returns>
         [WriteAccessRequired]
-        public Span<T> AsSpan()
+        public readonly Span<T> AsSpan()
         {
             return new Span<T>(GetUnsafePtr(), Length);
         }
@@ -215,7 +215,7 @@ namespace Unity.Collections
         public T this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
+            readonly get
             {
                 AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
                 return (*m_ListData)[index];
@@ -235,7 +235,7 @@ namespace Unity.Collections
         /// <param name="index">An index.</param>
         /// <returns>A reference to the element at the index.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown if index is out of bounds.</exception>
-        public ref T ElementAt(int index)
+        public readonly ref T ElementAt(int index)
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
             return ref m_ListData->ElementAt(index);
@@ -268,7 +268,7 @@ namespace Unity.Collections
         public int Count
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Length;
+            readonly get => Length;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => Length = value;
         }
@@ -306,7 +306,7 @@ namespace Unity.Collections
         /// <remarks>Internally, the elements of a NativeList are stored in an UnsafeList.</remarks>
         /// <remarks>Performs no job safety checks.</remarks>
         /// <returns>The internal unsafe list.</returns>
-        public UnsafeList<T>* GetUnsafeList() => m_ListData;
+        public readonly UnsafeList<T>* GetUnsafeList() => m_ListData;
 
         /// <summary>
         /// Appends an element to the end of this list.
@@ -376,7 +376,7 @@ namespace Unity.Collections
         /// <remarks>
         /// Length is incremented by 1. If necessary, the capacity is increased.
         /// </remarks>
-        public void Add(in T value)
+        public readonly void Add(in T value)
         {
             AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
             m_ListData->Add(in value);
@@ -772,7 +772,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array containing a copy of this list's content.</returns>
-        public NativeArray<T> ToArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<T> ToArray(AllocatorManager.AllocatorHandle allocator)
         {
             NativeArray<T> result = CollectionHelper.CreateNativeArray<T>(Length, allocator, NativeArrayOptions.UninitializedMemory);
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
@@ -785,7 +785,7 @@ namespace Unity.Collections
         /// Copies all elements of specified container to this container.
         /// </summary>
         /// <param name="other">An container to copy into this container.</param>
-        public void CopyFrom(in ReadOnlySpan<T> other)
+        public readonly void CopyFrom(in ReadOnlySpan<T> other)
         {
             AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
             m_ListData->CopyFrom(other);
@@ -806,7 +806,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -816,7 +816,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -863,9 +863,9 @@ namespace Unity.Collections
         /// Returns a read only of this list.
         /// </summary>
         /// <returns>A read only of this list.</returns>
-        public NativeArray<T>.ReadOnly AsReadOnly()
+        public readonly NativeArray<T>.ReadOnly AsReadOnly()
         {
-            return new NativeArray<T>.ReadOnly(m_ListData->Ptr, m_ListData->Length, ref m_Safety);
+            return new NativeArray<T>.ReadOnly(m_ListData->Ptr, m_ListData->Length, m_Safety);
         }
 
         /// <summary>
@@ -873,9 +873,9 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>A parallel reader of this list.</returns>
 //        [Obsolete("'AsParallelReader' has been deprecated; use 'AsReadOnly' instead. (UnityUpgradable) -> AsReadOnly")]
-        public NativeArray<T>.ReadOnly AsParallelReader()
+        public readonly NativeArray<T>.ReadOnly AsParallelReader()
         {
-            return new NativeArray<T>.ReadOnly(m_ListData->Ptr, m_ListData->Length, ref m_Safety);
+            return new NativeArray<T>.ReadOnly(m_ListData->Ptr, m_ListData->Length, m_Safety);
         }
 
         /// <summary>
@@ -1041,7 +1041,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckHandleMatches(AllocatorManager.AllocatorHandle handle)
+        readonly void CheckHandleMatches(AllocatorManager.AllocatorHandle handle)
         {
             if(m_ListData == null)
                 throw new ArgumentOutOfRangeException($"Allocator handle {handle} can't match because container is not initialized.");

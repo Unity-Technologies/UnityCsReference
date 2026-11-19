@@ -131,7 +131,7 @@ internal static class AttributeOverridesMenu
         if (field.enabledInHierarchy)
             return NameElementAction.FocusInPlace;
 
-        return !UIToolkitStageUtility.GetEditFlags(element).IsFullyEditable() && element.visualTreeAssetSource != null
+        return !AuthoringContext.For(element).GetEditFlags(element).IsFullyEditable() && element.visualTreeAssetSource != null
             ? NameElementAction.OpenOwnDocument
             : NameElementAction.None;
     }
@@ -182,7 +182,7 @@ internal static class AttributeOverridesMenu
         if (StageUtility.GetCurrentStage() != stage)
             return;
 
-        UIToolkitStageUtility.RequestSelectionOnNextUpdate(originElement, document);
-        UIToolkitStageUtility.RequestFocusOfPendingSelection(attributePath, inspectorPanel);
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(AuthoringContext.Global, originElement, document);
+        UIToolkitStageUtility.RequestFocusOfPendingSelection(AuthoringContext.Global, attributePath, inspectorPanel);
     }
 }

@@ -312,7 +312,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <param name="key">The key to get an enumerator for.</param>
         /// <returns>An enumerator over the values of a key.</returns>
-        public Enumerator GetValuesForKey(TKey key)
+        public readonly Enumerator GetValuesForKey(TKey key)
         {
             return new Enumerator { hashmap = this, key = key, isFirst = true };
         }
@@ -336,7 +336,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next value of the key.
@@ -364,26 +364,26 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// The current value.
             /// </summary>
             /// <value>The current value.</value>
-            public TValue Current
+            public readonly TValue Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => value;
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
 
             /// <summary>
             /// Returns this enumerator.
             /// </summary>
             /// <returns>This enumerator.</returns>
-            public Enumerator GetEnumerator() { return this; }
+            public readonly Enumerator GetEnumerator() { return this; }
         }
 
         /// <summary>
         /// Returns a parallel writer for this hash map.
         /// </summary>
         /// <returns>A parallel writer for this hash map.</returns>
-        public ParallelWriter AsParallelWriter()
+        public readonly ParallelWriter AsParallelWriter()
         {
             ParallelWriter writer;
 
@@ -463,7 +463,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
+        readonly IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -473,7 +473,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -493,7 +493,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next key-value pair.
@@ -511,13 +511,13 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// The current key-value pair.
             /// </summary>
             /// <value>The current key-value pair.</value>
-            public KeyValue<TKey, TValue> Current
+            public readonly KeyValue<TKey, TValue> Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_Enumerator.GetCurrent<TKey, TValue>();
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -676,7 +676,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
+            readonly IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -686,7 +686,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 throw new NotImplementedException();
             }

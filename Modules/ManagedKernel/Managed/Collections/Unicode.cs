@@ -156,7 +156,7 @@ namespace Unity.Collections
             /// <param name="obj">An object to compare with.</param>
             /// <returns>True if the value stored in this Rune is equal to the object.</returns>
             [ExcludeFromBurstCompatTesting("Takes managed object")]
-            public override bool Equals(object obj)
+            public readonly override bool Equals(object obj)
             {
                 if (obj is Rune)
                 {
@@ -170,7 +170,7 @@ namespace Unity.Collections
             /// A hash used for comparisons.
             /// </summary>
             /// <returns>A unique hash code.</returns>
-            public override int GetHashCode()
+            public readonly override int GetHashCode()
             {
                 return value;
             }
@@ -196,22 +196,22 @@ namespace Unity.Collections
                 return r.IsDigit();
             }
 
-            internal bool IsAscii()
+            internal readonly bool IsAscii()
             {
                 return value < 0x80;
             }
 
-            internal bool IsLatin1()
+            internal readonly bool IsLatin1()
             {
                 return value < 0x100;
             }
 
-            internal bool IsDigit()
+            internal readonly bool IsDigit()
             {
                 return value >= '0' && value <= '9';
             }
 
-            internal bool IsWhiteSpace()
+            internal readonly bool IsWhiteSpace()
             {
                 // https://en.wikipedia.org/wiki/Whitespace_character#Unicode
 
@@ -244,12 +244,12 @@ namespace Unity.Collections
                     ;
             }
 
-            internal Rune ToLowerAscii()
+            internal readonly Rune ToLowerAscii()
             {
                 return new Rune(value + (((uint)(value - 'A') <= ('Z' - 'A')) ? 0x20 : 0));
             }
 
-            internal Rune ToUpperAscii()
+            internal readonly Rune ToUpperAscii()
             {
                 return new Rune(value - (((uint)(value - 'a') <= ('z' - 'a')) ? 0x20 : 0));
             }
@@ -259,7 +259,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>The number of bytes required to encode this rune as UTF-8. If the rune's codepoint
             /// is invalid, returns 4 (the maximum possible encoding length).</returns>
-            public int LengthInUtf8Bytes()
+            public readonly int LengthInUtf8Bytes()
             {
                 if (value < 0)
                     return 4; // invalid codepoint
@@ -427,7 +427,6 @@ namespace Unity.Collections
         internal static ConversionError Utf8ToUcsReverse(out Rune rune, byte* buffer, ref int index, int capacity)
         {
             var prev = index;
-            --index;
 
             index = FindUtf8CharStartInReverse(buffer, ref index);
 

@@ -120,7 +120,7 @@ sealed partial class UICanvasResizerHandle : VisualElement
     void DrawResizer(MeshGenerationContext ctx)
     {
         var painter = ctx.painter2D;
-        if (!hasHoverPseudoState)
+        if (!hasHoverPseudoState || parent is UICanvas { MatchesGameView: true })
             return;
 
         painter.lineWidth = 4;

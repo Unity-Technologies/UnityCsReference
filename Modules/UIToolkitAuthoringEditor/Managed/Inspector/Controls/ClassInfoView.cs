@@ -11,7 +11,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 class ClassInfoView : VisualElement
 {
     const string k_UssClassName = "unity-ui-inspector__classinfo-view";

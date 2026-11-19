@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
@@ -14,7 +15,6 @@ namespace UnityEngine.U2D.Runtime
 
     internal class Geometry
     {
-
 
         internal struct GenerateParams
         {
@@ -31,8 +31,7 @@ namespace UnityEngine.U2D.Runtime
             public int      smoothenIterations;
         }
 
-        // TODO: The module needs to depend on the Burst module for this to work.
-        //Unity.Burst.BurstCompile]
+        [BurstCompile]
         [RequiredByNativeCode]
         internal static int Generate(ref GenerateParams _params)
         {

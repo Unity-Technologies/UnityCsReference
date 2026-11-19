@@ -10,12 +10,12 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.StyleSheets
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "Unity.Modules.Core.TextureStreaming.Tests.Editor")]
+    [VisibleToOtherModules("Unity.Modules.Core.TextureStreaming.Tests.Editor")]
     static class ThemeRegistry
     {
         internal static string k_DefaultStyleSheetPath
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "Unity.Modules.Core.TextureStreaming.Tests.Editor")]
+            [VisibleToOtherModules("Unity.Modules.Core.TextureStreaming.Tests.Editor")]
             get => "StyleSheets/Generated/Default.tss.asset";
         }
 
@@ -54,7 +54,6 @@ namespace UnityEditor.UIElements.StyleSheets
             themes.Remove(themeName);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static string FormatThemeDependencyKey(string themeName)
         {
             return k_ThemeDependencyPrefix + themeName;

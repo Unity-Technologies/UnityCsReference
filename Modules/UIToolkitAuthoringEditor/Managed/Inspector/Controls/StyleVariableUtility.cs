@@ -14,7 +14,6 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static partial class StyleVariableUtility
 {
     public static readonly string ElementLinkedVariableHandlerVEPropertyName = "__unity-ui-builder-linked-variable-handler";
@@ -27,6 +26,9 @@ internal static partial class StyleVariableUtility
     [AutoStaticsCleanupOnCodeReload]
     [IgnoreForUAL0015("Lazily re-populated by InitEditorVarDescriptions on next access after reload")]
     static Dictionary<string, string> s_EditorVarDescriptions;
+
+    [NoAutoStaticsCleanup] // scratch resolver for GetColor, cleared after each use
+    static readonly StyleVariableResolver s_ColorResolver = new();
 
     [Serializable]
     public class DescriptionInfo
@@ -217,18 +219,37 @@ internal static partial class StyleVariableUtility
         return info;
     }
 
-    public static Color? GetColor(in VariableInfo varInfo)
+    // Resolves the variable's color like the runtime does (var() aliases, fallbacks, cycles),
+    // in the context of the scope element that defines it. Null if undefined or not a color.
+    public static Color? GetColor(VisualElement currentVisualElement, string variableName, bool editorExtensionMode, VisualElement fallbackScopeElement = null)
     {
-        var handles = varInfo.StyleVariable.handles;
-        if (varInfo.Sheet == null || handles == null || handles.Length == 0)
+        var scopeElement = currentVisualElement;
+        var info = FindVariableInElement(scopeElement, variableName, editorExtensionMode);
+        if (info.Sheet == null && fallbackScopeElement != null && fallbackScopeElement != currentVisualElement)
+        {
+            scopeElement = fallbackScopeElement;
+            info = FindVariableInElement(scopeElement, variableName, editorExtensionMode);
+        }
+        if (info.Sheet == null)
             return null;
 
-        if (handles[0].valueType == StyleValueType.Color)
-            return varInfo.Sheet.ReadColor(handles[0]);
-        if (handles[0].valueType == StyleValueType.Enum
-            && StyleSheetColor.TryGetColor(varInfo.Sheet.ReadAsString(handles[0]).ToLowerInvariant(), out var namedColor))
-            return namedColor;
-        return null;
+        var resolver = s_ColorResolver;
+        resolver.variableContext = scopeElement.variableContext;
+        resolver.Init(null, info.Sheet, info.StyleVariable.handles);
+        try
+        {
+            if (!resolver.ResolveVariableReference(info.StyleVariable.nameId))
+                return null;
+
+            var values = resolver.resolvedValues;
+            return values.Count == 1 && values[0].sheet.TryReadColor(values[0].handle, out var color) ? color : null;
+        }
+        finally
+        {
+            // Don't keep the element's variables or their style sheets alive between calls.
+            resolver.Init(null, null, null);
+            resolver.variableContext = null;
+        }
     }
 
     static VariableInfo FindVariableInElement(VisualElement element, string variableName, bool editorExtensionMode)

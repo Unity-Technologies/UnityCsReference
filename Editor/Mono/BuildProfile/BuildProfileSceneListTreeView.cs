@@ -35,7 +35,7 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// Exported from <see cref="BuildPlayerWindow"/>.
+        /// Adds the currently open scenes to the scene list.
         /// </summary>
         public void AddOpenScenes()
         {

@@ -11,6 +11,9 @@ namespace UnityEditor.Connect
 {
     internal static class UnityConnectWebRequestUtils
     {
+        // Every Unity Connect request must end, even when the server never answers
+        internal const int k_RequestTimeoutSeconds = 30;
+
         internal static UnityConnectWebRequestException CreateUnityWebRequestException(UnityWebRequest request,
             string message)
             => new(L10n.Tr(message, null))
@@ -53,8 +56,9 @@ namespace UnityEditor.Connect
 
         internal static bool IsUnityWebRequestReadyForJsonExtract(UnityWebRequest unityWebRequest)
         {
-            return !IsRequestError(unityWebRequest)
-                   && !string.IsNullOrEmpty(unityWebRequest.downloadHandler.text);
+            return unityWebRequest != null
+                   && !IsRequestError(unityWebRequest)
+                   && !string.IsNullOrEmpty(unityWebRequest.downloadHandler?.text);
         }
 
         /// <summary>

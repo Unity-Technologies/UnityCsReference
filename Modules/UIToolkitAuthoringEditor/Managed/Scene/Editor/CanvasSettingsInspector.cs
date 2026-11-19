@@ -20,6 +20,7 @@ sealed partial class CanvasSettingsInspector : VisualElement
     public const string UssClass = "unity-ui-canvas-settings";
     public const string HeaderUssClass = UssClass + "__header";
     public const string CanvasSizeUssClass = UssClass + "__canvas-size";
+    public const string MatchGameViewUssClass = UssClass + "__match-game-view";
     public const string BackgroundToggleUssClass = UssClass + "__canvas-background";
     public const string CheckerboardMessageUssClass = BackgroundToggleUssClass + "__checkerboard-message";
     public const string HiddenBackgroundUssClass = BackgroundToggleUssClass + "--hidden";
@@ -29,9 +30,12 @@ sealed partial class CanvasSettingsInspector : VisualElement
     public const string BackgroundImageUssClass = BackgroundToggleUssClass + "__image-field";
     public const string ImageStretchModeUssClass = BackgroundToggleUssClass + "__image-stretch-mode";
     public const string FitCanvasToButtonUssClass = BackgroundToggleUssClass + "__fit-canvas-to-image-button";
+    public const string BackgroundCameraUssClass = BackgroundToggleUssClass + "__camera-field";
+    public const string BackgroundCameraOpacityUssClass = BackgroundToggleUssClass + "__camera-opacity-field";
 
     CanvasSettings m_Settings;
     CanvasSettingsHeader m_Header;
+    VisualElement m_SizeField;
     ToggleButtonGroup m_CanvasBackgroundToggle;
     HelpBox m_CheckerboardMessage;
     ColorField m_ColorField;
@@ -40,6 +44,8 @@ sealed partial class CanvasSettingsInspector : VisualElement
     Slider m_ImageOpacityField;
     ToggleButtonGroup m_ImageStrechMode;
     Button m_FitCanvasToImageButton;
+    ObjectField m_CameraField;
+    Slider m_CameraOpacityField;
 
     public CanvasSettings Settings
     {
@@ -51,7 +57,9 @@ sealed partial class CanvasSettingsInspector : VisualElement
             m_Settings = value;
             m_CanvasBackgroundToggle.value = ConvertToState(m_Settings.BackgroundType);
             m_ImageStrechMode.value = ConvertToState(m_Settings.BackgroundImageScaleMode);
+            m_CameraField.SetValueWithoutNotify(m_Settings.FindBackgroundCamera());
             SetFieldsVisibility(m_Settings.BackgroundType);
+            RefreshSizeEnabledState();
         }
     }
 
@@ -68,11 +76,11 @@ sealed partial class CanvasSettingsInspector : VisualElement
         m_Header = this.Q<CanvasSettingsHeader>(className:HeaderUssClass);
         m_Header.TypeIcon = EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D;
 
-        var sizeField = this.Q(className: CanvasSizeUssClass);
-        var xInput = sizeField.Q<FloatField>("unity-x-input");
+        m_SizeField = this.Q(className: CanvasSizeUssClass);
+        var xInput = m_SizeField.Q<FloatField>("unity-x-input");
         xInput.label = "Width";
         xInput.isDelayed = true;
-        var yInput = sizeField.Q<FloatField>("unity-y-input");
+        var yInput = m_SizeField.Q<FloatField>("unity-y-input");
         yInput.label = "Height";
         yInput.isDelayed = true;
 
@@ -87,6 +95,10 @@ sealed partial class CanvasSettingsInspector : VisualElement
         m_ImageOpacityField = this.Q<Slider>(className:BackgroundImageOpacityUssClass);
         m_ImageStrechMode = this.Q<ToggleButtonGroup>(className: ImageStretchModeUssClass);
         m_FitCanvasToImageButton = this.Q<Button>(className:FitCanvasToButtonUssClass);
+        m_CameraField = this.Q<ObjectField>(className: BackgroundCameraUssClass);
+        m_CameraField.objectType = typeof(Camera);
+        m_CameraField.allowSceneObjects = true;
+        m_CameraOpacityField = this.Q<Slider>(className: BackgroundCameraOpacityUssClass);
 
     }
 
@@ -98,11 +110,18 @@ sealed partial class CanvasSettingsInspector : VisualElement
                 m_CanvasBackgroundToggle.RegisterValueChangedCallback(OnCanvasBackgroundChanged);
                 m_ImageStrechMode.RegisterValueChangedCallback(OnImageStretchModeChanged);
                 m_FitCanvasToImageButton.clicked += OnFitCanvasToImage;
+                m_CameraField.RegisterValueChangedCallback(OnBackgroundCameraChanged);
+                if (m_Settings != null)
+                    m_Settings.CanvasSettingsChanged += OnCanvasSettingsChanged;
+                RefreshSizeEnabledState();
                 break;
             case DetachFromPanelEvent:
                 m_CanvasBackgroundToggle.UnregisterValueChangedCallback(OnCanvasBackgroundChanged);
                 m_ImageStrechMode.UnregisterValueChangedCallback(OnImageStretchModeChanged);
                 m_FitCanvasToImageButton.clicked -= OnFitCanvasToImage;
+                m_CameraField.UnregisterValueChangedCallback(OnBackgroundCameraChanged);
+                if (m_Settings != null)
+                    m_Settings.CanvasSettingsChanged -= OnCanvasSettingsChanged;
                 break;
         }
         base.HandleEventBubbleUp(evt);
@@ -127,9 +146,31 @@ sealed partial class CanvasSettingsInspector : VisualElement
         so.Update();
     }
 
+    void OnBackgroundCameraChanged(ChangeEvent<UnityEngine.Object> evt)
+    {
+        var camera = evt.newValue as Camera;
+        var so = new SerializedObject(m_Settings);
+        var cameraName = so.FindProperty("m_" + nameof(CanvasSettings.BackgroundCameraName));
+        cameraName.stringValue = camera != null ? camera.name : string.Empty;
+        so.ApplyModifiedProperties();
+        so.Update();
+    }
+
+    void OnCanvasSettingsChanged(CanvasSettings settings, Vector2 canvasSize, Vector2 offset, float zoomFactor)
+    {
+        RefreshSizeEnabledState();
+    }
+
+    void RefreshSizeEnabledState()
+    {
+        var editable = m_Settings == null || !m_Settings.MatchGameView;
+        m_SizeField.SetEnabled(editable);
+        m_FitCanvasToImageButton.SetEnabled(editable);
+    }
+
     void OnFitCanvasToImage()
     {
-        if (m_Settings.BackgroundImage == null)
+        if (m_Settings.BackgroundImage == null || m_Settings.MatchGameView)
             return;
         Undo.RegisterCompleteObjectUndo(m_Settings, "Canvas Settings Changed");
         m_Settings.CanvasSize = new(m_Settings.BackgroundImage.width, m_Settings.BackgroundImage.height);
@@ -145,15 +186,18 @@ sealed partial class CanvasSettingsInspector : VisualElement
         m_ImageStrechMode.EnableInClassList(HiddenBackgroundUssClass, type is not CanvasBackgroundType.Image);
         m_ImageOpacityField.EnableInClassList(HiddenBackgroundUssClass, type is not CanvasBackgroundType.Image);
         m_FitCanvasToImageButton.EnableInClassList(HiddenBackgroundUssClass, type is not CanvasBackgroundType.Image);
+        m_CameraField.EnableInClassList(HiddenBackgroundUssClass, type is not CanvasBackgroundType.Camera);
+        m_CameraOpacityField.EnableInClassList(HiddenBackgroundUssClass, type is not CanvasBackgroundType.Camera);
     }
 
     static CanvasBackgroundType ConvertBackgroundType(ToggleButtonGroupState state)
     {
         return state.data switch
         {
-            0b001 => CanvasBackgroundType.Checkerboard,
-            0b010 => CanvasBackgroundType.Color,
-            0b100 => CanvasBackgroundType.Image,
+            0b0001 => CanvasBackgroundType.Checkerboard,
+            0b0010 => CanvasBackgroundType.Color,
+            0b0100 => CanvasBackgroundType.Image,
+            0b1000 => CanvasBackgroundType.Camera,
             _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
         };
     }
@@ -162,9 +206,10 @@ sealed partial class CanvasSettingsInspector : VisualElement
     {
         return type switch
         {
-            CanvasBackgroundType.Checkerboard => new (0b001, 3),
-            CanvasBackgroundType.Color => new (0b010, 3),
-            CanvasBackgroundType.Image => new (0b100, 3),
+            CanvasBackgroundType.Checkerboard => new (0b0001, 4),
+            CanvasBackgroundType.Color => new (0b0010, 4),
+            CanvasBackgroundType.Image => new (0b0100, 4),
+            CanvasBackgroundType.Camera => new (0b1000, 4),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
     }

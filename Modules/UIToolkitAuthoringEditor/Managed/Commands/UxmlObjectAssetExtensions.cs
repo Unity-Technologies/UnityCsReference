@@ -7,7 +7,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static class UxmlObjectAssetExtensions
 {
     public static void RemoveAssetAndFieldParentIfEmpty(this UxmlObjectAsset uxmlObjectAsset,

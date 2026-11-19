@@ -16,6 +16,7 @@ namespace Unity.PlayMode.Editor
     class PlayModeListView : VisualElement
     {
         ListView m_ListView;
+        long m_ListVersion = -1;
         internal Action<PlayModeScenario> OnConfigSelected;
         readonly LabelWithIcon m_NewItemTextField;
 
@@ -62,6 +63,11 @@ namespace Unity.PlayMode.Editor
         {
             PlayModeScenarioUtils.AssetsChanged -= RefreshList;
             PlayModeScenarioUtils.AssetsChanged += RefreshList;
+
+            // AssetsChanged is not observed while detached (e.g. the window is a hidden docked tab),
+            // so catch up if scenarios were added or removed in the meantime.
+            if (m_ListVersion != PlayModeScenarioUtils.Version)
+                RefreshList();
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -99,6 +105,9 @@ namespace Unity.PlayMode.Editor
             #pragma warning disable UAL0018 // the list view lives in the scenarios window's visual tree, which is rebuilt on reload, and RefreshList re-assigns the source on every AssetsChanged notification
             m_ListView.itemsSource = PlayModeScenarioUtils.GetAllConfigs();
             #pragma warning restore UAL0018
+            #pragma warning disable UAL0018 // the list view is rebuilt on reload too, so m_ListVersion restarts at -1 when the version counter resets
+            m_ListVersion = PlayModeScenarioUtils.Version;
+            #pragma warning restore UAL0018
             m_ListView.Rebuild();
             m_ListView.makeItem = () =>
             {
@@ -107,8 +116,7 @@ namespace Unity.PlayMode.Editor
                 element.AddToClassList("unity-scenarios-playmode-list-view__item--scenario-window");
                 element.OnFinishEdit += s =>
                 {
-                    var path = AssetDatabase.GetAssetPath(element.userData as PlayModeScenario);
-                    AssetDatabase.RenameAsset(path, s);
+                    PlayModeScenarioUtils.RenamePlayModeConfig(element.userData as PlayModeScenario, s);
                     this.schedule.Execute(() => RefreshList());
                 };
 

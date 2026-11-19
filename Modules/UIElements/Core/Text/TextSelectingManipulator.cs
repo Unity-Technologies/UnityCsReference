@@ -6,10 +6,8 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class TextSelectingManipulator
     {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal TextSelectingUtilities m_SelectingUtilities;
 
         bool selectAllOnMouseUp;
@@ -136,6 +134,9 @@ namespace UnityEngine.UIElements
                 case PointerUpEvent pue:
                     OnPointerUpEvent(pue);
                     break;
+                case PointerCancelEvent pce:
+                    OnPointerCancelEvent(pce);
+                    break;
             }
         }
 
@@ -245,6 +246,18 @@ namespace UnityEngine.UIElements
                 m_SelectingUtilities.SelectAll();
                 ResetClickCount();
             }
+
+            selectAllOnMouseUp = false;
+            m_Dragged = false;
+            isClicking = false;
+            m_TextElement.ReleasePointer(evt.pointerId);
+            evt.StopPropagation();
+        }
+
+        void OnPointerCancelEvent(PointerCancelEvent evt)
+        {
+            if (evt.button != (int)MouseButton.LeftMouse || !isClicking || !m_TextElement.HasPointerCapture(evt.pointerId))
+                return;
 
             selectAllOnMouseUp = false;
             m_Dragged = false;

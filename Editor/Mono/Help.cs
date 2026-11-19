@@ -99,13 +99,23 @@ namespace UnityEditor
         public static void ShowHelpForObject(Object obj)
         {
             var startTick = DateTime.Now.Ticks;
-            var url = GetHelpURLForObject(obj, true);
+            ShowHelp(startTick, GetHelpURLForObject(obj, true), obj);
+        }
+
+        internal static void ShowHelpForType(Type type, Object obj)
+        {
+            var startTick = DateTime.Now.Ticks;
+            ShowHelp(startTick, GetHelpURLForType(type, obj, true), obj);
+        }
+
+        static void ShowHelp(long startTick, string url, Object contextObject)
+        {
             if (string.IsNullOrEmpty(url))
                 return;
 
             BrowseURL(url);
 
-            SendHelpRequestedUsabilityEvent(startTick, DateTime.Now.Ticks - startTick, obj, url);
+            SendHelpRequestedUsabilityEvent(startTick, DateTime.Now.Ticks - startTick, contextObject, url);
         }
 
         public static void ShowHelpPage(string page)
@@ -147,6 +157,11 @@ namespace UnityEditor
             return !string.IsNullOrEmpty(GetHelpURLForObject(obj, defaultToMonoBehaviour));
         }
 
+        internal static bool HasHelpForType(Type type, Object obj, bool defaultToMonoBehaviour)
+        {
+            return !string.IsNullOrEmpty(GetHelpURLForType(type, obj, defaultToMonoBehaviour));
+        }
+
         internal static string GetNiceHelpNameForObject(Object obj)
         {
             return GetNiceHelpNameForObject(obj, true);
@@ -182,12 +197,30 @@ namespace UnityEditor
             return helpTopic;
         }
 
+        internal static string GetNiceHelpNameForType(Type type, Object obj, bool defaultToMonoBehaviour)
+        {
+            if (obj is not null)
+                return GetNiceHelpNameForObject(obj, defaultToMonoBehaviour);
+
+            return type?.Name ?? "";
+        }
+
         internal static string GetHelpURLForObject(Object obj, bool defaultToMonoBehaviour)
         {
             if (obj == null || !obj)
                 return "";
 
-            var attrs = obj.GetType().GetCustomAttributes(typeof(HelpURLAttribute), true);
+            return GetHelpURLForType(obj.GetType(), obj, defaultToMonoBehaviour);
+        }
+
+        // obj is an optional instance of type; without one, only [HelpURL] and the custom editor's [HelpURL] are used
+        internal static string GetHelpURLForType(Type type, Object obj, bool defaultToMonoBehaviour)
+        {
+            bool isDestroyedObject = obj is not null && !obj;
+            if (type == null || isDestroyedObject)
+                return "";
+
+            var attrs = type.GetCustomAttributes(typeof(HelpURLAttribute), true);
             for (int i = 0; i < attrs.Length; i++)
             {
                 var attr = (HelpURLAttribute)attrs[i];
@@ -195,9 +228,9 @@ namespace UnityEditor
                 if (string.IsNullOrEmpty(url))
                     continue;
                 
-                if (!string.IsNullOrEmpty(attr.m_DispatchingFieldName))
+                if (obj is not null && !string.IsNullOrEmpty(attr.m_DispatchingFieldName))
                 {
-                    var field = obj.GetType().GetField(attr.m_DispatchingFieldName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    var field = type.GetField(attr.m_DispatchingFieldName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                     if (field != null)
                     {
                         var value = field.GetValue(obj);
@@ -223,11 +256,14 @@ namespace UnityEditor
                 return FindHelpNamed(url);
             }
 
-            if (InternalEditorUtility.IsUnityAssembly(obj.GetType()))
+            if (InternalEditorUtility.IsUnityAssembly(type))
             {
-                var editorUrl = GetHelpURLFromCustomEditor(obj);
+                var editorUrl = GetHelpURLFromCustomEditor(type);
                 if (!string.IsNullOrEmpty(editorUrl))
                     return editorUrl;
+
+                if (obj is null)
+                    return "";
 
                 var topicForObject = HelpFileNameForObject(obj);
                 if (HasNamedHelp(topicForObject))
@@ -247,9 +283,9 @@ namespace UnityEditor
             return "";
         }
 
-        static string GetHelpURLFromCustomEditor(Object obj)
+        static string GetHelpURLFromCustomEditor(Type type)
         {
-            var editorType = CustomEditorAttributes.FindCustomEditorType(obj, false);
+            var editorType = CustomEditorAttributes.FindCustomEditorTypeByType(type, false);
             if (editorType == null)
                 return null;
 
@@ -284,7 +320,7 @@ namespace UnityEditor
             return uri;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.ProjectAuditorModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.ProjectAuditorModule")]
         internal static string FindHelpNamed(string topic)
         {
             if (m_UrlCache.ContainsKey(topic))

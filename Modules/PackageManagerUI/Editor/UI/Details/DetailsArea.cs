@@ -44,7 +44,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             ServicesContainer.instance.Resolve<IExtensionManager>(),
             ServicesContainer.instance.Resolve<IUpmCache>(),
             ServicesContainer.instance.Resolve<IIOProxy>(),
-            ServicesContainer.instance.Resolve<ISampleImporter>())
+            ServicesContainer.instance.Resolve<ISampleImporter>(),
+            ServicesContainer.instance.Resolve<IInternalEditorUtilityProxy>())
         {
         }
 
@@ -57,6 +58,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IUpmCache m_UpmCache;
         private readonly IIOProxy m_IOProxy;
         private readonly ISampleImporter m_SampleImporter;
+        private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
         public DetailsArea(
             IResourceLoader resourceLoader,
             IApplicationProxy application,
@@ -72,7 +74,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IExtensionManager extensionManager,
             IUpmCache upmCache,
             IIOProxy ioProxy,
-            ISampleImporter sampleImporter)
+            ISampleImporter sampleImporter,
+            IInternalEditorUtilityProxy internalEditorUtilityProxy)
         {
             m_ResourceLoader = resourceLoader;
             m_Application = application;
@@ -89,6 +92,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache = upmCache;
             m_IOProxy = ioProxy;
             m_SampleImporter = sampleImporter;
+            m_InternalEditorUtilityProxy = internalEditorUtilityProxy;
 
             m_ScrollView = new ScrollView { name = "detailScrollView" };
             // We set the style here programatically instead of in the uss so that our style doesn't depend on a class or name that could change in the future
@@ -163,7 +167,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 case > 1:
                     newView = m_MultiSelectDetails ??= new MultiSelectDetails(m_ResourceLoader, m_Application, m_PackageDatabase,
                         m_OperationDispatcher, m_PageManager, m_PackageManagerPrefs, m_AssetStoreClient, m_AssetStoreDownloadManager,
-                        m_AssetStoreCache, m_BackgroundFetchHandler, m_UnityConnect, m_IOProxy, m_SampleImporter) { name = "multiSelectDetails" };
+                        m_AssetStoreCache, m_BackgroundFetchHandler, m_UnityConnect, m_IOProxy, m_SampleImporter, m_InternalEditorUtilityProxy) { name = "multiSelectDetails" };
                     break;
             }
 

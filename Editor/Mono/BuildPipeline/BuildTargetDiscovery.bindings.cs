@@ -86,6 +86,7 @@ namespace UnityEditor
         static readonly string k_SDKPlatformNoSupportedGuidsError = L10n.Tr("SDK platform '{0}' is a multi-target platform but has no supported platform guids.", null);
         static readonly string k_SDKPlatformMissingVariantsError = L10n.Tr("SDK platform '{0}' is a multi-target platform but has no preconfigured settings variants in the manifest.", null);
         static readonly string k_SDKPlatformVariantMissingGuidError = L10n.Tr("SDK platform '{0}' is a multi-target platform but has a preconfigured settings variant '{1}' without a platform GUID.", null);
+        static readonly string k_SDKPlatformVariantPackagesNotRecommendedWarning = L10n.Tr("SDK platform '{0}' has a preconfigured settings variant '{1}' requiring packages that are not among the platform's recommended packages: {2}. Packages a variant requires must be listed as recommended packages.", null);
         static readonly string k_SDKPlatformVariantUnsupportedGuidError = L10n.Tr("SDK platform '{0}' has a preconfigured settings variant '{1}' with platform GUID '{2}' which is not one of the platform's supported platform guids.", null);
         static readonly string k_SDKPlatformInvalidPlatformTypeError = L10n.Tr("SDK platform '{0}' has an invalid platform type.", null);
         static readonly string k_SDKPlatformMissingDisplayNameWarning = L10n.Tr("SDK platform '{0}' is missing a display name.", null);
@@ -905,13 +906,11 @@ namespace UnityEditor
 
         [NoAutoStaticsCleanup] // GUID->bool install map, value types only, repopulated by Initialize; no user-code refs
         static readonly Dictionary<GUID, bool> k_PlatformInstalledData = new();
-        // Filled only from the static constructor below, which runs once per domain and not again on a code
-        // reload, so emptying this map would make every reader behave as if no SDK platform is installed.
-        // Same static-constructor path as k_PlatformInstalledData above, so the two are kept consistent.
+        // Multi-target entries are removed on code deinitialization and loaded again on code initialization.
+        // Derived entries are re-registered when their platform module is recreated.
         [NoAutoStaticsCleanup]
         static readonly Dictionary<GUID, ISDKPlatformExtension> k_SDKPlatformExtensions = new();
 
-        [NoAutoStaticsCleanup] // immutable static platform-group config (strings + GUID arrays), no user-code refs
         static readonly PlatformGroup[] allPlatformGroups =
         {
             new PlatformGroup
@@ -993,9 +992,6 @@ namespace UnityEditor
         {
             LoadSDKPlatforms();
             PreloadBuildPlatformInstalledData();
-            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
-            LoadSDKMultiTargetPlatformExtensions();
-            #pragma warning restore UAL0015
         }
 
         public static IEnumerable<GUID> GetAllPlatforms() => allPlatforms.Keys;
@@ -1223,6 +1219,13 @@ namespace UnityEditor
                         continue;
                 }
 
+                foreach (var variant in preconfiguredSettingsVariants)
+                {
+                    var notRecommended = FindVariantPackagesNotRecommended(variant, sdkPlatformInfo.internalPackages, sdkPlatformInfo.partnerPackages);
+                    if (notRecommended.Count > 0)
+                        Debug.LogWarning(string.Format(k_SDKPlatformVariantPackagesNotRecommendedWarning, sdkPlatformGuid, variant.Name, string.Join(", ", notRecommended)));
+                }
+
                 var displayName = sdkPlatformInfo.displayName ?? string.Empty;
                 if (string.IsNullOrEmpty(displayName))
                     Debug.LogWarning(string.Format(k_SDKPlatformMissingDisplayNameWarning, sdkPlatformGuid));
@@ -1292,10 +1295,24 @@ namespace UnityEditor
             foreach (var variant in manifestVariants)
             {
                 var guid = string.IsNullOrEmpty(variant.platformGuid) ? default : new GUID(variant.platformGuid);
-                variantList.Add(new PreconfiguredSettingsVariant(variant.displayName, variant.selectedInitially, variant.description, variant.tooltip, guid));
+                variantList.Add(new PreconfiguredSettingsVariant(variant.displayName, variant.selectedInitially, variant.description, variant.tooltip, guid, variant.requiredPackages));
             }
 
             return variantList.ToArray();
+        }
+
+        internal static List<string> FindVariantPackagesNotRecommended(PreconfiguredSettingsVariant variant, PlatformPackageList internalPackages, PlatformPackageList partnerPackages)
+        {
+            var notRecommended = new List<string>();
+            foreach (var packageName in variant.RequiredPackages)
+            {
+                if (!IsRecommended(internalPackages, packageName) && !IsRecommended(partnerPackages, packageName) && !notRecommended.Contains(packageName))
+                    notRecommended.Add(packageName);
+            }
+            return notRecommended;
+
+            static bool IsRecommended(PlatformPackageList packageList, string packageName) =>
+                packageList != null && Array.Exists(packageList.recommendedPackages, package => package.qualifiedName == packageName);
         }
 
         static bool AreVariantPlatformGuidsValid(GUID sdkPlatformGuid, PreconfiguredSettingsVariant[] variants, GUID[] supportedGuids)
@@ -1365,6 +1382,28 @@ namespace UnityEditor
                     isInstalled = true;
 
                 k_PlatformInstalledData.Add(platform.Key, isInstalled);
+            }
+        }
+
+        // Registering a lifecycle method on BuildTargetDiscovery itself would run its static constructor at assembly load
+        internal static partial class SDKMultiTargetPlatformLifecycle
+        {
+            [OnCodeDeinitializing]
+            static void Unload() => UnloadSDKMultiTargetPlatformExtensions();
+
+            [OnCodeInitializing]
+            static void Load() => LoadSDKMultiTargetPlatformExtensions();
+        }
+
+        static void UnloadSDKMultiTargetPlatformExtensions()
+        {
+            foreach (var platform in allPlatforms)
+            {
+                if (!platform.Value.HasFlag(PlatformAttributes.IsMultiTargetPlatform))
+                    continue;
+
+                k_SDKPlatformExtensions.Remove(platform.Key);
+                k_PlatformInstalledData[platform.Key] = false;
             }
         }
 
@@ -1504,8 +1543,8 @@ namespace UnityEditor
 
         internal static void RegisterSDKPlatformExtension(GUID guid, ISDKPlatformExtension sdkPlatformExtension)
         {
-            if (!k_SDKPlatformExtensions.ContainsKey(guid))
-                k_SDKPlatformExtensions.Add(guid, sdkPlatformExtension);
+            // Replace any entry from before a code reload, its provider belongs to an unloaded assembly
+            k_SDKPlatformExtensions[guid] = sdkPlatformExtension;
         }
 
         internal static void SetSDKPlatformInstalledStatus(GUID guid, bool isInstalled)

@@ -299,7 +299,7 @@ namespace UnityEngine.Windows.WebCam
         private extern void Dispose_Internal();
 
         //-----------------------------------------------------------------
-#pragma warning disable UA5000 // Frees the native capture; DisposeThreaded is thread-safe, and the type is legacy and WSA-only.
+#pragma warning disable UAC0045 // Frees the native capture; DisposeThreaded is thread-safe, and the type is legacy and WSA-only.
         ~VideoCapture()
         {
             if (m_NativePtr != IntPtr.Zero)
@@ -308,7 +308,7 @@ namespace UnityEngine.Windows.WebCam
                 m_NativePtr = IntPtr.Zero;
             }
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         [NativeConditional("(PLATFORM_WIN || PLATFORM_WINRT) && !PLATFORM_XBOXONE")]
         [NativeMethod("VideoCaptureBindings::DisposeThreaded", HasExplicitThis = true, IsThreadSafe = true)]

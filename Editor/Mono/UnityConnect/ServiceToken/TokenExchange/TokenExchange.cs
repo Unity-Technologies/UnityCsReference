@@ -67,14 +67,10 @@ namespace UnityEditor.Connect
         {
             var jsonPayload = Json.Serialize(tokenExchangeRequest);
             var postBytes = Encoding.UTF8.GetBytes(jsonPayload);
-            var endpoint = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.ServicesGateway)
-                + "/api/auth/v1/genesis-token-exchange/unity";
+            var endpoint = GetExchangeEndpoint();
 
-            using (var exchangeRequest = new UnityWebRequest(endpoint, UnityWebRequest.kHttpVerbPOST))
+            using (var exchangeRequest = CreateExchangeRequest(endpoint, postBytes))
             {
-                exchangeRequest.uploadHandler = new UploadHandlerRaw(postBytes) { contentType = k_RequestContentType };
-                exchangeRequest.downloadHandler = new DownloadHandlerBuffer();
-
                 var exchangeTask = exchangeRequest.SendWebRequest();
 
                 while (!exchangeRequest.isDone)
@@ -98,6 +94,18 @@ namespace UnityEditor.Connect
                     exchangeRequest.responseCode.ToString(),
                     exchangeRequest.downloadHandler.text);
             }
+        }
+
+        internal virtual string GetExchangeEndpoint()
+            => UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.ServicesGateway) + "/api/auth/v1/genesis-token-exchange/unity";
+
+        internal static UnityWebRequest CreateExchangeRequest(string endpoint, byte[] postBytes)
+        {
+            var exchangeRequest = new UnityWebRequest(endpoint, UnityWebRequest.kHttpVerbPOST);
+            exchangeRequest.uploadHandler = new UploadHandlerRaw(postBytes) { contentType = k_RequestContentType };
+            exchangeRequest.downloadHandler = new DownloadHandlerBuffer();
+            exchangeRequest.timeout = UnityConnectWebRequestUtils.k_RequestTimeoutSeconds;
+            return exchangeRequest;
         }
 
         static void VerifyTokenExchangeResponse(UnityWebRequest exchangeRequest)

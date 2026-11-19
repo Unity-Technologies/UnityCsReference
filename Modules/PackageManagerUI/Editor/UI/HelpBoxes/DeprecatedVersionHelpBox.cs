@@ -14,9 +14,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             readMoreAnalyticsId = "deprecated-version-help-box";
         }
 
+        public static bool IsVisibleFor(IPackageVersion version) => version is { isInstalled: true } && version.HasTag(PackageTag.Deprecated);
+
         public override void Refresh(IPackageVersion version)
         {
-            var isVisible = version is { isInstalled: true } && version.HasTag(PackageTag.Deprecated);
+            var isVisible = IsVisibleFor(version);
             UIUtils.SetElementDisplay(this, isVisible);
 
             if (!isVisible)

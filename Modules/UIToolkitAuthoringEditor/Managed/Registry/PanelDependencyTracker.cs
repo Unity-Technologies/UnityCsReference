@@ -33,6 +33,7 @@ sealed class PanelDependencyTracker : IVisualElementChangeProcessor
     readonly object m_Owner;
     readonly ILiveReloadSystem m_LiveReload;
     readonly Action<List<VisualTreeAsset>> m_CollectRoots;
+    readonly Action<List<StyleSheet>> m_CollectStyleSheetRoots;
     readonly Func<UnityEngine.Object, UIAssetAccess> m_ResolveAccess;
 
     readonly RegistryVtaTracker m_VtaTracker;
@@ -46,13 +47,15 @@ sealed class PanelDependencyTracker : IVisualElementChangeProcessor
     bool m_Disposed;
 
     internal PanelDependencyTracker(UIAssetRegistry registry, Panel panel, object owner,
-        Action<List<VisualTreeAsset>> collectRoots, Func<UnityEngine.Object, UIAssetAccess> resolveAccess)
+        Action<List<VisualTreeAsset>> collectRoots, Func<UnityEngine.Object, UIAssetAccess> resolveAccess,
+        Action<List<StyleSheet>> collectStyleSheetRoots = null)
     {
         m_Registry = registry;
         m_Panel = panel;
         m_Owner = owner;
         m_LiveReload = panel?.liveReloadSystem;
         m_CollectRoots = collectRoots;
+        m_CollectStyleSheetRoots = collectStyleSheetRoots;
         m_ResolveAccess = resolveAccess ?? (_ => UIAssetAccess.ReadOnly);
         m_VtaTracker = new RegistryVtaTracker(this);
         m_SheetTracker = new RegistryStyleSheetTracker(this);
@@ -78,6 +81,13 @@ sealed class PanelDependencyTracker : IVisualElementChangeProcessor
         using var _sheets = HashSetPool<StyleSheet>.Get(out var sheets);
         foreach (var root in roots)
             Collect(root, vtas, sheets);
+
+        using (ListPool<StyleSheet>.Get(out var styleSheetRoots))
+        {
+            m_CollectStyleSheetRoots?.Invoke(styleSheetRoots);
+            foreach (var sheet in styleSheetRoots)
+                CollectSheet(sheet, sheets);
+        }
 
         // Additions (register once) and access refresh (every walk, so a changed edit target re-resolves).
         foreach (var vta in vtas)
@@ -218,8 +228,14 @@ sealed class PanelDependencyTracker : IVisualElementChangeProcessor
     /// templates, referenced style sheets and their <c>@import</c> chains — is one of <paramref name="assets"/>.
     /// </summary>
     internal static bool DependsOnAny(IPanelComponent component, IReadOnlyCollection<UnityEngine.Object> assets)
+        => DependsOnAny(component?.visualTreeAsset, assets);
+
+    /// <summary>
+    /// Whether <paramref name="root"/>, or anything it depends on — nested templates, referenced style sheets and
+    /// their <c>@import</c> chains — is one of <paramref name="assets"/>.
+    /// </summary>
+    internal static bool DependsOnAny(VisualTreeAsset root, IReadOnlyCollection<UnityEngine.Object> assets)
     {
-        var root = component?.visualTreeAsset;
         if (root == null || assets == null || assets.Count == 0)
             return false;
 

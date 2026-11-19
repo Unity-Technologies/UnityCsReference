@@ -213,7 +213,7 @@ namespace Unity.Collections
         /// <summary>
         /// The size of the buffer used. See <see cref="Capacity"/> for the total size.
         /// </summary>
-        public int Length
+        public readonly int Length
         {
             get
             {
@@ -224,7 +224,7 @@ namespace Unity.Collections
         /// <summary>
         /// The size of the buffer used in bits. See <see cref="Length"/> for the length in bytes.
         /// </summary>
-        public int LengthInBits
+        public readonly int LengthInBits
         {
             get
             {

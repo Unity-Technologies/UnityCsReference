@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IPrefixLabel
     {
         string label { get; }
@@ -25,13 +25,10 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for all editable elements.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface IEditableElement
     {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Action editingStarted { get; set; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Action editingEnded { get; set; }
     }
 
@@ -96,11 +93,8 @@ namespace UnityEngine.UIElements
 
         protected internal static readonly PropertyName serializedPropertyCopyName = "SerializedPropertyCopyName";
 
-        [NoAutoStaticsCleanup]
         static readonly CustomStyleProperty<float> s_LabelWidthRatioProperty = new("--unity-property-field-label-width-ratio");
-        [NoAutoStaticsCleanup]
         static readonly CustomStyleProperty<float> s_LabelExtraPaddingProperty = new("--unity-property-field-label-extra-padding");
-        [NoAutoStaticsCleanup]
         static readonly CustomStyleProperty<float> s_LabelBaseMinWidthProperty = new("--unity-property-field-label-base-min-width");
 
         private float m_LabelWidthRatio;
@@ -111,7 +105,7 @@ namespace UnityEngine.UIElements
 
         internal Action<ExpressionEvaluator.Expression> expressionEvaluated;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement visualInput
         {
             get { return m_VisualInput; }
@@ -143,7 +137,6 @@ namespace UnityEngine.UIElements
 
         // Enable some fields to specify how ValueChanged events should be dispatched (queued or immediate).
         // Mainly used by delayed text fields to immediately notify on value change when focus is lost (UUM-62652).
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal DispatchMode dispatchMode { get; set; } = DispatchMode.Default;
 
         /// <summary>
@@ -243,7 +236,7 @@ namespace UnityEngine.UIElements
         Action IEditableElement.editingStarted { get; set; }
         Action IEditableElement.editingEnded { get; set; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal AbstractBaseField(string label)
         {
             isCompositeRoot = true;

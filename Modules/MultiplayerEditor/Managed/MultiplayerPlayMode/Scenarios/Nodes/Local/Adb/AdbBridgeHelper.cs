@@ -36,7 +36,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         // cleanup nulls it.
         [IgnoreForUAL0015("Assembly reference re-resolved by the AndroidExtensions getter after cleanup nulls it")]
         private static Assembly s_AndroidExtensions;
-        private static readonly string kAndroidLogcatWarningIssued = nameof(kAndroidLogcatWarningIssued);
+        [NoAutoStaticsCleanup] // Modules are never unloaded, so this survives code reloads; it holds no user code.
+        static bool s_AndroidLogcatWarningIssued;
 
         private static Assembly AndroidExtensions
         {
@@ -63,10 +64,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 s_AndroidExtensionsState = s_AndroidExtensions == null ? ExtensionState.Unavalaible : ExtensionState.Available;
 
                 // Warn user once why logcat is disabled
-                if (SessionState.GetBool(kAndroidLogcatWarningIssued, false) == false &&
+                if (!s_AndroidLogcatWarningIssued &&
                     s_AndroidExtensionsState == ExtensionState.Unavalaible)
                 {
-                    SessionState.SetBool(kAndroidLogcatWarningIssued, true);
+                    s_AndroidLogcatWarningIssued = true;
                     Debug.LogWarning($"{assemblyName} assembly not found, android instances for playmode scenarios will be disabled.");
                 }
 

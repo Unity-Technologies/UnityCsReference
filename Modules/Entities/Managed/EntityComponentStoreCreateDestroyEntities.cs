@@ -64,26 +64,7 @@ namespace Unity.Entities
 
         public void DestroyEntities(EntityQueryImpl* queryImpl, ref BufferTypeHandle<LinkedEntityGroup> linkedEntityGroupTypeHandle)
         {
-            var chunkCacheIterator = new UnsafeChunkCacheIterator(queryImpl->_Filter,
-                queryImpl->_QueryData->HasEnableableComponents != 0,
-                queryImpl->GetMatchingChunkCache(), queryImpl->_QueryData->MatchingArchetypes.Ptr);
-            int chunkIndex = -1;
-            v128 chunkEnabledMask = default;
-            int maxChunkCount = chunkCacheIterator.Length;
-            using var chunksToProcess = new UnsafeList<ChunkAndEnabledMask>(maxChunkCount, Allocator.Temp);
-            while (chunkCacheIterator.MoveNextChunk(ref chunkIndex, out var archetypeChunk, out int chunkEntityCount,
-                       out byte useEnabledMask, ref chunkEnabledMask))
-            {
-                // Structural changes are not allowed while using an UnsafeChunkCacheIterator, so we just track
-                // the chunks & metadata to process outside the loop.
-                chunksToProcess.AddNoResize(new ChunkAndEnabledMask
-                {
-                    Chunk = archetypeChunk.m_Chunk,
-                    EnabledMask = chunkEnabledMask,
-                    ChunkEntityCount = chunkEntityCount,
-                    UseEnabledMask = useEnabledMask,
-                });
-            }
+            using var chunksToProcess = GatherChunksToProcess(queryImpl, EntityQueryProfiler.Operation.BatchDestroyEntity, Allocator.Temp);
             // Validate that for all LinkedEntityGroup roots that we're about to destroy, all the entities in their
             // LinkedEntityGroup buffers are also destroyed.
             // Architecturally this validation should happen in EntityDataAccess, but it is more efficient to implement
@@ -105,7 +86,7 @@ namespace Unity.Entities
                     // Populate a list of entity batches in this chunk to process
                     int batchCount = 0;
                     int batchEndIndex = 0;
-                    chunkEnabledMask = chunksToProcess[iChunk].EnabledMask;
+                    var chunkEnabledMask = chunksToProcess[iChunk].EnabledMask;
                     while (EnabledBitUtility.TryGetNextRange(chunkEnabledMask, batchEndIndex, out int batchStartIndex, out batchEndIndex))
                     {
                         chunkBatches[batchCount++] = new EntityBatchInChunk
@@ -309,10 +290,6 @@ namespace Unity.Entities
             }
         }
 
-        // Exposes DestroyBatch so GameObjectComponentStoreBridge can scavenge chunk entries whose
-        // GameObject died during a structural change.
-        internal void DestroyStaleGameObjectEntityBatch(in EntityBatchInChunk batch) => DestroyBatch(in batch);
-
         void DestroyBatch(in EntityBatchInChunk batch)
         {
             var chunk = batch.Chunk;
@@ -380,7 +357,7 @@ namespace Unity.Entities
             var src = GetEntityInChunk(srcEntity);
             var srcArchetype = GetArchetype(src.Chunk);
             var srcComponentStore = srcArchetype->EntityComponentStore;
-            var isFromOtherWorld = srcComponentStore != (EntityComponentStore*)UnsafeUtility.AddressOf(ref this);
+            var isFromOtherWorld = srcComponentStore != Self;
 
             var dstArchetype = removePrefab ? srcArchetype->InstantiateArchetype : srcArchetype->CopyArchetype;
             if (isFromOtherWorld)
@@ -528,7 +505,7 @@ namespace Unity.Entities
 
             // A reference outside the group would point into the source world, so it only survives within one world
             var keepExternalReferences = srcEntityCount == 0 ||
-                GetArchetype(GetChunk(srcEntities[0]))->EntityComponentStore == (EntityComponentStore*)UnsafeUtility.AddressOf(ref this);
+                GetArchetype(GetChunk(srcEntities[0]))->EntityComponentStore == Self;
 
             for (int i = 0; i != srcEntityCount; i++)
             {

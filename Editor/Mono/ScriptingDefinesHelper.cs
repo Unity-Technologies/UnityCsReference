@@ -53,4 +53,20 @@ internal static class ScriptingDefinesHelper
         distinctDefines.CopyTo(distinctDefinesArray);
         return distinctDefinesArray;
     }
+
+    // The compiler treats defines as a set, so order and duplicates do not change the result.
+    [VisibleToOtherModules]
+    internal static bool AreDefinesEquivalent(string defines, string otherDefines)
+    {
+        return AreDefinesEquivalent(
+            ConvertScriptingDefineStringToArray(defines),
+            ConvertScriptingDefineStringToArray(otherDefines));
+    }
+
+    [VisibleToOtherModules]
+    internal static bool AreDefinesEquivalent(string[] defines, string[] otherDefines)
+    {
+        var defineSet = new HashSet<string>(defines ?? Array.Empty<string>());
+        return defineSet.SetEquals(otherDefines ?? Array.Empty<string>());
+    }
 }

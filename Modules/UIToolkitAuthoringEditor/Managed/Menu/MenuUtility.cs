@@ -11,15 +11,18 @@ using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEditor.Utils;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace Unity.UIToolkit.Editor;
 
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 static class MenuUtility
 {
     const string k_UndoCreatePanelRenderer = "Create Panel Renderer";
     const string k_NewVisualTreeAssetDefaultName = "New UXML";
+    const string k_UnsavedVisualTreeAssetContent = "<ui:UXML xmlns:ui=\"UnityEngine.UIElements\" xmlns:uie=\"UnityEditor.UIElements\" />";
 
     /// <summary>
     /// When adding from a top menu, we will prioritize to find an existing <see cref="IPanelComponent"/> component in the
@@ -36,6 +39,75 @@ static class MenuUtility
         => AddElement(AddRequest.ForType(elementType, variantName), addAsSibling: false, parentNewGameObjectUnderSelection: true);
 
     /// <summary>
+    /// Adds an element under the selection of <paramref name="context"/>, in the document of its session. The
+    /// global context adds the way <see cref="AddElementAsLastChild(Type, string)"/> does.
+    /// </summary>
+    public static void AddElementAsLastChild(AuthoringContext context, Type elementType, string variantName = null)
+    {
+        if (context.IsGlobal)
+        {
+            AddElementAsLastChild(elementType, variantName);
+            return;
+        }
+
+        if (!LegacyHierarchyGuard.EnsureNewHierarchy() || context.Session is not { IsDisposed: false } session)
+            return;
+
+        if (!TryResolveSessionParent(session, context.Selection.ActiveObject as VisualElementSelection, addAsSibling: false,
+                SiblingPlacement.Last, out var parentVea, out var parentElement, out var index))
+            return;
+        ExecuteAdd(session, AddRequest.ForType(elementType, variantName), parentVea, parentElement, index, context);
+    }
+
+    /// <summary>
+    /// Adds a library item (a control, or a UXML document as a template instance) to the document of the session
+    /// of <paramref name="context"/>, the way a double-click in the UI Library window adds to the scene: as the last
+    /// sibling of the selected element, or at the root of the document when nothing is selected. The global context
+    /// adds the way <see cref="AddElementAsSibling(Type, string)"/> does.
+    /// </summary>
+    public static void AddFromLibrary(AuthoringContext context, LibraryItem item)
+        => AddNextToContextSelection(context, item, addAsSibling: true, SiblingPlacement.Last);
+
+    /// <summary>
+    /// Adds a library item under the selected element of <paramref name="context"/>, in the document of its
+    /// session. The global context adds the way <see cref="AddElementAsLastChild(Type, string)"/> does.
+    /// </summary>
+    public static void AddAsLastChild(AuthoringContext context, LibraryItem item)
+        => AddNextToContextSelection(context, item, addAsSibling: false, SiblingPlacement.Last);
+
+    /// <summary>
+    /// Inserts a library item next to the selected element of <paramref name="context"/>, or at the root of the
+    /// document of its session when nothing is selected. The global context inserts next to the editor selection,
+    /// in the UI Stage or the scene.
+    /// </summary>
+    public static void InsertNextToSelection(AuthoringContext context, LibraryItem item, SiblingPlacement placement)
+        => AddNextToContextSelection(context, item, addAsSibling: true, placement);
+
+    static void AddNextToContextSelection(AuthoringContext context, LibraryItem item, bool addAsSibling,
+        SiblingPlacement placement)
+    {
+        var request = item.isAsset
+            ? AddRequest.ForTemplate(item.visualTreeAsset)
+            : AddRequest.ForType(item.libraryType.type, item.libraryType.variantName);
+        if (!request.IsTemplate && request.ElementType == null)
+            return;
+
+        if (context.IsGlobal)
+        {
+            AddElement(request, addAsSibling, parentNewGameObjectUnderSelection: !addAsSibling, placement);
+            return;
+        }
+
+        if (!LegacyHierarchyGuard.EnsureNewHierarchy() || context.Session is not { IsDisposed: false } session)
+            return;
+
+        if (!TryResolveSessionParent(session, context.Selection.ActiveObject as VisualElementSelection, addAsSibling,
+                placement, out var parentVea, out var parentElement, out var index))
+            return;
+        ExecuteAdd(session, request, parentVea, parentElement, index, context);
+    }
+
+    /// <summary>
     /// Adds a UXML document as a template instance beside the current selection.
     /// </summary>
     public static void AddTemplateAsSibling(VisualTreeAsset template)
@@ -47,30 +119,18 @@ static class MenuUtility
     public static void AddTemplateAsLastChild(VisualTreeAsset template)
         => AddElement(AddRequest.ForTemplate(template), addAsSibling: false, parentNewGameObjectUnderSelection: true);
 
-    /// <summary>
-    /// Inserts an element right after the current selection.
-    /// </summary>
-    public static void InsertElementNextToSelection(Type elementType, string variantName, SiblingPlacement placement)
-        => AddElement(AddRequest.ForType(elementType, variantName), addAsSibling: true, parentNewGameObjectUnderSelection: false, placement);
-
-    /// <summary>
-    /// Inserts a UXML document as a template instance right after the current selection.
-    /// </summary>
-    public static void InsertTemplateNextToSelection(VisualTreeAsset template, SiblingPlacement placement)
-        => AddElement(AddRequest.ForTemplate(template), addAsSibling: true, parentNewGameObjectUnderSelection: false, placement);
-
     static void AddElement(AddRequest request, bool addAsSibling, bool parentNewGameObjectUnderSelection,
         SiblingPlacement placement = SiblingPlacement.Last)
     {
         if (!LegacyHierarchyGuard.EnsureNewHierarchy())
             return;
 
-        if (StageUtility.GetCurrentStage() is VisualElementEditingStage activeStage)
+        if (AuthoringContext.Global.Session is { } session)
         {
-            if (!TryResolveStageParent(activeStage, Selection.activeObject as VisualElementSelection, addAsSibling,
+            if (!TryResolveSessionParent(session, Selection.activeObject as VisualElementSelection, addAsSibling,
                     placement, out var parentVea, out var parentElement, out var index))
                 return;
-            ExecuteAdd(activeStage, request, parentVea, parentElement, index);
+            ExecuteAdd(session, request, parentVea, parentElement, index, AuthoringContext.Global);
             return;
         }
 
@@ -223,12 +283,12 @@ static class MenuUtility
 
         // Both commands filed their selection request by asset alone; narrow it to the instance the selection
         // is in.
-        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(target.ParentElement);
+        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(AuthoringContext.Global, target.ParentElement);
 
         // A new element has no name to identify it by until the user gives it one. An instance already reads as
         // the document it came from, so it is left alone.
         if (!request.IsTemplate)
-            UIToolkitStageUtility.RequestRenameOfPendingSelection();
+            UIToolkitStageUtility.RequestRenameOfPendingSelection(AuthoringContext.Global);
 
         // The commands only write to the authoring assets, and a scene panel does not show an in-memory change
         // to the document it renders until it clones it again.
@@ -322,13 +382,16 @@ static class MenuUtility
     /// the asset alone cannot, so the result is selected in the instance the selection is in.
     /// </param>
     /// <returns><see langword="false"/> when the selection resolves to an element that cannot take children.</returns>
-    static bool TryResolveStageParent(VisualElementEditingStage stage, VisualElementSelection selection,
+    static bool TryResolveSessionParent(UIDocumentSession session, VisualElementSelection selection,
         bool addAsSibling, SiblingPlacement placement, out VisualElementAsset parentVea, out VisualElement parentElement,
         out int index)
     {
         parentVea = null;
         parentElement = null;
         index = -1;
+
+        if (session.IsDocumentReadOnly)
+            return false;
 
         var element = selection?.Element;
         if (element == null)
@@ -337,13 +400,13 @@ static class MenuUtility
             // parentVea resolves to. The live parent is still named, though — editing a sub-document in context
             // means that root is one template instance among several, and the request has nothing else to tell
             // it from the other clones of the same document.
-            parentElement = stage.ResolveLocalRoot();
+            parentElement = session.ResolveLocalRoot();
             return true;
         }
 
-        if (stage.Context.GetElementEditFlags(element) != VisualElementEditFlags.FullyEditable)
+        if (session.GetElementEditFlags(element) != VisualElementEditFlags.FullyEditable)
         {
-            var suitable = GetFirstSuitableElement(element, stage.EditedVisualTreeAsset);
+            var suitable = GetFirstSuitableElement(element, session.EditedVisualTreeAsset);
             if (addAsSibling)
             {
                 parentVea = (VisualElementAsset)suitable?.visualElementAsset?.parentAsset;
@@ -393,6 +456,7 @@ static class MenuUtility
     /// Creates a new UI Document on disk, at the settings-configured default location or one the user picks.
     /// </summary>
     /// <returns><see langword="false"/> when the user declined to pick a location or the import failed.</returns>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static bool TryCreateNewVisualTreeAsset(out VisualTreeAsset asset)
     {
         asset = null;
@@ -408,6 +472,45 @@ static class MenuUtility
 
         asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(assetPath);
         return asset != null;
+    }
+
+    /// <summary>
+    /// Creates an empty UI Document that only lives in memory, until it is written to a file. It survives domain
+    /// reloads, but not the editor quitting.
+    /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    internal static VisualTreeAsset CreateUnsavedVisualTreeAsset(string name)
+    {
+        new UXMLImporterImpl().ImportXmlFromString(k_UnsavedVisualTreeAssetContent, out var asset);
+        asset.name = name;
+        asset.hideFlags = HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
+        if (asset.inlineSheet != null)
+            asset.inlineSheet.hideFlags |= HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
+        return asset;
+    }
+
+    /// <summary>
+    /// Destroys a document made by <see cref="CreateUnsavedVisualTreeAsset"/>, with its undo history and what the
+    /// registry knows of it.
+    /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    internal static void DestroyUnsavedVisualTreeAsset(VisualTreeAsset asset)
+    {
+        if (asset == null || EditorUtility.IsPersistent(asset))
+            return;
+
+        Undo.ClearUndo(asset);
+
+        // The registry keeps what it knows of a dirty asset after its last holder lets go.
+        UIAssetRegistry.LiveInstance?.MarkClean(asset);
+
+        if (asset.inlineSheet != null)
+        {
+            Undo.ClearUndo(asset.inlineSheet);
+            Object.DestroyImmediate(asset.inlineSheet);
+        }
+
+        Object.DestroyImmediate(asset);
     }
 
     static bool TryCreatePanelRendererAndAsset(GameObject parent, IPanelComponent reusableComponent, out IPanelComponent component)
@@ -459,24 +562,24 @@ static class MenuUtility
         return true;
     }
 
-    static void ExecuteAdd(VisualElementEditingStage stage, AddRequest request, VisualElementAsset parentVea,
-        VisualElement parentElement, int index)
+    static void ExecuteAdd(UIDocumentSession session, AddRequest request, VisualElementAsset parentVea,
+        VisualElement parentElement, int index, AuthoringContext context)
     {
         CommandExecutionStatus status;
         if (request.IsTemplate)
         {
-            if (stage.Context.WillCauseCircularDependency(request.Template))
+            if (session.WillCauseCircularDependency(request.Template))
             {
                 Debug.LogWarning($"Cannot add '{request.Template.name}' here because it would create a circular reference.");
                 return;
             }
 
-            var parentAsset = parentVea ?? stage.EditedVisualTreeAsset.visualTree;
-            status = AddTemplatesToElementCommand.Execute(CommandSources.Menus, parentAsset, index, new[] { request.Template });
+            var parentAsset = parentVea ?? session.EditedVisualTreeAsset.visualTree;
+            status = AddTemplatesToElementCommand.Execute(CommandSources.Menus, parentAsset, index, new[] { request.Template }, context);
         }
         else
         {
-            status = AddElementCommand.Execute(CommandSources.Menus, request.ElementType, stage.EditedVisualTreeAsset, parentVea, index, request.VariantName);
+            status = AddElementCommand.Execute(CommandSources.Menus, request.ElementType, session.EditedVisualTreeAsset, parentVea, index, request.VariantName, context);
         }
 
         if (status != CommandExecutionStatus.Success)
@@ -484,12 +587,12 @@ static class MenuUtility
 
         // Both commands asked for what they created by asset alone. A staged document can instantiate the same
         // template twice as well, so point the request at the instance the selection is in.
-        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parentElement);
+        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(context, parentElement);
 
         // A new element has no name to identify it by until the user gives it one. An instance already reads as
         // the document it came from, so it is left alone, the way a prefab instance is.
         if (!request.IsTemplate)
-            UIToolkitStageUtility.RequestRenameOfPendingSelection();
+            UIToolkitStageUtility.RequestRenameOfPendingSelection(context);
     }
 
     /// <summary>

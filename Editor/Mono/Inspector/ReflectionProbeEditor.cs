@@ -341,6 +341,16 @@ namespace UnityEditor
                 Lightmapping.BakeAllReflectionProbesSnapshots();
         }
 
+        internal void BakeSelectedReflectionProbeSnapshots()
+        {
+            foreach (var t in targets)
+            {
+                var probe = (ReflectionProbe)t;
+                if (probe && probe.enabled && probe.mode == ReflectionProbeMode.Baked && !string.IsNullOrEmpty(probe.gameObject.scene.path))
+                    Lightmapping.BakeReflectionProbeSnapshot(probe);
+            }
+        }
+
         ReflectionProbe reflectionProbeTarget
         {
             get { return (ReflectionProbe)target; }
@@ -376,7 +386,7 @@ namespace UnityEditor
                             // Bake button in non-continous mode
                             if (EditorGUI.LargeSplitButtonWithDropdownList(GUI.enabled ? Styles.bakeButtonText : Styles.bakeButtonTextDisabled, Styles.bakeButtonsText, OnBakeButton, !GUI.enabled))
                             {
-                                Lightmapping.BakeReflectionProbeSnapshot(reflectionProbeTarget);
+                                BakeSelectedReflectionProbeSnapshots();
                                 GUIUtility.ExitGUI();
                             }
                         }

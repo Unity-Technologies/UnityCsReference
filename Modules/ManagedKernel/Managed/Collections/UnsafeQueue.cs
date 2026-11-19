@@ -225,7 +225,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>The element at the front of this queue.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Peek()
+        public readonly T Peek()
         {
             CheckNotEmpty();
 
@@ -308,7 +308,7 @@ namespace Unity.Collections
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array containing a copy of this queue's content. The elements are ordered in the same order they were
         /// enqueued, *e.g.* the earliest enqueued element is copied to index 0 of the array.</returns>
-        public NativeArray<T> ToArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<T> ToArray(AllocatorManager.AllocatorHandle allocator)
         {
             UnsafeQueueBlockHeader* firstBlock = (UnsafeQueueBlockHeader*)m_Buffer->m_FirstBlock;
             var outputArray = CollectionHelper.CreateNativeArray<T>(Count, allocator, NativeArrayOptions.UninitializedMemory);
@@ -420,7 +420,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next value.
@@ -463,13 +463,13 @@ namespace Unity.Collections
             /// The current value.
             /// </summary>
             /// <value>The current value.</value>
-            public T Current
+            public readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => value;
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -477,9 +477,9 @@ namespace Unity.Collections
         /// </summary>
         /// <remarks>ReadOnly containers point to the same underlying data as the UnsafeQueue it is made from.</remarks>
         /// <returns>ReadOnly instance for this.</returns>
-        public ReadOnly AsReadOnly()
+        public readonly ReadOnly AsReadOnly()
         {
-            return new ReadOnly(ref this);
+            return new ReadOnly(this);
         }
 
         /// <summary>
@@ -491,7 +491,7 @@ namespace Unity.Collections
             [NativeDisableUnsafePtrRestriction]
             UnsafeQueueData* m_Buffer;
 
-            internal ReadOnly(ref UnsafeQueue<T> data)
+            internal ReadOnly(in UnsafeQueue<T> data)
             {
                 m_Buffer = data.m_Buffer;
             }
@@ -639,7 +639,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -649,7 +649,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -666,7 +666,7 @@ namespace Unity.Collections
         /// Returns a parallel writer for this queue.
         /// </summary>
         /// <returns>A parallel writer for this queue.</returns>
-        public ParallelWriter AsParallelWriter()
+        public readonly ParallelWriter AsParallelWriter()
         {
             ParallelWriter writer;
 
@@ -720,7 +720,7 @@ namespace Unity.Collections
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CheckNotEmpty()
+        readonly void CheckNotEmpty()
         {
             if (m_Buffer->m_FirstBlock == (IntPtr)0)
             {

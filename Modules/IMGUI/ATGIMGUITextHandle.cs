@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine
 {
+    [VisibleToOtherModules("UnityEditor.CoreModule")]
     internal partial class IMGUITextHandle : TextHandle
     {
         [AutoStaticsCleanupOnCodeReload]
@@ -171,6 +173,12 @@ namespace UnityEngine
 
         internal static (TextSettings, FontAsset, int) GetTextSettingsFontAssetAndFontSize(GUIStyle style)
         {
+            return GetTextSettingsFontAssetAndFontSize(style, GUIUtility.pixelsPerPoint);
+        }
+
+        [VisibleToOtherModules("UnityEditor.CoreModule")]
+        internal static (TextSettings, FontAsset, int) GetTextSettingsFontAssetAndFontSize(GUIStyle style, float pixelsPerPoint)
+        {
             if (s_EditorTextSettings == null)
             {
                 s_EditorTextSettings = (TextSettings)GetEditorTextSettings?.Invoke();
@@ -187,7 +195,7 @@ namespace UnityEngine
                 font = GUIStyle.GetDefaultFont();
             }
 
-            var scale = GUIUtility.pixelsPerPoint;
+            var scale = pixelsPerPoint;
             float fontSize = 0;
             int roundedFontSize = 0;
 

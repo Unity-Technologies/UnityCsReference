@@ -488,7 +488,82 @@ namespace UnityEngine.UIElements.UIR
                 child = child.nextSibling;
             }
 
+            if (insertAfter != null && insertAfter.zIndex == zIndex && IsAfterInHierarchy(insertAfter.owner, renderData.owner))
+                insertAfter = FindPrecedingTie(insertAfter, renderData.owner, zIndex);
+
             SpliceAfter(renderData, insertAfter, parentRenderData);
+        }
+
+        static RenderData FindPrecedingTie(RenderData lastTie, VisualElement ve, int zIndex)
+        {
+            var hierarchyParent = ve.hierarchy.parent;
+            bool tiesAreSiblings = true;
+            for (var r = lastTie; r != null && r.zIndex == zIndex; r = r.prevSibling)
+            {
+                if (r.owner.hierarchy.parent != hierarchyParent)
+                {
+                    tiesAreSiblings = false;
+                    break;
+                }
+            }
+
+            if (tiesAreSiblings)
+            {
+                int tiesAfter = 0;
+                for (int i = hierarchyParent.hierarchy.childCount - 1; hierarchyParent.hierarchy[i] != ve; --i)
+                {
+                    var siblingRenderData = hierarchyParent.hierarchy[i].renderData;
+                    if (siblingRenderData != null && siblingRenderData.parent == lastTie.parent && siblingRenderData.zIndex == zIndex)
+                        ++tiesAfter;
+                }
+
+                for (; tiesAfter > 0; --tiesAfter)
+                    lastTie = lastTie.prevSibling;
+                return lastTie;
+            }
+
+            while (lastTie != null && lastTie.zIndex == zIndex && IsAfterInHierarchy(lastTie.owner, ve))
+                lastTie = lastTie.prevSibling;
+            return lastTie;
+        }
+
+        static bool IsAfterInHierarchy(VisualElement a, VisualElement b)
+        {
+            int aDepth = 0;
+            for (var e = a; e != null; e = e.hierarchy.parent)
+                ++aDepth;
+
+            int bDepth = 0;
+            for (var e = b; e != null; e = e.hierarchy.parent)
+                ++bDepth;
+
+            bool aIsDeeper = aDepth > bDepth;
+
+            for (; aDepth > bDepth; --aDepth)
+                a = a.hierarchy.parent;
+
+            for (; bDepth > aDepth; --bDepth)
+                b = b.hierarchy.parent;
+
+            if (a == b)
+                return aIsDeeper;
+
+            while (a.hierarchy.parent != b.hierarchy.parent)
+            {
+                a = a.hierarchy.parent;
+                b = b.hierarchy.parent;
+            }
+
+            var parent = a.hierarchy.parent;
+            for (int i = parent.hierarchy.childCount - 1; i >= 0; --i)
+            {
+                var child = parent.hierarchy[i];
+                if (child == a)
+                    return true;
+                if (child == b)
+                    return false;
+            }
+            return false;
         }
 
         static void SpliceAfter(RenderData node, RenderData insertAfter, RenderData parent)

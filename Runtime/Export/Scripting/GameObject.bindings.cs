@@ -402,6 +402,7 @@ namespace UnityEngine
 
         public GameObject(string name)
         {
+            Unity.Entities.GameObjectComponentStoreBridge.CheckGameObjectCreationAllowed();
             Internal_CreateGameObject(this, name);
         }
 
@@ -409,11 +410,13 @@ namespace UnityEngine
 
         public GameObject()
         {
+            Unity.Entities.GameObjectComponentStoreBridge.CheckGameObjectCreationAllowed();
             Internal_CreateGameObject(this, null);
         }
 
         public GameObject(string name, params Type[] components)
         {
+            Unity.Entities.GameObjectComponentStoreBridge.CheckGameObjectCreationAllowed();
             Internal_CreateGameObject(this, name);
             foreach (Type t in components)
                 AddComponent(t);

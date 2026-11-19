@@ -56,10 +56,27 @@ namespace UnityEngine.UIElements.UIR
             : base(k_CreateAction, null, 100, 1000) { }
     }
 
-    partial class RenderTreeManager : IDisposable
+    partial class RenderTreeManager : IDisposable, IPooledNativeStore
     {
         readonly ElementIdPool m_ElementIdPool = new();
         internal ElementIdPool elementIdPool => m_ElementIdPool;
+
+        // The shader-info atlas: the allocators' entries, plus one element-info texel per live element id
+        string IPooledNativeStore.storeName => "ShaderInfo";
+
+        long IPooledNativeStore.GetBytesReserved() => shaderInfoAllocator?.GetReservedBytes() ?? 0;
+
+        long IPooledNativeStore.GetBytesUsed()
+        {
+            if (shaderInfoAllocator == null)
+                return 0;
+            return shaderInfoAllocator.GetUsedBytes() + (long)m_ElementIdPool.liveCount * ShaderInfoAllocator.kTexelBytes;
+        }
+
+        void IPooledNativeStore.ReleasePendingSlots()
+        {
+            // Entries are freed with their render data
+        }
 
         // Lazily acquire the id + queue the record write. Returns false (caller discards the mesh) when exhausted.
         public bool EnsureElementId(RenderData renderData)
@@ -157,9 +174,13 @@ namespace UnityEngine.UIElements.UIR
 
         bool blockDirtyRegistration { get; set; }
         public TextureSlotCount textureSlotCount { get; set;} = TextureSlotCount.Eight;
+        public FilterTextureBudget filterTextureBudget { get; set; }
 
         // Per-frame filter/backdrop callback targets; one entry covers both chains.
         readonly List<RenderData> m_ElementsWithFilterCallbacks = new();
+
+        FilterParameterStorage m_FilterParameterStorage;
+        public FilterParameterStorage filterParameterStorage => m_FilterParameterStorage ??= new FilterParameterStorage();
 
         // Blocks are cleared on release so a pooled block never retains textures/uniforms. collectionCheck
         // stays off on purpose (O(n) per Release); double-release is prevented by every release path clearing the owning list.
@@ -167,11 +188,8 @@ namespace UnityEngine.UIElements.UIR
         readonly UnityEngine.Pool.ObjectPool<MaterialPropertyBlock> m_FilterBlockPool =
             new(() => new MaterialPropertyBlock(), null, b => b.Clear(), null, false, 32, k_FilterBlockPoolMaxSize);
 
-        // Returns true when the count changed: the render-time caller must then re-prime defaults, since
-        // a grow leaves new blocks empty and a shrink leaves survivors holding a previous chain's uniforms.
-        public bool SizeFilterCallbackBlocks(List<MaterialPropertyBlock> blocks, int passCount)
+        public void SizeFilterCallbackBlocks(List<MaterialPropertyBlock> blocks, int passCount)
         {
-            bool changed = blocks.Count != passCount;
             while (blocks.Count < passCount)
                 blocks.Add(m_FilterBlockPool.Get());
             for (int i = blocks.Count - 1; i >= passCount; i--)
@@ -179,7 +197,6 @@ namespace UnityEngine.UIElements.UIR
                 m_FilterBlockPool.Release(blocks[i]);
                 blocks.RemoveAt(i);
             }
-            return changed;
         }
 
         public void ReleaseFilterCallbackBlocks(List<MaterialPropertyBlock> blocks)
@@ -215,9 +232,13 @@ namespace UnityEngine.UIElements.UIR
         // so no render target is bound while callbacks execute.
         void InvokeAllFilterCallbacks()
         {
+            // Before the early return: the defaults of chains that the walk missed are written there too
+            m_FilterParameterStorage?.Reset();
+
             if (m_ElementsWithFilterCallbacks.Count == 0)
                 return;
 
+            using var _ = k_MarkerFilterCallbacks.Auto();
             m_FilterCallbackScratch.Clear();
             m_FilterCallbackScratch.AddRange(m_ElementsWithFilterCallbacks);
 
@@ -244,6 +265,7 @@ namespace UnityEngine.UIElements.UIR
         {
             public static int GetFilterCallbackElementCount(RenderTreeManager rtm) => rtm.m_ElementsWithFilterCallbacks.Count;
             public static int GetPooledFilterBlockCount(RenderTreeManager rtm) => rtm.m_FilterBlockPool.CountInactive;
+            public static RenderTreeCompositor GetCompositor(RenderTreeManager rtm) => rtm.m_Compositor;
         }
 
         internal RenderData GetPooledRenderData()
@@ -284,6 +306,8 @@ namespace UnityEngine.UIElements.UIR
         // Profiling
         static readonly ProfilerMarker k_MarkerProcess = new(ProfilerCategory.UIToolkit, "RenderTreeManager.Process");
         static readonly ProfilerMarker k_MarkerSerialize = new(ProfilerCategory.UIToolkit, "RenderChain.Serialize");
+        static readonly ProfilerMarker k_MarkerFilterCallbacks = new(ProfilerCategory.UIToolkit, "RenderTreeManager.FilterCallbacks");
+        static readonly ProfilerMarker k_MarkerProcessTrees = new(ProfilerCategory.UIToolkit, "RenderTreeManager.ProcessTrees");
 
 
         public RenderTreeManager(BaseVisualElementPanel panel)
@@ -326,6 +350,7 @@ namespace UnityEngine.UIElements.UIR
 
             shaderInfoAllocator = new ShaderInfoAllocator(forceGammaRendering ? ColorSpace.Gamma : activeColorSpace);
             m_PerGlyphTcs = new PerGlyphTextCoreSettings(this);
+            PooledNativeStores.Register(this);
         }
 
         #region Dispose Pattern
@@ -366,6 +391,7 @@ namespace UnityEngine.UIElements.UIR
                 boxShadowProfile?.Dispose();
                 boxShadowProfile = null;
 
+                PooledNativeStores.Unregister(this);
                 shaderInfoAllocator.Dispose();
                 shaderInfoAllocator = null;
 
@@ -383,6 +409,9 @@ namespace UnityEngine.UIElements.UIR
 
                 m_Compositor.Dispose();
                 m_Compositor = null;
+
+                m_FilterParameterStorage?.Dispose();
+                m_FilterParameterStorage = null;
 
                 m_RenderDataPool.Clear();
                 m_RenderDataPool = null;
@@ -488,7 +517,8 @@ namespace UnityEngine.UIElements.UIR
                 m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
                 m_Compositor.Update(m_RootRenderTree);
                 device.AdvanceFrame(); // Before making any changes to the buffers
-                DepthFirstProcessChanges(m_RootRenderTree);
+                using (k_MarkerProcessTrees.Auto())
+                    DepthFirstProcessChanges(m_RootRenderTree);
                 m_BlockDirtyRegistration = false;
 
                 m_VisualChangesProcessor.PruneChainCache();
@@ -595,7 +625,7 @@ namespace UnityEngine.UIElements.UIR
                         clearSettings.clearColor, clearColor, UIRUtility.k_ClearZ);
                 }
 
-                RenderSingleTree(m_RootRenderTree, null, RectInt.zero, Rect.zero);
+                DrawRootTree();
             }
 
             // m_Stats is still intact here (it is only reset by the next ProcessChanges), and the
@@ -619,45 +649,21 @@ namespace UnityEngine.UIElements.UIR
             m_Compositor.RenderNestedPasses();
         }
 
-        public void RenderSingleTree(RenderTree renderTree, RenderTexture nestedTreeRT, RectInt nestedTreeViewport, Rect bounds, float treePixelsPerPoint = 0)
+        // The nested trees render in groups, with RenderNestedTreeGroup
+        void DrawRootTree()
         {
-            // This function is not supposed to be used to draw the root render tree of a panel that draws in cameras.
-            Debug.Assert(!drawInCameras || renderTree != m_RootRenderTree);
-
+            var renderTree = m_RootRenderTree;
             if (renderTree.firstCommand == null)
                 return;
 
             Exception immediateException = null;
 
-            bool shouldResetRT = false;
-            RenderTexture oldRT = null;
-            Camera oldCam = null;
             bool prevInvertCulling = GL.invertCulling;
             if (prevInvertCulling)
                 GL.invertCulling = false;
 
-            float pixelsPerPoint = treePixelsPerPoint > 0 ? treePixelsPerPoint : panel.scaledPixelsPerPoint;
-
-            Rect scissor;
-            if (renderTree == m_RootRenderTree)
-            {
-                Debug.Assert(nestedTreeRT == null);
-                var viewport = panel.visualTree.layout;
-                scissor = new Rect(0, 0, viewport.width, viewport.height);
-                bounds = viewport;
-            }
-            else
-            {
-                Debug.Assert(nestedTreeRT != null);
-                oldRT = RenderTexture.active;
-                oldCam = Camera.current;
-                Camera.SetupCurrent(null);
-                RenderTexture.active = nestedTreeRT;
-                shouldResetRT = true;
-                scissor = bounds;
-
-                GL.Viewport(UIRUtility.CastToRect(nestedTreeViewport));
-            }
+            var bounds = panel.visualTree.layout;
+            var scissor = new Rect(0, 0, bounds.width, bounds.height);
 
             var projection = ProjectionUtils.Ortho(bounds.xMin, bounds.xMax, bounds.yMax, bounds.yMin, -0.001f, 1.001f);
             GL.LoadProjectionMatrix(projection);
@@ -672,10 +678,10 @@ namespace UnityEngine.UIElements.UIR
                 shaderInfoAllocator,
                 scissor,
                 bounds,
-                pixelsPerPoint,
+                panel.scaledPixelsPerPoint,
                 false,
                 textureSlotCount,
-                (nestedTreeRT != null),
+                false,
                 ref immediateException,
                 panel);
             m_BlockDirtyRegistration = false;
@@ -685,22 +691,50 @@ namespace UnityEngine.UIElements.UIR
             if (prevInvertCulling)
                 GL.invertCulling = true;
 
-            if (shouldResetRT)
-            {
-                RenderTexture.active = oldRT;
-                Camera.SetupCurrent(oldCam);
-            }
+            ThrowImmediateException(immediateException);
+        }
 
-            if (immediateException != null)
-            {
-                Debug.Assert(!drawInCameras);
+        // The trees draw into the same texture, so the render state is set up once for all of them
+        public void RenderNestedTreeGroup(List<UIRenderDevice.NestedChain> chains, RenderTexture target)
+        {
+            Exception immediateException = null;
 
-                if (GUIUtility.IsExitGUIException(immediateException))
-                    throw immediateException;
+            bool prevInvertCulling = GL.invertCulling;
+            if (prevInvertCulling)
+                GL.invertCulling = false;
 
-                // Wrap the exception, this plays more nicely with the callstack logging.
-                throw new ImmediateModeException(immediateException);
-            }
+            var oldRT = RenderTexture.active;
+            var oldCam = Camera.current;
+            Camera.SetupCurrent(null);
+            RenderTexture.active = target;
+
+            m_BlockDirtyRegistration = drawInCameras;
+            device.EvaluateNestedChains(chains, m_DefaultMat, vectorImageManager?.atlas, shaderInfoAllocator, textureSlotCount, ref immediateException, panel);
+            m_BlockDirtyRegistration = false;
+
+            Utility.DisableScissor();
+
+            if (prevInvertCulling)
+                GL.invertCulling = true;
+
+            RenderTexture.active = oldRT;
+            Camera.SetupCurrent(oldCam);
+
+            ThrowImmediateException(immediateException);
+        }
+
+        void ThrowImmediateException(Exception immediateException)
+        {
+            if (immediateException == null)
+                return;
+
+            Debug.Assert(!drawInCameras);
+
+            if (GUIUtility.IsExitGUIException(immediateException))
+                throw immediateException;
+
+            // Wrap the exception, this plays more nicely with the callstack logging.
+            throw new ImmediateModeException(immediateException);
         }
 
         internal struct ElementInsertionData // Internal for testing purposes
@@ -1060,8 +1094,8 @@ namespace UnityEngine.UIElements.UIR
             m_PerGlyphTcs.FreeAllocs(extraData);
 
             // The emptied lists stay on the pooled ExtraRenderData for reuse.
-            ReleaseFilterCallbackBlocks(extraData.filterCallbackPropertyBlocks);
-            ReleaseFilterCallbackBlocks(extraData.backdropFilterCallbackPropertyBlocks);
+            extraData.filterParameters.Release(this);
+            extraData.backdropFilterParameters.Release(this);
 
             m_ExtraDataPool.Return(extraData);
 

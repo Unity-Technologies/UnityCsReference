@@ -123,8 +123,11 @@ namespace Unity.Entities
         /// <summary>
         /// Computes the matrix that transforms from this transform's local space to world space.
         /// </summary>
+        /// <remarks>
+        /// This method is not safe to call from parallel jobs that touch transform hierarchies.
+        /// </remarks>
         /// <returns>The local-to-world matrix.</returns>
-        public float4x4 CalculateLocalToWorld()
+        internal float4x4 CalculateLocalToWorld()
         {
             CheckReadAccess();
             // TODO DOTS-10269: CheckHierarchyReadAccess();
@@ -217,12 +220,14 @@ namespace Unity.Entities
         /// when the call site specifically needs world-space transform data for objects that may be in
         /// a hierarchy.
         ///
+        /// This method is not safe to call from parallel jobs that touch transform hierarchies.
+        ///
         /// The world-space scale can only be computed approximately in the general case; see <see cref="GetWorldLossyScale"/>.
         /// </remarks>
         /// <seealso cref="GetLocalPositionAndRotation(float3, quaternion)"/>
         /// <param name="position">The world-space position will be stored here</param>
         /// <param name="rotation">The world-space rotation will be stored here</param>
-        public void CalculateWorldPositionAndRotation(out float3 position, out quaternion rotation)
+        internal void CalculateWorldPositionAndRotation(out float3 position, out quaternion rotation)
         {
             CheckReadAccess();
             m_TransformUnion->CalculateWorldPositionAndRotation(out position, out rotation);
@@ -236,11 +241,13 @@ namespace Unity.Entities
         /// time is proporitional to the depth of this object in its transform hierarchy. Only use it
         /// when the call site specifically needs world-space transform data for objects that may be in
         /// a hierarchy.
+        ///
+        /// This method is not safe to call from parallel jobs that touch transform hierarchies.
         /// </remarks>
         /// <seealso cref="SetLocalPositionAndRotation(float3, quaternion)"/>
         /// <param name="position">The new world-space position</param>
         /// <param name="rotation">The new world-space rotation</param>
-        public void SetWorldPositionAndRotation(float3 position, quaternion rotation)
+        internal void SetWorldPositionAndRotation(float3 position, quaternion rotation)
         {
             CheckWriteAccess();
             m_TransformUnion->SetWorldPositionAndRotation(position, rotation);

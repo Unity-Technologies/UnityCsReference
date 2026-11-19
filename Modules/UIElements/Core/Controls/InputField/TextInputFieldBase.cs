@@ -40,9 +40,7 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId maskCharProperty = nameof(maskChar);
         internal static readonly BindingId verticalScrollerVisibilityProperty = nameof(verticalScrollerVisibility);
 
-        [NoAutoStaticsCleanup]
         static readonly CustomStyleProperty<Color> s_SelectionColorProperty = new("--unity-selection-color");
-        [NoAutoStaticsCleanup]
         static readonly CustomStyleProperty<Color> s_CursorColorProperty = new("--unity-cursor-color");
         internal const int kMaxLengthNone = -1;
         internal const char kMaskCharDefault = '*';
@@ -113,7 +111,7 @@ namespace UnityEngine.UIElements
         internal string placeholderText
         {
             get => textEdition.placeholder;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             set
             {
                 if (textEdition.placeholder == value) return;
@@ -567,7 +565,6 @@ namespace UnityEngine.UIElements
         public string text
         {
             get => m_TextInputBase.text;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             protected internal set => m_TextInputBase.text = value;
         }
 
@@ -680,7 +677,7 @@ namespace UnityEngine.UIElements
 
         internal bool hasFocus
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => textInputBase.textElement.hasFocus;
         }
 

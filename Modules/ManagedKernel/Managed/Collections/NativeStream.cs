@@ -177,7 +177,7 @@ namespace Unity.Collections
         /// </summary>
         /// <remarks>Each <see cref="Writer.Write{T}"/> and <see cref="Writer.Allocate"/> call increments this number.</remarks>
         /// <returns>The total number of items in the buffers of this stream.</returns>
-        public int Count()
+        public readonly int Count()
         {
             CheckRead();
             return m_Stream.Count();
@@ -241,7 +241,7 @@ namespace Unity.Collections
             return jobHandle;
         }
 
-        internal UnsafeStream GetUnsafeStream() => m_Stream;
+        internal readonly UnsafeStream GetUnsafeStream() => m_Stream;
 
         // The three jobs below are internal rather than private so that
         // Unity.Jobs.CollectionsJobReflectionRegistration can register their reflection data by name.
@@ -584,7 +584,7 @@ namespace Unity.Collections
             /// <remarks>If you intentionally don't want to read *all* the data in the buffer, don't call this method.
             /// Otherwise, calling this method is recommended, even though it's not strictly necessary.</remarks>
             /// <exception cref="ArgumentException">Thrown if not all the buffer's data has been read.</exception>
-            public void EndForEachIndex()
+            public readonly void EndForEachIndex()
             {
                 m_Reader.EndForEachIndex();
                 CheckEndForEachIndex();
@@ -607,14 +607,14 @@ namespace Unity.Collections
             /// The number of items not yet read from the buffer.
             /// </summary>
             /// <value>The number of items not yet read from the buffer.</value>
-            public int RemainingItemCount => m_Reader.RemainingItemCount;
+            public readonly int RemainingItemCount => m_Reader.RemainingItemCount;
 
             /// <summary>
             /// Returns the internal unsafe stream reader.
             /// </summary>
             /// <remarks>Internally, the NativeStream.Reader uses an unsafe stream reader for access to the stream content.</remarks>
             /// <returns>The internal unsafe stream reader.</returns>
-            public UnsafeStream.Reader GetUnsafeReader() => m_Reader;
+            public readonly UnsafeStream.Reader GetUnsafeReader() => m_Reader;
 
             /// <summary>
             /// Returns a pointer to the next position to read from the buffer. Advances the reader some number of bytes.
@@ -699,7 +699,7 @@ namespace Unity.Collections
             }
 
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-            void CheckNotReadingOutOfBounds(int size)
+            readonly void CheckNotReadingOutOfBounds(int size)
             {
                 if (m_RemainingBlocks < 0)
                     throw new System.ArgumentException("Reading out of bounds");
@@ -738,7 +738,7 @@ namespace Unity.Collections
             }
 
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-            void CheckEndForEachIndex()
+            readonly void CheckEndForEachIndex()
             {
                 if (m_Reader.m_RemainingItemCount != 0)
                 {

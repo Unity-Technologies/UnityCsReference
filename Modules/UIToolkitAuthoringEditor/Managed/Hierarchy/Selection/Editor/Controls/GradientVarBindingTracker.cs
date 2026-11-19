@@ -15,7 +15,6 @@ namespace Unity.UIToolkit.Editor
     // overrides. Decoded from the style property on read (SetVarBindings) and re-encoded on
     // write (BuildVarBindings). Shared between the UI Builder gradient field and the
     // VisualElement inspector background field.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class GradientVarBindingTracker
     {
         readonly List<(string colorVarName, string positionVarName)> m_StopVarNames = new();
@@ -24,18 +23,13 @@ namespace Unity.UIToolkit.Editor
         // fallback arguments) can be re-attached by name on the next write.
         StyleProperty.GradientVarBindings m_SourceBindings;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string angleVarName { get; set; }
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string extentVarName { get; set; }
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string positionXVarName { get; set; }
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal string positionYVarName { get; set; }
 
         // Decodes the slot-indexed bindings read from the style property into named vars,
         // anchored on the gradient currently shown by the field.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SetVarBindings(in StyleProperty.GradientVarBindings bindings, in BackgroundGradient effective)
         {
             m_SourceBindings = bindings;
@@ -57,7 +51,6 @@ namespace Unity.UIToolkit.Editor
         }
 
         // Re-encodes the named vars into the slot scheme for the write path.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleProperty.GradientVarBindings BuildVarBindings(bool isLinear)
         {
             int stopSlotBase = isLinear ? 1 : 4;
@@ -85,7 +78,6 @@ namespace Unity.UIToolkit.Editor
 
         // Clears the names of exactly the slots whose resolved value differs between the two
         // gradients; a type change invalidates every slot mapping, so all vars go.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void DropOverridden(in BackgroundGradient previous, in BackgroundGradient current)
         {
             if (previous.type != current.type)
@@ -107,7 +99,6 @@ namespace Unity.UIToolkit.Editor
             SyncStopCount(current.stops?.Length ?? 0);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void ClearAll()
         {
             angleVarName = null;
@@ -117,14 +108,12 @@ namespace Unity.UIToolkit.Editor
             ClearStops();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void ClearStops()
         {
             for (int i = 0; i < m_StopVarNames.Count; ++i)
                 m_StopVarNames[i] = (null, null);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SyncStopCount(int count)
         {
             while (m_StopVarNames.Count < count)
@@ -134,7 +123,6 @@ namespace Unity.UIToolkit.Editor
         }
 
         // Pairs each resolved stop with its tracked var names for the stops popup.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal BackgroundGradientStopsEditor.StopData[] CreateStopData(BackgroundGradientStop[] stops)
         {
             var stopDatas = new BackgroundGradientStopsEditor.StopData[stops.Length];
@@ -152,7 +140,6 @@ namespace Unity.UIToolkit.Editor
 
         // Replaces the tracked stop var names with the popup's; returns whether any changed,
         // so callers can force-notify a write when the resolved value is unchanged.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool SetStopNames(BackgroundGradientStopsEditor.StopData[] stopDatas)
         {
             bool changed = m_StopVarNames.Count != stopDatas.Length;

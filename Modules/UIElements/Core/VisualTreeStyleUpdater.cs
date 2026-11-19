@@ -12,7 +12,6 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static partial class StyleCache
     {
         // hash of a set of rules to a specified style data
@@ -135,12 +134,10 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class VisualTreeStyleUpdater : VisualTreeStyleUpdater<VisualTreeStyleUpdaterTraversal, NoOpStyleProfiler>
     {
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class VisualTreeStyleUpdater<TTraversal, TProfiler> : BaseVisualTreeUpdater
         where TTraversal : VisualTreeStyleUpdaterTraversal<TProfiler>, new()
         where TProfiler : struct, IStyleProfiler
@@ -260,7 +257,6 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class StyleMatchingContext
     {
         private List<StyleSheet> m_StyleSheetStack;
@@ -339,10 +335,8 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class VisualTreeStyleUpdaterTraversal : VisualTreeStyleUpdaterTraversal<NoOpStyleProfiler> { }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class VisualTreeStyleUpdaterTraversal<TStyleProfiler> : HierarchyTraversal where TStyleProfiler : struct, IStyleProfiler
     {
         private StyleVariableContext m_ProcessVarContext = new StyleVariableContext();
@@ -351,6 +345,10 @@ namespace UnityEngine.UIElements
         private List<StyleSelectorMatch> m_TempMatchResults = new List<StyleSelectorMatch>();
 
         private List<VisualElement> m_CustomStyleResolvedElements;
+        private List<VisualElement> m_ComponentStyleSyncElements;
+
+        internal int customStyleResolvedEventCount { get; private set; }
+        internal int componentStyleSyncCount { get; private set; }
 
         internal int variableContextCopyCount { get; private set; }
 
@@ -375,6 +373,7 @@ namespace UnityEngine.UIElements
         public override void Traverse(VisualElement element)
         {
             m_CustomStyleResolvedElements = VisualElementListPool.Get();
+            m_ComponentStyleSyncElements = VisualElementListPool.Get();
             // A panel change receiver runs user code mid-traversal that may destroy assets, so validate every lookup.
             StyleCache.BeginValidationPass(trustValidatedEntries: (currentPanel as Panel)?.panelChangeReceiver == null);
 
@@ -404,9 +403,18 @@ namespace UnityEngine.UIElements
                     ProcessQueuedElements();
                 }
 
-                // Dispatch accumulated CustomStyleResolvedEvents
+                // Components sync first, so CustomStyleResolvedEvent callbacks see their [StyleProperty] fields resolved.
+                foreach (var elt in m_ComponentStyleSyncElements)
+                {
+                    if (elt.elementPanel != currentPanel)
+                        continue;
+                    componentStyleSyncCount++;
+                    elt.InvokeComponentStyleSyncs();
+                }
+
                 foreach (var elt in m_CustomStyleResolvedElements)
                 {
+                    customStyleResolvedEventCount++;
                     using (var evt = CustomStyleResolvedEvent.GetPooled())
                     {
                         EventDispatchUtilities.SendEventDirectlyToTarget(evt, currentPanel, elt);
@@ -416,7 +424,9 @@ namespace UnityEngine.UIElements
             finally
             {
                 VisualElementListPool.Release(m_CustomStyleResolvedElements);
+                VisualElementListPool.Release(m_ComponentStyleSyncElements);
                 m_CustomStyleResolvedElements = null;
+                m_ComponentStyleSyncElements = null;
             }
         }
 
@@ -512,8 +522,11 @@ namespace UnityEngine.UIElements
             // at the matched custom styles won't suffice.
             var originalVariableContext = m_StyleMatchingContext.variableContext;
             int originalCustomStyleCount = element.computedStyle.customPropertiesCount;
+            var styleUnchanged = false;
             if (isDirty)
             {
+                var previousVariableContext = element.variableContext;
+                var previousInheritedStylesHash = element.inheritedStylesHash;
                 m_StyleMatchingContext.currentElement = element;
                 StyleSelectorHelper<TStyleProfiler>.FindMatches(m_StyleMatchingContext, m_TempMatchResults, originalStyleSheetCount - 1);
                 var newStyle = ProcessMatchedRules(element, m_TempMatchResults);
@@ -562,6 +575,9 @@ namespace UnityEngine.UIElements
                 newStyle.Release();
                 element.styleInitialized = true;
                 element.inheritedStylesHash = element.computedStyle.inheritedData.GetHashCode();
+                // An inline write of an inherited property restyles the element without changing its rules hash.
+                styleUnchanged = sameMatchingRules && ReferenceEquals(previousVariableContext, element.variableContext) &&
+                    previousInheritedStylesHash == element.inheritedStylesHash;
                 m_StyleMatchingContext.currentElement = null;
                 m_TempMatchResults.Clear();
             }
@@ -573,12 +589,18 @@ namespace UnityEngine.UIElements
             // Need to send the custom styles event after the inheritance is resolved because an element
             // may want to read standard styles too (TextInputFieldBase callback depends on it).
             // Accumulate elements that need the event; dispatch at the end to support future native code path.
-            // The count gate applies to component [StyleProperty] handlers like everyone else: they only
-            // sync when the element's computed style has (or had) custom properties to read.
-            if (isDirty && (originalCustomStyleCount > 0 || element.computedStyle.customPropertiesCount > 0) &&
-                element.HasSelfEventInterests(CustomStyleResolvedEvent.EventCategory))
+            if (isDirty && (originalCustomStyleCount > 0 || element.computedStyle.customPropertiesCount > 0))
             {
-                m_CustomStyleResolvedElements.Add(element);
+                if (element.HasSelfEventInterests(CustomStyleResolvedEvent.EventCategory))
+                    m_CustomStyleResolvedElements.Add(element);
+            }
+
+            if (isDirty)
+            {
+                // An unchanged style holds the values already synced; MarkDirtyStyles forces a sync anyway.
+                if (element.hasComponentStyleSync && (!styleUnchanged || element.componentStyleSyncPending))
+                    m_ComponentStyleSyncElements.Add(element);
+                element.componentStyleSyncPending = false;
             }
 
             if (element.hierarchy.childCount > 0)

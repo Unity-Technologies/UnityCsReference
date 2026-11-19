@@ -13,7 +13,6 @@ namespace Unity.UIToolkit.Editor;
 /// ignores it and instead relies on the <c>[CreateProperty]</c> two-way binding. <see cref="structural"/> is
 /// true for add/remove (row count changed), false for an in-place field edit.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal class AnimationLonghandListChangedEvent : EventBase<AnimationLonghandListChangedEvent>
 {
     public StyleAnimationListView.AnimationChangeType changeType;

@@ -22,7 +22,6 @@ namespace UnityEditor.Search
     public readonly struct AssetIndexChangeSet
     {
         static readonly string[] s_EmptyStrings = Array.Empty<string>();
-        [NoAutoStaticsCleanup]
         internal static readonly AssetIndexChangeSet s_Empty = new AssetIndexChangeSet(null, null);
 
         public readonly string[] updated;

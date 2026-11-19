@@ -24,6 +24,9 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
 
     UxmlAttributeFieldDecorator m_FieldDecoratorForListItem;
     UxmlAttributesEditingContext m_Context;
+
+    // Unlike a context inherited from a parent view, one assigned by the owner comes back when the view is attached again.
+    UxmlAttributesEditingContext m_AssignedContext;
     List<UxmlAttributeFieldDecorator> m_RegisteredDecorators = new();
     bool m_IsUxmlObject = false;
 
@@ -35,17 +38,23 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
         get => m_Context;
         set
         {
-            if (m_Context == value)
-                return;
+            m_AssignedContext = value;
+            ApplyContext(value);
+        }
+    }
 
-            SetContext(value);
+    void ApplyContext(UxmlAttributesEditingContext context)
+    {
+        if (m_Context == context)
+            return;
 
-            // Propagate the context to any child UxmlSerializedDataPropertyView
-            var childPropertyViews = this.Query<UxmlSerializedDataPropertyView>().ToList();
-            foreach (var childPropertyView in childPropertyViews)
-            {
-                childPropertyView.SetContext(value);
-            }
+        SetContext(context);
+
+        // Propagate the context to any child UxmlSerializedDataPropertyView
+        var childPropertyViews = this.Query<UxmlSerializedDataPropertyView>().ToList();
+        foreach (var childPropertyView in childPropertyViews)
+        {
+            childPropertyView.SetContext(context);
         }
     }
 
@@ -118,15 +127,14 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
         if (context != null)
             return;
 
-        var parentView = GetFirstAncestorOfType<UxmlSerializedDataPropertyView>();
-
-        if (parentView != null)
-            context = parentView.context;
+        var newContext = m_AssignedContext ?? GetFirstAncestorOfType<UxmlSerializedDataPropertyView>()?.context;
+        if (newContext != null)
+            ApplyContext(newContext);
     }
 
     void OnDetachedFromPanel(DetachFromPanelEvent evt)
     {
-        context = null;
+        ApplyContext(null);
     }
 
     void OnContextChanged(object obj, UxmlAttributesEditingContext.ContextChangedEventArgs args)
@@ -215,7 +223,6 @@ internal partial class UxmlSerializedDataPropertyView : BindableElement
 /// </example>
 /// <seealso cref="UxmlAttributeField"/>
 /// <seealso cref="UxmlAttributeFieldDecorator"/>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 [CustomPropertyDrawer(typeof(UxmlSerializedData), true)]
 public class UxmlSerializedDataPropertyDrawer : PropertyDrawer
 {
@@ -263,6 +270,9 @@ public class UxmlSerializedDataPropertyDrawer : PropertyDrawer
                         return;
                     }
                     fieldDecorator.boundPropertyChanged += (_, _) => UpdateAddOrRemoveButtonState(property, addOrRemoveButton);
+
+                    // The decorator is bound before the field builds this button, so it has missed that change.
+                    UpdateAddOrRemoveButtonState(property, addOrRemoveButton);
 
                     // The object can also be created without a rebind, for example when a nested list's bound
                     // size field creates it. Follow the flags so the icon does not stay on add.

@@ -4,11 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEditor.Search;
 using UnityEditor.UIElements;
-using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
@@ -19,15 +18,21 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Search provider for UI Toolkit elements - provides a picker window for browsing and searching UI controls.
     /// </summary>
+    /// <remarks>
+    /// The UI Library is either the UI Library window or a view embedded in a window that claims a local
+    /// <see cref="AuthoringContext"/>, such as the UI Builder's <see cref="LibraryView"/>. Adding an item targets the
+    /// context that owns the view: the window's document for an embedded view, the UI Stage or the scene otherwise.
+    /// Dragging an item works the same from any of them, as the drop target decides where the item goes.
+    /// </remarks>
     internal static partial class UIElementsProvider
     {
         class ProviderConfig
         {
             public string Id;
             public string Name;
-            public Func<LibraryTypeKey, bool> Filter { get; }
+            public Func<LibraryTypeKey, bool, bool> Filter { get; }
 
-            public ProviderConfig(string id, string name, Func<LibraryTypeKey, bool> filter)
+            public ProviderConfig(string id, string name, Func<LibraryTypeKey, bool, bool> filter)
             {
                 Id = id;
                 Name = name;
@@ -41,19 +46,23 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
+        // The editor controls are engine controls too, for a document that is an editor extension.
         [NoAutoStaticsCleanup] // immutable provider configs, safe to persist
         static readonly ProviderConfig[] s_ProviderConfigs =
         {
-            new(k_EngineProviderId, "Engine", typeKey => typeKey.id.StartsWith("UnityEngine")),
-            new(k_CustomProviderId, "Custom", typeKey => !typeKey.id.StartsWith("UnityEngine") && !typeKey.id.StartsWith("UnityEditor")),
+            new(k_EngineProviderId, "Engine", (typeKey, includeEditorOnly) =>
+                typeKey.id.StartsWith("UnityEngine") || (includeEditorOnly && typeKey.id.StartsWith("UnityEditor"))),
+            new(k_CustomProviderId, "Custom", (typeKey, _) => !typeKey.id.StartsWith("UnityEngine") && !typeKey.id.StartsWith("UnityEditor")),
         };
 
         // Cache for sorted and filtered library types per category
         [AutoStaticsCleanupOnCodeReload] // readonly: cleanup calls Clear()
         static readonly Dictionary<string, List<LibraryTypeKey>> s_CachedTypesByCategory = new();
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Cache recomputed on demand when the hash no longer matches")]
         static List<LibraryTypeKey> s_SortedTypes;
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Cache key; reset on code reload so the cache is recomputed")]
         static int s_CachedTypesHash;
         const string k_CustomProviderId = "uicustom";
         const string k_EngineProviderId = "uiengine";
@@ -67,6 +76,8 @@ namespace Unity.UIToolkit.Editor
         static Texture2D FolderIcon => s_FolderIcon != null ? s_FolderIcon : s_FolderIcon = EditorGUIUtility.FindTexture("Folder Icon");
         [NoAutoStaticsCleanup] // dead views are pruned on refresh, safe to persist
         static readonly List<ISearchView> s_OpenLibraryViews = new();
+        [NoAutoStaticsCleanup] // entries are released with their search context
+        static readonly ConditionalWeakTable<SearchContext, AuthoringContext> s_PickerTargetContexts = new();
         [AutoStaticsCleanupOnCodeReload] // the scheduled delayCall dies with the domain
         static bool s_RefreshScheduled;
         const string k_VisibilityButtonClassName = "search-groupbar__visibility-button";
@@ -76,17 +87,7 @@ namespace Unity.UIToolkit.Editor
         [MenuItem(k_MenuPath, false, 3010, secondaryPriority = 5)]
         internal static void OpenUIElementsPicker()
         {
-            var providers = new List<SearchProvider>
-            {
-                SearchService.GetProvider(k_EngineProviderId),
-                SearchService.GetProvider(k_CustomProviderId),
-                SearchService.GetProvider(k_UxmlProviderId)
-            };
-
-            var searchContext = SearchService.CreateContext(providers, string.Empty);
-            searchContext.useExplicitProvidersAsNormalProviders = true;
-
-            var state = new SearchViewState(searchContext)
+            var state = new SearchViewState(CreateLibraryContext())
             {
                 excludeClearItem = true,
                 group = k_EngineProviderId,
@@ -98,6 +99,75 @@ namespace Unity.UIToolkit.Editor
             SearchService.ShowWindow(state);
         }
 
+        /// <summary>
+        /// The state of a UI Library view embedded in another window: the content of the UI Library window, with
+        /// a plain search field and no side panels, to fit a pane.
+        /// </summary>
+        internal static SearchViewState CreateEmbeddedLibraryViewState()
+        {
+            var flags = SearchViewFlags.DisableSavedSearchQuery | SearchViewFlags.DisableBuilderModeToggle |
+                SearchViewFlags.DisableInspectorPreview | SearchViewFlags.OpenInTextMode;
+            return new SearchViewState(CreateLibraryContext(), flags)
+            {
+                excludeClearItem = true,
+                group = k_EngineProviderId,
+                resultViewDescriptorList = new SearchResultViewDescriptorList([SearchTreeView.GetDescriptor()])
+            };
+        }
+
+        static SearchContext CreateLibraryContext()
+        {
+            var providers = new List<SearchProvider>
+            {
+                SearchService.GetProvider(k_EngineProviderId),
+                SearchService.GetProvider(k_CustomProviderId),
+                SearchService.GetProvider(k_UxmlProviderId)
+            };
+
+            var searchContext = SearchService.CreateContext(providers, string.Empty);
+            searchContext.useExplicitProvidersAsNormalProviders = true;
+            return searchContext;
+        }
+
+        /// <summary>
+        /// The context the items of <paramref name="view"/> are added to: the one that owns the view when it is
+        /// embedded in a window, <see cref="AuthoringContext.Global"/> for the UI Library window.
+        /// </summary>
+        internal static AuthoringContext GetTargetContext(ISearchView view)
+        {
+            return view is VisualElement element ? AuthoringContext.For(element) : AuthoringContext.Global;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="item"/> can be added to the document of the local <paramref name="context"/>.
+        /// A document cannot instantiate itself, and a document that is only previewed takes nothing.
+        /// </summary>
+        internal static bool CanAddToLocalDocument(AuthoringContext context, LibraryItem item)
+        {
+            return item != null && context is { IsDisposed: false } &&
+                context.Session is { IsDisposed: false, IsDocumentReadOnly: false } session &&
+                session.EditedVisualTreeAsset is { } document &&
+                (!item.isAsset || item.visualTreeAsset != document);
+        }
+
+        /// <summary>
+        /// The context the items of the search <paramref name="context"/> are added to: the one a picker was opened
+        /// for, or the one that owns the view of the search otherwise.
+        /// </summary>
+        internal static AuthoringContext GetTargetContext(SearchContext context)
+        {
+            if (context != null && s_PickerTargetContexts.TryGetValue(context, out var pickerTargetContext))
+                return pickerTargetContext;
+
+            return GetTargetContext(context?.searchView);
+        }
+
+        static bool IncludesEditorOnlyControls(SearchContext context)
+        {
+            var targetContext = GetTargetContext(context);
+            return !targetContext.IsDisposed && EditorExtensionAuthoring.IsEnabled(targetContext.EditedVisualTreeAsset);
+        }
+
         static void RegisterLibraryView(ISearchView view)
         {
             if (view == null || s_OpenLibraryViews.Contains(view))
@@ -107,19 +177,29 @@ namespace Unity.UIToolkit.Editor
                 EditorApplication.projectChanged += OnProjectChanged;
 
             s_OpenLibraryViews.Add(view);
-            InstallControlsVisibilityDropdown(view);
+
+            // An embedded view installs the dropdown in its own group bar.
+            if (view is EditorWindow window)
+                InstallControlsVisibilityDropdown(window.rootVisualElement, view);
+        }
+
+        static bool IsAlive(ISearchView view)
+        {
+            return view switch
+            {
+                EditorWindow window => window,
+                VisualElement element => element.panel != null,
+                _ => false,
+            };
         }
 
         // The native Search visibility dropdown is hardcoded and offers no hook for custom options, so we hide it
         // and inject our own dropdown with the library's controls-visibility toggles in the same groupbar spot.
-        static void InstallControlsVisibilityDropdown(ISearchView view)
+        internal static void InstallControlsVisibilityDropdown(VisualElement root, ISearchView view)
         {
-            if (view is not EditorWindow window)
-                return;
-
-            window.rootVisualElement.schedule.Execute(() =>
+            root.schedule.Execute(() =>
             {
-                var nativeButton = window.rootVisualElement.Q(name: k_NativeVisibilityButtonName);
+                var nativeButton = root.Q(name: k_NativeVisibilityButtonName);
                 if (nativeButton == null)
                     return;
 
@@ -153,10 +233,11 @@ namespace Unity.UIToolkit.Editor
                 LibraryContent.ShowPackageControls = !LibraryContent.ShowPackageControls;
                 InvalidateAndRefresh();
             });
+
             menu.ShowAsContext();
         }
 
-        static void InvalidateAndRefresh()
+        internal static void InvalidateAndRefresh()
         {
             s_CachedTypesByCategory.Clear();
             s_SortedTypes = null;
@@ -164,7 +245,7 @@ namespace Unity.UIToolkit.Editor
 
             for (var i = s_OpenLibraryViews.Count - 1; i >= 0; i--)
             {
-                if (s_OpenLibraryViews[i] is EditorWindow window && window)
+                if (IsAlive(s_OpenLibraryViews[i]))
                     s_OpenLibraryViews[i].Refresh(RefreshFlags.StructureChanged);
                 else
                     s_OpenLibraryViews.RemoveAt(i);
@@ -243,22 +324,8 @@ namespace Unity.UIToolkit.Editor
 
         static void StartElementDrag(SearchItem item, SearchContext context)
         {
-            if (item.data is not LibraryItem libItem)
-                return;
-
-            DragAndDrop.PrepareStartDrag();
-
-            if (libItem.isAsset)
-            {
-                DragAndDrop.objectReferences = [libItem.visualTreeAsset];
-                DragAndDrop.paths = [libItem.assetPath];
-            }
-            else
-            {
-                DragAndDrop.SetGenericData(LibraryItem.DragDataKey, libItem);
-            }
-
-            DragAndDrop.StartDrag(libItem.name);
+            if (item.data is LibraryItem libItem)
+                libItem.StartDrag();
         }
 
         static UnityEngine.Object ToObject(SearchItem item, Type type)
@@ -286,17 +353,35 @@ namespace Unity.UIToolkit.Editor
         /// </summary>
         static VisualTreeAsset CreateVisualTreeAssetFromElement(LibraryItem libItem)
         {
+            try
+            {
+                return CreatePreviewVisualTreeAsset(libItem);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Failed to create VisualTreeAsset for {libItem.name}: {e.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Creates an unsaved VisualTreeAsset that holds the control of <paramref name="libItem"/> alone, configured
+        /// the way adding it from the library configures it, or null when the item is not a control. Throws what the
+        /// configuration throws; the caller destroys the asset.
+        /// </summary>
+        internal static VisualTreeAsset CreatePreviewVisualTreeAsset(LibraryItem libItem)
+        {
             var elementType = libItem.libraryType.type;
             if (elementType == null || !typeof(VisualElement).IsAssignableFrom(elementType))
                 return null;
 
+            // Create VTA using ScriptableObject
+            var vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
+            vta.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontUnloadUnusedAsset;
+            vta.name = $"Preview_{libItem.name}";
+
             try
             {
-                // Create VTA using ScriptableObject
-                var vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
-                vta.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontUnloadUnusedAsset;
-                vta.name = $"Preview_{libItem.name}";
-
                 // Add the element to the VTA using internal API
                 var fullTypeName = elementType.FullName;
                 var vea = vta.AddElementOfType(null, fullTypeName);
@@ -308,23 +393,23 @@ namespace Unity.UIToolkit.Editor
                 }
 
                 ElementConfiguratorRegistry.Configure(elementType, libItem.libraryType.variantName, vta, vea);
-
-                return vta;
             }
-            catch (Exception e)
+            catch
             {
-                Debug.LogWarning($"Failed to create VisualTreeAsset for {libItem.name}: {e.Message}");
-                return null;
+                UnityEngine.Object.DestroyImmediate(vta);
+                throw;
             }
+
+            return vta;
         }
 
         /// <summary>
         /// Common method to fetch controls filtered by a predicate.
         /// </summary>
-        static IEnumerable<SearchItem> FetchControlsByFilter(SearchContext context, SearchProvider provider, string idPrefix, Func<LibraryTypeKey, bool> filter)
+        static IEnumerable<SearchItem> FetchControlsByFilter(SearchContext context, SearchProvider provider, string idPrefix, Func<LibraryTypeKey, bool, bool> filter)
         {
             long score = 0;
-            var filteredTypes = GetCachedFilteredTypes(idPrefix, filter);
+            var filteredTypes = GetCachedFilteredTypes(idPrefix, IncludesEditorOnlyControls(context), filter);
 
             foreach (var typeKey in filteredTypes)
             {
@@ -359,7 +444,7 @@ namespace Unity.UIToolkit.Editor
         static IEnumerable<SearchItem> FetchProjectUxmlItems(SearchContext context, SearchProvider provider)
         {
             long score = 0;
-            foreach (var libItem in EnumerateProjectUxmlItems())
+            foreach (var libItem in LibraryContent.EnumerateProjectTemplates())
             {
                 if (!string.IsNullOrEmpty(context.searchQuery)
                     && libItem.name.IndexOf(context.searchQuery, StringComparison.OrdinalIgnoreCase) < 0)
@@ -382,37 +467,6 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        /// <summary>
-        /// Lazily enumerates the project's UXML documents under <c>Assets/</c> as <see cref="LibraryItem"/>s.
-        /// </summary>
-        static IEnumerable<LibraryItem> EnumerateProjectUxmlItems()
-        {
-            var searchFilter = new SearchFilter
-            {
-                classNames = [nameof(VisualTreeAsset)],
-                searchArea = SearchFilter.SearchArea.InAssetsOnly
-            };
-
-            var guids = AssetDatabase.FindAssets(searchFilter);
-            var paths = new string[guids.Length];
-            for (var i = 0; i < guids.Length; i++)
-                paths[i] = AssetDatabase.GUIDToAssetPath(guids[i]);
-
-            Array.Sort(paths, StringComparer.Ordinal);
-
-            foreach (var assetPath in paths)
-            {
-                if (string.IsNullOrEmpty(assetPath))
-                    continue;
-
-                var name = Path.GetFileName(assetPath);
-                var folder = Path.GetDirectoryName(assetPath);
-                folder = string.IsNullOrEmpty(folder) ? string.Empty : folder.ConvertSeparatorsToUnity();
-
-                yield return new LibraryItem(name, assetPath, folder);
-            }
-        }
-
         static void OnProjectChanged()
         {
             if (s_RefreshScheduled)
@@ -427,7 +481,7 @@ namespace Unity.UIToolkit.Editor
             s_RefreshScheduled = false;
             for (var i = s_OpenLibraryViews.Count - 1; i >= 0; i--)
             {
-                if (s_OpenLibraryViews[i] is EditorWindow window && window)
+                if (IsAlive(s_OpenLibraryViews[i]))
                     s_OpenLibraryViews[i].Refresh(RefreshFlags.StructureChanged);
                 else
                     s_OpenLibraryViews.RemoveAt(i);
@@ -440,8 +494,10 @@ namespace Unity.UIToolkit.Editor
         /// <summary>
         /// Gets cached filtered and sorted types for a category. Cache is invalidated when library content changes.
         /// </summary>
-        static List<LibraryTypeKey> GetCachedFilteredTypes(string categoryId, Func<LibraryTypeKey, bool> filter)
+        static List<LibraryTypeKey> GetCachedFilteredTypes(string providerId, bool includeEditorOnly, Func<LibraryTypeKey, bool, bool> filter)
         {
+            var categoryId = includeEditorOnly ? providerId + "/editor" : providerId;
+
             var libraryTypes = LibraryContent.GetAllLibraryTypes();
             var currentHash = HashCode.Combine(libraryTypes.GetHashCode(), LibraryContent.ShowInternalControls, LibraryContent.ShowPackageControls);
 
@@ -452,9 +508,10 @@ namespace Unity.UIToolkit.Editor
                 s_CachedTypesHash = currentHash;
 
                 s_SortedTypes = new List<LibraryTypeKey>(libraryTypes.Count);
+                // The curated editor controls count as internal, but an editor extension lists them regardless.
                 foreach (var typeKey in libraryTypes.Keys)
                 {
-                    if (LibraryContent.IsVisibleInLibrary(typeKey.type))
+                    if (LibraryContent.IsVisibleInLibrary(typeKey.type) || LibraryOrdering.GetCategory(typeKey.type) is { IsEditorOnly: true })
                         s_SortedTypes.Add(typeKey);
                 }
                 s_SortedTypes.Sort(static (a, b) =>
@@ -471,7 +528,7 @@ namespace Unity.UIToolkit.Editor
             var filtered = new List<LibraryTypeKey>();
             foreach (var typeKey in s_SortedTypes)
             {
-                if (filter(typeKey))
+                if (filter(typeKey, includeEditorOnly))
                     filtered.Add(typeKey);
             }
 
@@ -530,6 +587,14 @@ namespace Unity.UIToolkit.Editor
             if (item.data is not LibraryItem libItem)
                 return;
 
+            var context = GetTargetContext(item.context);
+            if (!context.IsGlobal)
+            {
+                if (CanAddToLocalDocument(context, libItem))
+                    MenuUtility.AddFromLibrary(context, libItem);
+                return;
+            }
+
             if (libItem.isAsset)
             {
                 var template = libItem.visualTreeAsset;
@@ -563,6 +628,14 @@ namespace Unity.UIToolkit.Editor
         {
             if (item.data is not LibraryItem libItem)
                 return;
+
+            var context = GetTargetContext(item.context);
+            if (!context.IsGlobal)
+            {
+                if (CanAddToLocalDocument(context, libItem))
+                    MenuUtility.AddAsLastChild(context, libItem);
+                return;
+            }
 
             if (libItem.isAsset)
             {

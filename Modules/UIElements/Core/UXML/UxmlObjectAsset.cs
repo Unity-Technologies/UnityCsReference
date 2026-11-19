@@ -11,7 +11,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     struct UxmlProperty
     {
         public string name;
@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     partial struct UxmlNamespaceDefinition : IEquatable<UxmlNamespaceDefinition>
     {
         [NoAutoStaticsCleanup]
@@ -142,7 +142,7 @@ namespace UnityEngine.UIElements
 
         internal VisualTreeAsset visualTreeAsset
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_VisualTreeAsset;
         }
 
@@ -240,7 +240,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetUxmlObjectAssets(string fieldName, List<UxmlObjectAsset> entries)
         {
             if (!string.IsNullOrEmpty(fieldName))
@@ -259,7 +259,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void CollectUxmlObjectAssets(string fieldName, List<UxmlObjectAsset> foundEntries)
         {
             for (var i = 0; i < childCount; i++)
@@ -579,7 +579,7 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class UxmlObjectAsset : UxmlAsset
     {
         [SerializeField] private int m_OrderInDocument;

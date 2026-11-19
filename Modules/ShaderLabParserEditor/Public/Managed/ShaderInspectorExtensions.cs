@@ -169,10 +169,7 @@ namespace UnityEditor.ShaderApiReflection
                     + " whose behavior may be overridden.";
 
             // If the shader is abstract, throw up a help box
-            bool isAbstract = false;
-            foreach (var function in functions)
-                isAbstract |= IsUnimplementedPureVirtual(function);
-            if(isAbstract)
+            if (reflection.IsAbstract)
             {
                 string helpText = $"This shader is abstract because it has at least one pure virtual function, so it cannot compile."
                     + " Extend it and implement all pure virtual functions to use it.";

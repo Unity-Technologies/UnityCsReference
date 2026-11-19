@@ -95,7 +95,10 @@ namespace UnityEngine.UIElements
         public BindingId(in PropertyPath path)
         {
             m_PropertyPath = path;
-            m_Path = path.ToString();
+
+            // The string is built on demand, since ids created from paths are mostly compared and rarely printed.
+            // Empty paths keep their empty string, so that they don't print like BindingId.Invalid.
+            m_Path = path.IsEmpty ? string.Empty : null;
         }
 
         /// <summary>
@@ -115,7 +118,7 @@ namespace UnityEngine.UIElements
         /// <returns>A path for the property.</returns>
         public static implicit operator string(in BindingId vep)
         {
-            return vep.m_Path;
+            return vep.ToString();
         }
 
         /// <summary>
@@ -144,7 +147,7 @@ namespace UnityEngine.UIElements
         /// <returns>The property path.</returns>
         public override string ToString()
         {
-            return m_Path;
+            return m_Path ?? (m_PropertyPath.IsEmpty ? null : m_PropertyPath.ToString());
         }
 
         /// <summary>
@@ -188,7 +191,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// This event does not bubble up or trickle down.
     /// </remarks>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class PropertyChangedEvent : EventBase<PropertyChangedEvent>, IChangeEvent, IProfilerIgnoredEvent
     {
         static PropertyChangedEvent()

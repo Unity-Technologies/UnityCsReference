@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     // GradientSettingsAtlas / VectorImageManager path Painter2D uses. Per-panel instance,
     // owned by RenderTreeManager (mirrors UIRVectorImageManager's shape). Cached by
     // gradient hash; refcounted; unused VIs are destroyed at the end of each ProcessChanges.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class BackgroundGradientBaker : IDisposable
     {
         const int k_AtlasWidth = 64;
@@ -32,18 +32,27 @@ namespace UnityEngine.UIElements
         readonly Dictionary<VectorImage, Entry> m_Entries = new();
         readonly HashSet<VectorImage> m_PendingEviction = new();
         readonly List<VectorImage> m_PurgeScratch = new();
+        // Indexed by stop count, so cache hits for pixel-stop gradients don't allocate.
+        BackgroundGradientStop[][] m_ResolveScratch = new BackgroundGradientStop[5][];
         bool m_Disposed;
 
-        public VectorImage Bake(in BackgroundGradient gradient)
+        // uvScale multiplies the element's gradient UVs (see MeshGenerator.GradientUVParams.UVAt).
+        public VectorImage Bake(in BackgroundGradient source, Vector2 rectSize, out float uvScale)
         {
-            if (gradient.IsEmpty())
+            uvScale = 1f;
+            if (source.IsEmpty())
                 return null;
 
+            var gradient = ResolveForElement(source, rectSize, GetResolveScratch(source.stops), out uvScale);
             if (m_Cache.TryGetValue(gradient, out var cached) && cached != null)
             {
                 m_PendingEviction.Remove(cached); // rescue: a fresh reference is inbound
                 return cached;
             }
+
+            // The cache key must not alias the scratch buffer.
+            if (gradient.stops != source.stops)
+                gradient.stops = (BackgroundGradientStop[])gradient.stops.Clone();
 
             var vi = ScriptableObject.CreateInstance<VectorImage>();
             vi.hideFlags = HideFlags.HideAndDontSave;
@@ -127,11 +136,172 @@ namespace UnityEngine.UIElements
         }
 
         // Test-only.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int CacheCount => m_Cache.Count;
         internal int PendingEvictionCount => m_PendingEviction.Count;
         internal int GetRefCount(VectorImage vi)
             => vi != null && m_Entries.TryGetValue(vi, out var e) ? e.refCount : 0;
+
+        internal static class Testing
+        {
+            public static BackgroundGradient ResolvePixelStops(in BackgroundGradient gradient, Vector2 rectSize)
+                => BackgroundGradientBaker.ResolvePixelStops(gradient, rectSize, new BackgroundGradientStop[gradient.stops?.Length ?? 0]);
+
+            public static BackgroundGradient ResolveForElement(in BackgroundGradient gradient, Vector2 rectSize)
+                => BackgroundGradientBaker.ResolveForElement(gradient, rectSize, new BackgroundGradientStop[gradient.stops.Length], out _);
+
+            public static Vector2 UVOnElement(in BackgroundGradient gradient, Vector2 rectSize, Vector2 frac)
+            {
+                BackgroundGradientBaker.ResolveForElement(gradient, rectSize, new BackgroundGradientStop[gradient.stops.Length], out float uvScale);
+                return new MeshGenerator.GradientUVParams(gradient, new Rect(Vector2.zero, rectSize), uvScale).UVAt(frac);
+            }
+
+            // The color drawn at frac of an element of rectSize, through the same stops and UVs as the renderer.
+            public static Color32 SampleLinearOnElement(in BackgroundGradient gradient, Vector2 rectSize, Vector2 frac)
+            {
+                var baked = BackgroundGradientBaker.ResolveForElement(gradient, rectSize, new BackgroundGradientStop[gradient.stops.Length], out _);
+                return SampleStops(baked, UVOnElement(gradient, rectSize, frac).x);
+            }
+
+            // Same as SampleLinearOnElement, but read from the baked ramp texels with clamped bilinear filtering, as the GPU does.
+            public static Color32 SampleBakedLinearOnElement(in BackgroundGradient gradient, Vector2 rectSize, Vector2 frac)
+            {
+                var baked = BackgroundGradientBaker.ResolveForElement(gradient, rectSize, new BackgroundGradientStop[gradient.stops.Length], out _);
+                float u = Mathf.Clamp(Mathf.Clamp01(UVOnElement(gradient, rectSize, frac).x) * k_AtlasWidth - 0.5f, 0f, k_AtlasWidth - 1);
+                int i = Mathf.Min((int)u, k_AtlasWidth - 2);
+                return Color32.Lerp(RampTexel(baked, i), RampTexel(baked, i + 1), u - i);
+            }
+        }
+
+        BackgroundGradientStop[] GetResolveScratch(BackgroundGradientStop[] stops)
+        {
+            int count = stops?.Length ?? 0;
+            if (count >= m_ResolveScratch.Length)
+                Array.Resize(ref m_ResolveScratch, count + 1);
+            return m_ResolveScratch[count] ??= new BackgroundGradientStop[count];
+        }
+
+        // Converts pixel and auto stops into fractions of the gradient line for rectSize. Returns the gradient
+        // unchanged when it has neither; otherwise its stops are written to (and alias) scratch.
+        static BackgroundGradient ResolvePixelStops(in BackgroundGradient gradient, Vector2 rectSize, BackgroundGradientStop[] scratch)
+        {
+            var stops = gradient.stops;
+            if (!NeedsResolve(stops))
+                return gradient;
+
+            // Whole pixels, so subpixel resizes keep hitting the same cache entry.
+            float length = Mathf.Round(GradientLength(gradient, rectSize));
+            int lastResolved = -1;
+            for (int i = 0; i < stops.Length; ++i)
+            {
+                var stop = stops[i];
+                if (stop.positionIsAuto && lastResolved >= 0 && i < stops.Length - 1)
+                    continue;
+
+                float position;
+                if (stop.positionIsAuto)
+                    position = i == 0 ? 0f : 1f; // as the parser anchors an unpositioned first or last stop
+                else
+                    position = stop.positionIsPercent ? stop.position : (length > 0f ? stop.position / length : 0f);
+                // CSS moves a stop placed before its predecessor up to it before spreading the auto stops in between.
+                if (lastResolved >= 0)
+                    position = Mathf.Max(position, scratch[lastResolved].position);
+                scratch[i] = BackgroundGradientStop.Percent(stop.color, position);
+                for (int j = lastResolved + 1; j < i; ++j)
+                {
+                    float t = (float)(j - lastResolved) / (i - lastResolved);
+                    scratch[j] = BackgroundGradientStop.Percent(stops[j].color, Mathf.Lerp(scratch[lastResolved].position, position, t));
+                }
+                lastResolved = i;
+            }
+
+            var resolved = gradient;
+            resolved.stops = scratch;
+            return resolved;
+        }
+
+        static BackgroundGradient ResolveForElement(in BackgroundGradient source, Vector2 rectSize,
+            BackgroundGradientStop[] scratch, out float uvScale)
+        {
+            uvScale = 1f;
+            if (!TryNormalizeLengthStops(source, scratch, out var normalized, out float pixelExtent))
+                return ResolvePixelStops(source, rectSize, scratch);
+
+            float length = GradientLength(source, rectSize);
+            // A gradient line shorter than half the extent would see under half the ramp's texels and blur close stops.
+            if (length * 2f < pixelExtent)
+                return ResolvePixelStops(source, rectSize, scratch);
+
+            uvScale = length / pixelExtent;
+            return normalized;
+        }
+
+        // Length stops become fractions of the farthest stop, not of the gradient line, so one ramp fits every size.
+        static bool TryNormalizeLengthStops(in BackgroundGradient gradient, BackgroundGradientStop[] scratch,
+            out BackgroundGradient normalized, out float pixelExtent)
+        {
+            normalized = gradient;
+            pixelExtent = 0f;
+            var stops = gradient.stops;
+            bool hasLength = false;
+            float extent = 0f;
+            for (int i = 0; i < stops.Length; ++i)
+            {
+                var stop = stops[i];
+                if (stop.positionIsAuto || (stop.positionIsPercent && stop.position != 0f))
+                    return false;
+                hasLength |= !stop.positionIsPercent;
+                extent = Mathf.Max(extent, stop.position);
+            }
+
+            if (!hasLength)
+                return false;
+            if (extent <= 0f)
+                extent = 1f; // every stop is at or before 0px: the ramp is solid, so any extent draws it
+            // The ramp reaches one texel past the farthest stop, so its last texel holds the color after that stop.
+            extent *= k_AtlasWidth / (k_AtlasWidth - 1f);
+
+            for (int i = 0; i < stops.Length; ++i)
+                scratch[i] = BackgroundGradientStop.Percent(stops[i].color, stops[i].position / extent);
+            normalized.stops = scratch;
+            pixelExtent = extent;
+            return true;
+        }
+
+        static bool NeedsResolve(BackgroundGradientStop[] stops)
+        {
+            if (stops == null)
+                return false;
+            for (int i = 0; i < stops.Length; ++i)
+            {
+                if (!stops[i].positionIsPercent || stops[i].positionIsAuto)
+                    return true;
+            }
+            return false;
+        }
+
+        // Pixels along the element per unit of the ramp parameter t, as LinearUV / RadialUV map it.
+        static float GradientLength(in BackgroundGradient gradient, Vector2 rectSize)
+        {
+            if (rectSize.x < 1e-6f || rectSize.y < 1e-6f)
+                return 0f;
+
+            if (gradient.type == GradientType.Radial)
+            {
+                if (gradient.shape == BackgroundGradientShape.Circle)
+                    return CircleRadius(gradient.position, gradient.size, rectSize);
+
+                // Ellipse t runs along the horizontal radius, as in CSS.
+                EllipseAxes(gradient.position, gradient.size, out float rx, out _);
+                return rx * rectSize.x;
+            }
+
+            // The renderer's fraction-space t, not the CSS gradient line, so pixel stops land where the ramp is drawn.
+            float t0 = LinearUV(Vector2.zero, gradient.angle).x;
+            float tx = (LinearUV(new Vector2(1f, 0f), gradient.angle).x - t0) / rectSize.x;
+            float ty = (LinearUV(new Vector2(0f, 1f), gradient.angle).x - t0) / rectSize.y;
+            float magnitude = Mathf.Sqrt(tx * tx + ty * ty);
+            return magnitude > 1e-6f ? 1f / magnitude : 0f;
+        }
 
         static Texture2D CreateAtlas(in BackgroundGradient gradient)
         {
@@ -145,10 +315,7 @@ namespace UnityEngine.UIElements
             };
             var pixels = atlas.GetRawTextureData<Color32>();
             for (int i = 0; i < k_AtlasWidth; ++i)
-            {
-                float t = (i + 0.5f) / k_AtlasWidth;
-                pixels[i] = SampleStops(gradient, t);
-            }
+                pixels[i] = RampTexel(gradient, i);
             atlas.Apply(false, true);
             return atlas;
         }
@@ -306,6 +473,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        static Color32 RampTexel(in BackgroundGradient gradient, int i) => SampleStops(gradient, (i + 0.5f) / k_AtlasWidth);
+
         static Color32 SampleStops(in BackgroundGradient gradient, float t)
         {
             t = Mathf.Clamp01(t);
@@ -315,30 +484,33 @@ namespace UnityEngine.UIElements
             if (stops.Length == 1)
                 return stops[0].color;
 
-            int prev = 0, next = stops.Length - 1;
+            int prev = 0, next = -1;
+            float prevT = 0f, nextT = 0f;
+            float position = float.NegativeInfinity;
             for (int i = 0; i < stops.Length; ++i)
             {
-                float pi = NormalizePosition(stops[i].position, stops[i].positionIsPercent);
-                if (pi >= t)
+                // CSS color-stop fix-up: a stop placed before its predecessor moves up to it.
+                position = Mathf.Max(position, stops[i].position);
+                if (position >= t)
                 {
                     next = i;
-                    prev = Mathf.Max(0, i - 1);
+                    nextT = position;
+                    if (i == 0)
+                        prevT = position;
                     break;
                 }
                 prev = i;
+                prevT = position;
+            }
+            if (next < 0)
+            {
+                next = prev;
+                nextT = prevT;
             }
 
-            float prevT = NormalizePosition(stops[prev].position, stops[prev].positionIsPercent);
-            float nextT = NormalizePosition(stops[next].position, stops[next].positionIsPercent);
             float span = nextT - prevT;
             float localT = span > 1e-6f ? Mathf.Clamp01((t - prevT) / span) : 0f;
             return Color.Lerp(stops[prev].color, stops[next].color, localT);
-        }
-
-        static float NormalizePosition(float pos, bool isPercent)
-        {
-            // Pixel stops have no canonical mapping without element bounds; approximate against atlas width.
-            return isPercent ? pos : Mathf.Clamp01(pos / k_AtlasWidth);
         }
     }
 }

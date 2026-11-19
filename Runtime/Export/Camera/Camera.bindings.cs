@@ -85,20 +85,7 @@ namespace UnityEngine
 
         extern public int cullingMask { get; set; }
         extern public int eventMask { get; set; }
-        public bool layerCullSpherical
-        {
-            get { return layerCullSphericalInternal; }
-            set
-            {
-                if (GraphicsSettings.isScriptableRenderPipelineEnabled)
-                {
-                    Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Camera.layerCullSpherical only with the built-in renderer.");
-                }
-
-                layerCullSphericalInternal = value;
-            }
-        }
-        [NativeProperty("LayerCullSpherical")]extern internal bool layerCullSphericalInternal { get; set; }
+        extern public bool layerCullSpherical { get; set; }
         extern public CameraType cameraType { get; set; }
 
         extern internal Material skyboxMaterial { get; }
@@ -446,6 +433,8 @@ namespace UnityEngine
         [FreeFunction("CameraScripting::SetupCurrent")] extern public static void SetupCurrent(Camera cur);
         [FreeFunction("CameraScripting::CopyFrom", HasExplicitThis = true)] extern public void CopyFrom(Camera other);
 
+#pragma warning disable CS0618 // CameraEvent is obsolete
+        [Obsolete("Camera.commandBufferCount is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         extern public int  commandBufferCount { get; }
         [NativeName("RemoveCommandBuffers")] extern void RemoveCommandBuffersImpl(CameraEvent evt);
         [NativeName("RemoveAllCommandBuffers")] extern void RemoveAllCommandBuffersImpl();
@@ -455,6 +444,7 @@ namespace UnityEngine
             Debug.LogWarning($"Your project uses a scriptable render pipeline. You can use Camera.{memberName} only with the built-in renderer.");
         }
 
+        [Obsolete("Camera.RemoveCommandBuffers is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void RemoveCommandBuffers(CameraEvent evt)
         {
             if (GraphicsSettings.isScriptableRenderPipelineEnabled)
@@ -468,6 +458,7 @@ namespace UnityEngine
             }
         }
 
+        [Obsolete("Camera.RemoveAllCommandBuffers is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void RemoveAllCommandBuffers()
         {
             if (GraphicsSettings.isScriptableRenderPipelineEnabled)
@@ -492,6 +483,7 @@ namespace UnityEngine
         [NativeName("AddCommandBufferAsync")] extern private void AddCommandBufferAsyncImpl(CameraEvent evt, [NotNull] CommandBuffer buffer, ComputeQueueType queueType);
         [NativeName("RemoveCommandBuffer")]   extern private void RemoveCommandBufferImpl(CameraEvent evt, [NotNull] CommandBuffer buffer);
 
+        [Obsolete("Camera.AddCommandBuffer is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void AddCommandBuffer(CameraEvent evt, CommandBuffer buffer)
         {
             if (!Rendering.CameraEventUtils.IsValid(evt))
@@ -509,6 +501,7 @@ namespace UnityEngine
             }
         }
 
+        [Obsolete("Camera.AddCommandBufferAsync is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void AddCommandBufferAsync(CameraEvent evt, CommandBuffer buffer, ComputeQueueType queueType)
         {
             if (!Rendering.CameraEventUtils.IsValid(evt))
@@ -526,6 +519,7 @@ namespace UnityEngine
             }
         }
 
+        [Obsolete("Camera.RemoveCommandBuffer is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void RemoveCommandBuffer(CameraEvent evt, CommandBuffer buffer)
         {
             if (!Rendering.CameraEventUtils.IsValid(evt))
@@ -543,6 +537,7 @@ namespace UnityEngine
             }
         }
 
+        [Obsolete("Camera.GetCommandBuffers is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.CameraEvent evt)
         {
             if (GraphicsSettings.isScriptableRenderPipelineEnabled)
@@ -556,6 +551,7 @@ namespace UnityEngine
         [FreeFunction("CameraScripting::GetCommandBuffers", HasExplicitThis = true)]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal UnityEngine.Rendering.CommandBuffer[] GetCommandBuffersImpl(UnityEngine.Rendering.CameraEvent evt);
+#pragma warning restore CS0618
 	    internal uint m_NonSerializedVersion;
     }
 
@@ -579,15 +575,20 @@ namespace UnityEngine
         // called once for each camera if the object is visible.
         // void OnWillRenderObject();
 
+        [Obsolete("Camera.CameraCallback is deprecated now that the Built-In Render Pipeline is removed. Use RenderPipelineManager.beginCameraRendering and RenderPipelineManager.endCameraRendering instead. #from(7000.0)", false)]
         public delegate void CameraCallback(Camera cam);
 
+        [Obsolete("Camera.onPreCull is deprecated now that the Built-In Render Pipeline is removed. Unity will stop calling it in a later version. To run code before a Camera renders, add a delegate to RenderPipelineManager.beginCameraRendering instead. #from(7000.0)", false)]
         [AutoStaticsCleanupOnCodeReload]
         public static CameraCallback onPreCull;
+        [Obsolete("Camera.onPreRender is deprecated now that the Built-In Render Pipeline is removed. Unity will stop calling it in a later version. To run code before a Camera renders, add a delegate to RenderPipelineManager.beginCameraRendering instead. #from(7000.0)", false)]
         [AutoStaticsCleanupOnCodeReload]
         public static CameraCallback onPreRender;
+        [Obsolete("Camera.onPostRender is deprecated now that the Built-In Render Pipeline is removed. Unity will stop calling it in a later version. To run code after a Camera renders, add a delegate to RenderPipelineManager.endCameraRendering instead. #from(7000.0)", false)]
         [AutoStaticsCleanupOnCodeReload]
         public static CameraCallback onPostRender;
 
+#pragma warning disable CS0618 // The engine keeps invoking the obsolete callbacks until they are removed
         [RequiredByNativeCode]
         private static void FireOnPreCull(Camera cam)
         {
@@ -608,6 +609,7 @@ namespace UnityEngine
             if (onPostRender != null)
                 onPostRender(cam);
         }
+#pragma warning restore CS0618
 
         [RequiredByNativeCode]
         private static void BumpNonSerializedVersion(Camera cam)

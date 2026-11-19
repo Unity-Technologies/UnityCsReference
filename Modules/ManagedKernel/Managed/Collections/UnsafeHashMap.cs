@@ -47,7 +47,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         internal const int kMaxCapacity = 2 << 28;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal int CalcCapacityCeilPow2(int capacity)
+        internal readonly int CalcCapacityCeilPow2(int capacity)
         {
             capacity = math.max(math.max(1, Count), capacity);
             int newCapacity = math.max(capacity, 1 << Log2MinGrowth);
@@ -226,7 +226,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int GetBucket(in TKey key)
+        readonly int GetBucket(in TKey key)
         {
             return (int)((uint)key.GetHashCode() & (BucketCapacity - 1));
         }
@@ -280,7 +280,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [VisibleToOtherModules("UnityEngine.EntitiesModule")]
-        internal int Find(TKey key)
+        internal readonly int Find(TKey key)
         {
             if (AllocatedIndex > 0)
             {
@@ -308,7 +308,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(int) })]
-        internal bool TryGetValue<TValue>(TKey key, out TValue item)
+        internal readonly bool TryGetValue<TValue>(TKey key, out TValue item)
             where TValue : unmanaged
         {
             var idx = Find(key);
@@ -373,7 +373,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             return -1;
         }
 
-        internal bool MoveNextSearch(ref int bucketIndex, ref int nextIndex, out int index)
+        internal readonly bool MoveNextSearch(ref int bucketIndex, ref int nextIndex, out int index)
         {
             for (int i = bucketIndex, num = BucketCapacity; i < num; ++i)
             {
@@ -396,7 +396,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool MoveNext(ref int bucketIndex, ref int nextIndex, out int index)
+        internal readonly bool MoveNext(ref int bucketIndex, ref int nextIndex, out int index)
         {
             if (nextIndex != -1)
             {
@@ -408,7 +408,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             return MoveNextSearch(ref bucketIndex, ref nextIndex, out index);
         }
 
-        internal NativeArray<TKey> GetKeyArray(AllocatorManager.AllocatorHandle allocator)
+        internal readonly NativeArray<TKey> GetKeyArray(AllocatorManager.AllocatorHandle allocator)
         {
             var result = CollectionHelper.CreateNativeArray<TKey>(Count, allocator, NativeArrayOptions.UninitializedMemory);
 
@@ -430,7 +430,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(int) })]
-        internal NativeArray<TValue> GetValueArray<TValue>(AllocatorManager.AllocatorHandle allocator)
+        internal readonly NativeArray<TValue> GetValueArray<TValue>(AllocatorManager.AllocatorHandle allocator)
             where TValue : unmanaged
         {
             var result = CollectionHelper.CreateNativeArray<TValue>(Count, allocator, NativeArrayOptions.UninitializedMemory);
@@ -453,7 +453,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [GenerateTestsForBurstCompatibility(GenericTypeArguments = new[] { typeof(int) })]
-        internal NativeKeyValueArrays<TKey, TValue> GetKeyValueArrays<TValue>(AllocatorManager.AllocatorHandle allocator)
+        internal readonly NativeKeyValueArrays<TKey, TValue> GetKeyValueArrays<TValue>(AllocatorManager.AllocatorHandle allocator)
             where TValue : unmanaged
         {
             var result = new NativeKeyValueArrays<TKey, TValue>(Count, allocator, NativeArrayOptions.UninitializedMemory);
@@ -507,14 +507,14 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal KVPair<TKey, TValue> GetCurrent<TValue>()
+            internal readonly KVPair<TKey, TValue> GetCurrent<TValue>()
                 where TValue : unmanaged
             {
                 return new KVPair<TKey, TValue> { m_Data = m_Data, m_Index = m_Index };
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal TKey GetCurrentKey()
+            internal readonly TKey GetCurrentKey()
             {
                 if (m_Index != -1)
                 {
@@ -527,7 +527,7 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CheckIndexOutOfBounds(int idx)
+        readonly void CheckIndexOutOfBounds(int idx)
         {
             if ((uint)idx >= (uint)Capacity)
             {
@@ -724,7 +724,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <param name="key">The key to look up.</param>
         /// <param name="item">Outputs the value associated with the key. Outputs default if the key was not present.</param>
         /// <returns>True if the key was present.</returns>
-        public bool TryGetValue(TKey key, out TValue item)
+        public readonly bool TryGetValue(TKey key, out TValue item)
         {
             return m_Data.TryGetValue(key, out item);
         }
@@ -734,7 +734,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <param name="key">The key to look up.</param>
         /// <returns>True if the key was present.</returns>
-        public bool ContainsKey(TKey key)
+        public readonly bool ContainsKey(TKey key)
         {
             return -1 != m_Data.Find(key);
         }
@@ -753,7 +753,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <exception cref="ArgumentException">For getting, thrown if the key was not present.</exception>
         public TValue this[TKey key]
         {
-            get
+            readonly get
             {
                 TValue result;
                 if (!m_Data.TryGetValue(key, out result))
@@ -782,14 +782,14 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array with a copy of all this hash map's keys (in no particular order).</returns>
-        public NativeArray<TKey> GetKeyArray(AllocatorManager.AllocatorHandle allocator) => m_Data.GetKeyArray(allocator);
+        public readonly NativeArray<TKey> GetKeyArray(AllocatorManager.AllocatorHandle allocator) => m_Data.GetKeyArray(allocator);
 
         /// <summary>
         /// Returns an array with a copy of all this hash map's values (in no particular order).
         /// </summary>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array with a copy of all this hash map's values (in no particular order).</returns>
-        public NativeArray<TValue> GetValueArray(AllocatorManager.AllocatorHandle allocator) => m_Data.GetValueArray<TValue>(allocator);
+        public readonly NativeArray<TValue> GetValueArray(AllocatorManager.AllocatorHandle allocator) => m_Data.GetValueArray<TValue>(allocator);
 
         /// <summary>
         /// Returns a NativeKeyValueArrays with a copy of all this hash map's keys and values.
@@ -797,13 +797,13 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <remarks>The key-value pairs are copied in no particular order. For all `i`, `Values[i]` will be the value associated with `Keys[i]`.</remarks>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>A NativeKeyValueArrays with a copy of all this hash map's keys and values.</returns>
-        public NativeKeyValueArrays<TKey, TValue> GetKeyValueArrays(AllocatorManager.AllocatorHandle allocator) => m_Data.GetKeyValueArrays<TValue>(allocator);
+        public readonly NativeKeyValueArrays<TKey, TValue> GetKeyValueArrays(AllocatorManager.AllocatorHandle allocator) => m_Data.GetKeyValueArrays<TValue>(allocator);
 
         /// <summary>
         /// Returns an enumerator over the key-value pairs of this hash map.
         /// </summary>
         /// <returns>An enumerator over the key-value pairs of this hash map.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             //            return new Enumerator { Data = m_Data, Index = -1 };
             fixed (HashMapHelper<TKey>* data = &m_Data)
@@ -817,7 +817,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<KVPair<TKey, TValue>> IEnumerable<KVPair<TKey, TValue>>.GetEnumerator()
+        readonly IEnumerator<KVPair<TKey, TValue>> IEnumerable<KVPair<TKey, TValue>>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -827,7 +827,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -846,7 +846,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next key-value pair.
@@ -864,7 +864,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// The current key-value pair.
             /// </summary>
             /// <value>The current key-value pair.</value>
-            public KVPair<TKey, TValue> Current
+            public readonly KVPair<TKey, TValue> Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_Enumerator.GetCurrent<TValue>();
@@ -873,7 +873,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// <summary>
             /// Gets the element at the current position of the enumerator in the container.
             /// </summary>
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -881,9 +881,9 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <remarks>ReadOnly containers point to the same underlying data as the UnsafeHashMap it is made from.</remarks>
         /// <returns>ReadOnly instance for this.</returns>
-        public ReadOnly AsReadOnly()
+        public readonly ReadOnly AsReadOnly()
         {
-            return new ReadOnly(ref m_Data);
+            return new ReadOnly(m_Data);
         }
 
         /// <summary>
@@ -896,7 +896,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             [NativeDisableUnsafePtrRestriction]
             internal HashMapHelper<TKey> m_Data;
 
-            internal ReadOnly(ref HashMapHelper<TKey> data)
+            internal ReadOnly(in HashMapHelper<TKey> data)
             {
                 m_Data = data;
             }
@@ -1015,7 +1015,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator<KVPair<TKey, TValue>> IEnumerable<KVPair<TKey, TValue>>.GetEnumerator()
+            readonly IEnumerator<KVPair<TKey, TValue>> IEnumerable<KVPair<TKey, TValue>>.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -1025,26 +1025,26 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void ThrowKeyNotPresent(TKey key)
+        readonly void ThrowKeyNotPresent(TKey key)
         {
             throw new ArgumentException($"Key: {key} is not present.");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void ThrowKeyAlreadyAdded(TKey key)
+        readonly void ThrowKeyAlreadyAdded(TKey key)
         {
             throw new ArgumentException($"An item with the same key has already been added: {key}");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void ThrowAtMaxCapacity()
+        readonly void ThrowAtMaxCapacity()
         {
             throw new InvalidOperationException($"Capacity is insufficient, and resize would fail (Capacity {Capacity} / {MaxCapacity}, Count {Count})!");
         }

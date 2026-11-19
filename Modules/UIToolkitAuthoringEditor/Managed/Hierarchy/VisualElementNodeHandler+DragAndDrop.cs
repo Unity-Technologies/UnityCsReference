@@ -558,7 +558,7 @@ internal partial class VisualElementNodeHandler
         var index = ResolveAssetInsertIndex(parentElement, childIndex, parentAsset);
 
         var status = AddTemplatesToElementCommand.Execute(CommandSources.Hierarchy, parentAsset, index,
-            visualTreeAssets.ToArray());
+            visualTreeAssets.ToArray(), m_Context);
         if (status != CommandExecutionStatus.Success)
             return DragVisualMode.Rejected;
 
@@ -649,7 +649,7 @@ internal partial class VisualElementNodeHandler
         // The new element is authored in the document that owns the parent asset, which in the Main Stage is
         // whichever scene document (or nested template) the drop landed in.
         var status = AddElementCommand.Execute(CommandSources.Hierarchy, elementType, parentAsset.visualTreeAsset,
-            parentAsset, index, variantName);
+            parentAsset, index, variantName, m_Context);
         if (status != CommandExecutionStatus.Success)
             return DragVisualMode.Rejected;
 

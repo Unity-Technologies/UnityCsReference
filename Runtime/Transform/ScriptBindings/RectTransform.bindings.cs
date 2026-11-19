@@ -415,20 +415,8 @@ namespace UnityEngine
         }
 
         // Return rect relative to lower left corner of parent rect
-        internal Rect GetRectInParentSpace()
-        {
-            Rect rectResult = rect;
-            Vector2 offset = offsetMin + Vector2.Scale(pivot, rectResult.size);
-            RectTransform parentRectTransform = parent as RectTransform;
-            if (parentRectTransform)
-            {
-                offset += Vector2.Scale(anchorMin, parentRectTransform.rect.size);
-            }
-
-            rectResult.x += offset.x;
-            rectResult.y += offset.y;
-            return rectResult;
-        }
+        [NativeMethod("GetRectInParentSpace")]
+        internal extern Rect GetRectInParentSpace();
 
         private Vector2 GetParentSize()
         {

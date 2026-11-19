@@ -9,12 +9,12 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class VisualElementSelectorUtility
     {
         static readonly Regex s_UssIdentifier = new(@"^[a-zA-Z0-9\-_]+$", RegexOptions.Compiled);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static string GenerateTargetedSelector(VisualElement element, Func<VisualElement, bool> isDocumentRoot)
         {
             if (element == null)

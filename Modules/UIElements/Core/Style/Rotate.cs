@@ -74,7 +74,7 @@ namespace UnityEngine.UIElements
             set => m_Angle = value;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal Vector3 axis
         {
             get => m_Axis;
@@ -88,7 +88,6 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private bool m_IsNone;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool IsNone() => m_IsNone;
 
         /// <undoc/>
@@ -106,7 +105,7 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public bool Equals(Rotate other)
         {
-            return other == this;
+            return m_Angle.Equals(other.m_Angle) && m_Axis.Equals(other.m_Axis) && m_IsNone == other.m_IsNone;
         }
 
         /// <undoc/>

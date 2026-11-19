@@ -52,4 +52,45 @@ internal static unsafe partial class SerializationBackendManagedCommands
         count = list._size;
         return true;
     }
+
+    // The transfer writes collection and string payloads out of line, behind a handle whose
+    // allocation keeps the count, instead of inline after their count. One transfer runs one mode
+    // throughout.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe bool V2IsOutOfLine(NativeBufferContext* ctx)
+    {
+        return ctx->outOfLineState != null;
+    }
+
+    // A new out-of-line allocation of byteSize bytes (tail pad zeroed by native) holding count
+    // elements; returns its handle.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe uint V2AllocateOutOfLine(NativeBufferContext* ctx, int count, int byteSize, out byte* data)
+    {
+        byte* allocation;
+        uint handle = ctx->allocateOutOfLine(ctx, count, byteSize, &allocation);
+        data = allocation;
+        return handle;
+    }
+
+    // A null or empty collection: 0, which is both the classic count and the out-of-line invalid
+    // handle. The header is the tail of the staged region.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void V2WriteEmptyCollection(NativeBufferContext* ctx)
+    {
+        Unsafe.WriteUnaligned(ctx->writerPtr - 4, 0);
+    }
+
+    // A collection with count > 0: the count, or on out-of-line transfers the handle and an out-of-line
+    // window over the body's allocation. The header is the tail of the staged region.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void V2BeginCollection(NativeBufferContext* ctx, int count, uint wireStride)
+    {
+        if (!V2IsOutOfLine(ctx))
+        {
+            Unsafe.WriteUnaligned(ctx->writerPtr - 4, count);
+            return;
+        }
+        ctx->openOutOfLineWindow(ctx, count, checked(count * (int)wireStride));
+    }
 }

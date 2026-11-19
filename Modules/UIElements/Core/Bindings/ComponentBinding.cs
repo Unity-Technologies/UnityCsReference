@@ -8,7 +8,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.UIElements
 {
-    // Routes a data binding whose target path selects a component ("${component:TypeName}.field") into
+    // Routes a data binding whose target path selects a component ("${component:<identity>}.field") into
     // that component's live data on the element, instead of the element itself.
     //
     // The selector is a virtual first path part, in the shape the upcoming Unity.Properties virtual
@@ -20,11 +20,12 @@ namespace UnityEngine.UIElements
     // still happens; TValue is preserved (no boxing) through the dispatcher's generic method.
     static class ComponentBinding
     {
-        const string k_SelectorPrefix = "${component:";
-        const char k_SelectorSuffix = '}';
+        // Spelled once in ComponentBindingSelector, so the runtime and the editor can't drift apart.
+        const string k_SelectorPrefix = ComponentBindingSelector.k_Prefix;
+        const char k_SelectorSuffix = ComponentBindingSelector.k_Suffix;
 
-        // True when bindingPath is "${component:TypeName}.<sub-path>" and TypeName is attached to
-        // element. Outputs the component's type handle and the sub-path addressing a field within it.
+        // True when bindingPath is "${component:<identity>}.<sub-path>" and the identity resolves against a
+        // component attached to element. Outputs its type handle and the sub-path addressing a field in it.
         internal static bool TryResolve(VisualElement element, in PropertyPath bindingPath,
             out RuntimeTypeHandle handle, out PropertyPath subPath)
         {
@@ -61,7 +62,7 @@ namespace UnityEngine.UIElements
             }
 
             identifier = identifier.Substring(0, identifier.Length - 1);
-            // "${component:}" carries no type name; not a component path.
+            // "${component:}" carries no identity; not a component path.
             if (identifier.Length == 0)
                 return false;
 
@@ -69,7 +70,7 @@ namespace UnityEngine.UIElements
             if (subStart >= bindingPath.Length)
                 return false;
 
-            if (!element.TryResolveComponentHandleByName(identifier, out handle))
+            if (!element.TryResolveComponentHandleByIdentity(identifier, out handle))
                 return false;
 
             var sub = new PropertyPath();

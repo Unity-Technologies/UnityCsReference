@@ -8,27 +8,31 @@ using System.Runtime.CompilerServices;
 namespace UnityEngine.Serialization;
 
 // Managed serialization V2 Dictionary<K,V> element-source handlers (doc
-// §2.6). The core's EnterElementSource arms own the structure (count framing,
-// staging allocation, element frame and repeat, FUID frame bracketing); these
-// handlers own the dictionary side: the GetEntriesTyped/SetEntriesTyped
-// bridges (dedup, warnings, ignored-rows cache), default allocation, and the
-// identifier-string conversion. The per-instantiation bridge indexes ride the
-// command's opaque userData words (source: GetEntriesTyped index; sink:
-// SetEntriesTyped in the low 32 bits, the default-allocate index in the high
-// 32; -1 means untyped fallback or stay null).
+// §2.6). The core's EnterElementSource arms own the structure (count framing, staging
+// allocation, element frame and repeat, FUID frame bracketing) and the wire;
+// these handlers own the dictionary side: the GetEntriesTyped/SetEntriesTyped
+// bridges (dedup, warnings, ignored-rows cache), default allocation, and
+// identifier-string conversion including duplicate-storage key resolution
+// (the leaf template formatted against the active FUID frame). Per-
+// instantiation bridge indices ride the command's opaque userData words
+// (source: GetEntriesTyped index; sink: SetEntriesTyped in the low 32 bits,
+// the default-allocate index in the high 32; -1 means untyped fallback or
+// stay null).
 internal static unsafe partial class SerializationBackendManagedCommands
 {
-    // Write element source: converts the live Dictionary<K,V> to a staged
-    // SerializedKeyValue<K,V>[] through the GetEntriesTyped bridge. The core
-    // never calls this for a null field. The identifier is only built when a
-    // hosting entity is known, because it is only ever consumed alongside a
-    // resolved host; a null build from a structural mismatch fails closed.
-    private static Array V2DictionaryElementSource(object collection, ref V2FuidBuilder fuid, NativeBufferContext* ctx, ulong userData)
+    // Element source: converts the live Dictionary<K,V> to a staged
+    // SerializedKeyValue<K,V>[] through the GetEntriesTyped bridge. Writes stage
+    // the entries to write; reads stage the entries to read into, as v1 does.
+    // The core never calls this for a null field. The identifier is only built
+    // when a hosting entity is known, because it is only ever consumed
+    // alongside a resolved host; a null build from a structural mismatch fails
+    // closed.
+    private static Array V2DictionaryElementSource(object collection, ref V2FuidBuilder fuid, EntityId hostingEntityId, ulong userData)
     {
         int getEntriesTypedIndex = unchecked((int)userData);
 
         byte[] identifierBytes = null;
-        if (ctx->hostingEntityId != EntityId.None)
+        if (hostingEntityId != EntityId.None)
             identifierBytes = fuid.Build();
 
         if (identifierBytes != null)
@@ -36,11 +40,11 @@ internal static unsafe partial class SerializationBackendManagedCommands
             fixed (byte* identifierPtr = identifierBytes)
             {
                 return DictionarySerialization.InvokeGetEntriesTyped(
-                    getEntriesTypedIndex, ctx->hostingEntityId, collection, (IntPtr)identifierPtr);
+                    getEntriesTypedIndex, hostingEntityId, collection, (IntPtr)identifierPtr);
             }
         }
         return DictionarySerialization.InvokeGetEntriesTyped(
-            getEntriesTypedIndex, ctx->hostingEntityId, collection, IntPtr.Zero);
+            getEntriesTypedIndex, hostingEntityId, collection, IntPtr.Zero);
     }
 
     // Read element sink: default-allocates a null field through the
@@ -68,14 +72,18 @@ internal static unsafe partial class SerializationBackendManagedCommands
         string dictionaryIdentifier = string.Empty;
         if (ctx->hostingEntityId != EntityId.None)
         {
+            // The built identifier is the leaf template (path relative to the
+            // template root); it must be formatted against the live FUID
+            // frame to match v1's key (DictionaryField::SetArray), or SR-body
+            // ignored-row lookups (GetDictionaryIgnoredEntryIdentifier) break.
             byte[] identifierBytes = fuid.Build();
             if (identifierBytes != null)
             {
-                // NUL-terminated UTF-8 in an oversized thread-static buffer.
-                int length = 0;
-                while (identifierBytes[length] != 0)
-                    ++length;
-                dictionaryIdentifier = System.Text.Encoding.UTF8.GetString(identifierBytes, 0, length);
+                fixed (byte* identifierPtr = identifierBytes)
+                {
+                    dictionaryIdentifier = DictionarySerialization.FormatDictionaryFieldUniqueIdentifierForStore(
+                        (IntPtr)identifierPtr);
+                }
             }
         }
 

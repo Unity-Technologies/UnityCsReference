@@ -122,7 +122,7 @@ namespace UnityEngine.UIElements
         // Text round-trip for the authoring inspectors (UI Builder + Integrated Authoring). Parses a
         // space-separated track list: auto / min-content / max-content, <n>fr / <n>% / <n>px / <n>,
         // minmax(a, b), fit-content(len), repeat(<int> | auto-fill | auto-fit, tracks).
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static List<GridTrackSize> ParseList(string text)
         {
             var result = new List<GridTrackSize>();
@@ -175,7 +175,7 @@ namespace UnityEngine.UIElements
             return list.Count > 0 ? list[0] : Auto();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static string FormatList(IEnumerable<GridTrackSize> tracks)
         {
             if (tracks == null) return string.Empty;

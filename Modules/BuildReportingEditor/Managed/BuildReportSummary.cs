@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -195,6 +197,29 @@ namespace UnityEditor.Build
             return JsonUtility.ToJson(summary, true);
         }
 
+        // Enum.ToString() is not used because on Mono it also lists every obsolete member aliased to zero (e.g. BuildOptions.Il2CPP).
+        internal static string[] FlagsToNames<T>(T value) where T : struct, Enum
+        {
+            if (value.Equals(default(T)))
+                return new[] { "None" };
+
+            var fields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Static);
+            var names = new List<string>();
+            foreach (var field in fields)
+            {
+                var flag = (T)field.GetValue(null);
+                if (flag.Equals(default(T)) || !value.HasFlag(flag))
+                    continue;
+
+                if (field.IsDefined(typeof(ObsoleteAttribute), false) &&
+                    Array.Exists(fields, other => !other.IsDefined(typeof(ObsoleteAttribute), false) && other.GetValue(null).Equals(flag)))
+                    continue;
+
+                names.Add(field.Name);
+            }
+            return names.ToArray();
+        }
+
         internal static string ToJson(BuildReport report)
         {
             var summary = report.summary;
@@ -202,10 +227,10 @@ namespace UnityEditor.Build
             var summaryData = new BuildReportSummary
             {
                 Version = kVersion,
-                BuildContentOptions = summary.buildContentOptions.ToString().Split(", ", StringSplitOptions.None),
+                BuildContentOptions = FlagsToNames(summary.buildContentOptions),
                 BuildManifestHash = summary.buildManifestHash.ToString(),
                 BuildName = summary.buildName,
-                BuildOptions = summary.options.ToString().Split(", ", StringSplitOptions.None),
+                BuildOptions = FlagsToNames(summary.options),
                 BuildProfilePath = summary.buildProfilePath,
                 BuildResult = summary.result,
                 BuildResultName = summary.result.ToString(),

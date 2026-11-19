@@ -147,6 +147,22 @@ namespace UnityEngine.UIElements
             return CaptureInto(element, panel, destination);
         }
 
+        // For callers already inside the panel's repaint, where Repaint() would re-enter.
+        internal static bool TryCaptureIntoRenderTextureWithoutRepaint(VisualElement element, RenderTexture destination)
+        {
+            var panel = element?.elementPanel;
+            if (panel == null || destination == null)
+                return false;
+            return CaptureInto(element, panel, destination);
+        }
+
+        internal static RenderTextureReadWrite GetCaptureReadWrite(BaseVisualElementPanel panel)
+        {
+            // Takes its sRGB mode from the panel so gamma output is not encoded twice.
+            bool gammaOutput = panel.panelRenderer?.effectiveForceGammaRendering ?? false;
+            return gammaOutput ? RenderTextureReadWrite.Linear : RenderTextureReadWrite.Default;
+        }
+
         static void GetElementPixelSize(VisualElement element, BaseVisualElementPanel panel, out int width, out int height)
         {
             // worldBound is expressed in panel points; scale to pixels for the capture size.
@@ -172,10 +188,7 @@ namespace UnityEngine.UIElements
             RenderTexture.active = prevActive;
 
             // 24-bit depth gives the temp texture the stencil buffer UI clipping/masking needs.
-            // Takes its sRGB mode from the panel so gamma output is not encoded twice.
-            bool gammaOutput = panel.panelRenderer?.effectiveForceGammaRendering ?? false;
-            var readWrite = gammaOutput ? RenderTextureReadWrite.Linear : RenderTextureReadWrite.Default;
-            var panelCapture = RenderTexture.GetTemporary(panelWidth, panelHeight, 24, RenderTextureFormat.ARGB32, readWrite);
+            var panelCapture = RenderTexture.GetTemporary(panelWidth, panelHeight, 24, RenderTextureFormat.ARGB32, GetCaptureReadWrite(panel));
             try
             {
                 if (!panel.TryRenderIntoTexture(panelCapture))

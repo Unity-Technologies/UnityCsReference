@@ -11,7 +11,6 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 sealed partial class NewClassWindow : EditorWindow
 {
     const string k_WindowTitle = "Add Class";

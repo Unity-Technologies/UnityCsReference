@@ -336,7 +336,7 @@ namespace UnityEditor.UIElements
 
                 // If an editor was provided but the targets are not set.
                 // This should never happen in normal operation since all multi argument constructors are internal/private.
-                if (m_Editor.targets.Length == 0)
+                if (m_Editor.targetCount == 0)
                     return;
             }
 
@@ -961,7 +961,7 @@ namespace UnityEditor.UIElements
                                             return;
                                         }
 
-                                        InspectorWindowUtils.DrawAddedComponentBackground(contentHeightRect, targetEditor.targets);
+                                        InspectorWindowUtils.DrawAddedComponentBackground(contentHeightRect, targetEditor);
 
                                         // Draw content
                                         if (visible)
@@ -972,7 +972,7 @@ namespace UnityEditor.UIElements
                                     }
                                     else
                                     {
-                                        InspectorWindowUtils.DrawAddedComponentBackground(contentRect, targetEditor.targets);
+                                        InspectorWindowUtils.DrawAddedComponentBackground(contentRect, targetEditor);
                                         using (new EditorPerformanceTracker(trackerName))
                                             targetEditor.OnInspectorGUI();
                                     }

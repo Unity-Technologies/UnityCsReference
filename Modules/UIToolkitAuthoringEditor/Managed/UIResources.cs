@@ -16,7 +16,7 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Utility class to retrieve UI Toolkit-related resources.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class UIResources
     {
         /// <summary>

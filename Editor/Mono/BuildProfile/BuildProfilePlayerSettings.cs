@@ -118,7 +118,7 @@ namespace UnityEditor.Build.Profile
                 buildProfilePlayerSettings = new BuildProfilePlayerSettings();
                 buildProfilePlayerSettings.name = "Player Settings";
                 buildProfilePlayerSettings.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-                PlayerSettings.CopySettingsToBuildProfilePlayerSettings(buildProfilePlayerSettings);
+                PlayerSettings.CopyProjectSettingsToBuildProfilePlayerSettings(buildProfilePlayerSettings);
 
                 if (EditorUtility.IsPersistent(this))
                 {
@@ -209,7 +209,7 @@ namespace UnityEditor.Build.Profile
             RemoveBuildProfilePlayerSettings();
             EditorUtility.SetDirty(this);
 
-            if (profileDefineSymbols != PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget) ||
+            if (!ScriptingDefinesHelper.AreDefinesEquivalent(profileDefineSymbols, PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget)) ||
                 !ArrayUtility.ArrayEquals(profileCompilerArguments, PlayerSettings.GetAdditionalCompilerArguments(namedBuildTarget)))
             {
                 scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(scriptingDefines);

@@ -14,7 +14,7 @@ namespace UnityEditor
      NativeHeader("Runtime/Graphics/RenderTexture.h"),
      NativeHeader("Editor/Src/Windowing/GUIView.bindings.h"),
      NativeHeader("Editor/Src/Windowing/ContainerWindow.bindings.h")]
-    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.BurstModule")]
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.BurstModule")]
     internal partial class GUIView
     {
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
@@ -33,7 +33,6 @@ namespace UnityEditor
         [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
         public extern void Repaint();
 
-        [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [NativeMethod("MonoGUIView::Focus", HasExplicitThis = true)]
         [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
         public extern void Focus();

@@ -24,9 +24,10 @@ internal sealed class AddTemplatesToElementCommand : Command<AddTemplatesToEleme
         return cmd;
     }
 
-    public static CommandExecutionStatus Execute(object source, VisualElementAsset parentAsset, int index, VisualTreeAsset[] templates)
+    public static CommandExecutionStatus Execute(object source, VisualElementAsset parentAsset, int index, VisualTreeAsset[] templates, AuthoringContext requestingContext = null)
     {
         using var command = GetPooled(source, parentAsset, index, templates);
+        command.RequestingContext = requestingContext;
         return UICommandQueue.Execute(command).Status;
     }
 
@@ -98,7 +99,7 @@ internal sealed class AddTemplatesToElementCommand : Command<AddTemplatesToEleme
         // Asked for by asset, like every other authoring command: the instances only come into being when the
         // documents are cloned again. A caller with a live parent to name narrows this to the instance it added
         // into (see ScopePendingSelectionRequestsTo).
-        UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(RequestingContext, toSelectAssets);
 
         return CommandExecutionStatus.Success;
     }

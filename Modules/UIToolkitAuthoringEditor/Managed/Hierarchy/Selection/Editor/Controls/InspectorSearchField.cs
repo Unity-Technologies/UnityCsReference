@@ -254,6 +254,7 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
     {
         var hasSearchText = !string.IsNullOrEmpty(str);
         var filterIsAll = m_ActiveFilters.HasFlag(SearchFilter.All);
+        var normalizedStr = hasSearchText ? NormalizeForSearch(str) : null;
 
         var rows = m_SearchContainer.Query<OverrideRow>().Build();
         int visibleCount = 0;
@@ -273,20 +274,23 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
                 }
                 else
                 {
-                    bool matchesSearch = false;
-                    var normalizedStr = NormalizeForSearch(str);
+                    bool matchesProperty = false;
                     foreach (var property in row.trackedProperties)
                     {
-                        if (property.Contains(str, StringComparison.OrdinalIgnoreCase)
-                            || NormalizeForSearch(property).Contains(normalizedStr, StringComparison.OrdinalIgnoreCase))
+                        if (TextMatches(property, str, normalizedStr))
                         {
-                            matchesSearch = true;
+                            matchesProperty = true;
                             break;
                         }
                     }
 
+                    var matchesOwnLabel = !matchesProperty && RowLabelMatches(row, str, normalizedStr);
+                    var matchesCategory = !matchesProperty && !matchesOwnLabel
+                        && HasMatchingAncestorFoldout(row, str, normalizedStr);
+
                     // Overrides + search: the matching property name must be in the per-property override map.
-                    shouldShow = matchesSearch && (filterIsAll || RowMatchesActiveFiltersWithSearch(row, str));
+                    shouldShow = (matchesProperty && (filterIsAll || RowMatchesActiveFiltersWithSearch(row, str)))
+                        || ((matchesOwnLabel || matchesCategory) && (filterIsAll || RowMatchesActiveFilters(row)));
                 }
 
                 if (shouldShow)
@@ -405,6 +409,36 @@ internal sealed partial class InspectorSearchField : VisualElement, IShortcutCon
         s_PersistentFilter = m_ActiveFilters;
 
         ClearSearch();
+    }
+
+    private static bool TextMatches(string text, string str, string normalizedStr) =>
+        !string.IsNullOrEmpty(text)
+        && (text.Contains(str, StringComparison.OrdinalIgnoreCase)
+            || NormalizeForSearch(text).Contains(normalizedStr, StringComparison.OrdinalIgnoreCase));
+
+    private static bool RowLabelMatches(OverrideRow row, string str, string normalizedStr)
+    {
+        if (row is OverrideFoldout foldout && TextMatches(foldout.text, str, normalizedStr))
+            return true;
+
+        foreach (var label in row.Query<Label>(className: BaseField<object>.labelUssClassName).Build())
+        {
+            if (label.GetFirstAncestorOfType<OverrideRow>() == row && TextMatches(label.text, str, normalizedStr))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool HasMatchingAncestorFoldout(VisualElement element, string str, string normalizedStr)
+    {
+        for (var parent = element.parent; parent != null; parent = parent.parent)
+        {
+            if (parent is OverrideFoldout foldout && TextMatches(foldout.text, str, normalizedStr))
+                return true;
+        }
+
+        return false;
     }
 
     private static string NormalizeForSearch(string value) => value.Replace("-", "").Replace(" ", "");

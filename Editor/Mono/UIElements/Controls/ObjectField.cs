@@ -29,7 +29,6 @@ namespace UnityEditor.UIElements
 
         internal event Action onObjectSelectorShow
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             add => m_OnObjectSelectorShow += value;
             remove => m_OnObjectSelectorShow -= value;
         }
@@ -141,7 +140,7 @@ namespace UnityEditor.UIElements
             m_ObjectFieldDisplay?.ShowMixedValue(showMixedValue);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual void UpdateDisplay()
         {
             UpdateMixedValueContent();
@@ -150,7 +149,7 @@ namespace UnityEditor.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static bool IsMissingObjectReference(SerializedProperty p) => p.propertyType == SerializedPropertyType.ObjectReference && p.objectReferenceEntityIdValue != EntityId.None && p.objectReferenceValue == null;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal class ObjectFieldDisplay : VisualElement
         {
             private readonly ObjectField m_ObjectField;
@@ -406,7 +405,7 @@ namespace UnityEditor.UIElements
 
         internal ObjectFieldDisplay objectFieldDisplay
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_ObjectFieldDisplay;
         }
 

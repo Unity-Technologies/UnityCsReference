@@ -548,6 +548,12 @@ namespace UnityEngine
         public System.Type[] field;
     }
 
+    [ExcludeFromDocs]
+    internal struct StructPPtrUnityType
+    {
+        public System.Type field;
+    }
+
     [NativeHeader("Modules/Marshalling/SystemTypeMarshallingTests.h")]
     [ExcludeFromDocs]
     internal static class SystemTypeMarshallingTests
@@ -564,6 +570,12 @@ namespace UnityEngine
 
         public static extern System.Type CanUnmarshallScriptingSystemTypeObjectPtrToSystemType();
         public static extern System.Type CanUnmarshallUnityTypeToSystemType();
+        public static extern System.Type CanUnmarshallUnityTypePtrToSystemType();
+        public static extern System.Type CanUnmarshallNullUnityTypePtrToSystemType();
+        public static extern StructPPtrUnityType CanUnmarshallPPtrUnityTypeStructField();
+        public static extern StructPPtrUnityType CanUnmarshallNullPPtrUnityTypeStructField();
+        public static extern System.Type CanUnmarshallDataComponentTypePtrToSystemType(int componentTypeId);
+        public static extern StructPPtrUnityType CanUnmarshallDataComponentPPtrUnityTypeStructField(int componentTypeId);
         public static extern System.Type CanUnmarshallScriptingClassPtrToSystemType();
 
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
@@ -1240,6 +1252,7 @@ namespace UnityEngine
         public static extern ulong TestInvokeULong(ulong arg);
         public static extern IntPtr TestInvokeIntPtr(IntPtr arg);
         public static extern UIntPtr TestInvokeUIntPtr(UIntPtr arg);
+        public static extern IntPtr TestInvokeVoidPointer(IntPtr arg, IntPtr inArg, ref IntPtr refArg, out IntPtr outArg);
         public static extern float TestInvokeFloat(float arg);
         public static extern double TestInvokeDouble(double arg);
         public static extern SomeEnum TestInvokeEnum32(SomeEnum arg);
@@ -1259,6 +1272,29 @@ namespace UnityEngine
         public static extern System.Object TestInvokeThrowsCaptureException(System.Object payload);
         public static extern void TestInvokeThrowsDiscard(System.Object payload, int iterations);
         public static extern System.Object TestInvokeRefObjectThrows(System.Object arg, int iterations);
+        public static extern int TestInvokeOverloadTakingInt(int arg);
+        public static extern float TestInvokeOverloadTakingFloat(float arg);
+        public static extern string TestInvokeOverloadTakingString(string arg);
+        public static extern int TestInvokeCustomMarshalled(int arg);
+        public static extern int TestInvokeCustomMarshalledIn(int arg);
+        public static extern int TestInvokeCustomMarshalledRef(int arg, int initial);
+        public static extern int TestInvokeCustomMarshalledOut(int arg);
+        public static extern int TestInvokeCustomMarshalledRefAttribute(int initial);
+        public static extern int TestInvokeCustomMarshalledRefInParameters(int initial);
+        public static extern string TestInvokeGuidByValue(string id);
+        public static extern string TestInvokeGuidIn(string id);
+        public static extern string TestInvokeGuidReturn();
+        public static extern string TestInvokeGuidOut();
+        public static extern string TestInvokeGuidRef(string initial);
+        public static extern string TestInvokeGuidRefUnchanged(string initial);
+        public static extern bool TestInvokeGuidIsEmpty(string id);
+        public static extern string TestInvokeGuidOutEmpty(string initial);
+        public static extern System.Object TestInvokeGuidByValueCaptureException(string id);
+        public static extern string TestInvokeGuidRefWithException(string initial);
+        public static extern int TestInvokeChained(int arg);
+        public static extern int TestInvokeChainedIn(int arg);
+        public static extern int TestInvokeChainedRef(int arg, int initial);
+        public static extern int TestInvokeChainedOut(int arg);
         // performance tests
         public static extern void TestInvokeObjectNoReturn(int iterations, System.Object arg);
         public static extern void TestInvokeObjectNoReturnAsGcHandle(int iterations, IntPtr handle);
@@ -1292,6 +1328,14 @@ namespace UnityEngine
         static IntPtr InvokeIntPtr(IntPtr arg) { return arg; }
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static UIntPtr InvokeUIntPtr(UIntPtr arg) { return arg; }
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static unsafe void* InvokeVoidPointer(void* arg, in void* inArg, ref void* refArg, out void* outArg)
+        {
+            var previousRefArg = refArg;
+            outArg = arg;
+            refArg = inArg;
+            return previousRefArg;
+        }
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static float InvokeFloat(float arg) { return arg; }
         [RequiredMember, RequiredByNativeCode(Optional = true)]
@@ -1334,6 +1378,132 @@ namespace UnityEngine
             throw new InvalidOperationException(kProxyThrowMessage);
         }
 
+        static int ValueOf(CustomMarshallingTests.CustomMarshalledClass c) => int.Parse(c.Value);
+        static CustomMarshallingTests.CustomMarshalledClass CustomMarshalled(int value) => new CustomMarshallingTests.CustomMarshalledClass { Value = value.ToString() };
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static CustomMarshallingTests.CustomMarshalledClass InvokeCustomMarshalled(CustomMarshallingTests.CustomMarshalledClass arg)
+        {
+            return CustomMarshalled(ValueOf(arg) + 1);
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static int InvokeCustomMarshalledIn(in CustomMarshallingTests.CustomMarshalledClass arg)
+        {
+            return ValueOf(arg);
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeCustomMarshalledRef(CustomMarshallingTests.CustomMarshalledClass arg, ref CustomMarshallingTests.CustomMarshalledClass value)
+        {
+            value = CustomMarshalled(ValueOf(value) * 10 + ValueOf(arg));
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeCustomMarshalledOut(CustomMarshallingTests.CustomMarshalledClass arg, out CustomMarshallingTests.CustomMarshalledClass result)
+        {
+            result = arg;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeCustomMarshalledRefAttribute(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallingTests.CustomMarshaller))] ref CustomMarshallingTests.CustomMarshalledClass value)
+        {
+            value = CustomMarshalled(ValueOf(value) + 1);
+        }
+
+        public static readonly Guid kProxyGuid = new Guid("6f9619ff-8b86-d011-b42d-00c04fc964ff");
+        public static readonly Guid kProxyOtherGuid = new Guid("0f8fad5b-d9cb-469f-a165-70867728950e");
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static string InvokeGuidByValue(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallingTests.GuidStringMarshaller))] Guid id)
+        {
+            return id.ToString("N");
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static string InvokeGuidIn(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallingTests.GuidStringMarshaller))] in Guid id)
+        {
+            return id.ToString("N");
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallingTests.GuidStringMarshaller))]
+        static Guid InvokeGuidReturn()
+        {
+            return kProxyGuid;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeGuidOut(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallingTests.GuidStringMarshaller))] out Guid id)
+        {
+            id = kProxyGuid;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeGuidRef(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallingTests.GuidStringMarshaller))] ref Guid id)
+        {
+            if (id == kProxyGuid)
+                id = kProxyOtherGuid;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeGuidRefUnchanged(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallingTests.GuidStringMarshaller))] ref Guid id)
+        {
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static bool InvokeGuidIsEmpty(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallingTests.GuidStringMarshaller))] Guid id)
+        {
+            return id == Guid.Empty;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeGuidOutEmpty(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallingTests.GuidStringMarshaller))] out Guid id)
+        {
+            id = Guid.Empty;
+        }
+
+        static CustomMarshallingTests.ChainedOuter Chained(int value) => new CustomMarshallingTests.ChainedOuter { inner = new CustomMarshallingTests.ChainedInner { value = value } };
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static CustomMarshallingTests.ChainedOuter InvokeChained(CustomMarshallingTests.ChainedOuter arg)
+        {
+            return Chained(arg.inner.value + 1);
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static int InvokeChainedIn(in CustomMarshallingTests.ChainedOuter arg)
+        {
+            return arg.inner.value;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeChainedRef(CustomMarshallingTests.ChainedOuter arg, ref CustomMarshallingTests.ChainedOuter value)
+        {
+            value = Chained(value.inner.value * 10 + arg.inner.value);
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeChainedOut(CustomMarshallingTests.ChainedOuter arg, out CustomMarshallingTests.ChainedOuter result)
+        {
+            result = arg;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeCustomMarshalledRefInParameters(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallingTests.CustomMarshallerUsingInParameters))] ref CustomMarshallingTests.CustomMarshalledClass value)
+        {
+            value = CustomMarshalled(ValueOf(value) + 1);
+        }
+
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static void InvokeThrows(System.Object payload)
         {
@@ -1341,6 +1511,20 @@ namespace UnityEngine
             exception.Data[kProxyThrowPayloadKey] = payload;
             throw exception;
         }
+
+        public const string kOverloadStringSuffix = " (string overload)";
+
+        // Each overload transforms its argument differently so a call that reaches the wrong slot is detected
+        [RequiredMember, RequiredByNativeCode("InvokeOverloadTakingInt", Optional = true)]
+        static int InvokeOverload(int arg) { return arg + 1; }
+
+        [RequiredMember, RequiredByNativeCode(Name = "InvokeOverloadTakingFloat", Optional = true)]
+        static float InvokeOverload(float arg) { return arg * 2f; }
+
+        [RequiredMember, RequiredByNativeCode("InvokeOverloadTakingString", Optional = true)]
+        static string InvokeOverload(string arg) { return arg + kOverloadStringSuffix; }
+
+        static int InvokeOverload() { return -1; }
     }
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
@@ -1474,6 +1658,12 @@ namespace UnityEngine
             public static T ConvertToManaged(int n) => new T() { Value = (n * 2).ToString() };
         }
 
+        public static class GuidStringMarshaller
+        {
+            public static string ConvertToUnmanaged(Guid g) => g == Guid.Empty ? null : g.ToString("D");
+            public static Guid ConvertToManaged(string s) => string.IsNullOrEmpty(s) ? Guid.Empty : Guid.Parse(s);
+        }
+
         public class CustomMarshallerInterface
         {
             public static int ConvertToUnmanaged(ICustomMarshalled c) => c == null ? 0 : int.Parse(c.Value) * 2;
@@ -1586,6 +1776,41 @@ namespace UnityEngine
         public static extern void ParameterCustomMarshalled_AsStruct_Ref(ref CustomMarshalledAsStruct arg);
         [NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ReturnStructInt), isFreeFunction: true)]
         public static extern CustomMarshalledAsStruct ParameterCustomMarshalled_AsStruct_Return();
+
+        [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BindingsMarshaller))]
+        public struct ChainedInner
+        {
+            public int value;
+
+            public static class BindingsMarshaller
+            {
+                public static int ConvertToUnmanaged(ChainedInner i) => i.value;
+                public static ChainedInner ConvertToManaged(int value) => new ChainedInner { value = value };
+            }
+        }
+
+        [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BindingsMarshaller))]
+        public struct ChainedOuter
+        {
+            public ChainedInner inner;
+
+            public static class BindingsMarshaller
+            {
+                public static ChainedInner ConvertToUnmanaged(ChainedOuter o) => o.inner;
+                public static ChainedOuter ConvertToManaged(ChainedInner i) => new ChainedOuter { inner = i };
+            }
+        }
+
+        [NativeMethod("ParameterCustomMarshalled", ThrowsException = true)]
+        public static extern void ParameterCustomMarshalled_Chained(ChainedOuter arg, int expected);
+        [NativeMethod("ParameterCustomMarshalledIn", ThrowsException = true)]
+        public static extern void ParameterCustomMarshalledIn_Chained(in ChainedOuter arg, int expected);
+        [NativeMethod("ParameterCustomMarshalledOut", ThrowsException = true)]
+        public static extern void ParameterCustomMarshalledOut_Chained(out ChainedOuter arg, int expected);
+        [NativeMethod("ParameterCustomMarshalledRef", ThrowsException = true)]
+        public static extern void ParameterCustomMarshalledRef_Chained(ref ChainedOuter arg, int expected);
+        [NativeMethod("ParameterCustomMarshalledReturn")]
+        public static extern ChainedOuter ParameterCustomMarshalledReturn_Chained(int value);
 
         public class MarshalThisAsStructInt
         {

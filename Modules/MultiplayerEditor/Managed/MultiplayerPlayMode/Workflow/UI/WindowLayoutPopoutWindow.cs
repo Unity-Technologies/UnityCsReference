@@ -6,12 +6,14 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     class WindowLayoutPopoutWindow : PopupWindowContent
     {
-        private const string k_FrameAfterTopViewSwitch = "frameAfterTopViewSwitch";
+        [NoAutoStaticsCleanup] // Modules are never unloaded, so this survives code reloads; it holds no user code.
+        static bool s_FrameAfterTopViewSwitch;
         private readonly LayoutCheckboxListView m_layoutCheckboxList;
 
         public WindowLayoutPopoutWindow()
@@ -44,9 +46,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal void OnUpdate()
         {
-            if (SessionState.GetBool(k_FrameAfterTopViewSwitch, false))
+            if (s_FrameAfterTopViewSwitch)
             {
-                SessionState.SetBool(k_FrameAfterTopViewSwitch, false);
+                s_FrameAfterTopViewSwitch = false;
 
                 // Switch modes and update our views.
                 var isPlayMode = EditorApplication.isPlaying;
@@ -75,7 +77,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     LayoutWindows = layoutWindows.ToArray(),
                     IsPlayMode = EditorApplication.isPlaying
                 });
-                SessionState.SetBool(k_FrameAfterTopViewSwitch, true);
+                s_FrameAfterTopViewSwitch = true;
                 EditorWindow.focusedWindow?.Close();
             }
         }

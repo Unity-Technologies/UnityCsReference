@@ -5,7 +5,6 @@
 using System;
 using Unity.Properties;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -262,18 +261,8 @@ class UxmlAttributesEditingContext : IDisposable
 
     public void Set(VisualElement element, bool isReadOnly = false)
     {
-        VisualTreeAsset vta;
-        var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
-
-        if (stage != null)
-        {
-            vta = stage.EditedVisualTreeAsset;
-        }
-        else
-        {
-            vta = element.visualTreeAssetSource;
-        }
-
+        var context = AuthoringContext.For(element);
+        var vta = context.IsEditingDocument ? context.EditedVisualTreeAsset : element.visualTreeAssetSource;
         Set(vta, element, isReadOnly);
     }
 
@@ -378,7 +367,7 @@ class UxmlAttributesEditingContext : IDisposable
         this.editedVisualTreeAsset = editedVisualTreeAsset;
         isInTemplateInstance = false;
         m_ShowsAncestorOverrides = true;
-        m_StageLocksAncestorDrivenFields = StageUtility.GetCurrentStage() is not VisualElementEditingStage;
+        m_StageLocksAncestorDrivenFields = !AuthoringContext.For(element).IsEditingDocument;
 
         if (element != null)
         {

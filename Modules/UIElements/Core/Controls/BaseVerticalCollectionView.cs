@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Buffers;
 using System.Collections;
@@ -72,7 +71,6 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class SerializedVirtualizationData
     {
         public Vector2 scrollOffset;
@@ -234,7 +232,6 @@ namespace UnityEngine.UIElements
 
         internal event Action selectionNotChanged
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             add => m_SelectionNotChanged += value;
             remove => m_SelectionNotChanged -= value;
         }
@@ -389,7 +386,7 @@ namespace UnityEngine.UIElements
 
         internal IReadOnlyList<int> selectedIndicesList // TODO: Consider making this public and deprecating selectedIndices
         {
-            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_Selection.indices;
         }
 
@@ -409,7 +406,7 @@ namespace UnityEngine.UIElements
 
         internal ScrollView scrollView
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEngine.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => m_ScrollView;
         }
 
@@ -417,11 +414,11 @@ namespace UnityEngine.UIElements
 
         internal CollectionVirtualizationController virtualizationController
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEngine.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => GetOrCreateVirtualizationController();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool allowSingleClickChoice = false;
 
         /// <summary>
@@ -665,7 +662,6 @@ namespace UnityEngine.UIElements
         KeyboardNavigationManipulator m_NavigationManipulator;
 
         [SerializeField, DontCreateProperty]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal SerializedVirtualizationData serializedVirtualizationData = new SerializedVirtualizationData();
 
         // Persisted. It's why this can't be a HashSet(). :(
@@ -822,7 +818,6 @@ namespace UnityEngine.UIElements
         private ListViewDragger m_Dragger;
 
         internal const float ItemHeightUnset = -1;
-        [NoAutoStaticsCleanup]
         internal static readonly CustomStyleProperty<int> s_ItemHeightProperty = new("--unity-item-height");
 
         // View controller callbacks

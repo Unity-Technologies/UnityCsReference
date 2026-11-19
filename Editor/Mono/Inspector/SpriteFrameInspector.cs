@@ -244,6 +244,7 @@ namespace UnityEditor
             {
                 _matHasTexture = spriteRendererMaterial.HasProperty("_MainTex");
                 _matHasTexelSize = spriteRendererMaterial.HasProperty("_MainTex_TexelSize");
+                spriteRendererMaterial.SetVector("unity_SpriteColor", Vector4.one);
             }
 
             bool hasColors = sprite.HasVertexAttribute(VertexAttribute.Color);

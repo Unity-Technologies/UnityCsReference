@@ -17,7 +17,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+[VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 internal partial class VisualTreeAssetExporter
 {
     [OnCodeInitializing]
@@ -28,13 +28,9 @@ internal partial class VisualTreeAssetExporter
 
     public const string ColorsPreferenceCategory = "UXML Syntax Highlighting";
 
-    [NoAutoStaticsCleanup] // preference color registrations; readonly, persist across reload
     static readonly UIPrefColor k_AttributeName = new(ColorsPreferenceCategory, "Attribute Name", HtmlColor("#098658"), HtmlColor("#5DA861"));
-    [NoAutoStaticsCleanup]
     static readonly UIPrefColor k_AttributeValue = new(ColorsPreferenceCategory, "Attribute Value", HtmlColor("#A15000"), HtmlColor("#E0BD73"));
-    [NoAutoStaticsCleanup]
     static readonly UIPrefColor k_Tag = new(ColorsPreferenceCategory, "Tag", HtmlColor("#0033B3"), HtmlColor("#B464EB"));
-    [NoAutoStaticsCleanup]
     static readonly UIPrefColor k_TagName = new(ColorsPreferenceCategory, "Tag Name", HtmlColor("#0033B3"), HtmlColor("#C26CFD"));
 
     public static Color AttributeNameColor { get => k_AttributeName.Color; set { k_AttributeName.Color = value; PrefSettings.Set(k_AttributeName.StorageKey, k_AttributeName); } }
@@ -50,7 +46,7 @@ internal partial class VisualTreeAssetExporter
 
     internal static readonly string[] IgnoredTypesWhenExporting = { SelectedVisualTreeAssetSpecialElementTypeName };
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal struct ExportOptions
     {
         const string k_DefaultIndent = "    ";

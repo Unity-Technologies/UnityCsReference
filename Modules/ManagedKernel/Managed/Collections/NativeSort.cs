@@ -34,7 +34,7 @@ namespace Unity.Collections
             /// <param name="y">Second value to compare.</param>
             /// <returns>A signed integer that denotes the relative values of `x` and `y`:
             /// 0 if they're equal, negative if `x &lt; y`, and positive if `x &gt; y`.</returns>
-            public int Compare(T x, T y) => x.CompareTo(y);
+            public readonly int Compare(T x, T y) => x.CompareTo(y);
         }
 
         /// <summary>
@@ -500,7 +500,7 @@ namespace Unity.Collections
         public unsafe static SortJob<T, DefaultComparer<T>> SortJob<T>(this NativeArray<T> container)
             where T : unmanaged, IComparable<T>
         {
-            return SortJob(container.AsSpan(), new DefaultComparer<T>());
+            return SortJob((T*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(container), container.Length);
         }
 
         /// <summary>
@@ -517,7 +517,7 @@ namespace Unity.Collections
             where T : unmanaged
             where U : IComparer<T>
         {
-            return SortJob(container.AsSpan(), comp);
+            return new SortJob<T, U> { Data = (T*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(container), Length = container.Length, Comp = comp };
         }
 
         /// <summary>
@@ -1310,7 +1310,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="inputDeps">Handle of a job to depend upon.</param>
         /// <returns>The handle of this newly scheduled job.</returns>
-        public JobHandle Schedule(JobHandle inputDeps = default)
+        public readonly JobHandle Schedule(JobHandle inputDeps = default)
         {
             if (Length == 0)
                 return inputDeps;

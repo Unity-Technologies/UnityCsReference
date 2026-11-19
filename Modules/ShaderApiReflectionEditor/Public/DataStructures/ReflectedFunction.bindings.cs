@@ -117,7 +117,6 @@ namespace UnityEditor.ShaderApiReflection
             // Left-align text
             StringBuilder normalized = new StringBuilder(BodyText.Length);
             {
-                string indentToStrip = new string(kSpace, (int)minIndent);
                 for (int i = 0; i < bodyLines.Length; ++i)
                 {
                     if (i > 0)

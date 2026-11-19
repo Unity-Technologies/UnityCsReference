@@ -22,7 +22,6 @@ namespace UnityEditor
         public List<AudioMixerGroupController> ChannelStripSelection { get; private set; }
 
         // Channelstrip selection
-        // We rely on SyncToUnitySelection is being called after setting Selection.objects through AudioWindow::OnSelectionChange ()
         public void SyncToUnitySelection()
         {
             if (m_Controller != null)
@@ -32,13 +31,11 @@ namespace UnityEditor
         public void SetChannelStrips(List<AudioMixerGroupController> newSelection)
         {
             Selection.objects = newSelection.ToArray();
-            //Debug.Log("SetChannelStrips " + DebugUtils.ListToString(Selection.instanceIDs));
         }
 
         public void SetSingleChannelStrip(AudioMixerGroupController group)
         {
             Selection.objects = new[] {group};
-            //Debug.Log("SetSingleChannelStrip " + DebugUtils.ListToString(Selection.instanceIDs));
         }
 
         public void ToggleChannelStrip(AudioMixerGroupController group)
@@ -54,7 +51,6 @@ namespace UnityEditor
         public void ClearChannelStrips()
         {
             Selection.objects = System.Array.Empty<Object>();
-            //Debug.Log("ClearChannelStrips " + DebugUtils.ListToString(Selection.instanceIDs));
         }
 
         public bool HasSingleChannelStripSelection()

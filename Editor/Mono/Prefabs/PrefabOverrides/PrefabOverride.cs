@@ -58,9 +58,10 @@ namespace UnityEditor.SceneManagement
         // For AddedGameObject, it's the added GameObject on the instance.
         // For RemovedComponent, it's the component on the Prefab Asset corresponding to the removed component on the instance.
         // For RemovedGameObject, it's the GameObject on the Prefab Asset corresponding to the removed GameObject on the instance.
+        // For DataComponentOverride, AddedDataComponent and RemovedDataComponent, it's null, since a data component has no Object.
         internal abstract UnityObject GetObject();
 
-        internal void HandleApplyMenuItems(GenericMenu menu, GenericMenu.MenuFunction2 applyAction)
+        internal virtual void HandleApplyMenuItems(GenericMenu menu, GenericMenu.MenuFunction2 applyAction)
         {
             bool isObjectOverride = this is ObjectOverride;
             Object obj = isObjectOverride ? GetObject() : GetAssetObject();
@@ -123,6 +124,158 @@ namespace UnityEditor.SceneManagement
         internal override UnityObject GetObject()
         {
             return instanceObject;
+        }
+    }
+
+    // A data component has no Object, so it is held by EntityId.
+    internal abstract class DataComponentPrefabOverride : PrefabOverride
+    {
+        public EntityId instanceDataComponent { get; set; }
+
+        public GameObject instanceGameObject
+            => EditorUtility.EntityIdToObject(DataComponentEntityId.GetOwner(instanceDataComponent)) as GameObject;
+
+        // The owner's source GameObject, which is in the same Prefab asset as the data component's source.
+        public override UnityObject GetAssetObject()
+        {
+            return PrefabUtility.GetCorrespondingObjectFromSource(instanceGameObject);
+        }
+
+        internal override UnityObject GetObject()
+        {
+            return null;
+        }
+
+        internal abstract bool CanApplyTo(GameObject owner, UnityObject sourceObject);
+
+        // A data component is in the same Prefab assets as its owner GameObject, so the owner's apply targets are its apply targets.
+        internal override void HandleApplyMenuItems(GenericMenu menu, GenericMenu.MenuFunction2 applyAction)
+        {
+            GameObject owner = instanceGameObject;
+            if (owner == null)
+                return;
+
+            PrefabUtility.HandleApplyMenuItems(
+                null,
+                owner,
+                (menuItemContent, sourceObject, instanceOrAssetObject) =>
+                {
+                    string prefabAssetPath = AssetDatabase.GetAssetPath(sourceObject);
+                    GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
+                    if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || !CanApplyTo(owner, sourceObject))
+                        menu.AddDisabledItem(menuItemContent);
+                    else
+                        menu.AddItem(menuItemContent, false, applyAction, prefabAssetPath);
+                });
+        }
+    }
+
+    internal class DataComponentOverride : DataComponentPrefabOverride
+    {
+        public override void Apply(string prefabAssetPath, InteractionMode mode)
+        {
+            PrefabUtility.ApplyDataComponentOverride(
+                instanceDataComponent,
+                prefabAssetPath,
+                mode);
+        }
+
+        public override void Revert(InteractionMode mode)
+        {
+            PrefabUtility.RevertDataComponentOverride(
+                instanceDataComponent,
+                mode);
+        }
+
+        internal override bool CanApplyTo(GameObject owner, UnityObject sourceObject)
+        {
+            return !EditorUtility.IsPersistent(owner) && PrefabUtility.HasApplicableDataComponentOverridesForTarget(instanceDataComponent, sourceObject, false);
+        }
+    }
+
+    internal class AddedDataComponent : DataComponentPrefabOverride
+    {
+        public override void Apply(string prefabAssetPath, InteractionMode mode)
+        {
+            PrefabUtility.ApplyAddedDataComponent(
+                instanceDataComponent,
+                prefabAssetPath,
+                mode);
+        }
+
+        public override void Revert(InteractionMode mode)
+        {
+            PrefabUtility.RevertAddedDataComponent(
+                instanceDataComponent,
+                mode);
+        }
+
+        // On a GameObject from another Prefab it becomes an added override in that asset.
+        internal override bool CanApplyTo(GameObject owner, UnityObject sourceObject)
+        {
+            return !EditorUtility.IsPersistent(owner);
+        }
+    }
+
+    // A removed data component has no instance, so it is held by its owner on the instance and the asset data component's EntityId.
+    internal class RemovedDataComponent : PrefabOverride
+    {
+        public GameObject containingInstanceGameObject { get; set; }
+        public EntityId assetDataComponent { get; set; }
+
+        public override void Apply(string prefabAssetPath, InteractionMode mode)
+        {
+            PrefabUtility.ApplyRemovedDataComponent(
+                containingInstanceGameObject,
+                assetDataComponent,
+                prefabAssetPath,
+                mode);
+        }
+
+        public override void Revert(InteractionMode mode)
+        {
+            PrefabUtility.RevertRemovedDataComponent(
+                containingInstanceGameObject,
+                assetDataComponent,
+                mode);
+        }
+
+        public override UnityObject GetAssetObject()
+        {
+            return PrefabUtility.GetCorrespondingObjectFromSource(containingInstanceGameObject);
+        }
+
+        internal override UnityObject GetObject()
+        {
+            return null;
+        }
+
+        // A Prefab further down the chain can lack the data component, when a nearer one has it as an added override.
+        internal static bool CanApplyTo(GameObject containingInstanceGameObject, UnityObject sourceObject, EntityId assetDataComponent)
+        {
+            var sourceGameObject = sourceObject as GameObject;
+            return sourceGameObject != null
+                && !EditorUtility.IsPersistent(containingInstanceGameObject)
+                && PrefabUtility.GetCorrespondingObjectFromSourceAtPath(containingInstanceGameObject, AssetDatabase.GetAssetPath(sourceGameObject)) == sourceGameObject
+                && PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(sourceGameObject)
+                && System.Array.IndexOf(PrefabUtility.GetDataComponents(sourceGameObject.GetEntityId()), DataComponentEntityId.Make(sourceGameObject.GetEntityId(), DataComponentEntityId.GetTypeId(assetDataComponent))) >= 0;
+        }
+
+        internal override void HandleApplyMenuItems(GenericMenu menu, GenericMenu.MenuFunction2 applyAction)
+        {
+            if (containingInstanceGameObject == null)
+                return;
+
+            PrefabUtility.HandleApplyMenuItems(
+                null,
+                containingInstanceGameObject,
+                (menuItemContent, sourceObject, instanceOrAssetObject) =>
+                {
+                    if (CanApplyTo(containingInstanceGameObject, sourceObject, assetDataComponent))
+                        menu.AddItem(menuItemContent, false, applyAction, AssetDatabase.GetAssetPath(sourceObject));
+                    else
+                        menu.AddDisabledItem(menuItemContent);
+                });
         }
     }
 

@@ -9,7 +9,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal class VariableField : VisualElement, INotifyValueChanged<string>
 {
     static readonly string s_UssClassName = "unity-variable-field";

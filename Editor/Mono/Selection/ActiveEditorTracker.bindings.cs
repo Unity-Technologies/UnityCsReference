@@ -40,6 +40,35 @@ namespace UnityEditor
                 => tracker != null ? tracker.m_Property.m_IntPtr : IntPtr.Zero;
         }
 
+        // Counts one view of a tracker until disposed; disposing it again does nothing. The only way a tracker gains or loses a view.
+        internal sealed class DisplayScope : IDisposable
+        {
+            ActiveEditorTracker m_Tracker;
+
+            [FreeFunction]
+            static extern void Internal_AddDisplay(
+                [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
+                ActiveEditorTracker self);
+            internal DisplayScope(ActiveEditorTracker tracker)
+            {
+                tracker.EnsureNativeAllocated();
+                Internal_AddDisplay(tracker);
+                m_Tracker = tracker;
+            }
+
+            [FreeFunction]
+            static extern void Internal_RemoveDisplay(
+                [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
+                ActiveEditorTracker self);
+            public void Dispose()
+            {
+                if (m_Tracker == null)
+                    return;
+                Internal_RemoveDisplay(m_Tracker);
+                m_Tracker = null;
+            }
+        }
+
         // Internal constructor that skips native allocation, for creating
         // temporary wrappers around borrowed native pointers.
         internal ActiveEditorTracker(IntPtr borrowedNativeHandle)
@@ -77,9 +106,9 @@ namespace UnityEditor
 
         [FreeFunction(IsThreadSafe = true)]
         static extern void Internal_Dispose(ref IntPtr nativeHandle);
-#pragma warning disable UA5000 // Releases the native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Releases the native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
         ~ActiveEditorTracker() { Internal_Dispose(ref m_Property.m_IntPtr); }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         [FreeFunction]
         static extern void Internal_Destroy(ref IntPtr nativeHandle);
@@ -138,7 +167,7 @@ namespace UnityEditor
             ActiveEditorTracker self,
             [NotNull] List<UnityObject> toBeLocked);
 
-        [FreeFunction]
+        [FreeFunction(ThrowsException = true)]
         static extern int Internal_GetVisible(
             [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
             ActiveEditorTracker self, int index);
@@ -148,7 +177,7 @@ namespace UnityEditor
             return Internal_GetVisible(this, index);
         }
 
-        [FreeFunction]
+        [FreeFunction(ThrowsException = true)]
         static extern void Internal_SetVisible(
             [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
             ActiveEditorTracker self, int index, int visible);
@@ -262,6 +291,30 @@ namespace UnityEditor
         }
 
         [FreeFunction]
+        static extern bool Internal_GetIsDisplayed(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
+            ActiveEditorTracker self);
+        // Whether an open DisplayScope counts a view of this tracker.
+        internal bool isDisplayed
+        {
+            get
+            {
+                EnsureNativeAllocated();
+                return Internal_GetIsDisplayed(this);
+            }
+        }
+
+        [FreeFunction("Internal_IsSharedTrackerDisplayed")]
+        internal static extern bool IsSharedTrackerDisplayed();
+
+        // Every window has released its view before a new domain starts, so a view still counted was leaked.
+        internal static void AssertNoSharedTrackerDisplays()
+        {
+            if (IsSharedTrackerDisplayed())
+                Debug.LogAssertion("A view of the shared tracker outlived the previous domain.");
+        }
+
+        [FreeFunction]
         static extern bool Internal_GetHasComponentsWhichCannotBeMultiEdited(
             [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
             ActiveEditorTracker self);
@@ -306,28 +359,6 @@ namespace UnityEditor
         {
             EnsureNativeAllocated();
             Internal_VerifyModifiedMonoBehaviours(this);
-        }
-
-        [FreeFunction]
-        static extern DataMode Internal_GetDataMode(
-            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
-            ActiveEditorTracker self);
-        [FreeFunction]
-        static extern void Internal_SetDataMode(
-            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
-            ActiveEditorTracker self, DataMode mode);
-        internal DataMode dataMode
-        {
-            get
-            {
-                EnsureNativeAllocated();
-                return Internal_GetDataMode(this);
-            }
-            set
-            {
-                EnsureNativeAllocated();
-                Internal_SetDataMode(this, value);
-            }
         }
 
         [Obsolete("Use Editor.CreateEditor instead")]

@@ -18,7 +18,6 @@ namespace Unity.UIToolkit.Editor
     // as an editable list (position + color + hex per row). Stops can bind their color or
     // position to a USS variable (see StopData); resolved values are always shown. Shared
     // between the UI Builder gradient popup and (later) the VisualElement inspector.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [MovedFrom("Unity.UI.Builder")]
     internal class BackgroundGradientStopsEditor : VisualElement
     {
@@ -52,7 +51,6 @@ namespace Unity.UIToolkit.Editor
 
         // A gradient stop plus the var() names bound to its color/position (null = unbound).
         // The stop always carries resolved values so the preview and handles can render.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal struct StopData
         {
             public BackgroundGradientStop stop;
@@ -144,30 +142,9 @@ namespace Unity.UIToolkit.Editor
             m_Stops.Clear();
             if (stops != null)
                 m_Stops.AddRange(stops);
-            SortStopsIfNeeded();
             m_ListView.RefreshItems();
             RefreshPreview();
             UpdateFooterButtons();
-        }
-
-        void SortStopsIfNeeded()
-        {
-            for (int i = 1; i < m_Stops.Count; ++i)
-            {
-                if (GetSortKey(m_Stops[i].stop) < GetSortKey(m_Stops[i - 1].stop))
-                {
-                    m_Stops.Sort((a, b) => GetSortKey(a.stop).CompareTo(GetSortKey(b.stop)));
-                    return;
-                }
-            }
-        }
-
-        float GetSortKey(in BackgroundGradientStop stop)
-        {
-            if (stop.positionIsPercent)
-                return stop.position;
-            var trackWidth = m_HandlesTrack.layout.width;
-            return trackWidth > 0 ? stop.position / trackWidth : stop.position;
         }
 
         // Re-inserts the stop at its sorted position and returns the new index. The matching
@@ -176,12 +153,12 @@ namespace Unity.UIToolkit.Editor
         int MoveStopToSortedIndex(int index)
         {
             var data = m_Stops[index];
-            var key = GetSortKey(data.stop);
+            if (data.stop.positionIsAuto)
+                return index;
+            var key = GetStopFraction(data.stop, m_HandlesTrack.layout.width);
             m_Stops.RemoveAt(index);
 
-            var newIndex = 0;
-            while (newIndex < m_Stops.Count && GetSortKey(m_Stops[newIndex].stop) <= key)
-                ++newIndex;
+            var newIndex = GetInsertIndex(key);
             m_Stops.Insert(newIndex, data);
 
             if (newIndex != index && index < m_Handles.Count)
@@ -214,9 +191,13 @@ namespace Unity.UIToolkit.Editor
         {
             if (index < 0 || index >= m_Stops.Count)
                 return;
+            var previous = m_Stops[index].stop;
             m_Stops[index] = data;
 
-            var newIndex = MoveStopToSortedIndex(index);
+            // Only a position edit moves the stop, so stops authored out of order keep their order.
+            bool positionChanged = previous.position != data.stop.position || previous.positionIsPercent != data.stop.positionIsPercent
+                || previous.positionIsAuto != data.stop.positionIsAuto;
+            var newIndex = positionChanged ? MoveStopToSortedIndex(index) : index;
             if (newIndex != index)
             {
                 m_ListView.RefreshItems();
@@ -256,18 +237,22 @@ namespace Unity.UIToolkit.Editor
         void OnItemIndexChanged(int previousIndex, int newIndex)
         {
             // ListView reordered m_Stops in place. Colors (and their var bindings) follow the
-            // drag; positions (and theirs) stay in ascending visual order — the dropped stop
+            // drag; positions (and theirs) stay in their pre-drag order — the dropped stop
             // takes the position of the slot it landed in, and shifted stops carry their old
             // positions with them.
-            var slots = new (float position, bool isPercent, string varName)[m_Stops.Count];
+            var preDrag = new List<StopData>(m_Stops);
+            var moved = preDrag[newIndex];
+            preDrag.RemoveAt(newIndex);
+            preDrag.Insert(previousIndex, moved);
+            var slots = new (float position, bool isPercent, bool isAuto, string varName)[m_Stops.Count];
             for (int i = 0; i < m_Stops.Count; ++i)
-                slots[i] = (m_Stops[i].stop.position, m_Stops[i].stop.positionIsPercent, m_Stops[i].positionVarName);
-            Array.Sort(slots, (a, b) => a.position.CompareTo(b.position));
+                slots[i] = (preDrag[i].stop.position, preDrag[i].stop.positionIsPercent, preDrag[i].stop.positionIsAuto, preDrag[i].positionVarName);
             for (int i = 0; i < m_Stops.Count; ++i)
             {
                 var data = m_Stops[i];
                 data.stop.position = slots[i].position;
                 data.stop.positionIsPercent = slots[i].isPercent;
+                data.stop.positionIsAuto = slots[i].isAuto;
                 data.positionVarName = slots[i].varName;
                 m_Stops[i] = data;
             }
@@ -336,14 +321,50 @@ namespace Unity.UIToolkit.Editor
                 return;
 
             var usable = Mathf.Max(0, trackWidth - k_HandleWidth);
+            var fractions = GetDisplayFractions();
             for (int i = 0; i < m_Handles.Count; ++i)
-                m_Handles[i].style.left = GetStopFraction(m_Stops[i].stop, trackWidth) * usable;
+                m_Handles[i].style.left = Mathf.Clamp01(fractions[i]) * usable;
+        }
+
+        // Where each stop is drawn, placed as the renderer does (BackgroundGradientBaker.ResolvePixelStops):
+        // a stop before its predecessor moves up to it, and auto stops spread between their neighbors.
+        // Never decreasing, so it is also the order new and edited stops are inserted in.
+        float[] GetDisplayFractions()
+        {
+            var trackWidth = m_HandlesTrack.layout.width;
+            var fractions = new float[m_Stops.Count];
+            int lastResolved = -1;
+            for (int i = 0; i < m_Stops.Count; ++i)
+            {
+                var stop = m_Stops[i].stop;
+                if (stop.positionIsAuto && i > 0 && i < m_Stops.Count - 1)
+                    continue;
+
+                float fraction = stop.positionIsAuto ? (i == 0 ? 0f : 1f) : GetStopFraction(stop, trackWidth);
+                if (lastResolved >= 0)
+                    fraction = Mathf.Max(fraction, fractions[lastResolved]);
+                for (int j = lastResolved + 1; j < i; ++j)
+                    fractions[j] = Mathf.Lerp(fractions[lastResolved], fraction, (float)(j - lastResolved) / (i - lastResolved));
+                fractions[i] = fraction;
+                lastResolved = i;
+            }
+            return fractions;
+        }
+
+        int GetInsertIndex(float fraction)
+        {
+            var fractions = GetDisplayFractions();
+            var index = 0;
+            while (index < fractions.Length && fractions[index] <= fraction)
+                ++index;
+            return index;
         }
 
         static float GetStopFraction(in BackgroundGradientStop stop, float trackWidth)
         {
-            var fraction = stop.positionIsPercent ? stop.position : stop.position / trackWidth;
-            return Mathf.Clamp01(fraction);
+            if (stop.positionIsPercent)
+                return stop.position;
+            return trackWidth > 0f ? stop.position / trackWidth : 0f;
         }
 
         void UpdateHandleSelection()
@@ -370,6 +391,7 @@ namespace Unity.UIToolkit.Editor
                 data.stop.position = Mathf.Round(fraction * 100f) / 100f;
             else
                 data.stop.position = Mathf.Round(fraction * m_HandlesTrack.layout.width);
+            data.stop.positionIsAuto = false;
             // A manual drag overrides whatever variable drove the position.
             data.positionVarName = null;
             m_Stops[index] = data;
@@ -397,9 +419,7 @@ namespace Unity.UIToolkit.Editor
             fraction = Mathf.Round(fraction * 100f) / 100f;
 
             var newStop = new StopData { stop = BackgroundGradientStop.Percent(SampleColor(fraction), fraction) };
-            var newIndex = 0;
-            while (newIndex < m_Stops.Count && GetSortKey(m_Stops[newIndex].stop) <= fraction)
-                ++newIndex;
+            var newIndex = GetInsertIndex(fraction);
             m_Stops.Insert(newIndex, newStop);
 
             m_ListView.RefreshItems();
@@ -414,15 +434,16 @@ namespace Unity.UIToolkit.Editor
             if (m_Stops.Count == 0)
                 return Color.white;
 
-            if (fraction <= GetSortKey(m_Stops[0].stop))
+            var fractions = GetDisplayFractions();
+            if (fraction <= fractions[0])
                 return m_Stops[0].stop.color;
 
             for (int i = 1; i < m_Stops.Count; ++i)
             {
-                var nextKey = GetSortKey(m_Stops[i].stop);
+                var nextKey = fractions[i];
                 if (fraction <= nextKey)
                 {
-                    var previousKey = GetSortKey(m_Stops[i - 1].stop);
+                    var previousKey = fractions[i - 1];
                     var t = nextKey > previousKey ? (fraction - previousKey) / (nextKey - previousKey) : 0f;
                     return Color.Lerp(m_Stops[i - 1].stop.color, m_Stops[i].stop.color, t);
                 }
@@ -540,7 +561,7 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        sealed class StopRow : VisualElement
+        internal sealed class StopRow : VisualElement
         {
             readonly FieldAffordanceElement m_PositionAffordance;
             readonly FloatField m_PositionField;
@@ -645,12 +666,27 @@ namespace Unity.UIToolkit.Editor
 
             internal void BindColorVariable(string variableName)
             {
-                if (!TryParseVarName(variableName, out var varName))
+                if (!TryParseVarName(variableName, out var varName) || !CanBindColorVariable(varName))
+                {
+                    UpdateHexDisplay();
                     return;
+                }
                 m_Data.colorVarName = varName;
                 ApplyResolvedVariableColor();
                 UpdateHexDisplay();
                 stopChanged?.Invoke(index, m_Data);
+            }
+
+            // An undefined variable may still be bound (it stays editable, like inspector fields),
+            // but a defined one must hold a color: anything else is dropped from the color-stop
+            // list at style resolution, which removes the stop from the gradient.
+            bool CanBindColorVariable(string varName)
+            {
+                if (resolveVariableSheet?.Invoke(varName) == null || resolveVariableColor?.Invoke(varName) != null)
+                    return true;
+
+                Debug.LogWarning($"Can't bind var({varName}) to a gradient color stop: the variable doesn't resolve to a color.");
+                return false;
             }
 
             // Mirrors the variable's current color into the stop so the swatch and preview
@@ -709,7 +745,7 @@ namespace Unity.UIToolkit.Editor
                 {
                     var stop = data.stop;
                     m_PositionField.SetValueWithoutNotify(stop.positionIsPercent ? stop.position * 100f : stop.position);
-                    m_UnitLabel.text = stop.positionIsPercent ? "%" : "px";
+                    m_UnitLabel.text = stop.positionIsAuto ? "auto" : stop.positionIsPercent ? "%" : "px";
                     m_ColorField.SetValueWithoutNotify(stop.color);
                     UpdatePositionVarDisplay();
                     UpdateHexDisplay();
@@ -763,6 +799,7 @@ namespace Unity.UIToolkit.Editor
                 {
                     m_Data.stop.position = evt.newValue;
                 }
+                m_Data.stop.positionIsAuto = false;
                 m_Data.positionVarName = null;
                 UpdatePositionVarDisplay();
                 stopChanged?.Invoke(index, m_Data);
@@ -786,6 +823,11 @@ namespace Unity.UIToolkit.Editor
 
                 if (TryParseVarName(evt.newValue, out var varName))
                 {
+                    if (!CanBindColorVariable(varName))
+                    {
+                        UpdateHexDisplay();
+                        return;
+                    }
                     m_Data.colorVarName = varName;
                     ApplyResolvedVariableColor();
                     UpdateHexDisplay();

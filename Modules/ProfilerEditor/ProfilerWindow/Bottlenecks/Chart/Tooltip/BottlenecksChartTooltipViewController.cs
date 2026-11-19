@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
@@ -96,12 +97,12 @@ namespace Unity.Profiling.Editor.UI
                 return $"{durationName}: {durationFormatted}";
         }
 
-        static string FormatTimeNsToMs(float timeNs)
+        internal static string FormatTimeNsToMs(float timeNs)
         {
             if (IsInvalidDuration(timeNs))
                 return string.Format($"--ms");
 
-            return string.Format($"{timeNs * 1.0e-6f:F3}ms");
+            return string.Format(CultureInfo.InvariantCulture, "{0:F3}ms", timeNs * 1.0e-6f);
         }
     }
 }

@@ -84,33 +84,34 @@ namespace UnityEditor
         [AutoStaticsCleanupOnCodeReload]
         static readonly Dictionary<int, DialogEventInfo> s_Open = new Dictionary<int, DialogEventInfo>();
 
-        /// <summary>Called from the native `DialogScope` constructors (Windows, macOS, and Linux) before the dialog is shown. Returns the ID to pass to `Internal_DialogDismissed`.</summary>
+        /// <summary>Called from the native `ModalDialogTracker` before a message box is shown, with its `OpenDialogRegistry` id.</summary>
         [RequiredByNativeCode]
-        internal static int Internal_DialogWillShow(string title, string message, string[] buttonLabels, int level)
+        internal static void Internal_DialogWillShow(int id, string title, string message, string[] buttonLabels, int level)
         {
-            return RaiseWillShow(DialogSource.NativeMessageBox, title, message, buttonLabels, (DialogType?)level);
+            RaiseWillShow(id, DialogSource.NativeMessageBox, title, message, buttonLabels, (DialogType?)level);
         }
 
-        /// <summary>Called from the native `DialogScope` destructors (Windows/OSX/Linux).</summary>
+        /// <summary>Called from the native `ModalDialogTracker` once a message box closes.</summary>
         [RequiredByNativeCode]
         internal static void Internal_DialogDismissed(int id)
         {
             RaiseDismissed(id);
         }
 
-        /// <summary>Called directly from `EditorWindow.MakeModal` before the modal window is shown. No native dialog-notification bridge is needed, unlike the native message box path — it still asks native for the next dialog event id (see <see cref="GetNextDialogEventId"/>).</summary>
+        /// <summary>Called directly from `EditorWindow.MakeModal` before the modal window is shown. Registers it with `OpenDialogRegistry` and raises the event under that id.</summary>
         internal static int RaiseManagedWillShow(string title)
         {
-            return RaiseWillShow(DialogSource.ManagedCustomWindow, title, null, null, null);
+            return RaiseWillShow(AddToOpenDialogRegistry(title), DialogSource.ManagedCustomWindow, title, null, null, null);
         }
 
-        /// <summary>Called directly from `EditorWindow.MakeModal`. No native bridge is needed.</summary>
+        /// <summary>Called directly from `EditorWindow.MakeModal`.</summary>
         internal static void RaiseManagedDismissed(int id)
         {
+            RemoveFromOpenDialogRegistry(id);
             RaiseDismissed(id);
         }
 
-        static int RaiseWillShow(DialogSource source, string title, string message, string[] buttonLabels, DialogType? level)
+        static int RaiseWillShow(int id, DialogSource source, string title, string message, string[] buttonLabels, DialogType? level)
         {
             // Defensive copy: buttonLabels may come from native code that could reuse the array,
             // and the wrapper is read-only so no dialogWillShow/dialogDismissed subscriber can mutate
@@ -120,9 +121,6 @@ namespace UnityEditor
             DialogEventInfo info;
             lock (s_Lock)
             {
-                // Native-backed (see EditorDialogEvents.bindings.h): stays unique for the whole
-                // editor session, not just since the last domain reload.
-                var id = GetNextDialogEventId();
                 info = new DialogEventInfo(id, source, title, message, buttonLabelsSnapshot, level, DateTime.UtcNow);
                 s_Open[id] = info;
             }

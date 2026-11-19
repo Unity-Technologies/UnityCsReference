@@ -13,7 +13,7 @@ namespace UnityEngine.U2D
 {
 
 
-    [NativeHeader("Modules/U2DRuntime/Private/Analysis/Profiler2D.h")]
+    [NativeHeader("U2DRuntime/Analysis/Profiler2D.h")]
     internal static partial class Profiler2D
     {
 

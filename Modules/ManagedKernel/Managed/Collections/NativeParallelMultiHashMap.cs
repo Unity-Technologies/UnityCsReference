@@ -33,7 +33,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>The entry index.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetEntryIndex() => EntryIndex;
+        public readonly int GetEntryIndex() => EntryIndex;
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ namespace Unity.Collections
         /// <param name="item">Outputs the associated value represented by the iterator.</param>
         /// <param name="it">Outputs an iterator.</param>
         /// <returns>True if the key was present.</returns>
-        public bool TryGetFirstValue(TKey key, out TValue item, out NativeParallelMultiHashMapIterator<TKey> it)
+        public readonly bool TryGetFirstValue(TKey key, out TValue item, out NativeParallelMultiHashMapIterator<TKey> it)
         {
             CheckRead();
             return m_MultiHashMapData.TryGetFirstValue(key, out item, out it);
@@ -204,7 +204,7 @@ namespace Unity.Collections
         /// <param name="item">Outputs the next value.</param>
         /// <param name="it">A reference to the iterator to advance.</param>
         /// <returns>True if the key was present and had another value.</returns>
-        public bool TryGetNextValue(out TValue item, ref NativeParallelMultiHashMapIterator<TKey> it)
+        public readonly bool TryGetNextValue(out TValue item, ref NativeParallelMultiHashMapIterator<TKey> it)
         {
             CheckRead();
             return m_MultiHashMapData.TryGetNextValue(out item, ref it);
@@ -215,7 +215,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="key">The key to look up.</param>
         /// <returns>True if the key was present in this hash map.</returns>
-        public bool ContainsKey(TKey key)
+        public readonly bool ContainsKey(TKey key)
         {
             return TryGetFirstValue(key, out var temp0, out var temp1);
         }
@@ -225,7 +225,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="key">The key to look up.</param>
         /// <returns>The number of values associated with the key. Returns 0 if the key was not present.</returns>
-        public int CountValuesForKey(TKey key)
+        public readonly int CountValuesForKey(TKey key)
         {
             if (!TryGetFirstValue(key, out var value, out var iterator))
             {
@@ -309,7 +309,7 @@ namespace Unity.Collections
         /// Use `GetUniqueKeyArray` of <see cref="Unity.Collections.NativeParallelHashMapExtensions"/> instead if you only want one occurrence of each key.</remarks>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array with a copy of all the keys (in no particular order).</returns>
-        public NativeArray<TKey> GetKeyArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<TKey> GetKeyArray(AllocatorManager.AllocatorHandle allocator)
         {
             CheckRead();
             return m_MultiHashMapData.GetKeyArray(allocator);
@@ -322,7 +322,7 @@ namespace Unity.Collections
         /// you can use <see cref="Unity.Collections.NativeParallelHashMapExtensions.Unique{T}"/> to remove duplicate values.</remarks>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>An array with a copy of all the values (in no particular order).</returns>
-        public NativeArray<TValue> GetValueArray(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeArray<TValue> GetValueArray(AllocatorManager.AllocatorHandle allocator)
         {
             CheckRead();
             return m_MultiHashMapData.GetValueArray(allocator);
@@ -335,7 +335,7 @@ namespace Unity.Collections
         /// </remarks>
         /// <param name="allocator">The allocator to use.</param>
         /// <returns>A NativeKeyValueArrays with a copy of all the keys and values (in no particular order).</returns>
-        public NativeKeyValueArrays<TKey, TValue> GetKeyValueArrays(AllocatorManager.AllocatorHandle allocator)
+        public readonly NativeKeyValueArrays<TKey, TValue> GetKeyValueArrays(AllocatorManager.AllocatorHandle allocator)
         {
             CheckRead();
             return m_MultiHashMapData.GetKeyValueArrays(allocator);
@@ -345,7 +345,7 @@ namespace Unity.Collections
         /// Returns a parallel writer for this hash map.
         /// </summary>
         /// <returns>A parallel writer for this hash map.</returns>
-        public ParallelWriter AsParallelWriter()
+        public readonly ParallelWriter AsParallelWriter()
         {
             ParallelWriter writer;
             writer.m_Writer = m_MultiHashMapData.AsParallelWriter();
@@ -375,7 +375,7 @@ namespace Unity.Collections
             /// <remarks>In a job, each thread gets its own copy of the ParallelWriter struct, and the job system assigns
             /// each copy the index of its thread.</remarks>
             /// <value>The index of the current thread.</value>
-            public int m_ThreadIndex => m_Writer.m_ThreadIndex;
+            public readonly int m_ThreadIndex => m_Writer.m_ThreadIndex;
 
             /// <summary>
             /// Returns the number of key-value pairs that fit in the current allocation.
@@ -453,7 +453,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next value of the key.
@@ -481,7 +481,7 @@ namespace Unity.Collections
             /// The current value.
             /// </summary>
             /// <value>The current value.</value>
-            public TValue Current
+            public readonly TValue Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
@@ -490,13 +490,13 @@ namespace Unity.Collections
                 }
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
 
             /// <summary>
             /// Returns this enumerator.
             /// </summary>
             /// <returns>This enumerator.</returns>
-            public Enumerator GetEnumerator() { return this; }
+            public readonly Enumerator GetEnumerator() { return this; }
         }
 
         /// <summary>
@@ -521,7 +521,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
+        readonly IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -531,7 +531,7 @@ namespace Unity.Collections
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -554,7 +554,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next key-value pair.
@@ -590,7 +590,7 @@ namespace Unity.Collections
                 }
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
@@ -785,7 +785,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
+            readonly IEnumerator<KeyValue<TKey, TValue>> IEnumerable<KeyValue<TKey, TValue>>.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -795,7 +795,7 @@ namespace Unity.Collections
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 throw new NotImplementedException();
             }

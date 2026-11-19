@@ -8,7 +8,6 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class VisualElementExtensions
     {
         internal static string GetUxmlFullTypeName(this VisualElement element)

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using Unity.Multiplayer.PlayMode.Editor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -14,6 +15,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
     {
         internal AssetImportEvents AssetImportEvents { get; }
         internal SceneEvents SceneEvents { get; }
+
+        // Compilation usually ends in a domain reload, which creates a new MainEditorSystems and loses the queue.
+        // The pending scenes are therefore kept in SessionState and restored in Listen.
+        const string k_PendingSceneReloadsKey = "MPPM.MainEditorSystems.PendingSceneReloads";
+
+        readonly SceneReloadQueue m_SceneReloadQueue = new();
 
         internal MainEditorSystems()
         {
@@ -104,13 +111,85 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 }
             };
 
-            EditorSceneManager.sceneSaved += scene =>
+            EditorSceneManager.sceneSaved += scene => QueueSceneReload(scene.path);
+
+            // A scene can also be changed on disk without the main editor saving it, for example when an external
+            // AI agent rewrites the scene file. sceneSaved is not raised in that case, so the clones would keep showing
+            // the old scene. Any loaded scene that gets reimported is sent to the clones the same way as a save.
+            AssetDatabaseCallbacks.OnImportedAssetsCallback += importedAssets =>
             {
-                if (!EditorApplication.isPlaying)
+                // Auto refresh also imports during Play Mode and while compiling. The flush waits for both to end.
+                var loadedScenes = new HashSet<string>(SceneHierarchy.FromCurrentEditorSceneManager().LoadedScenes, StringComparer.Ordinal);
+                foreach (var scenePath in SceneReloadQueue.GetImportedLoadedScenes(importedAssets, loadedScenes.Contains))
                 {
-                    EditorApplication.delayCall += () => { SceneEvents.InvokeSceneSaved(scene.path); };
+                    QueueSceneReload(scenePath);
                 }
             };
+
+            // A flush deferred by Play Mode is retried when Play Mode ends. EditorApplication is static, but a domain
+            // reload drops this handler together with this instance, and Listen subscribes it again for the new one.
+            // Compilation is handled in FlushSceneReloads instead: CompilationPipeline.compilationFinished is cleaned up
+            // on code reload, so subscribing to it from here is not allowed (UAL0015).
+            EditorApplication.playModeStateChanged += state =>
+            {
+                if (state == PlayModeStateChange.EnteredEditMode)
+                {
+                    ArmFlush();
+                }
+            };
+
+            // Pending reloads that survived a domain reload.
+            m_SceneReloadQueue.Restore(SessionState.GetString(k_PendingSceneReloadsKey, string.Empty));
+            if (m_SceneReloadQueue.PendingCount > 0)
+            {
+                ArmFlush();
+            }
+        }
+
+        void QueueSceneReload(string scenePath)
+        {
+            if (m_SceneReloadQueue.Enqueue(scenePath))
+            {
+                SessionState.SetString(k_PendingSceneReloadsKey, m_SceneReloadQueue.Serialize());
+                ArmFlush();
+            }
+        }
+
+        // Re-armed on every enqueue: if another delayCall handler throws earlier in the same tick, the flush
+        // is dropped, and the next enqueue has to schedule it again. Unsubscribing first keeps it to one call.
+        void ArmFlush()
+        {
+            EditorApplication.delayCall -= FlushSceneReloads;
+            EditorApplication.delayCall += FlushSceneReloads;
+        }
+
+        void FlushSceneReloads()
+        {
+            // While deferred the queue is kept. playModeStateChanged arms the flush again after Play Mode.
+            var loadedScenes = new HashSet<string>(SceneHierarchy.FromCurrentEditorSceneManager().LoadedScenes, StringComparer.Ordinal);
+            if (!m_SceneReloadQueue.TryFlush(EditorApplication.isPlayingOrWillChangePlaymode, EditorApplication.isCompiling, loadedScenes.Contains, out var scenes))
+            {
+                // While compiling, check again on the next editor update. If the compilation ends in a domain reload,
+                // the pending scenes are restored from SessionState in Listen instead.
+                if (EditorApplication.isCompiling && !EditorApplication.isPlayingOrWillChangePlaymode && m_SceneReloadQueue.PendingCount > 0)
+                {
+                    ArmFlush();
+                }
+
+                // Everything pending may have been dropped because it is no longer loaded.
+                if (m_SceneReloadQueue.PendingCount == 0)
+                {
+                    SessionState.EraseString(k_PendingSceneReloadsKey);
+                }
+
+                return;
+            }
+
+            SessionState.EraseString(k_PendingSceneReloadsKey);
+            foreach (var scenePath in scenes)
+            {
+                SceneEvents.InvokeSceneSaved(scenePath);
+            }
         }
     }
 }

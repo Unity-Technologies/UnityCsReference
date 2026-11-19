@@ -53,7 +53,7 @@ namespace Unity.Collections
         /// <typeparam name="T">The item type.</typeparam>
         /// <param name="array">The array.</param>
         /// <param name="item">The item to remove from the array.</param>
-        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static bool RemoveFromArray<T>(ref T[] array, T item)
         {
             var removeIndex = Array.IndexOf(array, item);
@@ -70,7 +70,7 @@ namespace Unity.Collections
         /// <typeparam name="T">The item type.</typeparam>
         /// <param name="array">The array.</param>
         /// <param name="index">The index to remove from the array.</param>
-        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static void RemoveFromArray<T>(ref T[] array, int index)
         {
             if (index < 0 || index >= array.Length)
@@ -89,7 +89,7 @@ namespace Unity.Collections
         /// </summary>
         /// <typeparam name="T">The item type.</typeparam>
         /// <param name="list">The list.</param>
-        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.UIElementsModule")]
         internal static T Min<T>([DisallowNull] this IReadOnlyList<T> list, IComparer<T> comparer = null)
         {
             if (list.Count == 0)
@@ -111,7 +111,7 @@ namespace Unity.Collections
         /// </summary>
         /// <typeparam name="T">The item type.</typeparam>
         /// <param name="list">The list.</param>
-        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule", "UnityEditor.ProjectAuditorModule")]
+        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.UIElementsModule", "UnityEditor.ProjectAuditorModule")]
         internal static T Max<T>([DisallowNull] this IReadOnlyList<T> list, IComparer<T> comparer = null)
         {
             if (list.Count == 0)

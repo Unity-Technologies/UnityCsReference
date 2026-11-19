@@ -260,21 +260,164 @@ namespace UnityEngine.UIElements
             public bool IsValid => version == bindingData.version && binding == bindingData.binding;
         }
 
+        sealed class ReferenceComparer : IEqualityComparer<object>
+        {
+            [NoAutoStaticsCleanup]
+            public static readonly ReferenceComparer instance = new ReferenceComparer();
+
+            bool IEqualityComparer<object>.Equals(object x, object y) => ReferenceEquals(x, y);
+            int IEqualityComparer<object>.GetHashCode(object obj) => RuntimeHelpers.GetHashCode(obj);
+        }
+
+        sealed class RangeStartComparer : IComparer<RangeInt>
+        {
+            [NoAutoStaticsCleanup]
+            public static readonly RangeStartComparer instance = new RangeStartComparer();
+
+            public int Compare(RangeInt x, RangeInt y) => x.start.CompareTo(y.start);
+        }
+
         internal class SourceInfo
         {
             private HashSet<PropertyPath> m_DetectedChanges;
+            private HashSet<object> m_ChangedItems;
+            private List<RangeInt> m_ReplacedRanges;
+            private bool m_AreReplacedRangesMerged;
+            private object m_Source;
 
             // The tracked source, null while the info is pooled.
-            public object source { get; set; }
+            public object source
+            {
+                get => m_Source;
+                set
+                {
+                    m_Source = value;
+                    notifiesPropertyChanges = value is INotifyBindablePropertyChanged;
+                    notifiesCollectionChanges = value is INotifyBindableCollectionChanged;
+                }
+            }
+
+            public bool notifiesPropertyChanges { get; private set; }
+            public bool notifiesCollectionChanges { get; private set; }
             public long lastVersion { get; set; }
             public int refCount { get; set; }
             public HashSet<PropertyPath> detectedChanges => m_DetectedChanges ??= new HashSet<PropertyPath>();
             public HashSet<PropertyPath> detectedChangesNoAlloc => m_DetectedChanges;
 
+            // True when firstChangedIndex, changedItems or the replaced ranges hold changes.
+            public bool hasCollectionChanges { get; private set; }
+
+            // Items were inserted or removed from this index, so every path starting at a later index changed.
+            public int firstChangedIndex { get; private set; } = int.MaxValue;
+
+            // Items of this collection whose content changed, compared by reference.
+            public HashSet<object> changedItemsNoAlloc => m_ChangedItems;
+
             // Per binding update state, only valid when the stamp matches the stamp of the current update.
             public int versionStamp { get; set; }
             public long versionAtUpdateStart { get; set; }
             public int changesStamp { get; set; }
+
+            public void AddIndexChange(int index)
+            {
+                if (index < firstChangedIndex)
+                    firstChangedIndex = index;
+                hasCollectionChanges = true;
+            }
+
+            public void AddChangedItem(object item)
+            {
+                (m_ChangedItems ??= new HashSet<object>(ReferenceComparer.instance)).Add(item);
+                hasCollectionChanges = true;
+            }
+
+            public void AddReplacedRange(int index, int count)
+            {
+                if (count <= 0)
+                    return;
+
+                hasCollectionChanges = true;
+                m_ReplacedRanges ??= new List<RangeInt>();
+
+                var last = m_ReplacedRanges.Count - 1;
+                if (last < 0)
+                {
+                    m_AreReplacedRangesMerged = true;
+                    m_ReplacedRanges.Add(new RangeInt(index, count));
+                    return;
+                }
+
+                // While the ranges arrive in order, they stay sorted and merged without sorting them.
+                var previous = m_ReplacedRanges[last];
+                if (m_AreReplacedRangesMerged && index >= previous.start && index <= previous.end)
+                {
+                    var end = Math.Max(previous.end, index + count);
+                    m_ReplacedRanges[last] = new RangeInt(previous.start, end - previous.start);
+                    return;
+                }
+
+                if (index < previous.start)
+                    m_AreReplacedRangesMerged = false;
+                m_ReplacedRanges.Add(new RangeInt(index, count));
+            }
+
+            public bool IsInReplacedRange(int index)
+            {
+                if (null == m_ReplacedRanges || m_ReplacedRanges.Count == 0)
+                    return false;
+
+                if (!m_AreReplacedRangesMerged)
+                    MergeReplacedRanges();
+
+                // Finds the last range that starts at or before the index.
+                var low = 0;
+                var high = m_ReplacedRanges.Count - 1;
+                while (low <= high)
+                {
+                    var middle = low + ((high - low) >> 1);
+                    if (m_ReplacedRanges[middle].start <= index)
+                        low = middle + 1;
+                    else
+                        high = middle - 1;
+                }
+
+                return high >= 0 && index < m_ReplacedRanges[high].end;
+            }
+
+            void MergeReplacedRanges()
+            {
+                m_ReplacedRanges.Sort(RangeStartComparer.instance);
+
+                var mergedCount = 0;
+                for (var i = 0; i < m_ReplacedRanges.Count; ++i)
+                {
+                    var range = m_ReplacedRanges[i];
+                    if (mergedCount > 0 && range.start <= m_ReplacedRanges[mergedCount - 1].end)
+                    {
+                        var previous = m_ReplacedRanges[mergedCount - 1];
+                        var end = Math.Max(previous.end, range.end);
+                        m_ReplacedRanges[mergedCount - 1] = new RangeInt(previous.start, end - previous.start);
+                    }
+                    else
+                    {
+                        m_ReplacedRanges[mergedCount++] = range;
+                    }
+                }
+
+                m_ReplacedRanges.RemoveRange(mergedCount, m_ReplacedRanges.Count - mergedCount);
+                m_AreReplacedRangesMerged = true;
+            }
+
+            public void ClearChanges()
+            {
+                m_DetectedChanges?.Clear();
+                if (!hasCollectionChanges)
+                    return;
+                firstChangedIndex = int.MaxValue;
+                m_ChangedItems?.Clear();
+                m_ReplacedRanges?.Clear();
+                hasCollectionChanges = false;
+            }
         }
 
         [NoAutoStaticsCleanup]
@@ -509,7 +652,7 @@ namespace UnityEngine.UIElements
                 info.source = null;
                 info.lastVersion = long.MinValue;
                 info.refCount = 0;
-                info.detectedChangesNoAlloc?.Clear();
+                info.ClearChanges();
                 m_SourceInfosPool.Add(info);
             }
 
@@ -566,9 +709,11 @@ namespace UnityEngine.UIElements
 
             readonly Dictionary<object, SourceInfo> m_SourceInfos;
             private readonly HashSet<object> m_SourcesToRemove;
+            private readonly List<object> m_ReleasedSources = new List<object>();
 
             readonly InvalidateDataSourcesTraversal m_InvalidateResolvedDataSources;
             readonly EventHandler<BindablePropertyChangedEventArgs> m_Handler;
+            readonly EventHandler<BindableCollectionChangedEventArgs> m_CollectionHandler;
             readonly EventCallback<PropertyChangedEvent, VisualElement> m_VisualElementHandler;
 
             private class ObjectComparer : IEqualityComparer<object>
@@ -594,6 +739,7 @@ namespace UnityEngine.UIElements
 
                 m_InvalidateResolvedDataSources = new InvalidateDataSourcesTraversal(this);
                 m_Handler = TrackPropertyChanges;
+                m_CollectionHandler = TrackCollectionChanges;
                 m_VisualElementHandler = OnVisualElementPropertyChanged;
             }
 
@@ -624,27 +770,41 @@ namespace UnityEngine.UIElements
                 if (null == dataSource)
                     return;
 
-                // If the data source was scheduled to be removed, then the callbacks have already
-                // been removed, so we should force them to be added.
-                var shouldRegisterChangeTracking = m_SourcesToRemove.Remove(dataSource);
+                // A data source scheduled to be removed is still subscribed to.
+                m_SourcesToRemove.Remove(dataSource);
 
                 if (!m_SourceInfos.TryGetValue(dataSource, out var info))
                 {
                     m_SourceInfos[dataSource] = info = GetPooledSourceInfo();
                     info.source = dataSource;
-                    shouldRegisterChangeTracking = true;
-                }
-
-                if (shouldRegisterChangeTracking)
-                {
-                    if (dataSource is INotifyBindablePropertyChanged notifier)
-                        notifier.propertyChanged += m_Handler;
-
-                    if (dataSource is VisualElement element)
-                        element.RegisterCallback(m_VisualElementHandler, element);
+                    Subscribe(dataSource);
                 }
 
                 ++info.refCount;
+            }
+
+            void Subscribe(object dataSource)
+            {
+                if (dataSource is INotifyBindablePropertyChanged notifier)
+                    notifier.propertyChanged += m_Handler;
+
+                if (dataSource is INotifyBindableCollectionChanged collectionNotifier)
+                    collectionNotifier.collectionChanged += m_CollectionHandler;
+
+                if (dataSource is VisualElement element)
+                    element.RegisterCallback(m_VisualElementHandler, element);
+            }
+
+            void Unsubscribe(object dataSource)
+            {
+                if (dataSource is INotifyBindablePropertyChanged notifier)
+                    notifier.propertyChanged -= m_Handler;
+
+                if (dataSource is INotifyBindableCollectionChanged collectionNotifier)
+                    collectionNotifier.collectionChanged -= m_CollectionHandler;
+
+                if (dataSource is VisualElement element)
+                    element.UnregisterCallback(m_VisualElementHandler);
             }
 
             private void OnVisualElementPropertyChanged(PropertyChangedEvent evt, VisualElement element)
@@ -661,16 +821,12 @@ namespace UnityEngine.UIElements
                     throw new InvalidOperationException("Trying to release a data source that isn't tracked. This is an internal bug. Please report using `Help > Report a Bug...`");
 
 
+                // The data source stays subscribed to until the end of the update, so that a binding that uses it again
+                // before then doesn't subscribe again, for example when its element is removed and added back.
                 if (info.refCount == 1)
                 {
                     info.refCount = 0;
                     m_SourcesToRemove.Add(dataSource);
-
-                    if (dataSource is INotifyBindablePropertyChanged notifier)
-                        notifier.propertyChanged -= m_Handler;
-
-                    if (dataSource is VisualElement element)
-                        element.UnregisterCallback(m_VisualElementHandler);
                 }
                 else
                 {
@@ -837,7 +993,16 @@ namespace UnityEngine.UIElements
             }
 
             private void TrackPropertyChanges(object sender, BindablePropertyChangedEventArgs args)
-                => TrackPropertyChanges(sender, args.propertyName);
+            {
+                if (args.changedItem == null)
+                {
+                    TrackPropertyChanges(sender, args.propertyName);
+                    return;
+                }
+
+                if (m_SourceInfos.TryGetValue(sender, out var info))
+                    info.AddChangedItem(args.changedItem);
+            }
 
             private void TrackPropertyChanges(object sender, PropertyPath propertyPath)
             {
@@ -846,6 +1011,34 @@ namespace UnityEngine.UIElements
 
                 var list = info.detectedChanges;
                 list.Add(propertyPath);
+            }
+
+            private void TrackIndexChanges(object sender, int firstChangedIndex)
+            {
+                if (m_SourceInfos.TryGetValue(sender, out var info))
+                    info.AddIndexChange(firstChangedIndex);
+            }
+
+            private void TrackCollectionChanges(object sender, BindableCollectionChangedEventArgs args)
+            {
+                switch (args.changeType)
+                {
+                    // Inserting or removing items changes every item from that index onward.
+                    case BindableCollectionChangedEventArgs.ChangeType.Added:
+                    case BindableCollectionChangedEventArgs.ChangeType.Removed:
+                    case BindableCollectionChangedEventArgs.ChangeType.Inserted:
+                        TrackIndexChanges(sender, Math.Max(0, args.index));
+                        break;
+                    case BindableCollectionChangedEventArgs.ChangeType.Cleared:
+                        TrackIndexChanges(sender, 0);
+                        break;
+                    case BindableCollectionChangedEventArgs.ChangeType.Replaced:
+                        if (m_SourceInfos.TryGetValue(sender, out var info))
+                            info.AddReplacedRange(args.index, args.count);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
 
             public SourceInfo GetSourceInfo(object source)
@@ -891,36 +1084,71 @@ namespace UnityEngine.UIElements
             public void Dispose()
             {
                 m_ResolvedHierarchicalDataSourceContext.Clear();
-                m_SourcesToRemove.Clear();
+                TakeSourcesToRemove();
                 m_SourceInfosPool.Clear();
                 foreach (var info in m_SourceInfos.Values)
                     info.source = null;
                 m_SourceInfos.Clear();
+
+                for (var i = 0; i < m_ReleasedSources.Count; ++i)
+                {
+                    UnsubscribeReleasedSource(m_ReleasedSources[i]);
+                }
+                m_ReleasedSources.Clear();
             }
 
             public void ClearSourceCache()
             {
-                foreach (var toRemove in m_SourcesToRemove)
+                if (m_SourcesToRemove.Count == 0)
+                    return;
+
+                TakeSourcesToRemove();
+                try
                 {
-                    if (m_SourceInfos.TryGetValue(toRemove, out var info))
+                    for (var i = 0; i < m_ReleasedSources.Count; ++i)
                     {
-                        if (info.refCount == 0)
-                        {
-                            m_SourceInfos.Remove(toRemove);
-                            ReleasePooledSourceInfo(info);
-                        }
-                        else
-                        {
-                            throw new InvalidOperationException("Trying to release a data source that is still being referenced. This is an internal bug. Please report using `Help > Report a Bug...`");
-                        }
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException("Trying to release a data source that isn't tracked. This is an internal bug. Please report using `Help > Report a Bug...`");
+                        var toRemove = m_ReleasedSources[i];
+                        if (!m_SourceInfos.TryGetValue(toRemove, out var info))
+                            throw new InvalidOperationException("Trying to release a data source that isn't tracked. This is an internal bug. Please report using `Help > Report a Bug...`");
+
+                        // Taken again by code that ran while releasing the other data sources.
+                        if (info.refCount > 0)
+                            continue;
+
+                        m_SourcesToRemove.Remove(toRemove);
+                        m_SourceInfos.Remove(toRemove);
+                        ReleasePooledSourceInfo(info);
+                        UnsubscribeReleasedSource(toRemove);
                     }
                 }
+                finally
+                {
+                    m_ReleasedSources.Clear();
+                }
+            }
 
+            // Unsubscribing runs the code of the data sources, which can track or release data sources, so the sources
+            // to remove are moved out of the set before.
+            void TakeSourcesToRemove()
+            {
+                foreach (var toRemove in m_SourcesToRemove)
+                {
+                    m_ReleasedSources.Add(toRemove);
+                }
                 m_SourcesToRemove.Clear();
+            }
+
+            // A data source that throws while unsubscribing doesn't stop the release of the others.
+            void UnsubscribeReleasedSource(object dataSource)
+            {
+                try
+                {
+                    Unsubscribe(dataSource);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
             }
         }
 

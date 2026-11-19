@@ -196,7 +196,7 @@ namespace Unity.Entities
     // TODO: Add proper alignment support to blob assets
     // TODO: Reduce the size of the header at runtime or remove it completely
     [StructLayout(LayoutKind.Explicit, Size = 32)]
-    [VisibleToOtherModules("UnityEngine.EntitiesPropertiesModule")]
+    [VisibleToOtherModules("UnityEngine.EntitiesPropertiesModule", "UnityEngine.AnimationModule")]
     unsafe struct BlobAssetHeader
     {
         [FieldOffset(0)]  public void* ValidationPtr;
@@ -224,7 +224,7 @@ namespace Unity.Entities
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 8)]
-    [VisibleToOtherModules("UnityEngine.EntitiesPropertiesModule")]
+    [VisibleToOtherModules("UnityEngine.EntitiesPropertiesModule", "UnityEngine.AnimationModule")]
     internal unsafe struct BlobAssetReferenceData : IEquatable<BlobAssetReferenceData>
     {
         [NativeDisableUnsafePtrRestriction]
@@ -242,7 +242,7 @@ namespace Unity.Entities
 
         internal BlobAssetHeader* Header
         {
-            [VisibleToOtherModules("UnityEngine.EntitiesPropertiesModule")]
+            [VisibleToOtherModules("UnityEngine.EntitiesPropertiesModule", "UnityEngine.AnimationModule")]
             get
             {
                 ThrowIfNull();
@@ -403,6 +403,7 @@ namespace Unity.Entities
         where T : unmanaged
     {
         [Properties.CreateProperty]
+        [VisibleToOtherModules("UnityEngine.AnimationModule")]
         internal BlobAssetReferenceData m_data;
         /// <summary>
         /// Reports whether this instance references a valid blob asset.
@@ -524,6 +525,7 @@ namespace Unity.Entities
         /// </summary>
         /// <param name="blobData">The blob data to attach to the returned object</param>
         /// <returns>The created BlobAssetReference</returns>
+        [VisibleToOtherModules("UnityEngine.AnimationModule")]
         internal static BlobAssetReference<T> Create(BlobAssetReferenceData blobData)
         {
             return new BlobAssetReference<T> { m_data = blobData };
@@ -776,7 +778,9 @@ namespace Unity.Entities
     [DebuggerDisplay("Cannot display the value of a " + nameof(BlobArray<T>) + " by itself. Please inspect the root BlobAssetReference instead.")]
     public unsafe struct BlobArray<T> where T : struct
     {
+        [VisibleToOtherModules("UnityEngine.AnimationModule")]
         internal int m_OffsetPtr;
+        [VisibleToOtherModules("UnityEngine.AnimationModule")]
         internal int m_Length;
 
         /// <summary>

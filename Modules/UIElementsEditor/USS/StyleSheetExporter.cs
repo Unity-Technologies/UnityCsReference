@@ -17,7 +17,7 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class StyleSheetExporter
     {
         [OnCodeInitializing]
@@ -28,31 +28,18 @@ namespace UnityEditor.UIElements
 
         public const string ColorsPreferenceCategory = "USS Syntax Highlighting";
 
-        [NoAutoStaticsCleanup] // preference color registrations; readonly, persist across reload
         static readonly UIPrefColor k_AtKeywordColor = new (ColorsPreferenceCategory, "At Keyword", HtmlColor("#871094"), HtmlColor("#BC8DF8"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_FunctionColor = new (ColorsPreferenceCategory, "Function", HtmlColor("#0058A8"), HtmlColor("#70B0FF"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_KeywordColor = new (ColorsPreferenceCategory, "Keyword", HtmlColor("#0033B3"), HtmlColor("#FFFFFF"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_NumberColor = new (ColorsPreferenceCategory, "Number", HtmlColor("#1750EB"), HtmlColor("#FF9668"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_PunctuationColor = new (ColorsPreferenceCategory, "Punctuation", HtmlColor("#000000"), HtmlColor("#70B0FF"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_PropertyColor = new (ColorsPreferenceCategory, "Property Name", HtmlColor("#0058A8"), HtmlColor("#B6C4F2"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_SelectorClassColor = new (ColorsPreferenceCategory, "Selector Class", HtmlColor("#9C5F00"), HtmlColor("#DBBE7F"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_SelectorIdColor = new (ColorsPreferenceCategory,  "Selector Id", HtmlColor("#7F0055"), HtmlColor("#70B0FF"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_SelectorPseudoClassColor = new (ColorsPreferenceCategory, "Selector Pseudo-Class", HtmlColor("#00796B"), HtmlColor("#4FD6BE"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_SelectorTypeColor = new (ColorsPreferenceCategory, "Selector Type", HtmlColor("#5B3F00"), HtmlColor("#DBBE7F"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_String = new (ColorsPreferenceCategory, "String", HtmlColor("#067D17"), HtmlColor("#64D1A9"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_UnitColor = new (ColorsPreferenceCategory, "Unit", HtmlColor("#871094"), HtmlColor("#F3C1FF"));
-        [NoAutoStaticsCleanup]
         static readonly UIPrefColor k_ValueColor = new (ColorsPreferenceCategory, "Value", HtmlColor("#871094"), HtmlColor("#F3C1FF"));
 
         public static Color AtKeywordColor { get => k_AtKeywordColor.Color; set { k_AtKeywordColor.Color = value; PrefSettings.Set(k_AtKeywordColor.StorageKey, k_AtKeywordColor); } }
@@ -108,7 +95,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal enum PreserveUnitType
         {
             None,
@@ -116,7 +103,7 @@ namespace UnityEditor.UIElements
             All
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal struct UssExportOptions
         {
             const string k_DefaultIndex = "    ";
@@ -224,7 +211,7 @@ namespace UnityEditor.UIElements
             private readonly UssExportOptions m_Options;
             private readonly bool m_WriteFloatsAsSeconds;
 
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             internal ExportContext(StyleSheet styleSheet, StringBuilder builder, UssExportOptions options)
                 : this(styleSheet, builder, options, false)
             {

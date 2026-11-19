@@ -1035,7 +1035,7 @@ sealed partial class AudioContainerWindow : EditorWindow
         if (playables == null)
             return;
 
-        // Iterate over the ActivePlayables from the runtime and try and match them to the instance ID on the clip field.
+        // Iterate over the ActivePlayables from the runtime and try and match them to the entity ID on the clip field.
         // if its a match, set the progress and remove the clip field to avoid overwriting the progress.
         var clipFields = m_ClipsListView.Query<AudioContainerElementClipField>().ToList();
 

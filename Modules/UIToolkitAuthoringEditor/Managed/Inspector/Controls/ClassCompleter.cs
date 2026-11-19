@@ -14,7 +14,6 @@ namespace Unity.UIToolkit.Editor;
 /// Consumers must set <see cref="FieldSearchCompleter{TData}.DataSourceCallback"/> before use to provide the
 /// list of <see cref="ClassCompleterInfo"/> items.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 class ClassCompleter : FieldSearchCompleter<ClassCompleterInfo>
 {
     const string k_PopupStyleSheet = "UIToolkitAuthoring/Inspector/Controls/Completers/ClassCompleterPopup.uss";

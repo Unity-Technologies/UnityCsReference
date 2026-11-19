@@ -23,21 +23,21 @@ namespace Unity.Entities
     [BurstCompile]
     internal static unsafe class TransformUnionHierarchyAssignment
     {
-        // Returns the owner value of the entities' World (see TransformDependencyBridge), or 0 if none has chunk storage.
+        // Writes the entities' World to owner, or default if none has chunk storage
         [RequiredByNativeCode]
-        static ulong AssignTransformHierarchy(IntPtr entityIds, IntPtr hierarchy, IntPtr indicesInHierarchy, int count)
+        static void AssignTransformHierarchy(IntPtr entityIds, IntPtr hierarchy, IntPtr indicesInHierarchy, int count, IntPtr owner)
         {
-            if (!TypeManager.IsInitialized)
-                return 0;
-
-            return AssignTransformHierarchyBurst((ulong*)entityIds, (void*)hierarchy, (int*)indicesInHierarchy, count);
+            ref var world = ref *(WorldUnmanaged*)owner;
+            world = default;
+            if (TypeManager.IsInitialized)
+                AssignTransformHierarchyBurst((ulong*)entityIds, (void*)hierarchy, (int*)indicesInHierarchy, count, out world);
         }
 
         [BurstCompile]
-        internal static ulong AssignTransformHierarchyBurst(ulong* entityIds, void* hierarchy, int* indicesInHierarchy, int count)
+        internal static void AssignTransformHierarchyBurst(ulong* entityIds, void* hierarchy, int* indicesInHierarchy, int count, out WorldUnmanaged owner)
         {
             TypeIndex typeIndex = TypeManager.GetTypeIndex<TransformRef>();
-            ulong owner = 0;
+            owner = default;
             var lookupCache = default(LookupCache);
             for (int i = 0; i < count; i++)
             {
@@ -46,7 +46,7 @@ namespace Unity.Entities
                 if (archetype == null)
                     continue;
                 var componentStore = archetype->EntityComponentStore;
-                if (owner == 0)
+                if (!owner.IsCreated)
                     owner = TransformDependencyBridge.GetOwner(componentStore);
                 var union = (TransformUnion*)ChunkDataUtility.GetOptionalComponentDataWithTypeRW(entityInChunk.Chunk,
                     archetype, entityInChunk.IndexInChunk, typeIndex, componentStore->GlobalSystemVersion, ref lookupCache);
@@ -56,7 +56,6 @@ namespace Unity.Entities
                 union->_IndexInHierarchy = indicesInHierarchy[i];
                 union->_HasHierarchy = hierarchy != null ? (byte)1 : (byte)0;
             }
-            return owner;
         }
     }
 

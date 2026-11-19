@@ -121,7 +121,8 @@ namespace UnityEngine
         ///<param name="path">The path of the transform.</param>
         extern public void SetTransformPath(int index, string path);
 
-        extern private float GetTransformWeight(int index);
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        extern internal float GetTransformWeight(int index);
         extern private void SetTransformWeight(int index, float weight);
 
         ///<summary>Returns true if the transform at the given index is active.</summary>
@@ -146,6 +147,49 @@ namespace UnityEngine
                 SetTransformPath(i, other.GetTransformPath(i));
                 SetTransformActive(i, other.GetTransformActive(i));
             }
+        }
+
+        [RequiredByNativeCode]
+        internal void BakeWeightMask()
+        {
+            if (MotionProxy.BakeAvatarMask != null)
+            {
+                MotionProxy.BakeAvatarMask(this);
+            }
+        }
+
+        // The WeightMask blob that BakeWeightMask stores. Reading it bakes it if it is empty.
+        [NativeMethod(IsThreadSafe = false)]
+        extern unsafe void*                 GetBlobData(out ulong typeHash, out uint size);
+
+        [NativeMethod(IsThreadSafe = false)]
+        extern int                          GetBlobVersion();
+
+        [NativeMethod(IsThreadSafe = false)]
+        extern unsafe void                  SetBlobDataAndHeader(ulong typeHash, void* ptr, uint size, int version);
+
+        [NativeMethod(IsThreadSafe = false)]
+        extern BlobObjectReference          AcquireReference();
+
+        // Same checks as BlobObject.AcquireReference<T>
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        internal unsafe BlobObjectReference<T> AcquireReference<T>(int version = 0) where T : unmanaged
+        {
+            var blobData = GetBlobData(out var typeHash, out var size);
+            if (!BlobObject.IsBlobCompatible<T>(this, blobData, typeHash, size, GetBlobVersion(), version, true))
+                return default;
+
+            return new BlobObjectReference<T>(AcquireReference());
+        }
+
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        internal unsafe void SetBlobAsset<T>(Unity.Entities.BlobAssetReference<T> blobAssetReference, int version = 0) where T : unmanaged
+        {
+            var typeHash = BlobObjectReference<T>.TypeHash;
+            if (blobAssetReference.IsCreated)
+                SetBlobDataAndHeader(typeHash, blobAssetReference.GetUnsafePtr(), (uint)blobAssetReference.m_data.Header->Length, version);
+            else
+                SetBlobDataAndHeader(typeHash, null, 0, version);
         }
     }
 }

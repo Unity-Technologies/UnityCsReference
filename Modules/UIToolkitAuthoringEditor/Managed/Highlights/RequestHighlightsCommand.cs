@@ -19,10 +19,10 @@ class RequestHighlightsCommand : Command<RequestHighlightsCommand>
         return pooled;
     }
 
-    public static void Execute(object source, VisualElement element)
+    public static void Execute(AuthoringContext context, object source, VisualElement element)
     {
         using var command = GetPooled(source, element);
-        UICommandQueue.Execute(command);
+        context.Messages.Execute(command);
     }
 
     public static RequestHighlightsCommand GetPooled(object source, StyleRule rule)
@@ -33,10 +33,10 @@ class RequestHighlightsCommand : Command<RequestHighlightsCommand>
         return pooled;
     }
 
-    public static void Execute(object source, StyleRule rule)
+    public static void Execute(AuthoringContext context, object source, StyleRule rule)
     {
         using var command = GetPooled(source, rule);
-        UICommandQueue.Execute(command);
+        context.Messages.Execute(command);
     }
 
     public static RequestHighlightsCommand GetPooled(object source, int veaId, VisualTreeAsset elementDocument)
@@ -48,10 +48,10 @@ class RequestHighlightsCommand : Command<RequestHighlightsCommand>
         return pooled;
     }
 
-    public static void Execute(object source, int veaId, VisualTreeAsset elementDocument)
+    public static void Execute(AuthoringContext context, object source, int veaId, VisualTreeAsset elementDocument)
     {
         using var command = GetPooled(source, veaId, elementDocument);
-        UICommandQueue.Execute(command);
+        context.Messages.Execute(command);
     }
 
     public VisualElement Element { get; private set; }

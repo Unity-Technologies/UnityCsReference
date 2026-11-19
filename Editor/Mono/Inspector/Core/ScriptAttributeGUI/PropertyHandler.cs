@@ -15,7 +15,6 @@ using Unity.Collections;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class PropertyHandler : IDisposable
     {
         [AutoStaticsCleanupOnCodeReload]
@@ -32,7 +31,6 @@ namespace UnityEditor
 
         internal PropertyDrawer propertyDrawer
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
                 if (m_PropertyDrawers == null || m_NestingLevel >= m_PropertyDrawers.Count)
@@ -84,7 +82,7 @@ namespace UnityEditor
             foreach (var listEntry in s_reorderableLists)
             {
                 if (listEntry.Key.Contains(property.propertyPath)
-                    && listEntry.Key.Contains(property.serializedObject.targetObject.GetEntityId().ToString() + (GUIView.current?.nativeHandle.ToInt64() ?? -1)))
+                    && listEntry.Key.Contains(property.serializedObject.targetEntityId.ToString() + (GUIView.current?.nativeHandle.ToInt64() ?? -1)))
                     listEntry.Value.InvalidateCache();
             }
         }
@@ -443,9 +441,12 @@ namespace UnityEditor
 
         public void AddMenuItems(SerializedProperty property, GenericMenu menu)
         {
-            if (contextMenuItems != null)
+            // CallMenuCallback needs Unity object targets
+            Type scriptType = contextMenuItems != null && property.serializedObject.hasUnityObjectTargets
+                ? property.serializedObject.GetTargetType()
+                : null;
+            if (scriptType != null)
             {
-                Type scriptType = property.serializedObject.targetObject.GetType();
                 foreach (ContextMenuItemAttribute attribute in contextMenuItems)
                 {
                     MethodInfo method = scriptType.GetMethod(attribute.function, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -461,10 +462,10 @@ namespace UnityEditor
             if (SearchUtility.CanSearchProperty(property))
             {
                 menu.AddItem(new GUIContent("Search Same Property Value"), false, () => SearchUtility.SearchProperty(property));
-                if (SearchUtility.SupportsFindDependenciesInProject(property))
-                {
-                    menu.AddItem(new GUIContent($"Find references to {property.objectReferenceValue.GetType().Name} {property.objectReferenceValue.name}"), false, () => SearchUtility.FindReferences(property.objectReferenceValue));
-                }
+            }
+            if (SearchUtility.SupportsFindDependenciesInProject(property))
+            {
+                menu.AddItem(new GUIContent($"Find references to {property.objectReferenceValue.GetType().Name} {property.objectReferenceValue.name}"), false, () => SearchUtility.FindReferences(property.objectReferenceValue));
             }
         }
 
@@ -534,16 +535,11 @@ namespace UnityEditor
             // if it has a non-reorderable attribute
             while (propertyName.Count > 0)
             {
-                try
-                {
-                    // We should at least try to get the type from object instance
-                    // in order to handle interfaces and abstractions correctly
-                    type = listInfo.GetValue(property.serializedObject.targetObject).GetType();
-                }
-                catch
-                {
-                    type = listInfo.FieldType;
-                }
+                // The instance type handles interfaces and abstractions. A nested field is not a field of the
+                // target object, so it falls back to the declared type without throwing.
+                var targetObject = property.serializedObject.targetObject;
+                var value = listInfo.DeclaringType.IsInstanceOfType(targetObject) ? listInfo.GetValue(targetObject) : null;
+                type = value?.GetType() ?? listInfo.FieldType;
 
                 if (type.IsArray) type = type.GetElementType();
                 else if (type.IsArrayOrList()) type = type.GetGenericArguments().Single();

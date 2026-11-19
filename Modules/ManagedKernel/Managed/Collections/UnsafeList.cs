@@ -132,7 +132,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         public T this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
+            readonly get
             {
                 CollectionHelper.CheckIndexInRange(index, m_length);
                 return Ptr[CollectionHelper.AssumePositive(index)];
@@ -152,7 +152,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <param name="index">The index to access. Must be in the range of [0..Length).</param>
         /// <returns>A reference to the element at the index.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref T ElementAt(int index)
+        public readonly ref T ElementAt(int index)
         {
             CollectionHelper.CheckIndexInRange(index, m_length);
             return ref Ptr[CollectionHelper.AssumePositive(index)];
@@ -164,7 +164,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
-        public T* GetUnsafePtr()
+        public readonly T* GetUnsafePtr()
         {
             return Ptr;
         }
@@ -205,7 +205,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Span&lt;T&gt; view of this container.</returns>
         [WriteAccessRequired]
-        public Span<T> AsSpan()
+        public readonly Span<T> AsSpan()
         {
             return new Span<T>(GetUnsafePtr(), Length);
         }
@@ -929,7 +929,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// Returns an enumerator over the elements of the list.
             /// </summary>
             /// <returns>An enumerator over the elements of the list.</returns>
-            public Enumerator GetEnumerator()
+            public readonly Enumerator GetEnumerator()
             {
                 return new Enumerator { m_Ptr = Ptr, m_Length = Length, m_Index = -1 };
             }
@@ -939,7 +939,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -949,7 +949,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <returns>Throws NotImplementedException.</returns>
             /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -1141,7 +1141,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// Returns an enumerator over the elements of the list.
         /// </summary>
         /// <returns>An enumerator over the elements of the list.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             return new Enumerator { m_Ptr = Ptr, m_Length = Length, m_Index = -1 };
         }
@@ -1151,7 +1151,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -1161,7 +1161,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -1182,7 +1182,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
             /// <summary>
             /// Advances the enumerator to the next element of the list.
@@ -1203,13 +1203,13 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// The current element.
             /// </summary>
             /// <value>The current element.</value>
-            public T Current
+            public readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_Ptr[m_Index];
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
@@ -1222,7 +1222,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckIndexCount(int index, int count)
+        readonly void CheckIndexCount(int index, int count)
         {
             if (count < 0)
             {
@@ -1246,7 +1246,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckBeginEndNoLength(int begin, int end)
+        readonly void CheckBeginEndNoLength(int begin, int end)
         {
             if (begin > end)
             {
@@ -1260,7 +1260,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckBeginEnd(int begin, int end)
+        readonly void CheckBeginEnd(int begin, int end)
         {
             CheckBeginEndNoLength(begin, end);
 
@@ -1277,14 +1277,14 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CheckNoResizeHasEnoughCapacity(int length)
+        readonly void CheckNoResizeHasEnoughCapacity(int length)
         {
             CheckNoResizeHasEnoughCapacity(length, Length);
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CheckNoResizeHasEnoughCapacity(int length, int index)
+        readonly void CheckNoResizeHasEnoughCapacity(int length, int index)
         {
             if (Capacity < index + length)
             {
@@ -1524,7 +1524,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         public T* this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
+            readonly get
             {
                 CollectionHelper.CheckIndexInRange(index, Length);
                 return Ptr[CollectionHelper.AssumePositive(index)];
@@ -1544,7 +1544,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <param name="index">The index to access. Must be in the range of [0..Length).</param>
         /// <returns>A reference to the element at the index.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref T* ElementAt(int index)
+        public readonly ref T* ElementAt(int index)
         {
             CollectionHelper.CheckIndexInRange(index, Length);
             return ref Ptr[CollectionHelper.AssumePositive(index)];
@@ -1686,7 +1686,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <param name="ptr">The pointer to search for in the list.</param>
         /// <returns>The index of the first occurrence of the pointer. Returns -1 if it is not found in the list.</returns>
-        public int IndexOf(void* ptr)
+        public readonly int IndexOf(void* ptr)
         {
             for (int i = 0; i < Length; ++i)
             {
@@ -1701,7 +1701,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <param name="ptr">The pointer to search for in the list.</param>
         /// <returns>True if the list contains at least one occurrence of the pointer.</returns>
-        public bool Contains(void* ptr)
+        public readonly bool Contains(void* ptr)
         {
             return IndexOf(ptr) != -1;
         }
@@ -1853,7 +1853,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <remarks>Use Enumerator GetEnumerator() instead.</remarks>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -1864,7 +1864,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// <remarks>Use Enumerator GetEnumerator() instead.</remarks>
         /// <returns>Throws NotImplementedException.</returns>
         /// <exception cref="NotImplementedException">Method is not implemented.</exception>
-        IEnumerator<IntPtr> IEnumerable<IntPtr>.GetEnumerator()
+        readonly IEnumerator<IntPtr> IEnumerable<IntPtr>.GetEnumerator()
         {
             throw new NotImplementedException();
         }
@@ -1929,7 +1929,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <param name="ptr">The pointer to search for in the list.</param>
             /// <returns>The index of the first occurrence of the pointer. Returns -1 if it is not found in the list.</returns>
-            public int IndexOf(void* ptr)
+            public readonly int IndexOf(void* ptr)
             {
                 for (int i = 0; i < Length; ++i)
                 {
@@ -1943,7 +1943,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <param name="ptr">The pointer to search for in the list.</param>
             /// <returns>True if the list contains at least one occurrence of the pointer.</returns>
-            public bool Contains(void* ptr)
+            public readonly bool Contains(void* ptr)
             {
                 return IndexOf(ptr) != -1;
             }
@@ -1991,7 +1991,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <param name="ptr">The pointer to search for in the list.</param>
             /// <returns>The index of the first occurrence of the pointer. Returns -1 if it is not found in the list.</returns>
-            public int IndexOf(void* ptr)
+            public readonly int IndexOf(void* ptr)
             {
                 for (int i = 0; i < Length; ++i)
                 {
@@ -2005,7 +2005,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// </summary>
             /// <param name="ptr">The pointer to search for in the list.</param>
             /// <returns>True if the list contains at least one occurrence of the pointer.</returns>
-            public bool Contains(void* ptr)
+            public readonly bool Contains(void* ptr)
             {
                 return IndexOf(ptr) != -1;
             }

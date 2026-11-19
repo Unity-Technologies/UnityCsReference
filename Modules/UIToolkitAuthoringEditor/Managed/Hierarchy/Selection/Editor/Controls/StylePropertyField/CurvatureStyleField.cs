@@ -13,7 +13,6 @@ namespace Unity.UIToolkit.Editor
     /// A field for editing <see cref="Curvature"/> values as X and Y bend angles, with a button
     /// opening a 3D preview popup of the bend.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UxmlElement]
     internal partial class CurvatureStyleField : BaseField<Curvature>
     {

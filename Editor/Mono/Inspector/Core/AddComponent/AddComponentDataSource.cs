@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
@@ -35,6 +36,7 @@ namespace UnityEditor.AddComponent
             public string path;
             public string command;
             public bool isLegacy;
+            public int priority;
         }
 
         protected AdvancedDropdownItem RebuildTree()
@@ -48,11 +50,6 @@ namespace UnityEditor.AddComponent
             for (var i = 0; i < menuItems.Count; i++)
             {
                 var menu = menuItems[i];
-                if (menu.command == "ADD")
-                {
-                    continue;
-                }
-
                 var paths = menu.path.Split('/');
 
                 var parent = root;
@@ -106,7 +103,7 @@ namespace UnityEditor.AddComponent
 
         static List<MenuItemData> GetSortedMenuItems(UnityEngine.GameObject[] targets)
         {
-            var menus = Unsupported.GetSubmenus("Component");
+            var menus = Menu.GetMenuItems("Component", false, false);
             var commands = Unsupported.GetSubmenusCommands("Component");
 
             var menuItems = new List<MenuItemData>(menus.Length);
@@ -117,13 +114,18 @@ namespace UnityEditor.AddComponent
 
             for (var i = 0; i < menus.Length; i++)
             {
-                var menuPath = menus[i];
+                // "Component/Add..." opens this dropdown, so it is not listed.
+                if (commands[i] == "ADD")
+                    continue;
+
+                var menuPath = menus[i].path;
                 bool isLegacy = menuPath.ToLower().Contains(kLegacyString);
                 var item = new MenuItemData
                 {
                     path = menuPath,
                     command = commands[i],
-                    isLegacy = isLegacy
+                    isLegacy = isLegacy,
+                    priority = menus[i].priority
                 };
 
                 if (!hasFilterOverride || ModeService.Execute("inspector_filter_component", targets, menuPath))
@@ -139,14 +141,61 @@ namespace UnityEditor.AddComponent
                 }
             }
 
-            int comparison(MenuItemData x, MenuItemData y) => string.CompareOrdinal(x.path, y.path);
-
-            menuItems.Sort(comparison);
-            legacyMenuItems.Sort(comparison);
+            menuItems.Sort(CompareMenuItems);
+            legacyMenuItems.Sort(CompareMenuItems);
 
             menuItems.AddRange(legacyMenuItems);
 
             return menuItems;
+        }
+
+        // Orders the items of each menu level with the submenus first, sorted alphabetically, followed by the components,
+        // sorted by menu priority (AddComponentMenu.componentOrder) and then alphabetically.
+        // Paths are compared at their first differing segment, which keeps the items of a submenu together.
+        static int CompareMenuItems(MenuItemData x, MenuItemData y)
+        {
+            var xPath = x.path;
+            var yPath = y.path;
+            var xStart = 0;
+            var yStart = 0;
+            while (true)
+            {
+                var xEnd = xPath.IndexOf('/', xStart);
+                var xIsComponent = xEnd < 0;
+                if (xIsComponent)
+                    xEnd = xPath.Length;
+
+                var yEnd = yPath.IndexOf('/', yStart);
+                var yIsComponent = yEnd < 0;
+                if (yIsComponent)
+                    yEnd = yPath.Length;
+
+                if (xIsComponent != yIsComponent)
+                    return xIsComponent ? 1 : -1;
+
+                if (xIsComponent)
+                {
+                    var priorityComparison = x.priority.CompareTo(y.priority);
+                    if (priorityComparison != 0)
+                        return priorityComparison;
+                }
+
+                var xLength = xEnd - xStart;
+                var yLength = yEnd - yStart;
+                var nameComparison = string.CompareOrdinal(xPath, xStart, yPath, yStart, Math.Min(xLength, yLength));
+                if (nameComparison == 0)
+                    nameComparison = xLength.CompareTo(yLength);
+
+                if (nameComparison != 0)
+                    return nameComparison;
+
+                // Components with the same name and priority, compared by command to keep the order deterministic.
+                if (xIsComponent)
+                    return string.CompareOrdinal(x.command, y.command);
+
+                xStart = xEnd + 1;
+                yStart = yEnd + 1;
+            }
         }
 
         protected override AdvancedDropdownItem Search(string searchString)

@@ -75,6 +75,13 @@ class UxmlAttributeChangeHandler
             {
                 var vta = change.visualTreeAsset;
 
+                // A reimport between capture and this deferred call can destroy the captured instance.
+                if (vta == null)
+                {
+                    ListPool<UndoPropertyModification>.Release(change.propertyModifications);
+                    continue;
+                }
+
                 Undo.IncrementCurrentGroup();
                 Undo.RegisterCompleteObjectUndo(vta, "UXML Attribute Change");
                 EditorUtility.SetDirty(vta);

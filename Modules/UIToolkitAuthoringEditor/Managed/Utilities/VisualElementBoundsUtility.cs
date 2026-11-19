@@ -8,7 +8,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 static class VisualElementBoundsUtility
 {
     // Returns false when any visible descendant has no computed layout yet.

@@ -68,11 +68,11 @@ namespace UnityEditor
         [NoAutoStaticsCleanup]
         static Constants ms_Constants;
 
-        [NativeHeader("Modules/AssetPackageEditor/AssetPackage.bindings.h")]
+        [NativeHeader("Editor/Modules/AssetPackageEditor/AssetPackage.bindings.h")]
         [FreeFunction("Marshalling::GetImportPackageItems")]
         private static extern ImportPackageItem[] GetImportPackageItems(IntPtr nativeItems);
 
-        [NativeHeader("Modules/AssetPackageEditor/AssetPackage.bindings.h")]
+        [NativeHeader("Editor/Modules/AssetPackageEditor/AssetPackage.bindings.h")]
         [FreeFunction("Marshalling::GetAssetPackageInfo")]
         internal static extern AssetPackageInfo GetAssetPackageInfo(IntPtr nativeAssetPackageInfo);
 
@@ -215,7 +215,7 @@ namespace UnityEditor
             var wizard = PackageImportWizard.instance;
             var assetPackageInfo = wizard.assetPackageInfo;
             var trustAndSignature =  assetPackageInfo != null
-                    ? TrustAndSignatureHelper.GetTrustAndSignature(assetPackageInfo, ServicesContainer.instance.Resolve<IProjectSettingsProxy>().isSignatureValidationDisabled)
+                    ? TrustAndSignatureHelper.GetTrustAndSignature(assetPackageInfo, ServicesContainer.instance.Resolve<IProjectSettingsProxy>().isSignatureDisabled)
                     : TrustAndSignature.NotApplicable;
 
             if (trustAndSignature == TrustAndSignature.UntrustedNoSignature && wizard.isAssetStorePackage)

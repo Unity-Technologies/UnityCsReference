@@ -640,7 +640,9 @@ namespace UnityEditor
 
         // Command buffers are not serialized data, so can't get to them through
         // serialized property (hence no multi-edit).
-        internal bool showCommandBufferGUI => targets.Length == 1 && target is Camera { commandBufferCount: > 0 };
+#pragma warning disable CS0618 // Camera command buffers are obsolete
+        internal bool showCommandBufferGUI => !GraphicsSettings.isScriptableRenderPipelineEnabled && targets.Length == 1 && target is Camera { commandBufferCount: > 0 };
+#pragma warning restore CS0618
 
         internal enum ProjectionType
         {
@@ -751,6 +753,7 @@ namespace UnityEditor
                 RenderGizmo(camera);
         }
 
+#pragma warning disable CS0618 // Camera command buffers are obsolete
         void CommandBufferGUI()
         {
             if(!showCommandBufferGUI)
@@ -799,6 +802,7 @@ namespace UnityEditor
 
             EditorGUI.indentLevel--;
         }
+#pragma warning restore CS0618
 
         public override void OnInspectorGUI()
         {
@@ -1069,6 +1073,7 @@ namespace UnityEditor
                 return true;
             });
 
+#pragma warning disable CS0618 // Camera command buffers are obsolete
             var buffers = new List<CommandBuffer>();
             var bufferEvents = new Dictionary<CommandBuffer, CameraEvent>();
             var commandBuffers = editor.MandatoryQ<Foldout>(Styles.k_CommandBuffersElementName);
@@ -1076,22 +1081,27 @@ namespace UnityEditor
 
             var commandBuffersUpdate = UIElementsEditorUtility.CreateDynamicVisibilityCallback(commandBuffers, () =>
             {
-                commandBuffers.text = L10n.Tr($"{c.commandBufferCount} command buffers", null);
-
                 buffers.Clear();
                 bufferEvents.Clear();
-                foreach (var ce in (CameraEvent[])Enum.GetValues(typeof(CameraEvent)))
+
+                var visible = showCommandBufferGUI;
+                if (visible)
                 {
-                    var cbs = camera.GetCommandBuffers(ce);
-                    foreach (var cb in cbs)
+                    commandBuffers.text = L10n.Tr($"{c.commandBufferCount} command buffers", null);
+
+                    foreach (var ce in (CameraEvent[])Enum.GetValues(typeof(CameraEvent)))
                     {
-                        buffers.Add(cb);
-                        bufferEvents[cb] = ce;
+                        var cbs = camera.GetCommandBuffers(ce);
+                        foreach (var cb in cbs)
+                        {
+                            buffers.Add(cb);
+                            bufferEvents[cb] = ce;
+                        }
                     }
                 }
                 list.Rebuild();
 
-                return showCommandBufferGUI;
+                return visible;
             });
             list.makeItem = () =>
             {
@@ -1140,6 +1150,7 @@ namespace UnityEditor
 
                 commandBuffersUpdate?.Invoke();
             });
+#pragma warning restore CS0618
 
             onSettingsChanged += () =>
             {

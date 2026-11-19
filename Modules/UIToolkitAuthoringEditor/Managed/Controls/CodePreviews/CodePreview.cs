@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using UnityEditor;
+using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -114,10 +115,11 @@ abstract partial class CodePreview<T> : VisualElement
     protected void Refresh()
     {
         var assetPath = AssetDatabase.GetAssetPath(Asset);
-        var isAssetOnDisk = !string.IsNullOrEmpty(assetPath);
-        m_AssetPath.text = isAssetOnDisk
-            ? Path.GetFileName(assetPath)
-            : "<unsaved file>" + GetExtension();
+        var isBuiltInAsset = URIHelpers.IsBuiltinResourcePath(assetPath);
+        var isAssetOnDisk = !isBuiltInAsset && !string.IsNullOrEmpty(assetPath);
+        m_AssetPath.text = isBuiltInAsset
+            ? VisualElementNodeHandler.BuiltInDocumentName
+            : isAssetOnDisk ? Path.GetFileName(assetPath) : "<unsaved file>" + GetExtension();
         m_OpenInIde.EnableInClassList(HideOpenInIdeUssClass, !isAssetOnDisk);
 
         if (IsActive)

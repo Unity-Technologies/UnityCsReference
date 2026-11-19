@@ -136,7 +136,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::GetCounters", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetCounters(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetBounds", IsThreadSafe = true)] extern internal static PhysicsAABB PhysicsWorld_GetBounds(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::CreateSnapshot", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_CreateSnapshot(PhysicsWorld world, Allocator allocator);
-        [NativeMethod(Name = "PhysicsWorld::RestoreSnapshot")] extern internal static bool PhysicsWorld_RestoreSnapshot(PhysicsWorld world, ReadOnlySpan<byte> image);
+        [NativeMethod(Name = "PhysicsWorld::RestoreSnapshot")] extern internal static bool PhysicsWorld_RestoreSnapshot(PhysicsWorld world, ReadOnlySpan<byte> image, bool removeOwned);
         [NativeMethod(Name = "PhysicsWorld::GetProfile", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetProfile(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetGlobalCounters", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldCounters PhysicsWorld_GetGlobalCounters();
         [NativeMethod(Name = "PhysicsWorld::GetGlobalProfile", IsThreadSafe = true)] extern internal static PhysicsWorld.WorldProfile PhysicsWorld_GetGlobalProfile();

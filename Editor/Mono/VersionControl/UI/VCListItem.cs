@@ -41,13 +41,6 @@ namespace UnityEditorInternal.VersionControl
             m_Identifier = (int)(VCSProviderIdentifier.UnsetIdentifier);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
-        ~ListItem()
-        {
-            Clear();
-        }
-#pragma warning restore UA5000
-
         public Texture Icon
         {
             get

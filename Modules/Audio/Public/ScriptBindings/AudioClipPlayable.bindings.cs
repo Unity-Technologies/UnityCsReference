@@ -175,7 +175,7 @@ namespace UnityEngine.Audio
         internal void GetPauseDelay(double value)
         {
             double currentDelay = GetPauseDelayInternal(ref m_Handle);
-            //FIXME Chanage 0.5 from arbitrary value to something that is dependent on sample rate and dsp buffer size
+            //FIXME Change 0.05 from arbitrary value to something that is dependent on sample rate and dsp buffer size
             if (m_Handle.GetPlayState() == PlayState.Playing &&
                 (value < 0.05 || (currentDelay != 0.0 && currentDelay < 0.05)))
                 throw new ArgumentException("AudioClipPlayable.pauseDelay: Setting new delay when existing delay is too small or 0.0 ("
@@ -196,7 +196,6 @@ namespace UnityEngine.Audio
             SetStartDelayInternal(ref m_Handle, startDelay);
             if (duration > 0)
             {
-                //setting done to true if seeking has equaled or exceeded the clip duration
                 var seekTime =  startDelay + duration;
                 if(seekTime >= m_Handle.GetDuration())
                     m_Handle.SetDone(true);

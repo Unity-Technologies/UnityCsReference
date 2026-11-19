@@ -17,4 +17,5 @@ static partial class StyleDataAllocator
     internal static extern int SizeOf(StyleDataType type);
     internal static extern int BlockSizeOf(StyleDataType type);
     internal static extern long GetPoolBytesReserved(StyleDataType type);
+    internal static extern long GetPoolBytesUsed(StyleDataType type);
 }

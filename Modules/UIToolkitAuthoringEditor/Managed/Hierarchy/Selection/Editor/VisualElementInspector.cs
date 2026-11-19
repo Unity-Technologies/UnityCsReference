@@ -8,7 +8,6 @@ using Unity.Profiling;
 using Unity.Properties;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -224,13 +223,13 @@ internal sealed partial class VisualElementInspector : UIInspector
 
     void RefreshAttributeOverrideHelpbox()
     {
-        var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
-        var isUnnamedTemplateElement = stage != null &&
+        var context = AuthoringContext.For(m_Element);
+        var isUnnamedTemplateElement = context.IsEditingDocument &&
             m_EditFlags == VisualElementEditFlags.None
             && m_Element?.visualElementAsset != null
             && string.IsNullOrEmpty(m_Element.name)
             && m_Element.templateAsset != null
-            && m_Element.visualTreeAssetSource != stage.EditedVisualTreeAsset;
+            && m_Element.visualTreeAssetSource != context.EditedVisualTreeAsset;
 
         m_AttributesInspector.SetAttributeOverrideHelpboxVisible(isUnnamedTemplateElement);
 
@@ -277,7 +276,7 @@ internal sealed partial class VisualElementInspector : UIInspector
 
     static bool CanOverrideAttributes(VisualElement element)
     {
-        var editedDocument = (StageUtility.GetCurrentStage() as VisualElementEditingStage)?.EditedVisualTreeAsset;
+        var editedDocument = AuthoringContext.For(element).EditedVisualTreeAsset;
         if (editedDocument == null || element.visualTreeAssetSource == editedDocument)
             return true;
 
@@ -298,7 +297,7 @@ internal sealed partial class VisualElementInspector : UIInspector
     {
         var selectionObject = element.GetSelectionObject();
         if (selectionObject)
-            Selection.entityIds = new[] { selectionObject.GetEntityId() };
+            AuthoringContext.For(element).Selection.EntityIds = new[] { selectionObject.GetEntityId() };
     }
 
     void UpdateControlsState()
@@ -323,7 +322,7 @@ internal sealed partial class VisualElementInspector : UIInspector
     }
 
     /// <summary>
-    /// Called by <see cref="VisualElementSelectionEditor"/> when recording starts, stops,
+    /// Called by <see cref="VisualElementSelectionInspectorContent"/> when recording starts, stops,
     /// or the selection changes while recording. Updates the recording banner, OpenInBuilder
     /// visibility, and passes the controller to the style inspector.
     /// </summary>

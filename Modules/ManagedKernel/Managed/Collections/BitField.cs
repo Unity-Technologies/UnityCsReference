@@ -697,7 +697,7 @@ namespace Unity.Collections
         /// <param name="numBits">Number of bits to get (must be 1-32).</param>
         /// <exception cref="ArgumentException">Thrown if `pos` or `numBits` are out of bounds or if `pos + numBits` exceeds 32.</exception>
         /// <returns>The requested range of bits from the bit field stored in the least-significant bits of a uint. All other bits of the uint will be 0.</returns>
-        public uint GetBits(int pos, int numBits = 1)
+        public readonly uint GetBits(int pos, int numBits = 1)
         {
             CheckArgs(pos, numBits);
             var mask = 0xffffffffu >> (32 - numBits);
@@ -709,7 +709,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="pos">Position in the bit field (must be 0-31).</param>
         /// <returns>True if the bit at the position is 1.</returns>
-        public bool IsSet(int pos)
+        public readonly bool IsSet(int pos)
         {
             return 0 != GetBits(pos);
         }
@@ -721,7 +721,7 @@ namespace Unity.Collections
         /// <param name="numBits">Number of bits to test (must be 1-32).</param>
         /// <exception cref="ArgumentException">Thrown if `pos` or `numBits` are out of bounds or if `pos + numBits` exceeds 32.</exception>
         /// <returns>True if none of the bits in the contiguous range are 1.</returns>
-        public bool TestNone(int pos, int numBits = 1)
+        public readonly bool TestNone(int pos, int numBits = 1)
         {
             return 0u == GetBits(pos, numBits);
         }
@@ -733,7 +733,7 @@ namespace Unity.Collections
         /// <param name="numBits">Number of bits to test (must be 1-32).</param>
         /// <exception cref="ArgumentException">Thrown if `pos` or `numBits` are out of bounds or if `pos + numBits` exceeds 32.</exception>
         /// <returns>True if at least one bit in the contiguous range is 1.</returns>
-        public bool TestAny(int pos, int numBits = 1)
+        public readonly bool TestAny(int pos, int numBits = 1)
         {
             return 0u != GetBits(pos, numBits);
         }
@@ -745,7 +745,7 @@ namespace Unity.Collections
         /// <param name="numBits">Number of bits to test (must be 1-32).</param>
         /// <exception cref="ArgumentException">Thrown if `pos` or `numBits` are out of bounds or if `pos + numBits` exceeds 32.</exception>
         /// <returns>True if all bits in the contiguous range are 1.</returns>
-        public bool TestAll(int pos, int numBits = 1)
+        public readonly bool TestAll(int pos, int numBits = 1)
         {
             CheckArgs(pos, numBits);
             var mask = 0xffffffffu >> (32 - numBits);
@@ -756,7 +756,7 @@ namespace Unity.Collections
         /// Returns the number of bits that are 1.
         /// </summary>
         /// <returns>The number of bits that are 1.</returns>
-        public int CountBits()
+        public readonly int CountBits()
         {
             return math.countbits(Value);
         }
@@ -765,7 +765,7 @@ namespace Unity.Collections
         /// Returns the number of leading zeroes.
         /// </summary>
         /// <returns>The number of leading zeros.</returns>
-        public int CountLeadingZeros()
+        public readonly int CountLeadingZeros()
         {
             return math.lzcnt(Value);
         }
@@ -774,7 +774,7 @@ namespace Unity.Collections
         /// Returns the number of trailing zeros.
         /// </summary>
         /// <returns>The number of trailing zeros.</returns>
-        public int CountTrailingZeros()
+        public readonly int CountTrailingZeros()
         {
             return math.tzcnt(Value);
         }
@@ -881,7 +881,7 @@ namespace Unity.Collections
         /// <param name="numBits">Number of bits to get (must be 1-64).</param>
         /// <exception cref="ArgumentException">Thrown if `pos` or `numBits` are out of bounds or if `pos + numBits` exceeds 64.</exception>
         /// <returns>The requested range of bits from the bit field stored in the least-significant bits of a ulong. All other bits of the ulong will be 0.</returns>
-        public ulong GetBits(int pos, int numBits = 1)
+        public readonly ulong GetBits(int pos, int numBits = 1)
         {
             CheckArgs(pos, numBits);
             var mask = 0xfffffffffffffffful >> (64 - numBits);
@@ -893,7 +893,7 @@ namespace Unity.Collections
         /// </summary>
         /// <param name="pos">Position in the bit field (must be 0-63).</param>
         /// <returns>True if the bit at the position is 1.</returns>
-        public bool IsSet(int pos)
+        public readonly bool IsSet(int pos)
         {
             return 0ul != GetBits(pos);
         }
@@ -905,7 +905,7 @@ namespace Unity.Collections
         /// <param name="numBits">Number of bits to test (must be 1-64).</param>
         /// <exception cref="ArgumentException">Thrown if `pos` or `numBits` are out of bounds or if `pos + numBits` exceeds 64.</exception>
         /// <returns>True if none of the bits in the contiguous range are 1.</returns>
-        public bool TestNone(int pos, int numBits = 1)
+        public readonly bool TestNone(int pos, int numBits = 1)
         {
             return 0ul == GetBits(pos, numBits);
         }
@@ -917,7 +917,7 @@ namespace Unity.Collections
         /// <param name="numBits">Number of bits to test (must be 1-64).</param>
         /// <exception cref="ArgumentException">Thrown if `pos` or `numBits` are out of bounds or if `pos + numBits` exceeds 64.</exception>
         /// <returns>True if at least one bit in the contiguous range is 1.</returns>
-        public bool TestAny(int pos, int numBits = 1)
+        public readonly bool TestAny(int pos, int numBits = 1)
         {
             return 0ul != GetBits(pos, numBits);
         }
@@ -929,7 +929,7 @@ namespace Unity.Collections
         /// <param name="numBits">Number of bits to test (must be 1-64).</param>
         /// <exception cref="ArgumentException">Thrown if `pos` or `numBits` are out of bounds or if `pos + numBits` exceeds 64.</exception>
         /// <returns>True if all bits in the contiguous range are 1.</returns>
-        public bool TestAll(int pos, int numBits = 1)
+        public readonly bool TestAll(int pos, int numBits = 1)
         {
             CheckArgs(pos, numBits);
             var mask = 0xfffffffffffffffful >> (64 - numBits);
@@ -940,7 +940,7 @@ namespace Unity.Collections
         /// Returns the number of bits that are 1.
         /// </summary>
         /// <returns>The number of bits that are 1.</returns>
-        public int CountBits()
+        public readonly int CountBits()
         {
             return math.countbits(Value);
         }
@@ -949,7 +949,7 @@ namespace Unity.Collections
         /// Returns the number of leading zeroes.
         /// </summary>
         /// <returns>The number of leading zeros.</returns>
-        public int CountLeadingZeros()
+        public readonly int CountLeadingZeros()
         {
             return math.lzcnt(Value);
         }
@@ -958,7 +958,7 @@ namespace Unity.Collections
         /// Returns the number of trailing zeros.
         /// </summary>
         /// <returns>The number of trailing zeros.</returns>
-        public int CountTrailingZeros()
+        public readonly int CountTrailingZeros()
         {
             return math.tzcnt(Value);
         }

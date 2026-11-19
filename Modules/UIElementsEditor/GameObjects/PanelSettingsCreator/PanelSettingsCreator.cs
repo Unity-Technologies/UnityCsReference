@@ -10,7 +10,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class PanelSettingsCreator
     {
         static void CreateDirectoryRecursively(string dirPath)
@@ -29,7 +28,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static string GetTssTemplateContent()
         {
             return "@import url(\"" + ThemeRegistry.kThemeScheme + "://default\");";

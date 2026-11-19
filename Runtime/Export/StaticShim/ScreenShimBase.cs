@@ -75,6 +75,8 @@ namespace UnityEngine
 
         public virtual Rect[] cutouts => EditorScreen.cutouts;
 
+        public virtual Rendering.SwapchainPreTransform currentSwapChainPreTransform => EditorScreen.currentSwapChainPreTransform;
+
         public virtual bool autorotateToPortrait
         {
             get { return EditorScreen.autorotateToPortrait; }

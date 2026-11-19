@@ -107,6 +107,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackRequest Pack(string packageFolder, string exportPath, string orgId)
         {
+            if (string.IsNullOrEmpty(orgId))
+            {
+                // The Pack function was made obsolete before deciding to give a way for closed network users to export without a signature.
+                // By consequence, this function will remain and stay obsolete for as long as we need it.
+#pragma warning disable CS0618
+                return Client.Pack(packageFolder, exportPath);
+#pragma warning restore CS0618
+            }
+
             return Client.Pack(packageFolder, exportPath, orgId);
         }
     }

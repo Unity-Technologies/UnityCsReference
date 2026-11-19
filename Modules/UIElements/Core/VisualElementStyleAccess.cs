@@ -153,7 +153,7 @@ namespace UnityEngine.UIElements
             return ref data;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal List<StyleSheet> styleSheetList
         {
             get

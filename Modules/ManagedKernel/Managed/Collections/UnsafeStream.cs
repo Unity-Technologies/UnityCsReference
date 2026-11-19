@@ -64,7 +64,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             return block;
         }
 
-        internal void Free(UnsafeStreamBlock* oldBlock)
+        internal readonly void Free(UnsafeStreamBlock* oldBlock)
         {
             Memory.Unmanaged.Array.Resize(oldBlock, AllocationSize, 0, Allocator, 1, 16);
         }
@@ -247,7 +247,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         /// </summary>
         /// <remarks>Each <see cref="Writer.Write{T}"/> and <see cref="Writer.Allocate"/> call increments this number.</remarks>
         /// <returns>The total number of items in the buffers of this stream.</returns>
-        public int Count()
+        public readonly int Count()
         {
             int itemCount = 0;
 
@@ -456,7 +456,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// The number of buffers in the stream of this writer.
             /// </summary>
             /// <value>The number of buffers in the stream of this writer.</value>
-            public int ForEachCount => ((UnsafeStreamBlockData*)m_BlockData.Range.Pointer)->RangeCount;
+            public readonly int ForEachCount => ((UnsafeStreamBlockData*)m_BlockData.Range.Pointer)->RangeCount;
 
             /// <summary>
             /// Readies this writer to write to a particular buffer of the stream.
@@ -612,7 +612,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// <remarks> Setting a state obtained from a different reader leads to undefined behavior. </remarks>
             public ReaderState State
             {
-                get => new()
+                readonly get => new()
                     {
                         m_CurrentBlock = m_CurrentBlock,
                         m_CurrentPtr = m_CurrentPtr,
@@ -658,7 +658,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// Does nothing.
             /// </summary>
             /// <remarks>Included only for consistency with <see cref="NativeStream"/>.</remarks>
-            public void EndForEachIndex()
+            public readonly void EndForEachIndex()
             {
             }
 
@@ -666,13 +666,13 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// The number of buffers in the stream of this reader.
             /// </summary>
             /// <value>The number of buffers in the stream of this reader.</value>
-            public int ForEachCount => ((UnsafeStreamBlockData*)m_BlockData.Range.Pointer)->RangeCount;
+            public readonly int ForEachCount => ((UnsafeStreamBlockData*)m_BlockData.Range.Pointer)->RangeCount;
 
             /// <summary>
             /// The number of items not yet read from the buffer.
             /// </summary>
             /// <value>The number of items not yet read from the buffer.</value>
-            public int RemainingItemCount => m_RemainingItemCount;
+            public readonly int RemainingItemCount => m_RemainingItemCount;
 
             /// <summary>
             /// Returns a pointer to the next position to read from the buffer. Advances the reader some number of bytes.
@@ -737,7 +737,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// Returns the total number of items in the buffers of the stream.
             /// </summary>
             /// <returns>The total number of items in the buffers of the stream.</returns>
-            public int Count()
+            public readonly int Count()
             {
                 var blockData = (UnsafeStreamBlockData*)m_BlockData.Range.Pointer;
                 var ranges = (UnsafeStreamRange*)blockData->Ranges.Range.Pointer;

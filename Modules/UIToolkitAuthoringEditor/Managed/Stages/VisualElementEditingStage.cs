@@ -3,18 +3,24 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEditor.UIElements;
-using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
+/// <summary>
+/// The UI Stage: edits a document in the scene's place, through a <see cref="UIDocumentSession"/> owned by
+/// <see cref="AuthoringContext.Global"/>.
+/// </summary>
+/// <remarks>
+/// The session owns the panel, the clone, undo, the clipboard and the saved state. The stage adds what only a
+/// stage has: navigation and its breadcrumbs, when the document is shown, save prompts when leaving, the state
+/// hash, and serialization of what it edits.
+/// </remarks>
 internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCallbackReceiver
 {
     /// <summary>
@@ -38,28 +44,15 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         Disposed,
     }
 
-    const CommandCategory k_ExternalChangesTrackedCategories = ~CommandCategory.Save;
-
     private GlobalObjectId m_MainAsset;
     private int[] m_SerializedPath;
     private SubDocumentOptions m_Options;
     private GlobalObjectId m_PanelSettings;
-    private Clipboard m_Clipboard;
-    private bool m_FrameUpdateRequested;
-    private bool m_ExternalChanges;
-    private bool m_ExternalSave;
-    private bool m_InsideGroup;
-    // Set while we drive our own discard reload, so the registry's AssetReloaded event (which we also
-    // subscribe to for other tools' changes) does not make us re-clone a second time.
-    private bool m_SelfReloading;
     private DisplayState m_DisplayState;
-    private bool m_DocumentCloned;
 
     private GUIContent m_HeaderContent;
 
-    private VisualTreeAssetEditingContext m_Context;
-
-    private PanelElement m_PanelElement;
+    private UIDocumentSession m_Session;
 
     public event Action<VisualElementEditingStage> MainDocumentWasCloned;
     public event Action<PanelElement> PanelWasRepainted;
@@ -75,77 +68,35 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     public override string assetPath => AssetDatabase.GetAssetPath(EditedVisualTreeAsset);
 
-    internal Panel GetAuthoringPanel() => m_PanelElement?.SubPanel;
-
     /// <summary>
-    /// The live element the edited (sub-)document hangs from: the authoring panel's root, or — when a
-    /// sub-document is edited in context — the template instance along
-    /// <see cref="VisualTreeAssetEditingContext.SubDocumentPath"/> that is being edited.
+    /// The session the stage edits its document through, created and registered if the stage has none yet.
     /// </summary>
     /// <remarks>
-    /// The stage has no panel component, so this instance is the only thing that tells apart two clones of one
-    /// template in the same document: they are cloned from the same assets and differ only in the chain of
-    /// instances they hang from. A caller that authors without a live parent of its own — an add with nothing
-    /// selected — names this one, so its result is selected where the user is editing rather than in whichever
-    /// clone comes first.
+    /// Created on first use rather than in <see cref="OnEnable"/>: after a domain reload, a Hierarchy can resolve
+    /// the stage before the stage is enabled, and must find the session it will show.
     /// </remarks>
-    internal VisualElement ResolveLocalRoot()
-    {
-        var panel = GetAuthoringPanel();
-        if (panel == null)
-            return null;
+    internal UIDocumentSession GetOrCreateSession() => m_Session ??= new UIDocumentSession(AuthoringContext.Global);
 
-        var localRoot = panel is PanelElement.RuntimePanel runtimePanel ? runtimePanel.Root : panel.visualTree;
+    internal Panel GetAuthoringPanel() => m_Session?.Panel;
 
-        var context = Context;
-        if (context.SubDocumentOptions is SubDocumentOptions.None or SubDocumentOptions.Isolation)
-            return localRoot;
-
-        var subDocumentPath = context.SubDocumentPath;
-        if (subDocumentPath == null)
-            return localRoot;
-
-        for (var i = 0; i < subDocumentPath.Length && localRoot != null; ++i)
-        {
-            var template = subDocumentPath[i];
-            localRoot = localRoot.Query<TemplateContainer>()
-                .Where(tc => (tc.visualElementAsset as TemplateAsset)?.id == template.id)
-                .First();
-        }
-
-        return localRoot;
-    }
+    /// <inheritdoc cref="UIDocumentSession.ResolveLocalRoot"/>
+    internal VisualElement ResolveLocalRoot() => m_Session?.ResolveLocalRoot();
 
     internal override bool isValid => ValidateContext();
 
-    internal PanelElement PanelElement => m_PanelElement;
+    internal PanelElement PanelElement => m_Session?.PanelElement;
 
     public VisualTreeAssetEditingContext Context
     {
-        get => m_Context;
-        private set
-        {
-            if (m_Context == value)
-                return;
-
-            m_Context = value;
-            if (m_Context.SubDocumentOptions != SubDocumentOptions.None)
-            {
-                var template = m_Context.SubDocumentPath[^1];
-                EditedVisualTreeAsset = template.ResolveTemplate();
-            }
-            else
-            {
-                EditedVisualTreeAsset = m_Context.RootVisualTreeAsset;
-            }
-        }
+        get => m_Session?.Document ?? default;
+        private set => GetOrCreateSession().Document = value;
     }
 
     public BreadcrumbBar.SeparatorStyle SeparatorStyle { get; set; }
 
-    public VisualTreeAsset EditedVisualTreeAsset { get; private set; }
+    public VisualTreeAsset EditedVisualTreeAsset => m_Session?.EditedVisualTreeAsset;
 
-    public Clipboard Clipboard => m_Clipboard;
+    public Clipboard Clipboard => m_Session?.Clipboard;
 
     public void SetContext(VisualTreeAssetEditingContext context)
     {
@@ -181,50 +132,13 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         m_HeaderContent = new GUIContent();
     }
 
-    /// <summary>
-    /// Shows the edited document to whoever just started watching the panel, for a caller that needs the document
-    /// to be there rather than to be up to date. The tree is only cloned when the panel does not already hold it,
-    /// but the panel is ticked either way: a change processor registered on it gets its first look at the tree
-    /// from that tick.
-    /// </summary>
-    internal void EnsureDocumentShown()
-    {
-        if (!m_DocumentCloned)
-        {
-            RequestRefresh();
-            return;
-        }
+    /// <inheritdoc cref="UIDocumentSession.EnsureDocumentShown"/>
+    internal void EnsureDocumentShown() => m_Session?.EnsureDocumentShown();
 
-        if (m_PanelElement is { IsCreated: true })
-            m_PanelElement.FrameUpdate();
-    }
-
-    internal void RequestRefresh()
-    {
-        if (m_PanelElement is not { IsCreated: true })
-            return;
-
-        // Process whatever changes we previously add before cloning to ensure everything is up to date.
-        PanelElement.FrameUpdate();
-        CloneTree();
-        PanelElement.FrameUpdate();
-    }
+    internal void RequestRefresh() => m_Session?.RequestRefresh();
 
     public void RequestCanvasSize(Vector2 viewportSize, Vector2 canvasSize, Vector2 offset, float zoomFactor)
-    {
-        if (m_PanelElement is not { IsCreated: true })
-            return;
-
-        m_PanelElement.ResizeRenderTexture(viewportSize);
-        m_PanelElement.Offset = offset;
-        m_PanelElement.ScaleFactor = zoomFactor;
-        m_PanelElement.Size = canvasSize;
-
-        if (viewportSize.x == 0 || viewportSize.y == 0)
-            return;
-
-        m_PanelElement.FrameUpdate();
-    }
+        => m_Session?.RequestCanvasSize(viewportSize, canvasSize, offset, zoomFactor);
 
     internal override Scene GetSceneAt(int index)
     {
@@ -268,68 +182,34 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     private void EnsureRealized()
     {
         m_DisplayState = DisplayState.Settled;
-
-        if (m_PanelElement is { IsCreated: true })
-            return;
-
-        m_PanelElement.CreateSubPanel();
-        Binding.SetPanelLogLevel(m_PanelElement.SubPanel, BindingLogLevel.None);
-        m_PanelElement.SetPanelSize(new Vector2Int(480, 640));
-        m_PanelElement.PanelSettings = Context.PanelSettings;
-    }
-
-    private void CloneTree()
-    {
-        var subRoot = m_PanelElement.subRootVisualElement;
-        if (subRoot == null)
-            return;
-
-        subRoot.Clear();
-
-        switch (Context.SubDocumentOptions)
-        {
-            case SubDocumentOptions.None:
-                Context.RootVisualTreeAsset.CloneTree(subRoot);
-                break;
-            case SubDocumentOptions.InContext:
-                Context.RootVisualTreeAsset.CloneTree(subRoot);
-                break;
-            case SubDocumentOptions.Isolation:
-                EditedVisualTreeAsset?.CloneTree(subRoot);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-        m_DocumentCloned = true;
-        MainDocumentWasCloned?.Invoke(this);
-        UIAssetRegistry.instance.RefreshPanel(m_PanelElement?.SubPanel);
+        GetOrCreateSession().CreatePanel();
     }
 
     protected override void OnEnable()
     {
         base.OnEnable();
-        m_PanelElement = new PanelElement();
-        m_PanelElement.OnAfterRepaint += OnPanelRepainted;
+
+        // Enabled again without a domain reload: the disable disposed the session, but the stage still edits its
+        // document.
+        if (m_Session is { IsDisposed: true } disposed)
+            m_Session = new UIDocumentSession(disposed.Document, AuthoringContext.Global);
+
+        var session = GetOrCreateSession();
+        session.DocumentCloned += OnDocumentCloned;
+        session.PanelRepainted += OnPanelRepainted;
+
         RestoreSerializedContext();
         StageNavigationManager.instance.beforeSwitchingAwayFromStage += BeforeLeavingStage;
-        Undo.undoRedoPerformed += OnUndoRedoPerformed;
-        m_Clipboard = new Clipboard();
 
         // This is temporary fix for domain issues that are very specific to timings.
         // TODO: [MP] Remove once we have the proper reload attributes for managed objects.
         if (StageUtility.GetCurrentStage() == this)
         {
             EnsureRealized();
-            CloneTree();
-            TrackStagePanel();
-            AttachToRegistry();
+            session.CloneTree();
+            session.Track();
+            session.AttachToRegistry();
         }
-        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Styling, OnStylingChanged);
-        UICommandQueue.GroupBegan += OnGroupBegan;
-        UICommandQueue.GroupEnded += OnGroupEnded;
-        UICommandQueue.RegisterHandlerForCategory(k_ExternalChangesTrackedCategories, CheckForBuilderChanges);
-        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Save, OnBuilderSave);
-        UIAssetRegistry.instance.AssetReloaded += OnRegistryAssetReloaded;
 
         // A stage whose document could not be resolved is torn down by the next stage tick, so nothing should
         // start resolving live elements against it.
@@ -340,23 +220,14 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     protected override void OnDisable()
     {
         base.OnDisable();
-        Undo.undoRedoPerformed -= OnUndoRedoPerformed;
         StageNavigationManager.instance.beforeSwitchingAwayFromStage -= BeforeLeavingStage;
-        UntrackStagePanel();
-        // Not UIAssetRegistry.instance: a disable that runs during teardown must not bring the singleton back.
-        UIAssetRegistry.LiveInstance?.DetachPanel(m_PanelElement.SubPanel);
-        m_PanelElement.subRootVisualElement?.Clear();
-        m_PanelElement.DestroySubPanel();
-        m_DocumentCloned = false;
-        m_PanelElement.OnAfterRepaint -= OnPanelRepainted;
-        m_Clipboard.Dispose();
-        m_Clipboard = null;
-        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Styling, OnStylingChanged);
-        UICommandQueue.UnregisterHandlerForCategory(k_ExternalChangesTrackedCategories, CheckForBuilderChanges);
-        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Save, OnBuilderSave);
-        UICommandQueue.GroupBegan -= OnGroupBegan;
-        UICommandQueue.GroupEnded -= OnGroupEnded;
-        UIAssetRegistry.LiveInstance?.AssetReloaded -= OnRegistryAssetReloaded;
+
+        if (m_Session == null)
+            return;
+
+        m_Session.DocumentCloned -= OnDocumentCloned;
+        m_Session.PanelRepainted -= OnPanelRepainted;
+        m_Session.DisposeKeepingPanelOwner();
     }
 
     protected internal override bool OnOpenStage()
@@ -376,14 +247,11 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     /// </summary>
     internal void OpenForDisplay()
     {
-        if (m_DisplayState == DisplayState.Disposed || m_PanelElement is { IsCreated: true })
+        if (m_DisplayState == DisplayState.Disposed || GetOrCreateSession().IsOpen)
             return;
 
-        EnsureRealized();
-        TrackStagePanel();
-        ReloadAssets();
-        AttachToRegistry();
-        RequestRefresh();
+        m_DisplayState = DisplayState.Settled;
+        GetOrCreateSession().Open();
     }
 
     void BeforeLeavingStage(Stage stage)
@@ -392,34 +260,12 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
             return;
 
         // Untracking here would re-register the selection registry behind the hierarchy handler on return.
-        m_PanelElement.subRootVisualElement?.Clear();
-        m_DocumentCloned = false;
-    }
-
-    void OnUndoRedoPerformed()
-    {
-        if (StageUtility.GetCurrentStage() == this)
-        {
-            if (EditedVisualTreeAsset != null)
-            {
-                foreach (var styleSheet in EditedVisualTreeAsset.GetAllReferencedStyleSheets())
-                {
-                    styleSheet.RequestRebuild(StyleSheet.RebuildOptions.Synchronous);
-                }
-            }
-            UIElementsEditorUtility.ClearStyleCacheAfterUndoIfTracked(default);
-            ReloadAssets();
-            CloneTree();
-        }
+        m_Session?.ClearDocumentTree();
     }
 
     protected override void OnCloseStage()
     {
-        UntrackStagePanel();
-        DetachFromRegistry();
-        m_PanelElement?.DestroyPanelPermanently();
-        m_PanelElement = null;
-        m_DocumentCloned = false;
+        m_Session?.Dispose();
         m_DisplayState = DisplayState.Disposed;
         base.OnCloseStage();
     }
@@ -439,10 +285,11 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         }
 
         EnsureRealized();
-        TrackStagePanel();
-        AttachToRegistry();
-        ReimportAssets();
-        RequestRefresh();
+        var session = GetOrCreateSession();
+        session.Track();
+        session.AttachToRegistry();
+        session.ReimportAssets();
+        session.RequestRefresh();
     }
 
     protected internal override GUIContent CreateHeaderContent()
@@ -460,104 +307,12 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     // Dirtiness is tracked per asset, not per stage, so a stage only passed through must not answer for it: the
     // walk settles what it opens up front, but a caller that opted out of modals leaves that settling undone.
-    internal override bool hasUnsavedChanges => m_DisplayState != DisplayState.Deferred && AnyReferencedAssetDirty();
+    internal override bool hasUnsavedChanges
+        => m_DisplayState != DisplayState.Deferred && m_Session is { HasUnsavedChanges: true };
 
-    private bool AnyReferencedAssetDirty()
-    {
-        var vta = EditedVisualTreeAsset;
-        if (vta == null)
-            return false;
+    internal override bool Save() => m_Session != null && m_Session.Save();
 
-        var registry = UIAssetRegistry.instance;
-        if (registry.IsDirty(vta))
-            return true;
-
-        using var _ = ListPool<StyleSheet>.Get(out var styleSheets);
-        UIAssetRegistry.CollectDocumentStyleSheets(vta, styleSheets);
-        foreach (var styleSheet in styleSheets)
-            if (registry.IsDirty(styleSheet))
-                return true;
-        return false;
-    }
-
-    void AttachToRegistry()
-    {
-        var panel = m_PanelElement?.SubPanel;
-        if (panel != null)
-            UIAssetRegistry.instance.AttachPanel(panel, this, CollectStageRoots, ResolveStageAccess);
-    }
-
-    void DetachFromRegistry()
-    {
-        var panel = m_PanelElement?.SubPanel;
-        if (panel != null)
-            UIAssetRegistry.instance.DetachPanel(panel);
-    }
-
-    void CollectStageRoots(List<VisualTreeAsset> roots)
-    {
-        if (Context.RootVisualTreeAsset != null)
-            roots.Add(Context.RootVisualTreeAsset);
-        if (EditedVisualTreeAsset != null)
-            roots.Add(EditedVisualTreeAsset);
-    }
-
-    // The edited document and the stylesheets it references are writable; everything else in the hierarchy
-    // (enclosing/nested templates, imported sheets) is tracked read-only.
-    UIAssetAccess ResolveStageAccess(UnityEngine.Object asset)
-    {
-        var edited = EditedVisualTreeAsset;
-        if (ReferenceEquals(asset, edited))
-            return UIAssetAccess.ReadWrite;
-
-        if (asset is StyleSheet styleSheet && edited != null)
-        {
-            using var _ = ListPool<StyleSheet>.Get(out var sheets);
-            edited.GetAllReferencedStyleSheets(sheets);
-            if (sheets.Contains(styleSheet))
-                return UIAssetAccess.ReadWrite;
-        }
-        return UIAssetAccess.ReadOnly;
-    }
-
-    void MarkTrackedAssetsClean()
-    {
-        var vta = EditedVisualTreeAsset;
-        if (vta == null)
-            return;
-
-        var registry = UIAssetRegistry.instance;
-        registry.MarkClean(vta);
-        using var _ = ListPool<StyleSheet>.Get(out var styleSheets);
-        UIAssetRegistry.CollectDocumentStyleSheets(vta, styleSheets);
-        foreach (var styleSheet in styleSheets)
-            if (styleSheet != null)
-                registry.MarkClean(styleSheet);
-    }
-
-    internal override bool Save()
-    {
-        var succeeded = UIAssetRegistry.instance.SaveAsset(EditedVisualTreeAsset, CommandSources.Stage);
-        ReloadAssets();
-        CloneTree();
-        return succeeded;
-    }
-
-    internal override void DiscardChanges()
-    {
-        m_SelfReloading = true;
-        try
-        {
-            UIAssetRegistry.instance.DiscardAsset(EditedVisualTreeAsset, CommandSources.Stage);
-        }
-        finally
-        {
-            m_SelfReloading = false;
-        }
-
-        ReloadAssets();
-        CloneTree();
-    }
+    internal override void DiscardChanges() => m_Session?.DiscardChanges();
 
     internal bool AskUserToSaveModifiedStage()
     {
@@ -619,82 +374,54 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         };
     }
 
-    private void ReloadAssets()
+    /// <summary>
+    /// Fills the viewport's breadcrumbs with the stage history, the path to what is shown: every crumb but the
+    /// last navigates back to its stage.
+    /// </summary>
+    internal static void PopulateHistoryBreadcrumbs(UIViewport viewport)
     {
-        if (VisualTreeAssetEditingContext.TryReload(Context, out var reloaded))
-            Context = reloaded;
-    }
+        viewport.ClearBreadcrumbs();
 
-    private void ReimportAssets()
-    {
-        Context = VisualTreeAssetEditingContext.Reimport(Context);
-        // A force reimport brings the assets back to their on-disk state, so re-baseline them clean.
-        MarkTrackedAssetsClean();
-        ClearUndoForEditedAssets();
-    }
-
-    private void ClearUndoForEditedAssets()
-    {
-        var vta = EditedVisualTreeAsset;
-        if (vta == null)
-            return;
-
-        Undo.ClearUndo(vta);
-        if (vta.inlineSheet != null)
-            Undo.ClearUndo(vta.inlineSheet);
-
-        foreach (var styleSheet in vta.GetAllReferencedStyleSheets())
-            Undo.ClearUndo(styleSheet);
-    }
-
-    protected internal override Hash128 GetHashForStateStorage()
-    {
-        switch (m_Context.SubDocumentOptions)
+        var history = StageNavigationManager.instance.stageHistory;
+        for (var i = 0; i < history.Count; i++)
         {
-            // When editing the root VisualTreeAsset or editing a VisualTreeAsset in isolation,
-            // use the hash for the edited VisualTreeAsset
-            case SubDocumentOptions.None:
-            case SubDocumentOptions.Isolation:
-                return base.GetHashForStateStorage();
-            // When editing a VisualTreeAsset in context, use a hash calculated from the all
-            // the VisualTreeAssets from the root to the edited one.
-            case SubDocumentOptions.InContext:
-            {
-                using var _ = StringBuilderPool.Get(out var sb);
-                sb.Append(AssetDatabase.GetAssetPath(m_Context.RootVisualTreeAsset));
+            var stage = history[i];
+            var content = stage.CreateHeaderContent();
+            var icon = content.image as Texture2D;
+            var label = stage.hasUnsavedChanges ? content.text + "*" : content.text;
 
-                for (var i = 0; i < m_Context.SubDocumentPath.Length; ++i)
-                {
-                    sb.Append('|');
-                    var templateAsset = m_Context.SubDocumentPath[i];
-                    var vta = templateAsset.ResolveTemplate();
-                    sb.Append(AssetDatabase.GetAssetPath(vta));
-                    sb.Append(templateAsset.id);
-                }
-                return Hash128.Compute(sb.ToString());
+            var isCurrentStage = i == history.Count - 1;
+            if (isCurrentStage)
+            {
+                viewport.PushBreadcrumb(label, icon);
             }
-            default:
-                throw new ArgumentOutOfRangeException();
+            else
+            {
+                viewport.PushBreadcrumb(label, icon, () => StageUtility.GoToStage(stage, false));
+            }
         }
     }
 
+    protected internal override Hash128 GetHashForStateStorage() => GetOrCreateSession().GetStateStorageHash();
+
     public void OnBeforeSerialize()
     {
-        m_MainAsset = GlobalObjectId.GetGlobalObjectIdSlow(m_Context.RootVisualTreeAsset);
+        var context = Context;
+        m_MainAsset = GlobalObjectId.GetGlobalObjectIdSlow(context.RootVisualTreeAsset);
 
-        if (m_Context.SubDocumentPath != null)
+        if (context.SubDocumentPath != null)
         {
-            m_SerializedPath = new int[m_Context.SubDocumentPath.Length];
-            for (var i = 0; i < m_Context.SubDocumentPath.Length; ++i)
-                m_SerializedPath[i] = m_Context.SubDocumentPath[i].id;
+            m_SerializedPath = new int[context.SubDocumentPath.Length];
+            for (var i = 0; i < context.SubDocumentPath.Length; ++i)
+                m_SerializedPath[i] = context.SubDocumentPath[i].id;
         }
         else
         {
             m_SerializedPath = null;
         }
 
-        m_PanelSettings = GlobalObjectId.GetGlobalObjectIdSlow(m_Context.PanelSettings);
-        m_Options = m_Context.SubDocumentOptions;
+        m_PanelSettings = GlobalObjectId.GetGlobalObjectIdSlow(context.PanelSettings);
+        m_Options = context.SubDocumentOptions;
     }
 
     public void OnAfterDeserialize()
@@ -737,190 +464,28 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     private bool ValidateContext()
     {
-        if (!Context.RootVisualTreeAsset)
+        var context = Context;
+        if (!context.RootVisualTreeAsset)
             return false;
 
-        if (Context.SubDocumentPath != null)
+        if (context.SubDocumentPath != null)
         {
-            for (var i = Context.SubDocumentPath.Length - 1; i >= 1; --i)
+            for (var i = context.SubDocumentPath.Length - 1; i >= 1; --i)
             {
-                var template = Context.SubDocumentPath[i];
-                if (template.visualTreeAsset != Context.SubDocumentPath[i - 1].ResolveTemplate())
+                var template = context.SubDocumentPath[i];
+                if (template.visualTreeAsset != context.SubDocumentPath[i - 1].ResolveTemplate())
                     return false;
             }
 
-            if (Context.SubDocumentPath.Length > 0 && !VisualTreeAssetEditingContext.CanResolveSubDocumentPath(Context))
+            if (context.SubDocumentPath.Length > 0 && !VisualTreeAssetEditingContext.CanResolveSubDocumentPath(context))
                 return false;
         }
         return true;
     }
 
-    void OnPanelRepainted(PanelElement panel)
-    {
-        PanelWasRepainted?.Invoke(panel);
-    }
+    void OnDocumentCloned(UIDocumentSession session) => MainDocumentWasCloned?.Invoke(this);
 
-    void TrackStagePanel()
-    {
-        var panel = m_PanelElement?.SubPanel;
-        if (panel != null)
-            VisualElementSelectionRegistry.Instance?.TrackStagePanel(this);
-    }
-
-    void UntrackStagePanel()
-    {
-        var panel = m_PanelElement?.SubPanel;
-        if (panel != null)
-            VisualElementSelectionRegistry.Instance?.UntrackStagePanel(this);
-    }
-
-    void OnStylingChanged(in CommandContext context)
-    {
-        m_FrameUpdateRequested = true;
-        if (m_InsideGroup)
-            return;
-
-        ProcessDelayedCommands();
-    }
-
-    void OnGroupBegan(string undoGroup)
-    {
-        m_InsideGroup = true;
-    }
-
-    void OnGroupEnded(in GroupEndedContext context)
-    {
-        m_InsideGroup = false;
-        ProcessDelayedCommands();
-    }
-
-    void ProcessDelayedCommands()
-    {
-        if (m_FrameUpdateRequested)
-        {
-            PanelElement.FrameUpdate();
-            m_FrameUpdateRequested = false;
-        }
-
-        if (m_ExternalChanges)
-        {
-            ProcessBuilderChanges();
-        }
-    }
-
-    void CheckForBuilderChanges(in CommandContext context)
-    {
-        if (context.Status != CommandExecutionStatus.Success || context.Source != CommandSources.Builder)
-            return;
-
-        m_ExternalChanges = true;
-        if (m_InsideGroup)
-            return;
-
-        ProcessBuilderChanges();
-    }
-
-    void ProcessBuilderChanges()
-    {
-        // Here, we take for granted that the UI Builder made a change. Go nuclear.
-        EditorApplication.delayCall += DoProcessBuilderChanges;
-    }
-
-    void DoProcessBuilderChanges()
-    {
-        if (!m_ExternalChanges)
-            return;
-        RequestRefresh();
-        m_ExternalChanges = false;
-    }
-
-    void OnBuilderSave(in CommandContext context)
-    {
-        if (context.Status != CommandExecutionStatus.Success || context.Source != CommandSources.Builder)
-            return;
-
-        if (context.Command is not PostSaveCommand postSaveCommand)
-            return;
-
-        // A save that failed to write leaves the document unsaved, so adopting it as clean would drop the "*"
-        // while the edits are still only in memory.
-        if (!postSaveCommand.Succeeded)
-            return;
-
-        // Ignore saves of documents we are not editing so a save of an unrelated document never discards our
-        // own in-memory edits.
-        if (postSaveCommand.Context.EditedVisualTreeAsset != EditedVisualTreeAsset)
-            return;
-
-        m_ExternalSave = true;
-        // Defer so the reload runs after the Builder's save has fully settled.
-        EditorApplication.delayCall += DoProcessBuilderSave;
-    }
-
-    void DoProcessBuilderSave()
-    {
-        if (!m_ExternalSave)
-            return;
-        m_ExternalSave = false;
-
-        AdoptReloadedContext(markClean: true);
-    }
-
-    void OnRegistryAssetReloaded(UnityEngine.Object asset)
-    {
-        if (m_SelfReloading || m_PanelElement == null || !IsPartOfEditedDocument(asset))
-            return;
-
-        AdoptReloadedContext(markClean: false);
-    }
-
-    bool IsPartOfEditedDocument(UnityEngine.Object asset)
-    {
-        if (asset == null)
-            return false;
-
-        // Fast path: the common reimport reuses the managed instance, so a reference match settles it.
-        if (ReferenceEquals(asset, EditedVisualTreeAsset) || ReferenceEquals(asset, Context.RootVisualTreeAsset))
-            return true;
-
-        var path = AssetDatabase.GetAssetPath(asset);
-        if (string.IsNullOrEmpty(path))
-            return false;
-
-        var root = (VisualTreeAsset)GlobalObjectId.GlobalObjectIdentifierToObjectSlow(m_MainAsset);
-        if (root != null && AssetDatabase.GetAssetPath(root) == path)
-            return true;
-
-        var edited = EditedVisualTreeAsset;
-        if (edited == null)
-            return false;
-        if (AssetDatabase.GetAssetPath(edited) == path)
-            return true;
-
-        using var _ = ListPool<StyleSheet>.Get(out var sheets);
-        edited.GetAllReferencedStyleSheets(sheets);
-        foreach (var sheet in sheets)
-            if (sheet != null && AssetDatabase.GetAssetPath(sheet) == path)
-                return true;
-        return false;
-    }
-
-    void AdoptReloadedContext(bool markClean)
-    {
-        if (m_PanelElement == null)
-            return;
-
-        var freshRoot = (VisualTreeAsset)GlobalObjectId.GlobalObjectIdentifierToObjectSlow(m_MainAsset);
-        if (freshRoot && (Context.SubDocumentPath == null || Context.SubDocumentPath.Length == 0))
-            Context = new VisualTreeAssetEditingContext(freshRoot, Context.PanelSettings);
-        else
-            ReloadAssets();
-
-        if (markClean)
-            MarkTrackedAssetsClean();
-        CloneTree();
-        ClearUndoForEditedAssets();
-    }
+    void OnPanelRepainted(PanelElement panel) => PanelWasRepainted?.Invoke(panel);
 
     internal override string GetErrorMessage()
     {

@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool closedNetworkEnabled { get; set; }
         bool closedNetworkEnabledDraft { get; set; }
         bool hasBypassPackageTrustEntitlement { get; }
-        bool isSignatureValidationDisabled { get; }
+        bool isSignatureDisabled { get; }
         bool dismissPreviewPackagesInUse { get; set; }
         bool enablePreReleasePackages { get; set; }
         bool advancedSettingsExpanded { get; set; }
@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool hasBypassPackageTrustEntitlement => PackageTrustLevel.HasBypassPackageTrustEntitlement();
 
-        public bool isSignatureValidationDisabled => closedNetworkEnabled && hasBypassPackageTrustEntitlement;
+        public bool isSignatureDisabled => closedNetworkEnabled && hasBypassPackageTrustEntitlement;
 
         public bool dismissPreviewPackagesInUse
         {

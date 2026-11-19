@@ -240,6 +240,12 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_StaticShadowCaster, Styles.staticShadowCaster);
                 }
 
+                if (showMeshLODSettings)
+                {
+                    using (new EditorGUI.DisabledScope(meshLodCount == 1))
+                        EditorGUILayout.IntSlider(m_GlobalIlluminationMeshLod, 0, meshLodCount - 1, Styles.globalIlluminationMeshLod);
+                }
+
                 if (!showLightmapSettings)
                 {
                     EditorGUI.indentLevel -= 1;
@@ -295,14 +301,6 @@ namespace UnityEditor
                             EditorGUI.showMixedValue = showMixedGIValue;
                             receiveGI = (ReceiveGI)EditorGUILayout.IntPopup(Styles.receiveGITitle, (int)ReceiveGI.LightProbes, Styles.receiveGILightmapStrings, Styles.receiveGILightmapValues);
                             EditorGUI.showMixedValue = false;
-                        }
-                    }
-
-                    if (contributeGI && showMeshLODSettings)
-                    {
-                        using (new EditorGUI.DisabledScope(meshLodCount == 1))
-                        {
-                            EditorGUILayout.IntSlider(m_GlobalIlluminationMeshLod, 0, meshLodCount - 1, Styles.globalIlluminationMeshLod);
                         }
                     }
                 }

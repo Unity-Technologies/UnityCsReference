@@ -25,7 +25,7 @@ namespace UnityEditor
     {
         ///<summary>Build a macOS standalone.
         ///
-        ///To specify which architecture to use (Intel, ARM or Universal), refer to <see href="https://docs.unity3d.com/ScriptReference/OSXStandalone.UserBuildSettings-architecture.html">OSXStandalone.UserBuildSettings.architecture</see>.</summary>
+        ///macOS builds target Apple silicon.</summary>
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         StandaloneOSX = 2,
 

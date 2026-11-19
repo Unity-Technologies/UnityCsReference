@@ -147,6 +147,33 @@ namespace Unity.U2D.Physics
 
         /// <undoc/>
         [RequiredByNativeCode]
+        static void RemoveDestroyedWatchers()
+        {
+            // Runs from native after a scene load that keeps PhysicsCore2D running (PhysicsCore2D::OnDidDestroyWorld).
+            // Removes the watchers whose Transform the load destroyed, as nothing can unregister them now, and keeps every other watcher.
+            // The native interest was destroyed with each Transform, so only the store changes.
+            if (s_TransformWatchers == null)
+                return;
+
+            using (ListPool<Transform>.Get(out var destroyedTransforms))
+            {
+                // A destroyed Transform compares equal to null while it is still a key.
+                foreach (var transform in s_TransformWatchers.Keys)
+                {
+                    if (transform == null)
+                        destroyedTransforms.Add(transform);
+                }
+
+                foreach (var transform in destroyedTransforms)
+                {
+                    HashSetPool<PhysicsCallbacks.ITransformChangedCallback>.Release(s_TransformWatchers[transform]);
+                    s_TransformWatchers.Remove(transform);
+                }
+            }
+        }
+
+        /// <undoc/>
+        [RequiredByNativeCode]
         static void TransformChangedCallback(PhysicsBuffer physicsBuffer)
         {
             var transformChangeEvents = physicsBuffer.ToNativeArray<PhysicsEvents.TransformChangeEvent>();

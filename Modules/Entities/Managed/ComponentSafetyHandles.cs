@@ -443,6 +443,21 @@ namespace Unity.Entities
             public TypeIndex          TypeIndex;
         }
 
+        // Native code checks these handles before it reads or writes component data (Modules/Entities/Public/ComponentDependencies.h).
+        // Both arrays are allocated once and keep their address until the World is destroyed.
+        internal ushort* TypeArrayIndices => m_TypeArrayIndices;
+        internal void* ComponentSafetyHandlesPtr => m_ComponentSafetyHandles;
+
+        internal static void GetComponentSafetyHandleLayout(out int size, out int safetyHandleOffset, out int bufferHandleOffset, out int typeIndexOffset)
+        {
+            ComponentSafetyHandle handle = default;
+            var start = (byte*)&handle;
+            size = sizeof(ComponentSafetyHandle);
+            safetyHandleOffset = (int)((byte*)&handle.SafetyHandle - start);
+            bufferHandleOffset = (int)((byte*)&handle.BufferHandle - start);
+            typeIndexOffset = (int)((byte*)&handle.TypeIndex - start);
+        }
+
         AtomicSafetyHandle m_TempSafety;
     }
 }

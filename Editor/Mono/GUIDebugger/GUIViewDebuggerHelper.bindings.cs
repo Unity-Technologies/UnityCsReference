@@ -33,6 +33,7 @@ namespace UnityEditor
     {
         public Rect         rect;
         public Rect         visibleRect;
+        public float        pixelsPerPoint;
         [UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public GUIStyle     usedGUIStyle;
         [UnityMarshalAs(NativeType.ScriptingObjectPtr)]

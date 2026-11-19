@@ -61,7 +61,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal struct ShortHandStylePropertyData
         : IEquatable<ShortHandStylePropertyData>
     {
@@ -108,7 +108,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal struct StylePropertyData<
         TInline,         /* .style */
         TComputedValue>  /* .computedStyle */
@@ -158,7 +158,7 @@ namespace UnityEngine.UIElements
         All = UxmlInlineProperties | Bindings | Selectors
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class StyleDiff : INotifyBindablePropertyChanged, IDataSourceViewHashProvider, IDisposable
     {
         private bool SetInlineValue<TInline, TComputed>(ref StylePropertyData<TInline, TComputed> property,
@@ -172,6 +172,34 @@ namespace UnityEngine.UIElements
             }
 
             return false;
+        }
+
+        // Copy only on change: the inline style updates its stored lists in place
+        private bool SetInlineValue<T, TComputed>(ref StylePropertyData<StyleList<T>, TComputed> property,
+            StyleList<T> storedInlineValue)
+        {
+            if (property.inlineValue.Equals(storedInlineValue))
+                return false;
+            property.inlineValue = InlineStyleAccess.CopyStoredValue(storedInlineValue);
+            return true;
+        }
+
+        private bool SetInlineValue<TComputed>(ref StylePropertyData<StyleBackground, TComputed> property,
+            StyleBackground storedInlineValue)
+        {
+            if (property.inlineValue.Equals(storedInlineValue))
+                return false;
+            property.inlineValue = InlineStyleAccess.CopyStoredValue(storedInlineValue);
+            return true;
+        }
+
+        private bool SetInlineValue<TComputed>(ref StylePropertyData<StyleMaterialDefinition, TComputed> property,
+            StyleMaterialDefinition storedInlineValue)
+        {
+            if (property.inlineValue.Equals(storedInlineValue))
+                return false;
+            property.inlineValue = InlineStyleAccess.CopyStoredValue(storedInlineValue);
+            return true;
         }
 
         private bool SetComputedValue<TInline, TComputed>(ref StylePropertyData<TInline, TComputed> property,
@@ -787,7 +815,7 @@ namespace UnityEngine.UIElements
         }
 
         // The inline values only need to be compared when the element or the previous one has some.
-        private IStyle GetInlineStyle(VisualElement element, bool propertiesMatchPreviousRefresh, out bool refreshInlineValues)
+        private InlineStyleAccess GetInlineStyle(VisualElement element, bool propertiesMatchPreviousRefresh, out bool refreshInlineValues)
         {
             var inlineStyle = element.inlineStyleAccess;
             var hasInlineValues = inlineStyle != null && inlineStyle.hasInlineValues;

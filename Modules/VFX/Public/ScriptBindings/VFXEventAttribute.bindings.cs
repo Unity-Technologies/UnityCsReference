@@ -85,12 +85,12 @@ namespace UnityEngine.VFX
             m_VfxAsset = null;
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Frees the owned native attribute; Internal_Destroy is thread-safe and Dispose suppresses the finalizer.
         ~VFXEventAttribute()
         {
             Release();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         ///<exclude />
         public void Dispose()

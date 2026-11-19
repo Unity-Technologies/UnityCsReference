@@ -20,7 +20,12 @@ namespace UnityEditor
 
         public Type TargetType;
 
+        // targets is empty when the inspected type has no Object instances, such as data components
         [RequiredSignature]
-        static bool SignatureBool(Rect rectangle, UnityEngine.Object[] targetObjets) { throw new InvalidOperationException(); }
+        static bool TypeSignatureBool(Rect rectangle, Type targetType, UnityEngine.Object[] targets) { throw new InvalidOperationException(); }
+
+        // Only called when there is at least one Object target
+        [RequiredSignature]
+        static bool ObjectSignatureBool(Rect rectangle, UnityEngine.Object[] targetObjets) { throw new InvalidOperationException(); }
     }
 }

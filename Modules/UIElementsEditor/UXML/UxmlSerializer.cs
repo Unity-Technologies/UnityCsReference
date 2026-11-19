@@ -16,7 +16,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class UxmlSerializedAttributeDescription
     {
         // Lazy loaded fields that are mostly used in the UI Builder.
@@ -498,7 +498,7 @@ namespace UnityEditor.UIElements
         public override string ToString() => $"{serializedField.DeclaringType.ReflectedType.Name}.{serializedField.Name} ({serializedField.FieldType})";
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class UxmlSerializedUxmlObjectAttributeDescription : UxmlSerializedAttributeDescription
     {
         internal const string k_MultipleUxmlObjectsWarning = "Multiple UxmlObjects found for UxmlObjectReference field {0}. " +
@@ -510,7 +510,7 @@ namespace UnityEditor.UIElements
         public string rootName { get; set; }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class UxmlSerializer
     {
         public static UxmlAttributeConversionResult TryParseSerializedAttribute(string name, string value, UxmlSerializedData uxmlSerializedData, CreationContext cc)

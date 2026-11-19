@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
     [NativeHeader("Modules/UIElements/Core/Native/UIAnimationClip.h")]
     [NativeHeader("Modules/UIElements/Core/Native/UIAnimationClip.bindings.h")]
     [NativeClass("UIAnimationClip", PersistentTypeId = 0x175EDA4B)]
+    [HelpURL("ui-systems/animate-standalone-ui")]
     public sealed class UIAnimationClip : Object
     {
         internal UIAnimationClip(global::UnityEngine.EntityId id) : base(id) {}
@@ -33,7 +34,7 @@ namespace UnityEngine.UIElements
         [FreeFunction("UIAnimationClipBindings::Internal_Create")]
         extern private static EntityId Internal_Create();
 
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal extern AnimationClip animationClip
         {
             [NativeMethod("GetAnimationClip")]

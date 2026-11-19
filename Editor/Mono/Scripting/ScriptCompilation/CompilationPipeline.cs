@@ -349,17 +349,6 @@ namespace UnityEditor.Compilation
             {
                 try
                 {
-#pragma warning disable 618
-                    assemblyCompilationStarted?.Invoke(scriptAssembly.FullPath);
-#pragma warning restore 618
-                }
-                catch (Exception e)
-                {
-                    UnityEngine.Debug.LogException(e);
-                }
-
-                try
-                {
                     assemblyCompilationFinished?.Invoke(scriptAssembly.FullPath, messages);
                 }
                 catch (Exception e)
@@ -367,6 +356,24 @@ namespace UnityEditor.Compilation
                     UnityEngine.Debug.LogException(e);
                 }
             };
+        }
+
+        // Raises the public assemblyCompilationStarted event. Both Bee (per assembly as it finishes)
+        // and MSBuild (batched after a build completes) fire this via the same path so the public
+        // event has one authoritative emit site. The event is [Obsolete] but still subscribed to
+        // externally, so we must keep firing it.
+        internal static void RaiseAssemblyCompilationStarted(string assemblyFullPath)
+        {
+            try
+            {
+#pragma warning disable 618
+                assemblyCompilationStarted?.Invoke(assemblyFullPath);
+#pragma warning restore 618
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogException(e);
+            }
         }
 
         public static string[] GetSystemAssemblyDirectories(ApiCompatibilityLevel apiCompatibilityLevel)
@@ -469,6 +476,19 @@ namespace UnityEditor.Compilation
         public static string GetAssemblyRootNamespaceFromScriptPath(string sourceFilePath)
         {
             var projectRootNamespace = UnityEditor.EditorSettings.projectGenerationRootNamespace;
+            if (MsBuildCompilationInterface.IsEnabled())
+            {
+                try
+                {
+                    var csa = MsBuildCompilationInterface.Instance.FindCustomScriptAssemblyFromScriptPath(sourceFilePath);
+                    return csa != null ? (csa.RootNamespace ?? projectRootNamespace) : projectRootNamespace;
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+
             return GetAssemblyRootNamespaceFromScriptPath(EditorCompilationInterface.Instance, projectRootNamespace, sourceFilePath);
         }
 

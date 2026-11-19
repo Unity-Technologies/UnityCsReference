@@ -108,7 +108,7 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
 
     private void CheckForUntrustedPackages(PackagesChangeArgs args)
     {
-        if (Unsupported.IsPackageTrustValidationDisabled || m_SettingsProxy.isSignatureValidationDisabled)
+        if (Unsupported.IsPackageTrustValidationDisabled || m_SettingsProxy.isSignatureDisabled)
             return;
 
         IEnumerable<IPackage> PackagesToCheck()

@@ -12,7 +12,6 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Toggle in a completer that indicates whether only compatible results should be displayed in the completer.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class ShowOnlyCompatibleResultsToggle : VisualElement
     {
         static readonly string s_UssClassName = "show-only-compatible-toggle";

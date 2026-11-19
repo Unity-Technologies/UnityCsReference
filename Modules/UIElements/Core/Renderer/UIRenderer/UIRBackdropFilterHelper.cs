@@ -11,10 +11,6 @@ namespace UnityEngine.UIElements.UIR
 {
     static partial class BackdropFilterHelper
     {
-        // Not thread-safe; UIR rendering is sequential. Revisit if panel processing becomes parallel.
-        [NoAutoStaticsCleanup] // Reused property block; ApplyFilterChain clears it before each pass
-        static readonly MaterialPropertyBlock s_PropertyBlock = new MaterialPropertyBlock();
-
         // The editor window's sampleable back buffer (the GUIView aux RT) and its content row order
         // (isTopOrigin: texel row 0 is the top of the window; platform windowing convention).
         [AutoStaticsCleanupOnCodeReload] // delegate into editor code; RetainedMode's cctor re-registers it after reload
@@ -22,28 +18,6 @@ namespace UnityEngine.UIElements.UIR
         // cleanup is wired again before any editor UI uses it.
         [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         public static System.Func<(RenderTexture texture, bool isTopOrigin)> editorWindowBackdropSource { private get; set; }
-
-        static readonly int s_ColorMatrixId = Shader.PropertyToID("_ColorMatrix");
-        static readonly int s_ColorOffsetId = Shader.PropertyToID("_ColorOffset");
-        static readonly int s_ColorInvertId = Shader.PropertyToID("_ColorInvert");
-
-        [NoAutoStaticsCleanup] // persist the cached material; nulling it would orphan the native HideAndDontSave object
-        static Material s_NormalizeMaterial;
-        static Material normalizeMaterial
-        {
-            get
-            {
-                if (s_NormalizeMaterial == null)
-                {
-                    s_NormalizeMaterial = new Material(Shader.Find(Shaders.k_RuntimeColorEffect));
-                    s_NormalizeMaterial.hideFlags = HideFlags.HideAndDontSave;
-                    s_NormalizeMaterial.SetMatrix(s_ColorMatrixId, Matrix4x4.identity);
-                    s_NormalizeMaterial.SetFloat(s_ColorOffsetId, 0f);
-                    s_NormalizeMaterial.SetFloat(s_ColorInvertId, 0f);
-                }
-                return s_NormalizeMaterial;
-            }
-        }
 
         [NoAutoStaticsCleanup] // persist the cached texture; nulling it would orphan the native HideAndDontSave object
         static Texture2D s_EmptyBackdrop;
@@ -63,12 +37,6 @@ namespace UnityEngine.UIElements.UIR
                 return s_EmptyBackdrop;
             }
         }
-
-        // Shaders sharing UnityUIEFilter.cginc read unity_uie_UVRect via GetFilterUVRect. The
-        // compositor sets it per-pass for the regular `filter` style; backdrop-filter always
-        // samples the full backdrop texture, so InvokeBackdropFilterCallbacks primes it to
-        // (0,0,1,1).
-        static readonly Vector4[] s_FullUVRectArray = new Vector4[] { new Vector4(0f, 0f, 1f, 1f) };
 
         static RenderTextureReadWrite GetColorSpace()
         {
@@ -114,8 +82,8 @@ namespace UnityEngine.UIElements.UIR
                     owner.flags &= ~RenderDataFlags.HasBackdropFilter;
                 }
 
-                // Return the per-pass MPBs to the manager pool; idempotent, so FreeExtraData may repeat it.
-                renderTreeManager.ReleaseFilterCallbackBlocks(extraData.backdropFilterCallbackPropertyBlocks);
+                // Idempotent, so FreeExtraData may repeat it
+                extraData.backdropFilterParameters.Release(renderTreeManager);
             }
         }
 
@@ -208,7 +176,7 @@ namespace UnityEngine.UIElements.UIR
             return Mathf.FloorToInt(Mathf.Log(budget, 2f));
         }
 
-        // Update-phase entry point: populates the per-pass blocks while no render target is bound.
+        // Update-phase entry point: writes the chain's parameters while no render target is bound.
         public static void InvokeBackdropFilterCallbacks(RenderTreeManager renderTreeManager, RenderData owner)
         {
             VisualElement ve = owner.owner;
@@ -219,19 +187,20 @@ namespace UnityEngine.UIElements.UIR
             if (backdropFilters.Length == 0)
                 return;
 
-            int passCount = FilterHelper.CountFilterChainPasses(backdropFilters);
+            int passCount = FilterHelper.CountFilterChainPasses(backdropFilters, out bool hasSettingsCallback);
             if (passCount == 0)
             {
-                // Zero-pass chains still capture/blit the backdrop, so release only the blocks, not the texture.
+                // Zero-pass chains still capture/blit the backdrop, so release only the parameters, not the texture.
                 if (owner.hasExtraData)
-                    renderTreeManager.ReleaseFilterCallbackBlocks(renderTreeManager.GetExtraData(owner).backdropFilterCallbackPropertyBlocks);
+                    renderTreeManager.GetExtraData(owner).backdropFilterParameters.Release(renderTreeManager);
                 return;
             }
 
-            // A callback removing its own element frees the extra data mid-walk; keep a local reference.
-            var extraData = renderTreeManager.GetOrAddExtraData(owner);
-            var blocks = extraData.backdropFilterCallbackPropertyBlocks ??= new List<MaterialPropertyBlock>(passCount);
-            renderTreeManager.SizeFilterCallbackBlocks(blocks, passCount);
+            // A callback removing its own element frees the extra data mid-walk; keep local references.
+            ref var chain = ref renderTreeManager.GetOrAddExtraData(owner).backdropFilterParameters;
+            chain.Prepare(renderTreeManager, passCount, hasSettingsCallback);
+            var blocks = chain.blocks;
+            var parameterValues = chain.values;
 
             // GetColorSpace() returns Default (sRGB temps), so the shader reads linear even under force-gamma; params track the active color space only.
             bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma;
@@ -250,12 +219,8 @@ namespace UnityEngine.UIElements.UIR
                 readsGamma: readsGamma,
                 writesGamma: readsGamma,
                 lastPassWritesGamma: readsGamma,
-                pixelsPerPoint);
-
-            // Renderer-owned (like _MainTex), so set after the callbacks. The Count re-check covers
-            // a callback removing the element mid-walk.
-            for (int i = 0; i < passCount && i < blocks.Count; i++)
-                blocks[i].SetVectorArray(FilterHelper.s_UVRectId, s_FullUVRectArray);
+                pixelsPerPoint,
+                parameterValues);
         }
 
         // Recomputed every mesh-record pass: the UV corners depend on the world transform. Returns false
@@ -445,7 +410,7 @@ namespace UnityEngine.UIElements.UIR
             }
 
             // Clamp to source bounds; the recorded rect can extend past the RT (custom Camera.rect, split-screen),
-            // which would make the CopyTexture below throw on out-of-range coords.
+            // which would make the CopyRegion below throw on out-of-range coords.
             if (!ClampCapture(ref captureRect, new RectInt(0, 0, source.width, source.height)))
                 return;
 
@@ -468,11 +433,7 @@ namespace UnityEngine.UIElements.UIR
                 normalized.filterMode = FilterMode.Bilinear;
 
                 // Not Graphics.Blit: it clobbers the projection matrix mid-EvaluateChain.
-                var normalizePass = new PostProcessingPass { material = normalizeMaterial };
-                s_PropertyBlock.Clear();
-                FilterHelper.ApplyFilterPass(backdrop, normalized, normalizePass, s_PropertyBlock,
-                    outputLinear: forceGamma,
-                    sourceUVRect: auxIsTopOrigin ? new Rect(0, 1, 1, -1) : new Rect(0, 0, 1, 1));
+                UIRUtility.Resample(backdrop, auxIsTopOrigin ? new Rect(0, 1, 1, -1) : new Rect(0, 0, 1, 1), normalized, gammaToLinear: forceGamma);
 
                 RenderTexture.ReleaseTemporary(backdrop);
                 backdrop = normalized;
@@ -484,7 +445,6 @@ namespace UnityEngine.UIElements.UIR
             int downscaleShift = ComputeDownscaleShift(ve.computedStyle.backdropFilter, IncludeTreeDensity(ve, owner, contentScale), ve.scaledPixelsPerPoint);
             if (downscaleShift > 0)
             {
-                var resamplePass = new PostProcessingPass { material = normalizeMaterial };
                 for (int i = 0; i < downscaleShift; i++)
                 {
                     RenderTexture half = RenderTexture.GetTemporary(
@@ -492,8 +452,7 @@ namespace UnityEngine.UIElements.UIR
                         Mathf.Max(1, (backdrop.height + 1) >> 1),
                         0, backdrop.format, colorSpace);
                     half.filterMode = FilterMode.Bilinear;
-                    s_PropertyBlock.Clear();
-                    FilterHelper.ApplyFilterPass(backdrop, half, resamplePass, s_PropertyBlock, outputLinear: false);
+                    UIRUtility.Resample(backdrop, new Rect(0, 0, 1, 1), half, gammaToLinear: false);
                     RenderTexture.ReleaseTemporary(backdrop);
                     backdrop = half;
                 }
@@ -509,9 +468,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 RenderTexture upscaled = RenderTexture.GetTemporary(captureRect.width, captureRect.height, 0, filtered.format, colorSpace);
                 upscaled.filterMode = FilterMode.Bilinear;
-                var resamplePass = new PostProcessingPass { material = normalizeMaterial };
-                s_PropertyBlock.Clear();
-                FilterHelper.ApplyFilterPass(filtered, upscaled, resamplePass, s_PropertyBlock, outputLinear: false);
+                UIRUtility.Resample(filtered, new Rect(0, 0, 1, 1), upscaled, gammaToLinear: false);
                 if (filtered != backdrop)
                     RenderTexture.ReleaseTemporary(filtered);
                 RenderTexture.ReleaseTemporary(backdrop);
@@ -539,7 +496,7 @@ namespace UnityEngine.UIElements.UIR
                 pixelRect.width,
                 pixelRect.height,
                 0,
-                filtered.format, // Match filtered so the CopyTexture in BlitToTarget is format-compatible.
+                filtered.format, // Match filtered so the CopyRegion in BlitToTarget is format-compatible.
                 colorSpace
             );
             outputTexture.filterMode = FilterMode.Bilinear;
@@ -592,7 +549,7 @@ namespace UnityEngine.UIElements.UIR
         static void BlitToTarget(RenderTexture source, RenderTexture target, RectInt destRect, Vector2Int srcOffset)
         {
             // The GetTemporary above can hand back a buffer holding a previous frame's backdrop, and the
-            // CopyTexture below only overwrites destRect (a clipped capture leaves a margin), so wipe stale
+            // CopyRegion below only overwrites destRect (a clipped capture leaves a margin), so wipe stale
             // pooled content first -- unless the copy fully covers the target, where the clear is redundant.
             bool fullyCovered = destRect.x == 0 && destRect.y == 0
                 && destRect.width == target.width && destRect.height == target.height;
@@ -605,10 +562,10 @@ namespace UnityEngine.UIElements.UIR
             }
 
             // Verbatim copy, NOT an alpha-blend: `filtered` is already premultiplied, so alpha-blending it would
-            // re-multiply by alpha (double premultiply -> darkened backdrop). CopyTexture overwrites exactly.
+            // re-multiply by alpha (double premultiply -> darkened backdrop). CopyRegion overwrites exactly.
             // srcOffset selects the element sub-rect out of the margin-inflated capture.
-            Graphics.CopyTexture(source, 0, 0, srcOffset.x, srcOffset.y, destRect.width, destRect.height,
-                                 target, 0, 0, destRect.x, destRect.y);
+            UIRUtility.CopyRegion(source, new RectInt(srcOffset.x, srcOffset.y, destRect.width, destRect.height),
+                target, new Vector2Int(destRect.x, destRect.y));
         }
 
         static RenderTexture CaptureBackdrop(RenderTexture source, RectInt region, RenderTextureReadWrite colorSpace, bool chainCanLowerAlpha)
@@ -630,9 +587,8 @@ namespace UnityEngine.UIElements.UIR
 
             if (copyable)
             {
-                // Byte-for-byte GPU copy; avoids DrawTexture's alpha-blend and sub-pixel drift. Bottom-left origin pixels.
-                Graphics.CopyTexture(source, 0, 0, region.xMin, region.yMin, region.width, region.height,
-                                     backdrop, 0, 0, 0, 0);
+                // 1:1 texel copy; avoids DrawTexture's alpha-blend and sub-pixel drift. Bottom-left origin pixels.
+                UIRUtility.CopyRegion(source, region, backdrop, Vector2Int.zero);
             }
             else
             {
@@ -653,9 +609,7 @@ namespace UnityEngine.UIElements.UIR
                     (float)drawRegion.yMin / drawSource.height,
                     (float)drawRegion.width / drawSource.width,
                     (float)drawRegion.height / drawSource.height);
-                s_PropertyBlock.Clear();
-                FilterHelper.ApplyFilterPass(drawSource, backdrop, new PostProcessingPass { material = normalizeMaterial },
-                    s_PropertyBlock, outputLinear: false, sourceUVRect: sourceUVRect);
+                UIRUtility.Resample(drawSource, sourceUVRect, backdrop, gammaToLinear: false);
 
                 if (drawSource != source)
                     RenderTexture.ReleaseTemporary(drawSource);
@@ -711,49 +665,28 @@ namespace UnityEngine.UIElements.UIR
             if (passCount == 0)
                 return source;
 
-            // Re-prime with defaults when the pass count changed after the update-phase walk (chain mutated
-            // mid-frame): new blocks are empty and survivors hold stale uniforms, incl. a degenerate
-            // unity_uie_UVRect. Only count changes are detected; user callbacks cannot run at render time.
+            // When the chain changed after the update-phase walk, ApplyFilterChain draws every pass with its defaults
             var renderTreeManager = owner.renderTree.renderTreeManager;
             var extraData = renderTreeManager.GetOrAddExtraData(owner);
-            var blocks = extraData.backdropFilterCallbackPropertyBlocks ??= new List<MaterialPropertyBlock>(passCount);
-            if (renderTreeManager.SizeFilterCallbackBlocks(blocks, passCount))
-            {
-                bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma;
-                PrimeDefaultBlocks(blocks, backdropFilters, readsGamma);
-            }
-
             return FilterHelper.ApplyFilterChain(
                 source,
                 backdropFilters,
                 colorSpace,
-                blocks,
+                extraData.backdropFilterParameters.blocks,
+                extraData.backdropFilterParameters.values,
+                renderTreeManager.filterParameterStorage,
                 usePixelMatrix: true);
         }
 
-        // Default bindings + full UV rect for every rendered slot; user callbacks must not run at render time.
-        static void PrimeDefaultBlocks(List<MaterialPropertyBlock> blocks, System.ReadOnlySpan<UnmanagedFilterFunction> filters, bool readsGamma)
+        public static class Testing
         {
-            int flatBlockIndex = 0;
-            for (int i = 0; i < filters.Length; i++)
+            // A parameter that the update phase wrote for the pass at passSlot, in flat chain order
+            public static Vector4 GetParameter(RenderTreeManager renderTreeManager, RenderData owner, int passSlot, string name)
             {
-                var filterFunc = (FilterFunction)filters[i];
-                var filterDef = filterFunc.GetDefinition();
-                if (filterDef == null || filterDef.passes == null)
-                    continue;
-
-                for (int j = 0; j < filterDef.passes.Length; j++)
-                {
-                    var pass = filterDef.passes[j];
-                    if (pass.material != null)
-                    {
-                        var block = blocks[flatBlockIndex];
-                        block.Clear();
-                        FilterHelper.ApplyDefaultParameterBindings(block, pass, filterFunc, readsGamma);
-                        block.SetVectorArray(FilterHelper.s_UVRectId, s_FullUVRectArray);
-                    }
-                    flatBlockIndex++;
-                }
+                var values = renderTreeManager.GetExtraData(owner).backdropFilterParameters.values;
+                if (values == null || !values.TryGet(passSlot, Shader.PropertyToID(name), out var entry))
+                    throw new System.ArgumentException($"Pass {passSlot} has no parameter '{name}'.");
+                return entry.vector;
             }
         }
     }

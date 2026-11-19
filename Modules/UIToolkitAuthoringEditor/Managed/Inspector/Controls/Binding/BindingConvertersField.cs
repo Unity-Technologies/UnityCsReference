@@ -18,7 +18,6 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Represents a view used to edit the list of local converters to source or to target of a Binding instance
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class BindingConvertersField : BaseField<string>
     {
         /// <summary>
@@ -357,22 +356,9 @@ namespace Unity.UIToolkit.Editor
                     sourcePropertyType = context.DataSourceType;
                 else
                 {
-                    using (ListPool<PropertyPathInfo>.Get(out var properties))
-                    {
-                        DataBindingUtility.GetPropertyPaths(context.DataSourceType, int.MaxValue, properties);
-
-                        var sourceProperty = new PropertyPathInfo();
-                        foreach (var p in properties)
-                        {
-                            if (p.propertyPath == propertyPath)
-                            {
-                                sourceProperty = p;
-                                break;
-                            }
-                        }
-
-                        sourcePropertyType = sourceProperty.type;
-                    }
+                    var result = DataBindingUtility.IsPathValid(context.DataSourceType, propertyPath);
+                    if (result.returnCode == VisitReturnCode.Ok)
+                        sourcePropertyType = result.type;
                 }
             }
 

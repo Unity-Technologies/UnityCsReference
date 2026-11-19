@@ -13,7 +13,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class VisualTreeAssetExtensions
     {
         [NoAutoStaticsCleanup]
@@ -128,7 +128,6 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Gets whether the UXML document is in editor extension mode.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool IsEditorExtensionMode(this VisualTreeAsset vta)
         {
             const string k_EditorExtensionModeAttributeName = "editor-extension-mode";
@@ -150,7 +149,7 @@ namespace UnityEditor.UIElements
         /// Gets all stylesheets referenced by the root element of the VisualTreeAsset.
         /// Fills the provided list with stylesheets. The list is not cleared before filling.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void GetAllReferencedStyleSheets(this VisualTreeAsset vta, List<StyleSheet> outStyleSheets)
         {
             var visualTree = vta.visualTreeNoAlloc;
@@ -195,7 +194,7 @@ namespace UnityEditor.UIElements
         /// Gets all stylesheets referenced by the root element of the VisualTreeAsset.
         /// Returns a new list containing the stylesheets.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static List<StyleSheet> GetAllReferencedStyleSheets(this VisualTreeAsset vta)
         {
             var result = new List<StyleSheet>();
@@ -203,7 +202,7 @@ namespace UnityEditor.UIElements
             return result;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         public static StyleRule GetOrCreateInlineStyleRule(this VisualTreeAsset vta, VisualElementAsset vea)
         {
             return vta.GetOrCreateInlineStyleRule(vea, out var _);

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Profiling;
 using Unity.Properties;
@@ -67,11 +68,16 @@ namespace UnityEngine.UIElements
                     affectsBindingOrder = bindingManager.IsTrackingAnyElementInHierarchy(ve, false);
                     break;
                 case HierarchyChangeType.AttachedToPanel:
+                    m_DataSourceChangedRequests.Add(ve);
                     for (var i = 0; i < additionalContext.Count; ++i)
                     {
                         var added = additionalContext[i];
                         m_RemovedElements.Remove(added);
-                        m_DataSourceChangedRequests.Add(ve);
+
+                        // The invalidation stops at descendants that have a data source, but their data source could
+                        // change while they were outside of the panel.
+                        if (added.dataSource != null)
+                            m_DataSourceChangedRequests.Add(added);
                     }
                     affectsBindingOrder = bindingManager.IsTrackingAnyElement(additionalContext);
                     break;
@@ -199,37 +205,37 @@ namespace UnityEngine.UIElements
                             m_VersionedSources.Add(sourceInfo);
                         }
 
-                        if (binding.isDirty)
-                            binding.dirtyUpdateStamp = stamp;
-
-                        if (!m_Updater.ShouldProcessBindingAtStage(binding, BindingUpdateStage.UpdateUI, changed, binding.dirtyUpdateStamp == stamp))
-                            continue;
-
+                        // Cleared even when no binding of the source is processed, so the changes don't accumulate
                         if (null != sourceInfo && changed && sourceInfo.changesStamp != stamp)
                         {
                             sourceInfo.changesStamp = stamp;
                             m_ChangedSources.Add(sourceInfo);
                         }
 
-                        if (binding.updateTrigger == BindingUpdateTrigger.OnSourceChanged && source is INotifyBindablePropertyChanged && !binding.isDirty)
+                        if (binding.isDirty)
+                            binding.dirtyUpdateStamp = stamp;
+
+                        if (!m_Updater.ShouldProcessBindingAtStage(binding, BindingUpdateStage.UpdateUI, changed, binding.dirtyUpdateStamp == stamp))
+                            continue;
+
+                        if (binding.updateTrigger == BindingUpdateTrigger.OnSourceChanged && !binding.isDirty && IsChangeTracked(source, sourceInfo, resolvedDataSourcePath))
                         {
                             var changedPaths = sourceInfo?.detectedChangesNoAlloc;
-                            if (null == changedPaths || changedPaths.Count == 0)
-                                continue;
-
-                            // Special case when binding against the data source itself.
-                            var processBinding = resolvedDataSourcePath.IsEmpty;
-
-                            foreach (var path in changedPaths)
+                            var hasChangedPaths = null != changedPaths && changedPaths.Count > 0;
+                            if (sourceInfo is not { hasCollectionChanges: true })
                             {
-                                if (IsPrefix(path, resolvedDataSourcePath))
-                                {
-                                    processBinding = true;
-                                    break;
-                                }
-                            }
+                                if (!hasChangedPaths)
+                                    continue;
 
-                            if (!processBinding)
+                                // Special case when binding against the data source itself.
+                                if (!resolvedDataSourcePath.IsEmpty && !ContainsPrefixOf(changedPaths, resolvedDataSourcePath))
+                                    continue;
+                            }
+                            else if (!resolvedDataSourcePath.IsEmpty &&
+                                     !IsAffectedByIndexChange(resolvedDataSourcePath, sourceInfo.firstChangedIndex) &&
+                                     !IsInReplacedRange(resolvedDataSourcePath, sourceInfo) &&
+                                     !(hasChangedPaths && ContainsPrefixOf(changedPaths, resolvedDataSourcePath)) &&
+                                     !IsChangedItem(source, resolvedDataSourcePath, sourceInfo.changedItemsNoAlloc))
                                 continue;
                         }
                     }
@@ -278,12 +284,14 @@ namespace UnityEngine.UIElements
                 sourceInfo.lastVersion = sourceInfo.versionAtUpdateStart;
             }
 
-            ProcessPropertyChangedEvents(stamp);
-
             foreach (var sourceInfo in m_ChangedSources)
             {
-                sourceInfo.detectedChangesNoAlloc?.Clear();
+                sourceInfo.ClearChanges();
             }
+
+            // The changes that the controls write back to their data sources are kept for the next update, so that the
+            // other bindings of these data sources see them.
+            ProcessPropertyChangedEvents(stamp);
 
             m_BoundsElement.Clear();
             m_BoundCollections.Clear();
@@ -316,36 +324,89 @@ namespace UnityEngine.UIElements
             return (null != source, 0L);
         }
 
-        private bool IsPrefix(in PropertyPath prefix, in PropertyPath path)
+        // A collection that only reports collection changes says nothing about the content of its items or about its other
+        // properties, so only the collection itself (the empty path) and the paths that stop at an item, such as "[3]",
+        // can wait for a notification.
+        private static bool IsChangeTracked(object source, DataBindingManager.SourceInfo sourceInfo, in PropertyPath path)
+        {
+            if (null != sourceInfo)
+            {
+                if (sourceInfo.notifiesPropertyChanges)
+                    return true;
+                if (!sourceInfo.notifiesCollectionChanges)
+                    return false;
+            }
+            else if (source is INotifyBindablePropertyChanged)
+                return true;
+            else if (source is not INotifyBindableCollectionChanged)
+                return false;
+
+            return path.IsEmpty || (path.Length == 1 && path[0].Kind == PropertyPathPartKind.Index);
+        }
+
+        // The collection reports changed items without their index, so the item at the index of the path is looked up.
+        private static bool IsChangedItem(object source, in PropertyPath path, HashSet<object> changedItems)
+        {
+            if (null == changedItems || changedItems.Count == 0)
+                return false;
+
+            var firstPart = path[0];
+            if (firstPart.Kind != PropertyPathPartKind.Index || source is not IList list)
+                return false;
+
+            var index = firstPart.Index;
+            return index >= 0 && index < list.Count && changedItems.Contains(list[index]);
+        }
+
+        // Paths that do not start with an index can depend on the number of items.
+        private static bool IsAffectedByIndexChange(in PropertyPath path, int firstChangedIndex)
+        {
+            if (firstChangedIndex == int.MaxValue)
+                return false;
+
+            var firstPart = path[0];
+            return firstPart.Kind != PropertyPathPartKind.Index || firstPart.Index >= firstChangedIndex;
+        }
+
+        private static bool IsInReplacedRange(in PropertyPath path, DataBindingManager.SourceInfo sourceInfo)
+        {
+            var firstPart = path[0];
+            return firstPart.Kind == PropertyPathPartKind.Index && sourceInfo.IsInReplacedRange(firstPart.Index);
+        }
+
+        internal static bool ContainsPrefixOf(HashSet<PropertyPath> changedPaths, in PropertyPath path)
+        {
+            // Looking up every prefix of the path is cheaper than comparing the path against many changes.
+            // Only for paths whose strict prefixes fit in the inline parts, since longer prefixes allocate.
+            if (path.Length <= PropertyPath.k_InlineCount + 1 && changedPaths.Count > path.Length + 1)
+            {
+                for (var length = 0; length <= path.Length; ++length)
+                {
+                    if (changedPaths.Contains(PropertyPath.SubPath(path, 0, length)))
+                        return true;
+                }
+
+                return false;
+            }
+
+            foreach (var changedPath in changedPaths)
+            {
+                if (IsPrefix(changedPath, path))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsPrefix(in PropertyPath prefix, in PropertyPath path)
         {
             if (path.Length < prefix.Length)
                 return false;
 
             for (var i = 0; i < prefix.Length; ++i)
             {
-                var prefixPart = prefix[i];
-                var part = path[i];
-
-                if (prefixPart.Kind != part.Kind)
+                if (!prefix[i].Equals(path[i]))
                     return false;
-
-                switch (prefixPart.Kind)
-                {
-                    case PropertyPathPartKind.Name:
-                        if (prefixPart.Name != part.Name)
-                            return false;
-                        break;
-                    case PropertyPathPartKind.Index:
-                        if (prefixPart.Index != part.Index)
-                            return false;
-                        break;
-                    case PropertyPathPartKind.Key:
-                        if (prefixPart.Key != part.Key)
-                            return false;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
             }
 
             return true;

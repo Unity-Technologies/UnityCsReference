@@ -13,7 +13,7 @@ using Unity.Collections;
 
 namespace UnityEditor.Utils
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class Paths
     {
         internal static readonly char[] invalidFilenameChars;

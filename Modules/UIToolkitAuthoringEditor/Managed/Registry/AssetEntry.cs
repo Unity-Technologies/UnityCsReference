@@ -15,7 +15,6 @@ namespace Unity.UIToolkit.Editor;
 /// How a tool holds an open asset. Read-only holders never contribute to dirtiness and never trigger a
 /// save prompt on close; read-write holders do.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 enum UIAssetAccess
 {
     ReadOnly,

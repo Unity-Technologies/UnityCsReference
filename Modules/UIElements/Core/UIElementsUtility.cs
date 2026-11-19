@@ -206,7 +206,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.GraphToolkitModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.GraphToolkitModule")]
     internal static partial class UIElementsUtility
     {
 
@@ -236,7 +236,6 @@ namespace UnityEngine.UIElements
         public const string hiddenClassName = "unity-hidden";
         internal static readonly UniqueStyleString hiddenClassNameUnique = new(hiddenClassName);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal const ExtraVertexChannels k_AllExtraChannels =
             ExtraVertexChannels.TexCoord1 |
             ExtraVertexChannels.TexCoord2 |
@@ -288,7 +287,6 @@ namespace UnityEngine.UIElements
         }
 
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void UpdateSchedulers()
         {
             if (UnloadingUtility.LogErrorIfShutdown())
@@ -393,7 +391,7 @@ namespace UnityEngine.UIElements
             return displayValue;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void MarkVisualTreeAssetAsChanged(VisualTreeAsset visualTreeAsset)
         {
             var iterator = GetPanelsIterator();

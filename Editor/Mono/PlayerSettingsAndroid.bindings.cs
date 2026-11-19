@@ -399,6 +399,14 @@ namespace UnityEditor
         Sensor = 2,
     }
 
+    // Keep in sync with AndroidInputEmulationMode in Runtime/Misc/PlayerSettings.h
+    internal enum AndroidInputEmulationMode
+    {
+        Platform = 0,
+        Engine = 1,
+        None = 2,
+    }
+
     [Flags]
     public enum AndroidApplicationEntry : uint
     {
@@ -1286,6 +1294,10 @@ namespace UnityEditor
             // Add enableOnBackInvokedCallback flag to AndroidManifest
             [NativeProperty("AndroidPredictiveBackSupport", TargetType.Function)]
             public static extern bool predictiveBackSupport { get; set; }
+
+            // Who turns mouse and touchpad input into touches; anything but Platform adds android.hardware.type.pc to AndroidManifest
+            [NativeProperty("AndroidInputEmulation", TargetType.Function)]
+            internal static extern AndroidInputEmulationMode inputEmulation { get; set; }
 
             [Obsolete("GetAndroidVulkanDenyFilterListImpl is deprecated. Use the androidVulkanDeviceFilterListAsset instead.")]
             internal static extern AndroidDeviceFilterData[] GetAndroidVulkanDenyFilterListImpl();

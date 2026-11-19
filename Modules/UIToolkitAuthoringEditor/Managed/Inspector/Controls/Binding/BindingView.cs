@@ -558,7 +558,8 @@ namespace Unity.UIToolkit.Editor
             {
                 // A component target (${component:<Type>}.<field>) is not a property of the element, so its type
                 // comes from the component's serialized data; element targets resolve through the property bag.
-                var propertyType = SerializedPropertyExtensions.TryGetComponentAttributeType(BindingPropertyName, out var componentFieldType)
+                var propertyType = SerializedPropertyExtensions.TryGetComponentAttributeType(
+                        m_Element, BindingPropertyName, out var componentFieldType)
                     ? componentFieldType
                     : BindableProperty?.DeclaredValueType();
 

@@ -317,7 +317,6 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 }
             }
 
-            [NoAutoStaticsCleanup] // immutable config array; GUIContent entries and string keys are code-reload-safe
             internal static readonly DetailsSectionInfo[] s_DetailsSections = new DetailsSectionInfo[]
             {
                 new DetailsSectionInfo(

@@ -123,7 +123,12 @@ namespace UnityEditorInternal.Profiling
                     return;
                 }
 
-                var extracted = ExtractScreenshotFromEmissionFrame(sourceEmissionFrame);
+                // Invalidate the cache key before extracting: the extract overwrites the current
+                // texture's pixels in place when it can reuse it, so a failure part-way through
+                // would otherwise leave the texture labelled as a frame it no longer holds.
+                m_CurrentTextureEmissionFrame = -1;
+
+                var extracted = ExtractScreenshotFromEmissionFrame(sourceEmissionFrame, m_CurrentTexture);
                 if (!extracted.Found)
                 {
                     ClearCurrentTexture();
@@ -131,13 +136,23 @@ namespace UnityEditorInternal.Profiling
                     return;
                 }
 
-                // Swap first, dispose second — anything else flashes blank mid-frame.
-                var previousTexture = m_CurrentTexture;
-                m_CurrentTexture = extracted.Texture;
+                if (ReferenceEquals(extracted.Texture, m_CurrentTexture))
+                {
+                    // Reused in place, so Image.image is already the right reference and its setter
+                    // would early-out on the equal reference without scheduling a repaint.
+                    m_ScreenshotImage.MarkDirtyRepaint();
+                }
+                else
+                {
+                    // Swap first, dispose second — anything else flashes blank mid-frame.
+                    var previousTexture = m_CurrentTexture;
+                    m_CurrentTexture = extracted.Texture;
+                    m_ScreenshotImage.image = extracted.Texture;
+                    if (previousTexture != null)
+                        UnityEngine.Object.DestroyImmediate(previousTexture);
+                }
+
                 m_CurrentTextureEmissionFrame = sourceEmissionFrame;
-                m_ScreenshotImage.image = extracted.Texture;
-                if (previousTexture != null)
-                    UnityEngine.Object.DestroyImmediate(previousTexture);
 
                 UpdateInfoText(logicalFrame, sourceLogicalFrame, extracted.Texture);
             }
@@ -177,7 +192,7 @@ namespace UnityEditorInternal.Profiling
             public bool Found;
         }
 
-        static ScreenshotResult ExtractScreenshotFromEmissionFrame(int emissionFrame)
+        static ScreenshotResult ExtractScreenshotFromEmissionFrame(int emissionFrame, Texture2D reusable)
         {
             using (var frameData = ProfilerDriver.GetRawFrameDataView(emissionFrame, 0))
             {
@@ -190,8 +205,9 @@ namespace UnityEditorInternal.Profiling
                 if (data.Length == 0)
                     return default;
 
-                // Upload directly from the NativeArray slice (no managed copy).
-                var texture = ScreenshotIndexCatalogue.CreateScreenshotTexture(data, width, height, format);
+                // Upload directly from the NativeArray slice (no managed copy), into the texture
+                // already on screen when it can take these pixels.
+                var texture = ScreenshotIndexCatalogue.ReuseOrCreateScreenshotTexture(reusable, data, width, height, format);
                 return new ScreenshotResult { Texture = texture, Found = true };
             }
         }

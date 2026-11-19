@@ -317,12 +317,12 @@ namespace UnityEngine
         // names rather than one per curve.
         internal static int FindChannel(string[] names, int count, ref uint[] cachedHashes, ref int cachedPrefixHash, int prefixHash, int attributeHash)
         {
-            var prefixState = (uint)prefixHash ^ k_Crc32InitialState;
+            var prefixCrc = (uint)prefixHash;
             var hashes = cachedHashes;
             var built = false;
             if (hashes == null || hashes.Length != count || cachedPrefixHash != prefixHash)
             {
-                hashes = HashNames(names, count, prefixState);
+                hashes = HashNames(names, count, prefixCrc);
                 built = true;
             }
 
@@ -330,9 +330,9 @@ namespace UnityEngine
 
             // The serializer refills m_Names in place when its length doesn't change, so cached hashes can
             // be stale: confirm a hit, and look again with fresh hashes after a miss.
-            if (!built && (index < 0 || HashName(prefixState, names[index]) != (uint)attributeHash))
+            if (!built && (index < 0 || HashName(prefixCrc, names[index]) != (uint)attributeHash))
             {
-                hashes = HashNames(names, count, prefixState);
+                hashes = HashNames(names, count, prefixCrc);
                 index = Array.IndexOf(hashes, (uint)attributeHash);
             }
 
@@ -342,81 +342,17 @@ namespace UnityEngine
             return index;
         }
 
-        static uint[] HashNames(string[] names, int count, uint prefixState)
+        static uint[] HashNames(string[] names, int count, uint prefixCrc)
         {
             var hashes = new uint[count];
             for (int i = 0; i < count; i++)
-                hashes[i] = HashName(prefixState, names[i]);
+                hashes[i] = HashName(prefixCrc, names[i]);
             return hashes;
         }
 
-        static uint HashName(uint prefixState, string name)
+        static uint HashName(uint prefixCrc, string name)
         {
-            return UpdateCrc32(prefixState, name ?? string.Empty) ^ k_Crc32InitialState;
-        }
-
-        // Matches crc32 in Runtime/Utilities/CRC32.h, which hashes curve attributes as UTF-8.
-        const uint k_Crc32InitialState = 0xFFFFFFFF;
-        static readonly uint[] k_Crc32Table = CreateCrc32Table();
-
-        static uint[] CreateCrc32Table()
-        {
-            var table = new uint[256];
-            for (uint i = 0; i < table.Length; i++)
-            {
-                var entry = i;
-                for (int bit = 0; bit < 8; bit++)
-                    entry = (entry & 1) != 0 ? (entry >> 1) ^ 0xEDB88320 : entry >> 1;
-                table[i] = entry;
-            }
-            return table;
-        }
-
-        static uint UpdateCrc32(uint state, byte value)
-        {
-            return k_Crc32Table[(state ^ value) & 0xFF] ^ (state >> 8);
-        }
-
-        // Hashes the UTF-8 encoding of text without allocating it. Unpaired surrogates encode as
-        // U+FFFD, as they do when the string is converted for native code.
-        static uint UpdateCrc32(uint state, string text)
-        {
-            for (int i = 0; i < text.Length; i++)
-            {
-                int codePoint = text[i];
-                if (char.IsSurrogate(text[i]))
-                {
-                    if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
-                    {
-                        codePoint = char.ConvertToUtf32(text[i], text[i + 1]);
-                        i++;
-                    }
-                    else
-                        codePoint = 0xFFFD;
-                }
-
-                if (codePoint < 0x80)
-                    state = UpdateCrc32(state, (byte)codePoint);
-                else if (codePoint < 0x800)
-                {
-                    state = UpdateCrc32(state, (byte)(0xC0 | (codePoint >> 6)));
-                    state = UpdateCrc32(state, (byte)(0x80 | (codePoint & 0x3F)));
-                }
-                else if (codePoint < 0x10000)
-                {
-                    state = UpdateCrc32(state, (byte)(0xE0 | (codePoint >> 12)));
-                    state = UpdateCrc32(state, (byte)(0x80 | ((codePoint >> 6) & 0x3F)));
-                    state = UpdateCrc32(state, (byte)(0x80 | (codePoint & 0x3F)));
-                }
-                else
-                {
-                    state = UpdateCrc32(state, (byte)(0xF0 | (codePoint >> 18)));
-                    state = UpdateCrc32(state, (byte)(0x80 | ((codePoint >> 12) & 0x3F)));
-                    state = UpdateCrc32(state, (byte)(0x80 | ((codePoint >> 6) & 0x3F)));
-                    state = UpdateCrc32(state, (byte)(0x80 | (codePoint & 0x3F)));
-                }
-            }
-            return state;
+            return Crc32Utility.Append(prefixCrc, name ?? string.Empty);
         }
     }
 }

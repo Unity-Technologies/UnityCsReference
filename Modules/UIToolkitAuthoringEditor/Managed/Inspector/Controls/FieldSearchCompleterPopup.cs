@@ -16,7 +16,6 @@ namespace Unity.UIToolkit.Editor;
 /// the number of results found. It also handles the hover state of the items in the ListView, and provides events for
 /// when an item is chosen or when the selection changes.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 class FieldSearchCompleterPopup : Popup
 {
     public new const string UssClassName = "unity-field-search-completer-popup";

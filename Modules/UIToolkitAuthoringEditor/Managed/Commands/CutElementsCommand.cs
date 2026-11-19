@@ -28,8 +28,6 @@ sealed class CutElementsCommand : Command<CutElementsCommand>
 
     public static bool Validate(object source, ReadOnlySpan<VisualElementAsset> elements)
     {
-        if (Clipboard.GetClipboardForStage() == null)
-            return false;
         if (elements.IsEmpty)
             return false;
         foreach (var element in elements)
@@ -40,9 +38,10 @@ sealed class CutElementsCommand : Command<CutElementsCommand>
         return true;
     }
 
-    public static CommandExecutionStatus Execute(object source, VisualElementAsset[] elements)
+    public static CommandExecutionStatus Execute(object source, VisualElementAsset[] elements, AuthoringContext requestingContext = null)
     {
         using var cmd = GetPooled(source, elements);
+        cmd.RequestingContext = requestingContext;
         return UICommandQueue.Execute(cmd).Status;
     }
 
@@ -66,7 +65,7 @@ sealed class CutElementsCommand : Command<CutElementsCommand>
             return CommandExecutionStatus.ExecutionFailed;
 
         Clipboard.SystemCopyBuffer = content;
-        Clipboard.GetClipboardForStage().SetCutElements(ElementsToCut);
+        Clipboard.For(RequestingContext).SetCutElements(ElementsToCut);
         return CommandExecutionStatus.Success;
     }
 }

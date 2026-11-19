@@ -44,7 +44,7 @@ namespace UnityEditor.UIElements
         private EnumData m_EnumData;
 
         // These properties exist so that the UIBuilder can read them.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [UxmlAttribute, UxmlTypeReference(typeof(Enum))]
         internal Type type
         {
@@ -61,7 +61,7 @@ namespace UnityEditor.UIElements
         }
 
         [UxmlAttribute]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool includeObsoleteValues
         {
             get => m_IncludeObsoleteValues;
@@ -71,9 +71,9 @@ namespace UnityEditor.UIElements
         [UxmlAttribute("value"), UxmlAttributeBindingPath("value"), EnumFlagsFieldValueDecorator]
         internal string valueAsString
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => value?.ToString();
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             set
             {
                 if (type != null)
@@ -199,7 +199,6 @@ namespace UnityEditor.UIElements
             return EnumDataUtility.EnumFlagsToInt(m_EnumData, value);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void PopulateDataFromType(Type enumType)
         {
             m_EnumType = enumType;

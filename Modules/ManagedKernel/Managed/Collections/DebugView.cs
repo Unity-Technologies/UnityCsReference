@@ -17,7 +17,7 @@ namespace Unity.Collections
             value = v;
         }
 
-        public override string ToString()
+        public readonly override string ToString()
         {
             return $"{key} = {value}";
         }

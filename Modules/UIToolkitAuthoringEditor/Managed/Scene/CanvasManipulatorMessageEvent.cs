@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 sealed class CanvasManipulatorMessageEvent : EventBase<CanvasManipulatorMessageEvent>
 {
     public string Message { get; private set; }

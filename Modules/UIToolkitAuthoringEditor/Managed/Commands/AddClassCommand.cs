@@ -7,7 +7,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 sealed class AddClassCommand : Command<AddClassCommand>
 {
     public static AddClassCommand GetPooled(object source, VisualElementAsset vea, string className)

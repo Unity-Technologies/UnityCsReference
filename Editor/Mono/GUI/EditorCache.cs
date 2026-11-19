@@ -110,12 +110,12 @@ namespace UnityEditor
             System.GC.SuppressFinalize(this);
         }
 
-#pragma warning disable UA5000 // Intentional leak warning: logs an error when the EditorWrapper was not disposed.
+#pragma warning disable UAC0045 // Intentional leak warning: logs an error when the EditorWrapper was not disposed.
         ~EditorWrapper()
         {
             Debug.LogError("Failed to dispose EditorWrapper.");
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
     }
 
     internal class EditorCache : System.IDisposable
@@ -184,11 +184,11 @@ namespace UnityEditor
             System.GC.SuppressFinalize(this);
         }
 
-#pragma warning disable UA5000 // Intentional leak warning: logs an error when the EditorCache was not disposed.
+#pragma warning disable UAC0045 // Intentional leak warning: logs an error when the EditorCache was not disposed.
         ~EditorCache()
         {
             Debug.LogError("Failed to dispose EditorCache.");
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
     }
 } // namespace

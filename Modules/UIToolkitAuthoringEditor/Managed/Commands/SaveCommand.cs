@@ -7,7 +7,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 abstract class SaveCommand<T> : Command<T>
     where T : SaveCommand<T>, new()
 {
@@ -70,7 +69,6 @@ abstract class SaveCommand<T> : Command<T>
     public bool SingleAsset { get; private set; }
 }
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 class PreSaveCommand : SaveCommand<PreSaveCommand>
 {
     public static PreSaveCommand GetPooled(object source, VisualTreeAssetEditingContext context)
@@ -99,7 +97,6 @@ class PreSaveCommand : SaveCommand<PreSaveCommand>
     }
 }
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 class PostSaveCommand : SaveCommand<PostSaveCommand>
 {
     public new static PostSaveCommand GetPooled(object source, VisualTreeAssetEditingContext context, bool succeeded = true)
@@ -128,7 +125,6 @@ class PostSaveCommand : SaveCommand<PostSaveCommand>
     }
 }
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 class PreDiscardCommand : SaveCommand<PreDiscardCommand>
 {
     // No Succeeded overload: a Pre command opens the operation, so there is no outcome to report yet.
@@ -158,7 +154,6 @@ class PreDiscardCommand : SaveCommand<PreDiscardCommand>
     }
 }
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 class PostDiscardCommand : SaveCommand<PostDiscardCommand>
 {
     public new static PostDiscardCommand GetPooled(object source, VisualTreeAssetEditingContext context, bool succeeded = true)

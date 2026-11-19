@@ -587,7 +587,7 @@ namespace UnityEditor
                 EditorGUILayout.Space();
 
                 // Vertical that contains box and the toolbar below it
-                Rect listRect = EditorGUILayout.BeginVertical();
+                Rect listRect = EditorGUILayout.BeginVertical(EditorStyles.frameBox);
                 {
                     int dropFieldId = EditorGUIUtility.GetControlID(s_DropFieldHash, FocusType.Passive, listRect);
                     MonoScript dropped = EditorGUI.DoDropField(listRect, dropFieldId, typeof(MonoScript), MonoScriptValidatorCallback, false, Styles.dropField) as MonoScript;
@@ -617,7 +617,7 @@ namespace UnityEditor
                     } EditorGUILayout.EndVertical();
 
                     // The toolbar below the box
-                    GUILayout.BeginHorizontal(Styles.toolbar);
+                    GUILayout.BeginHorizontal();
                     {
                         GUILayout.FlexibleSpace();
                         Rect r2;

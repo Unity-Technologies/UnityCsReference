@@ -27,7 +27,7 @@ namespace UnityEngine.UIElements
         private EnumData m_EnumData;
 
         // These properties exist so that the UIBuilder can read them.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [UxmlAttribute, UxmlTypeReference(typeof(Enum))]
         internal Type type
         {
@@ -57,14 +57,14 @@ namespace UnityEngine.UIElements
         }
 
         [UxmlAttribute]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool includeObsoleteValues
         {
             get => m_IncludeObsoleteValues;
             set => m_IncludeObsoleteValues = value;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [UxmlAttribute("value"), UxmlAttributeBindingPath("value"), EnumFieldValueDecoratorAttribute]
         internal string valueAsString
         {
@@ -225,7 +225,6 @@ namespace UnityEngine.UIElements
                 UpdateValueLabel(defaultValue);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void PopulateDataFromType(Type enumType)
         {
             m_EnumType = enumType;
@@ -234,9 +233,13 @@ namespace UnityEngine.UIElements
 
         public override void SetValueWithoutNotify(Enum newValue)
         {
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
+
             if (!Enum.Equals(rawValue, newValue))
             {
-                base.SetValueWithoutNotify(newValue);
+                using (IgnoreValidation())
+                    base.SetValueWithoutNotify(newValue);
 
                 if (m_EnumType == null)
                     return;

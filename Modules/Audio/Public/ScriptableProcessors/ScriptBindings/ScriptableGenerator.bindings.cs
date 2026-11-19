@@ -749,7 +749,6 @@ namespace UnityEngine.Audio
                     var context = new ControlContext(pResources);
                     runtimeHandle = definition.CreateInstance(context, null, default(GeneratorInstance.CreationParameters));
 
-                    // Set source asset entity ID for profiler display
                     if (runtimeHandle.m_ProcessorInstance.Handle.WasCreated)
                         SetProcessorSourceAssetEntityId(pResources, runtimeHandle.m_ProcessorInstance.Handle, generatorObjectDefinition.GetEntityId());
 

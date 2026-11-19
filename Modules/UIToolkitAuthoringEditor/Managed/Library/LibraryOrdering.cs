@@ -12,97 +12,143 @@ namespace Unity.UIToolkit.Editor
 {
     internal static class LibraryOrdering
     {
-        [NoAutoStaticsCleanup] // fixed engine control-type list, never mutated
-        static readonly Type[] k_CuratedOrder =
+        /// <summary>
+        /// A named group of the curated controls, in display order.
+        /// </summary>
+        internal sealed class Category
         {
-            // Containers
-            typeof(VisualElement),
-            typeof(ScrollView),
-            typeof(ListView),
-            typeof(TreeView),
-            typeof(MultiColumnListView),
-            typeof(MultiColumnTreeView),
-            typeof(GroupBox),
+            public string Name { get; }
 
-            // Editor Containers
-            typeof(IMGUIContainer),
+            /// <summary>
+            /// Whether the controls of the category only work in editor UI.
+            /// </summary>
+            public bool IsEditorOnly { get; }
 
-            // Controls
-            typeof(Label),
-            typeof(Image),
-            typeof(Button),
-            typeof(Toggle),
-            typeof(ToggleButtonGroup),
-            typeof(Scroller),
-            typeof(TextField),
-            typeof(Foldout),
-            typeof(Slider),
-            typeof(SliderInt),
-            typeof(MinMaxSlider),
-            typeof(ProgressBar),
-            typeof(DropdownField),
-            typeof(EnumField),
-            typeof(RadioButton),
-            typeof(RadioButtonGroup),
-            typeof(Tab),
-            typeof(TabView),
-            typeof(HelpBox),
-            typeof(MaskField),
-            typeof(Mask64Field),
+            public IReadOnlyList<Type> Types { get; }
 
-            // Numeric Fields
-            typeof(IntegerField),
-            typeof(FloatField),
-            typeof(LongField),
-            typeof(DoubleField),
-            typeof(Hash128Field),
-            typeof(Vector2Field),
-            typeof(Vector3Field),
-            typeof(Vector4Field),
-            typeof(RectField),
-            typeof(BoundsField),
-            typeof(UnsignedIntegerField),
-            typeof(UnsignedLongField),
-            typeof(Vector2IntField),
-            typeof(Vector3IntField),
-            typeof(RectIntField),
-            typeof(BoundsIntField),
+            public Category(string name, bool isEditorOnly, params Type[] types)
+            {
+                Name = name;
+                IsEditorOnly = isEditorOnly;
+                Types = types;
+            }
+        }
 
-            // Value Fields
-            typeof(ColorField),
-            typeof(CurveField),
-            typeof(GradientField),
+        [NoAutoStaticsCleanup] // fixed engine control-type list, never mutated
+        static readonly Category[] k_Categories =
+        {
+            new("Containers", false,
+                typeof(VisualElement),
+                typeof(ScrollView),
+                typeof(ListView),
+                typeof(TreeView),
+                typeof(MultiColumnListView),
+                typeof(MultiColumnTreeView),
+                typeof(GroupBox)),
 
-            // Choice Fields
-            typeof(TagField),
-            typeof(LayerField),
-            typeof(LayerMaskField),
-            typeof(EnumFlagsField),
+            new("Editor Containers", true,
+                typeof(IMGUIContainer)),
 
-            // Toolbar
-            typeof(Toolbar),
-            typeof(ToolbarMenu),
-            typeof(ToolbarButton),
-            typeof(ToolbarSpacer),
-            typeof(ToolbarToggle),
-            typeof(ToolbarBreadcrumbs),
-            typeof(ToolbarSearchField),
-            typeof(ToolbarPopupSearchField),
+            new("Controls", false,
+                typeof(Label),
+                typeof(Image),
+                typeof(Button),
+                typeof(Toggle),
+                typeof(ToggleButtonGroup),
+                typeof(Scroller),
+                typeof(TextField),
+                typeof(Foldout),
+                typeof(Slider),
+                typeof(SliderInt),
+                typeof(MinMaxSlider),
+                typeof(ProgressBar),
+                typeof(DropdownField),
+                typeof(EnumField),
+                typeof(RadioButton),
+                typeof(RadioButtonGroup),
+                typeof(Tab),
+                typeof(TabView),
+                typeof(HelpBox),
+                typeof(MaskField),
+                typeof(Mask64Field)),
 
-            // Inspectors
-            typeof(ObjectField),
-            typeof(PropertyField),
+            new("Numeric Fields", false,
+                typeof(IntegerField),
+                typeof(FloatField),
+                typeof(LongField),
+                typeof(DoubleField),
+                typeof(Hash128Field),
+                typeof(Vector2Field),
+                typeof(Vector3Field),
+                typeof(Vector4Field),
+                typeof(RectField),
+                typeof(BoundsField),
+                typeof(UnsignedIntegerField),
+                typeof(UnsignedLongField),
+                typeof(Vector2IntField),
+                typeof(Vector3IntField),
+                typeof(RectIntField),
+                typeof(BoundsIntField)),
+
+            new("Value Fields", true,
+                typeof(ColorField),
+                typeof(CurveField),
+                typeof(GradientField)),
+
+            new("Choice Fields", true,
+                typeof(TagField),
+                typeof(LayerField),
+                typeof(LayerMaskField),
+                typeof(EnumFlagsField)),
+
+            new("Toolbar", true,
+                typeof(Toolbar),
+                typeof(ToolbarMenu),
+                typeof(ToolbarButton),
+                typeof(ToolbarSpacer),
+                typeof(ToolbarToggle),
+                typeof(ToolbarBreadcrumbs),
+                typeof(ToolbarSearchField),
+                typeof(ToolbarPopupSearchField)),
+
+            new("Inspectors", true,
+                typeof(ObjectField),
+                typeof(PropertyField)),
         };
 
-        [NoAutoStaticsCleanup] // built once from k_CuratedOrder engine types, never mutated
+        [NoAutoStaticsCleanup] // built once from k_Categories engine types, never mutated
         static readonly Dictionary<Type, int> s_OrderByType = BuildOrderByType();
+
+        [NoAutoStaticsCleanup] // built once from k_Categories engine types, never mutated
+        static readonly Dictionary<Type, Category> s_CategoryByType = BuildCategoryByType();
+
+        /// <summary>
+        /// The curated categories, in display order.
+        /// </summary>
+        public static IReadOnlyList<Category> Categories => k_Categories;
 
         static Dictionary<Type, int> BuildOrderByType()
         {
-            var orderByType = new Dictionary<Type, int>(k_CuratedOrder.Length);
-            for (var i = 0; i < k_CuratedOrder.Length; i++)
-                orderByType.Add(k_CuratedOrder[i], i);
+            var orderByType = new Dictionary<Type, int>();
+            foreach (var category in k_Categories)
+            {
+                foreach (var type in category.Types)
+                    orderByType.Add(type, orderByType.Count);
+            }
+
             return orderByType;
+        }
+
+        static Dictionary<Type, Category> BuildCategoryByType()
+        {
+            var categoryByType = new Dictionary<Type, Category>();
+            foreach (var category in k_Categories)
+            {
+                foreach (var type in category.Types)
+                    categoryByType.Add(type, category);
+            }
+
+            return categoryByType;
         }
 
         /// <summary>
@@ -112,6 +158,14 @@ namespace Unity.UIToolkit.Editor
         public static int GetOrder(Type type)
         {
             return type != null && s_OrderByType.TryGetValue(type, out var order) ? order : int.MaxValue;
+        }
+
+        /// <summary>
+        /// Returns the curated category of a type, or null when the type isn't curated.
+        /// </summary>
+        public static Category GetCategory(Type type)
+        {
+            return type != null && s_CategoryByType.TryGetValue(type, out var category) ? category : null;
         }
     }
 }

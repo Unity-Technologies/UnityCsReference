@@ -40,7 +40,7 @@ namespace UnityEngine.UIElements
         Hidden = LayoutOverflow.Hidden
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal enum OverflowInternal
     {
         Visible = LayoutOverflow.Visible,
@@ -368,7 +368,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines the position of an element.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal enum PositionProperty
     {
         /// <summary>

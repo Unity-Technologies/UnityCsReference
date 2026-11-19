@@ -8,6 +8,7 @@ using UnityEngine.Scripting;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
+using UnityEngine.Animations;
 
 namespace UnityEngine
 {
@@ -604,6 +605,7 @@ namespace UnityEngine
     ///<seealso cref="HumanDescription" />
     ///<seealso cref="T:UnityEditor.ModelImporter" />
     [NativeHeader("Modules/Animation/Avatar.h")]
+    [NativeHeader("Modules/Animation/ScriptBindings/Avatar.bindings.h")]
     [global::UnityEngine.NativeClass("Avatar", PersistentTypeId = 90)]
     [UsedByNativeCode]
     public class Avatar : Object
@@ -670,6 +672,12 @@ namespace UnityEngine
             return Internal_GetLimitSign(HumanTrait.GetBoneIndexFromMono(humanId));
         }
 
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        internal int GetSkeletonBoneIndex(HumanBodyBones humanBoneId)
+        {
+            return Internal_GetSkeletonBoneIndex(HumanTrait.GetBoneIndexFromMono((int)humanBoneId));
+        }
+
         [NativeMethod("GetAxisLength")]
         extern internal float Internal_GetAxisLength(int humanId);
 
@@ -687,5 +695,107 @@ namespace UnityEngine
 
         [NativeMethod("GetLimitSign")]
         extern internal Vector3 Internal_GetLimitSign(int humanId);
+
+        [NativeMethod("GetSkeletonBoneIndex")]
+        extern internal int Internal_GetSkeletonBoneIndex(int humanId);
+
+        // Bone information
+        extern internal int boneCount
+        {
+            [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+            [NativeMethod("GetBoneCount")]
+            get;
+        }
+
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        extern internal uint        GetBoneID(int boneIndex);
+        extern internal string      GetBonePath(int boneIndex);
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        extern internal int         GetParentBoneIndex(int boneIndex);
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        extern internal Vector3     GetBoneLocalPosition(int boneIndex);
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        extern internal Quaternion  GetBoneLocalRotation(int boneIndex);
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        extern internal Vector3     GetBoneLocalScale(int boneIndex);
+
+        internal GenericBinding[] genericBindings
+        {
+            [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+            get => GetGenericBindings();
+            set => SetGenericBindings(value);
+        }
+
+        [FreeFunction("AvatarBindings::GetGenericBindings", HasExplicitThis = true)]
+        extern GenericBinding[] GetGenericBindings();
+
+        unsafe void SetGenericBindings(ReadOnlySpan<GenericBinding> bindings)
+        {
+            fixed (GenericBinding* bindingsPtr = bindings)
+                Internal_SetGenericBindings(bindingsPtr, bindings.Length);
+        }
+
+        [FreeFunction("AvatarBindings::SetGenericBindings", HasExplicitThis = true, ThrowsException = true)]
+        extern unsafe void Internal_SetGenericBindings(void* bindings, int bindingsCount);
+
+        [RequiredByNativeCode]
+        internal void               BakeMotionRigDefinition()
+        {
+            if (MotionProxy.BakeAvatar != null)
+            {
+                MotionProxy.BakeAvatar(this);
+            }
+        }
+
+        // The RigDefinition blob that BakeMotionRigDefinition stores. Reading it bakes it if it is empty.
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        [NativeMethod(IsThreadSafe = false)]
+        extern internal unsafe void*        GetBlobData(out ulong typeHash, out uint size);
+
+        [NativeMethod(IsThreadSafe = false)]
+        extern int                          GetBlobVersion();
+
+        [NativeMethod(IsThreadSafe = false)]
+        extern unsafe void                  SetBlobDataAndHeader(ulong typeHash, void* ptr, uint size, int version);
+
+        [NativeMethod(IsThreadSafe = false)]
+        extern BlobObjectReference          AcquireReference();
+
+        // entityId must be in the RigDefinition blob. It is rewritten with the EntityId of the same object when the data is read.
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        [NativeMethod(IsThreadSafe = false)]
+        extern internal void                RegisterEntityReference(ref EntityId entityId);
+
+        // Same as RegisterEntityReference for contiguous EntityIds, in a single pass. entityIds must be in the RigDefinition blob.
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        internal unsafe void RegisterEntityReferences(Span<EntityId> entityIds)
+        {
+            fixed (EntityId* entityIdsPtr = entityIds)
+                RegisterEntityReferences(entityIdsPtr, entityIds.Length);
+        }
+
+        [NativeMethod(IsThreadSafe = false)]
+        extern unsafe void                  RegisterEntityReferences(EntityId* entityIds, int count);
+
+        // Same checks as BlobObject.AcquireReference<T>
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        internal unsafe BlobObjectReference<T> AcquireReference<T>(int version = 0) where T : unmanaged
+        {
+            var blobData = GetBlobData(out var typeHash, out var size);
+            if (!BlobObject.IsBlobCompatible<T>(this, blobData, typeHash, size, GetBlobVersion(), version, true))
+                return default;
+
+            return new BlobObjectReference<T>(AcquireReference());
+        }
+
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        internal unsafe void SetBlobAsset<T>(Unity.Entities.BlobAssetReference<T> blobAssetReference, int version = 0) where T : unmanaged
+        {
+            var typeHash = BlobObjectReference<T>.TypeHash;
+            if (blobAssetReference.IsCreated)
+                SetBlobDataAndHeader(typeHash, blobAssetReference.GetUnsafePtr(), (uint)blobAssetReference.m_data.Header->Length, version);
+            else
+                SetBlobDataAndHeader(typeHash, null, 0, version);
+        }
     }
 }

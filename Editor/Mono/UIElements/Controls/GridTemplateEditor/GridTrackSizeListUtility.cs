@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class GridTrackSizeListUtility
     {
         // Returns false, leaving destination untouched, when it already holds the same tracks.

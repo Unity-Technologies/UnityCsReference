@@ -551,27 +551,51 @@ namespace UnityEditor.Connect
         [RequiredByNativeCode]
         internal static void AccessTokenRefreshed(bool success)
         {
-            if (instance.m_AccessTokenRefreshed != null)
+            // Detach first, so a callback that requests another refresh subscribes to the next one
+            var callbacks = instance.m_AccessTokenRefreshed;
+            instance.m_AccessTokenRefreshed = null;
+            if (callbacks == null)
+                return;
+
+            foreach (var callback in callbacks.GetInvocationList())
             {
-                instance.m_AccessTokenRefreshed(success);
-                instance.m_AccessTokenRefreshed = null;
+                try
+                {
+                    ((Action<bool>)callback)(success);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
             }
         }
 
         [RequiredByNativeCode]
         static async void RequestNewServiceToken()
         {
+            await RequestNewServiceTokenAsync(GetUserId_Internal, GetServiceTokenWhenOnline, SetServiceToken_Internal);
+        }
+
+        static async Task<string> GetServiceTokenWhenOnline()
+        {
+            if (Online() && !WorkingOffline())
+                return await CloudProjectSettings.GetServiceTokenAsync();
+            return string.Empty;
+        }
+
+        internal static async Task RequestNewServiceTokenAsync(Func<string> getUserId, Func<Task<string>> getServiceToken, Action<string> setServiceToken)
+        {
+            var userId = getUserId();
             var serviceToken = string.Empty;
             try
             {
-                if (Online() && !WorkingOffline())
-                {
-                    serviceToken = await CloudProjectSettings.GetServiceTokenAsync();
-                }
+                serviceToken = await getServiceToken();
             }
             finally
             {
-                SetServiceToken_Internal(serviceToken);
+                // Native code asks again for the account that signed in meanwhile
+                if (getUserId() == userId)
+                    setServiceToken(serviceToken);
             }
         }
 
@@ -603,7 +627,7 @@ namespace UnityEditor.Connect
         }
 
         [RequiredByNativeCode]
-        static async void FetchMissingProjectInfos(string genesisOrganizationId)
+        static async void FetchMissingProjectInfos(string genesisOrganizationId, ulong requestId)
         {
             OrganizationRequestResponse organization = new("", "", "", "");
 
@@ -617,12 +641,12 @@ namespace UnityEditor.Connect
             }
             finally
             {
-                OnMissingProjectInfosFetched_Internal(organization.LegacyId, organization.Name);
+                OnMissingProjectInfosFetched_Internal(organization.LegacyId, organization.Name, requestId);
             }
         }
 
         [NativeMethod("OnMissingProjectInfosFetched")]
-        private static extern void OnMissingProjectInfosFetched_Internal(string organizationId, string organizationName);
+        private static extern void OnMissingProjectInfosFetched_Internal(string organizationId, string organizationName, ulong requestId);
 
         [NativeMethod("GetOrganizationForeignKey")]
         private static extern string GetOrganizationForeignKey_Internal();

@@ -530,7 +530,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             Glyph[] glyphs;
-            var allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_FontFaceHandle, m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
+            var allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_FontFaceHandle, m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, isCheckerboardDebugEnabled, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
             // Add new glyphs to relevant font asset data structure
             {
@@ -655,7 +655,7 @@ namespace UnityEngine.TextCore.Text
             while (!allGlyphsAddedToTexture)
             {
                 Glyph[] glyphs;
-                allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_FontFaceHandle, glyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
+                allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_FontFaceHandle, glyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, isCheckerboardDebugEnabled, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
                 // Add new glyphs to relevant font asset data structure
                 {
@@ -929,7 +929,7 @@ namespace UnityEngine.TextCore.Text
 
         bool TryAddGlyphToTexture(uint glyphIndex, out Glyph glyph, bool populateLigatures = true)
         {
-            if (FontEngine.TryAddGlyphToTexture(m_FontFaceHandle, glyphIndex, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyph))
+            if (FontEngine.TryAddGlyphToTexture(m_FontFaceHandle, glyphIndex, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, isCheckerboardDebugEnabled, m_AtlasTextures[m_AtlasTextureIndex], out glyph))
             {
                 // Update glyph atlas index
                 glyph.atlasIndex = m_AtlasTextureIndex;
@@ -972,7 +972,7 @@ namespace UnityEngine.TextCore.Text
             Glyph[] glyphs;
 
             // Try adding remaining glyphs in the newly created atlas texture
-            bool allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_FontFaceHandle, m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
+            bool allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(m_FontFaceHandle, m_GlyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, isCheckerboardDebugEnabled, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
 
             // Add new glyphs to relevant data structures.
             for (int i = 0; i < glyphs.Length && glyphs[i] != null; i++)

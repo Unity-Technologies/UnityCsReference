@@ -21,7 +21,7 @@ namespace UnityEditor
     public class RootEditorAttribute : System.Attribute
     {
         public delegate System.Type RootEditorHandler(UnityEngine.Object[] objects);
-        internal delegate System.Type RootEditorWithMetaDataHandler(UnityEngine.Object[] objects, UnityEngine.Object context, DataMode dataMode);
+        internal delegate System.Type RootEditorWithMetaDataHandler(UnityEngine.Object[] objects, UnityEngine.Object context);
 
         public bool supportsAddComponent;
         public RootEditorAttribute(bool supportsAddComponent = false)
@@ -36,7 +36,7 @@ namespace UnityEditor
         }
 
         [RequiredSignature]
-        private static System.Type signature(UnityEngine.Object[] objects, UnityEngine.Object context, DataMode dataMode)
+        private static System.Type signature(UnityEngine.Object[] objects, UnityEngine.Object context)
         {
             return null;
         }
@@ -100,7 +100,7 @@ namespace UnityEditor
         }
 
         [UsedByNativeCode, UsedImplicitly] // Currently, only called from native
-        internal static Type FindRootEditor(UnityEngine.Object[] objects, UnityEngine.Object context, DataMode dataMode)
+        internal static Type FindRootEditor(UnityEngine.Object[] objects, UnityEngine.Object context)
         {
             if (s_SuppressRootEditor)
                 return null;
@@ -108,7 +108,7 @@ namespace UnityEditor
             foreach (var desc in kSRootEditor)
             {
                 var rootEditorType = desc.usesMetaData
-                    ? desc.rootEditorWithMetaDataHandler(objects, context, dataMode)
+                    ? desc.rootEditorWithMetaDataHandler(objects, context)
                     : desc.rootEditorHandler(objects);
 
                 if (rootEditorType != null)

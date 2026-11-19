@@ -434,6 +434,9 @@ namespace UnityEngine
         extern public static Rect safeArea { get; }
         extern public static Rect[] cutouts {[FreeFunction("ScreenScripting::GetCutouts")] get; }
 
+        [NativeConditional("PLATFORM_SUPPORTS_SWAPCHAIN_PRETRANSFORM")]
+        extern public static SwapchainPreTransform currentSwapChainPreTransform {[FreeFunction("ScreenScripting::GetCurrentSwapChainPreTransform")] get; }
+
         [NativeName("RequestResolution")]
         extern public static void SetResolution(int width, int height, FullScreenMode fullscreenMode, RefreshRate preferredRefreshRate);
 
@@ -613,6 +616,8 @@ namespace UnityEngine
         public static Rect safeArea => ShimManager.screenShim.safeArea;
 
         public static Rect[] cutouts => ShimManager.screenShim.cutouts;
+
+        public static SwapchainPreTransform currentSwapChainPreTransform => ShimManager.screenShim.currentSwapChainPreTransform;
 
         public static bool autorotateToPortrait
         {

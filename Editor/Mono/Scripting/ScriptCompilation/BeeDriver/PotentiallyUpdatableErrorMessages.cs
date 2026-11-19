@@ -10,7 +10,6 @@ using NiceIO;
 using UnityEditor.Scripting.Compilers;
 using UnityEngine;
 using Unity.Collections;
-using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -67,7 +66,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return !matchedMessage.Success ? null : matchedMessage.Groups["type_name"].Value;
         }
 
-        [NoAutoStaticsCleanup] // immutable parser config (whitelisted Regex + enum arrays, no user refs), safe to persist across reload
         private static readonly CompilerMessageParser EnglishMessageParser = new(
             //error CS0117: 'type_name' does not contain a definition for 'member_name'
             new Regex("[^'`“]*['`“](?<type_name>[^'`”]+)['`”][^'`“]+['`“](?<member_name>[^'`”]+)['`”]", RegexOptions.ExplicitCapture | RegexOptions.Compiled),
@@ -82,7 +80,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         );
 
         // Parses compilers messages for languages that reports CS0234 in the format: text `name space name` text `type name` (for instance, simplified chinese)
-        [NoAutoStaticsCleanup] // immutable parser config (whitelisted Regex + enum arrays, no user refs), safe to persist across reload
         private static readonly CompilerMessageParser AlternativeLanguageMessageParser = EnglishMessageParser with
         {
             MissingType = new Regex("([^'`“]*['`“](?<namespace>[^'`”]+)['`”][^'`“]+['`“](?<type_name>[^'`”]+)['`”])", RegexOptions.ExplicitCapture | RegexOptions.Compiled),

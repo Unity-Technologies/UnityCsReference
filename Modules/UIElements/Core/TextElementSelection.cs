@@ -577,7 +577,6 @@ namespace UnityEngine.UIElements
         // Always return a valid selecting manipulator and rely on isSelectable to use it/not
         internal TextSelectingManipulator selectingManipulator
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get => m_SelectingManipulator ??= new TextSelectingManipulator(this);
         }
 

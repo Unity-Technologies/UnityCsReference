@@ -274,7 +274,7 @@ namespace Unity.Entities
 
         public static unsafe void SetEntityName(Entity entity, EntityName name)
         {
-            if (name.Index == 0)
+            if (name.Index == -1)
                 return;
 
             var page = GetOrCreateNamePage(entity.Index);
@@ -332,11 +332,9 @@ namespace Unity.Entities
         /// </summary>
         public void SetFixedString(in FixedString64Bytes value)
         {
-            int tryIndex = EntityNameStorage.GetOrCreateIndex(in value);
+            Index = EntityNameStorage.GetOrCreateIndex(in value);
 
-            if(tryIndex >= 0)
-                Index = tryIndex;
-            else if(EntityNameStorage.s_State.Data.hasLoggedError == 0)
+            if(Index == -1 && EntityNameStorage.s_State.Data.hasLoggedError == 0)
             {
                 // The unmanaged overload logs a FixedString from Burst-compiled callers too
                 var message = EntityNameStorage.s_State.Data.kMaxEntriesMsg;

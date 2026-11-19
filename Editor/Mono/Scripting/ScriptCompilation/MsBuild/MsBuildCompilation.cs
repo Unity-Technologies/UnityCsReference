@@ -48,6 +48,7 @@ partial class MsBuildCompilation
     internal class CompilationAssembly
     {
         public string Name;
+        public string OutputPath;
         public List<string> ReferencedAssemblyNames;
     }
 
@@ -64,17 +65,36 @@ partial class MsBuildCompilation
     private Task<BuildResultMessage> _currentBuildTask;
 
     private MSBuildCompilationBuildState _currentBuildState;
+    private MSBuildCompilationBuildState _analysisBuildState;
     private bool _shouldRestore = false;
     private bool _requestedBuild = false;
+    private bool _clearConsolePending;
 
     private bool _editorAssembliesMightBeDirty = false;
+
+    // Snapshotted on every editor TickCompilationPipeline call so RequestMsBuildScriptCompilation
+    // can dispatch the build immediately on the request thread (overlapping with asset-refresh
+    // postprocess work) without waiting for the next editor tick. Invalid until the first tick.
+    private BuildTarget _lastTickBuildTarget;
+    private CompileTarget _lastTickCompileTarget;
+    private MSBuildCompilationOptions _lastTickCompilationOptions;
+    private bool _lastTickParamsValid;
+
+    // What the in-flight build was dispatched with. An early dispatch uses the previous tick's parameters, which are stale
+    // after a platform, scripting backend or code optimization change, so a caller with different ones must not consume
+    // this task's result as its own.
+    private BuildTarget _inflightBuildTarget;
+    private CompileTarget _inflightCompileTarget;
+    private MSBuildCompilationOptions _inflightCompilationOptions;
 
     // Computed by the converter during SetAllScripts; written into the shared analyzers props at build start.
     private string[] _globalAnalyzers = Array.Empty<string>();
 
-    private readonly IncrementalAsmDefConverter _converter = new IncrementalAsmDefConverter();
+    private readonly IncrementalAsmDefConverter _converter = new IncrementalAsmDefConverter(Path.Combine("Library", "MSBuild", "AsmDefConverterState.json"));
 
     private static readonly TimeSpan _connectionTimeout = TimeSpan.FromMinutes(10);
+    // The host gives up on its pending work after 8 s.
+    private static readonly TimeSpan _hostCleanUpTimeout = TimeSpan.FromSeconds(10);
     static ICompilerClient CompilerClient => _compilerClient.Value;
     [AutoStaticsCleanupOnCodeReload] // reset the lazy client on reload so [OnCodeLoaded] PrimeCompilerClient rebuilds the connection
     private static Lazy<ICompilerClient> _compilerClient = new (() =>
@@ -83,12 +103,9 @@ partial class MsBuildCompilation
         return ClientFactory.CreateChannel(socketOrNamedPipe, _connectionTimeout);
     });
 
-    public void Initialize(bool createInitCsprojs, MSBuildCompilationOptions compilationOptions)
+    public void Initialize(MSBuildCompilationOptions compilationOptions)
     {
         UnityEditorMSBuildPropsTargetsGeneration.UpdateInstallPathFile();
-
-        if (createInitCsprojs)
-            ProjectGenerator.Instance.GenerateUnityProjectIfMissing(Path.Combine("Assets", "Runtime", "Runtime.csproj"));
 
         // Only update essential props on initialization; deferrable props will be updated during restore
         UnityEditorMSBuildPropsTargetsGeneration.UpdateEssentialPropsOnly(EditorUserBuildSettings.activeBuildTarget);
@@ -103,16 +120,64 @@ partial class MsBuildCompilation
 
         // No need to wait for this, just kick off the connection so that it's ready when we need it.
         _ = CompilerClient.PrimeConnectionAsync();
+
+        EditorApplication.quitting += FinishHostWorkOnQuit;
+    }
+
+    // The host writes the build cache after reporting a build, and dies with the Editor. Letting it finish keeps the
+    // next session from rebuilding everything the last one built.
+    private static void FinishHostWorkOnQuit()
+    {
+        if (!_compilerClient.IsValueCreated)
+            return;
+
+        try
+        {
+            // Off the main thread: the client's continuations would otherwise wait for the blocked main thread.
+            Task.Run(() => CompilerClient.CleanUpAndExitAsync()).Wait(_hostCleanUpTimeout);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"[MSBU] The MSBuild host did not finish its pending work before quitting: {e.Message}");
+        }
     }
 
     public void RequestMsBuildScriptCompilation(bool restore, string reason = null)
     {
-        var restoreString = restore ? "/Restore" : "";
-        Console.WriteLine($"Requesting Compilation: {reason}\nRestoring: {restoreString}");
+        // Matches EditorCompilation.RequestScriptCompilation; the always-on startup build passes no reason
+        if (!string.IsNullOrEmpty(reason))
+            Console.WriteLine($"[ScriptCompilation] Requested script compilation because: {reason}{(restore ? " (with restore)" : "")}");
+
+        // A package install or a plugin import changes the precompiled assemblies the props list.
+        UnityEditorMSBuildPropsTargetsGeneration.InvalidateCache();
 
         _currentBuildState?.CancellationTokenSource.Cancel();
+        _analysisBuildState?.CancellationTokenSource.Cancel();
         _shouldRestore |= restore;
         _requestedBuild = true;
+
+        // Overlap the build dispatch with any remaining asset-refresh postprocess work: this request
+        // typically fires from inside AssetDatabase.PostProcessAllAssets' native caller, and the editor
+        // main-loop tick that would otherwise pick it up can be ~0.5-1.0 s away. Falls back to tick
+        // dispatch when we lack cached tick parameters (first request after reload) or an in-flight
+        // build still owns the state (its cancellation must land before the next dispatch).
+        // A player build follows its request with a blocking player compile, which an editor build would only delay.
+        if (!_lastTickParamsValid || BuildPipeline.isBuildingPlayer)
+            return;
+        if (_currentBuildTask != null || _currentBuildState != null || _analysisBuildState != null)
+            return;
+
+        try
+        {
+            DispatchBuild(_lastTickBuildTarget, _lastTickCompileTarget, _lastTickCompilationOptions);
+        }
+        catch (Exception ex)
+        {
+            UnityEngine.Debug.LogWarning($"[MSBU] Early build dispatch from RequestMsBuildScriptCompilation failed; falling back to tick dispatch: {ex}");
+            _currentBuildTask = null;
+            _currentBuildState = null;
+            _requestedBuild = true;
+        }
     }
 
     public bool HaveScriptsForEditorBeenCompiledSinceLastDomainReload()
@@ -129,11 +194,20 @@ partial class MsBuildCompilation
 
     public bool IsCompiling()
     {
-        return _requestedBuild || _currentBuildState is not null;
+        return _requestedBuild || _currentBuildState is not null || _analysisBuildState is not null;
     }
 
+    // Blocks until the requested target is built. The native caller treats every status but CompilationFailed as success.
     public EditorCompilation.CompileStatus Compile(BuildTarget buildTarget, CompileTarget target, MSBuildCompilationOptions compilationOptions)
     {
+        if (_currentBuildTask != null && !IsInflightBuildFor(buildTarget, target, compilationOptions))
+        {
+            PumpCurrentBuild();
+            CompleteInflightBuild();
+        }
+
+        if (_currentBuildTask == null)
+            _requestedBuild = true;
         return TickCompilationPipeline(buildTarget, true, target, compilationOptions);
     }
 
@@ -173,72 +247,141 @@ partial class MsBuildCompilation
 
     public EditorCompilation.CompileStatus TickCompilationPipeline(BuildTarget buildTarget, bool allowBlocking, CompileTarget target, MSBuildCompilationOptions compilationOptions)
     {
+        // Only snapshot params from the editor-tick path. Compile() reaches here with player
+        // configurations for sync player builds (CompileScriptsForPlayerSync), and we never want
+        // RequestMsBuildScriptCompilation (which always compiles for the editor) to early-dispatch
+        // using those.
+        if (target == CompileTarget.EditorDebug || target == CompileTarget.EditorRelease)
+        {
+            _lastTickBuildTarget = buildTarget;
+            _lastTickCompileTarget = target;
+            _lastTickCompilationOptions = compilationOptions;
+            _lastTickParamsValid = true;
+        }
+
         if (!_requestedBuild && _currentBuildTask == null)
             return EditorCompilation.CompileStatus.Idle;
 
-        // An out-of-band analysis build (RequestAnalysisCompilationAsync) holds _currentBuildState without a
-        // _currentBuildTask. Don't start or post-process a normal compile until it finishes — this serializes
-        // the two against the host's shared per-build state. The pending _requestedBuild stays set and starts
-        // once the analysis build clears _currentBuildState (or is cancelled by RequestMsBuildScriptCompilation).
-        if (_currentBuildTask == null && _currentBuildState != null)
+        // An analysis build shares the host's per-build state, so a normal compile starts or completes once it finishes
+        if (_analysisBuildState != null)
             return EditorCompilation.CompileStatus.Compiling;
 
-        // If build is running return compiling
-        if (_currentBuildTask != null && !_currentBuildTask.IsCompleted)
-            return EditorCompilation.CompileStatus.Compiling;
-
-        // Start a Build if requested
-        if (_requestedBuild && _currentBuildTask == null)
+        // Drain a build dispatched with stale parameters like Compile() does, then build with this tick's.
+        if (_currentBuildTask != null && !IsInflightBuildFor(buildTarget, target, compilationOptions))
         {
-            _currentBuildState = new MSBuildCompilationBuildState(CompilerClient);
-            _requestedBuild = false;
-
-            Console.WriteLine($"Beginning build. Restoring: {_shouldRestore}");
-
-            // Update deferrable props in parallel before build (defines, references, plugins, search paths, analyzers).
-            // If a Build runs before any SetAllScripts populated _globalAnalyzers, fall back to the built-in
-            // set so the shared analyzers props isn't written with the built-ins missing.
-            var globalAnalyzers = _globalAnalyzers.Length > 0
-                ? _globalAnalyzers
-                : UnityEditorMSBuildPropsTargetsGeneration.GetBuiltinRoslynAnalyzerPaths();
-            UnityEditorMSBuildPropsTargetsGeneration.UpdateDeferrablePropsInParallel(buildTarget, compilationOptions, globalAnalyzers);
-
-            var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value || Application.HasARGV("generate-binlog");
-            var disableNugetRestore = Application.HasARGV("disable-nuget-restore");
-            var configuration = GetMsBuildConfiguration(target, buildTarget);
-
-            _currentBuildTask = _currentBuildState.BuildAsync(_shouldRestore, generateBinLog, configuration, !disableNugetRestore);
-
-            _shouldRestore = false;
-
-            if (!allowBlocking)
+            _currentBuildState.CancellationTokenSource.Cancel();
+            if (!_currentBuildTask.IsCompleted && !allowBlocking)
                 return EditorCompilation.CompileStatus.Compiling;
 
-            // Pump the build task until it completes
-            // This is because we can't write to the Progress bar from a background thread
-            while (!_currentBuildTask.IsCompleted || !_currentBuildState.ProgressEvents.IsEmpty)
-            {
-                if (!_currentBuildState.ProgressEvents.TryDequeue(out var buildEvent))
-                {
-                    // Must block: an unawaited Task.Delay spins this loop, and the timer and thread-pool
-                    // work it queues starves the continuations that drain the build stream.
-                    // JIRA: https://jira.unity3d.com/browse/MSBU-530
-                    Thread.Sleep(1);
-                    continue;
-                }
-                // Cancelling aborts the call, which lands the task as Canceled and is the only way
-                // out of a build the host has wedged, since nothing times it out by wall clock.
-                if (EditorUtility.DisplayCancelableProgressBar("Compiling Scripts", buildEvent.Text ?? "Building...", buildEvent.Progress))
-                    _currentBuildState.CancellationTokenSource.Cancel();
-            }
-
-            EditorUtility.ClearProgressBar();
-
-            return CompleteBuild(target, configuration, generateBinLog);
+            if (allowBlocking)
+                PumpCurrentBuild();
+            CompleteInflightBuild();
+            _requestedBuild = true;
         }
 
-        return CompleteBuild(target, GetMsBuildConfiguration(target, buildTarget),
-            (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value || Application.HasARGV("generate-binlog"));
+        if (_requestedBuild && _currentBuildTask == null)
+            DispatchBuild(buildTarget, target, compilationOptions);
+
+        // From here _currentBuildTask != null — either just dispatched above, or dispatched earlier
+        // from RequestMsBuildScriptCompilation. Non-blocking callers poll; blocking callers pump.
+        while (true)
+        {
+            if (_clearConsolePending)
+            {
+                _clearConsolePending = false;
+                ConsoleWindow.ClearConsoleOnRecompile();
+            }
+
+            if (!_currentBuildTask.IsCompleted && !allowBlocking)
+                return EditorCompilation.CompileStatus.Compiling;
+
+            if (allowBlocking)
+                PumpCurrentBuild();
+
+            // An editor build superseded by a newer request is not a failure: reporting it as one marks
+            // script compilation as failed until the replacement finishes (UUM-161011)
+            if (_currentBuildTask.IsCanceled && _requestedBuild && IsEditorTarget(target))
+            {
+                Console.WriteLine("Build superseded by a newer request; starting the replacement build.");
+                _currentBuildTask = null;
+                _currentBuildState = null;
+                DispatchBuild(buildTarget, target, compilationOptions);
+                continue;
+            }
+
+            var status = CompleteBuild(target, GetMsBuildConfiguration(target, buildTarget), IsBinLogRequested());
+
+            // The script updater changed sources and requested a rebuild; a blocking caller waits for it too.
+            if (status == EditorCompilation.CompileStatus.Compiling)
+                return TickCompilationPipeline(buildTarget, allowBlocking, target, compilationOptions);
+
+            return status;
+        }
+    }
+
+    private bool IsInflightBuildFor(BuildTarget buildTarget, CompileTarget target, MSBuildCompilationOptions compilationOptions) =>
+        _inflightBuildTarget == buildTarget && _inflightCompileTarget == target && _inflightCompilationOptions == compilationOptions;
+
+    private void CompleteInflightBuild() =>
+        CompleteBuild(_inflightCompileTarget, GetMsBuildConfiguration(_inflightCompileTarget, _inflightBuildTarget), IsBinLogRequested());
+
+    private static bool IsBinLogRequested() =>
+        (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value || Application.HasARGV("generate-binlog");
+
+    private void PumpCurrentBuild()
+    {
+        // Pump the build task until it completes
+        // This is because we can't write to the Progress bar from a background thread
+        while (!_currentBuildTask.IsCompleted || !_currentBuildState.ProgressEvents.IsEmpty)
+        {
+            if (!_currentBuildState.ProgressEvents.TryDequeue(out var buildEvent))
+            {
+                // Must block: an unawaited Task.Delay spins this loop, and the timer and thread-pool
+                // work it queues starves the continuations that drain the build stream.
+                // JIRA: https://jira.unity3d.com/browse/MSBU-530
+                Thread.Sleep(1);
+                continue;
+            }
+            // Cancelling aborts the call, which lands the task as Canceled and is the only way
+            // out of a build the host has wedged, since nothing times it out by wall clock.
+            if (EditorUtility.DisplayCancelableProgressBar("Compiling Scripts", buildEvent.Text ?? "Building...", buildEvent.Progress))
+                _currentBuildState.CancellationTokenSource.Cancel();
+        }
+
+        EditorUtility.ClearProgressBar();
+    }
+
+    // May run on the main thread from either TickCompilationPipeline (editor tick) or
+    // RequestMsBuildScriptCompilation (asset-refresh thread, same thread as the request).
+    // Must only be called when _currentBuildTask == null and _currentBuildState == null.
+    private void DispatchBuild(BuildTarget buildTarget, CompileTarget target, MSBuildCompilationOptions compilationOptions)
+    {
+        _currentBuildState = new MSBuildCompilationBuildState(CompilerClient);
+        _inflightBuildTarget = buildTarget;
+        _inflightCompileTarget = target;
+        _inflightCompilationOptions = compilationOptions;
+        _requestedBuild = false;
+
+        Console.WriteLine($"Beginning build. Restoring: {_shouldRestore}");
+
+        _clearConsolePending = true;
+
+        // Update deferrable props in parallel before build (defines, references, plugins, search paths, analyzers).
+        // If a Build runs before any SetAllScripts populated _globalAnalyzers, fall back to the built-in
+        // set so the shared analyzers props isn't written with the built-ins missing.
+        var globalAnalyzers = _globalAnalyzers.Length > 0
+            ? _globalAnalyzers
+            : UnityEditorMSBuildPropsTargetsGeneration.GetBuiltinRoslynAnalyzerPaths();
+        UnityEditorMSBuildPropsTargetsGeneration.UpdateDeferrablePropsInParallel(buildTarget, compilationOptions, globalAnalyzers, IsEditorTarget(target));
+
+        var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value || Application.HasARGV("generate-binlog");
+        var disableNugetRestore = Application.HasARGV("disable-nuget-restore");
+        var configuration = GetMsBuildConfiguration(target, buildTarget);
+
+        BeginScriptUpdatingForBuild();
+        _currentBuildTask = _currentBuildState.BuildAsync(_shouldRestore, generateBinLog, configuration, !disableNugetRestore);
+
+        _shouldRestore = false;
     }
 
     private EditorCompilation.CompileStatus CompleteBuild(CompileTarget target, string configuration, bool generateBinLog)
@@ -248,32 +391,146 @@ partial class MsBuildCompilation
         _currentBuildState = null;
         _currentBuildTask = null;
 
+        // Player builds (e.g. BuildAssetBundles) must not touch the editor flag, or entering Play Mode reloads the domain
+        var isEditorTarget = IsEditorTarget(target);
+
         // Superseded by a newer request, or cancelled by the user; the replacement is already queued.
         if (buildTask.IsCanceled)
         {
-            _editorAssembliesMightBeDirty = false;
+            if (isEditorTarget)
+                _editorAssembliesMightBeDirty = false;
             return EditorCompilation.CompileStatus.CompilationFailed;
         }
 
         if (buildTask.IsFaulted)
         {
-            _editorAssembliesMightBeDirty = false;
+            if (isEditorTarget)
+                _editorAssembliesMightBeDirty = false;
             UnityMSBuildLogger.LogBuildFailedWithoutResult(buildTask.Exception, buildState?.Elapsed ?? TimeSpan.Zero,
                 buildState?.LastProgressText ?? "unknown", configuration, generateBinLog);
             return EditorCompilation.CompileStatus.CompilationFailed;
         }
 
         var buildResult = buildTask.Result;
-        _editorAssembliesMightBeDirty = true;
+        if (isEditorTarget)
+            _editorAssembliesMightBeDirty = true;
 
-        UnityMSBuildLogger.LogCompilerMessages(buildResult, IsEditorTarget(target));
+        // As with BeeDriver, upgradable warnings are updated too, so a successful build can have updates.
+        // Diagnostics the script updater fixed are not reported; the rebuild reports its own.
+        if (IsEditorTarget(target) && TryApplyScriptUpdates(buildResult))
+            return EditorCompilation.CompileStatus.Compiling;
+
+        UnityMSBuildLogger.LogCompilerMessages(buildResult, IsEditorTarget(target), m_ScriptUpdaterMessages);
         if (generateBinLog)
         {
             UnityMSBuildLogger.LogProjectBuildManagerMessages(buildResult);
         }
 
+        FirePerAssemblyCompilationEvents(target, buildResult);
         ReportBuildFinished(target, buildResult);
         return GetCompileStatus(buildResult);
+    }
+
+    // Fires the per-assembly CompilationPipeline events (compilationStarted, assemblyCompilationStarted,
+    // assemblyCompilationFinished, compilationFinished) for subscribers that would otherwise be Bee-only.
+    // Includes BurstLoader, which under MSBU previously consumed the whole-build buildFinished event and
+    // had to re-notify Burst about every assembly in the solution; firing per-assembly events for just the
+    // DLLs MSBuild actually (re)wrote drops that to Bee's steady-state cost.
+    //
+    // Order: compilationStarted, then one round of assemblyCompilationStarted, then one round of
+    // assemblyCompilationFinished (raising the internal EditorCompilation event, which bubbles up to the
+    // public assemblyCompilationFinished), then compilationFinished. Rounds are not interleaved per-assembly
+    // — subscribers must treat the timing of these events as advisory. Bee streams them per-assembly during
+    // the build; MSBU batches them at build completion.
+    private void FirePerAssemblyCompilationEvents(CompileTarget target, BuildResultMessage buildResult)
+    {
+        if (!IsEditorTarget(target))
+            return;
+
+        var projectResults = buildResult.GetProjectResults();
+        var perAssembly = new List<(ScriptAssembly asm, UnityEditor.Compilation.CompilerMessage[] messages)>();
+
+        foreach (var path in buildResult.GetUpdatedOutputFiles())
+        {
+            if (!path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var assemblyName = Path.GetFileNameWithoutExtension(path);
+
+            ProjectResultMessage projectResult = null;
+            foreach (var kv in projectResults)
+            {
+                if (kv.Value.AssemblyName == assemblyName)
+                {
+                    projectResult = kv.Value;
+                    break;
+                }
+            }
+            if (projectResult == null)
+                continue;
+            if (projectResult.IsILPostProcessor)
+                continue;
+
+            var defineConstants = projectResult.GetDefineConstants();
+            var defines = new string[defineConstants.Count];
+            for (int i = 0; i < defines.Length; i++)
+                defines[i] = defineConstants[i];
+
+            var scriptAssembly = new ScriptAssembly
+            {
+                Filename = Path.GetFileName(path),
+                OutputDirectory = Path.GetDirectoryName(path),
+                Defines = defines,
+                HasCompileErrors = !buildResult.Success,
+            };
+            perAssembly.Add((scriptAssembly, ConvertLogMessagesToCompilerMessages(projectResult.GetLogMessages())));
+        }
+
+        if (perAssembly.Count == 0)
+            return;
+
+        var editorCompilation = EditorCompilationInterface.Instance;
+
+        try { editorCompilation.RaiseCompilationStarted(null); }
+        catch (Exception e) { UnityEngine.Debug.LogException(e); }
+
+        foreach (var (asm, _) in perAssembly)
+            CompilationPipeline.RaiseAssemblyCompilationStarted(asm.FullPath);
+
+        foreach (var (asm, messages) in perAssembly)
+        {
+            try { editorCompilation.RaiseAssemblyCompilationFinished(asm, messages); }
+            catch (Exception e) { UnityEngine.Debug.LogException(e); }
+        }
+
+        try { editorCompilation.RaiseCompilationFinished(null); }
+        catch (Exception e) { UnityEngine.Debug.LogException(e); }
+    }
+
+    private static UnityEditor.Compilation.CompilerMessage[] ConvertLogMessagesToCompilerMessages(IReadOnlyList<LogMessage> logMessages)
+    {
+        if (logMessages == null || logMessages.Count == 0)
+            return Array.Empty<UnityEditor.Compilation.CompilerMessage>();
+
+        var result = new UnityEditor.Compilation.CompilerMessage[logMessages.Count];
+        for (int i = 0; i < logMessages.Count; i++)
+        {
+            var m = logMessages[i];
+            result[i] = new UnityEditor.Compilation.CompilerMessage
+            {
+                message = m.Message,
+                file = m.File,
+                line = m.LineNumber,
+                column = m.ColumnNumber,
+                type = m.MessageType switch
+                {
+                    LogMessageType.Error => UnityEditor.Compilation.CompilerMessageType.Error,
+                    LogMessageType.Warning => UnityEditor.Compilation.CompilerMessageType.Warning,
+                    _ => UnityEditor.Compilation.CompilerMessageType.Info,
+                },
+            };
+        }
+        return result;
     }
 
     private CompilationDoneResult GetCompilationDoneResult(CompileTarget target, BuildResultMessage buildResult)
@@ -339,11 +596,22 @@ partial class MsBuildCompilation
     private string[] m_AllAssemblyJsonPaths;
     private string[] m_AllAssemblyJsonContents;
     private string[] m_AllAssemblyJsonGuids;
+    private bool m_ProjectFolderHasAnyScripts;
+
+    // Parsed once per inventory; asmdef-by-name lookups run per postprocessor callback after every reload.
+    private CustomScriptAssemblyData[] m_AsmdefData;
+    private Dictionary<string, int> m_AsmdefIndexByName;
+    private Dictionary<string, int> m_AsmdefIndexByDllName;
+
+    // Inputs for the legacy AssemblyGraphBuilder, which maps a script path to its asmdef; rebuilt when the inventory changes.
+    private CustomScriptAssembly[] m_CustomScriptAssemblies;
+    private CustomScriptAssemblyReference[] m_CustomScriptAssemblyReferences;
 
     public void SetAllCustomScriptAssemblyReferenceJsonsContents(string[] allAssemblyReferenceJsons, string[] allAssemblyReferenceJsonContents)
     {
         m_AllAssemblyReferenceJsons = allAssemblyReferenceJsons;
         m_AllAssemblyReferenceJsonContents = allAssemblyReferenceJsonContents;
+        m_CustomScriptAssemblyReferences = null;
     }
 
     public void SetAllCustomScriptAssemblyJsonContents(string[] allAssemblyJsonPaths, string[] allAssemblyJsonContents, string[] guids)
@@ -351,6 +619,44 @@ partial class MsBuildCompilation
         m_AllAssemblyJsonPaths = allAssemblyJsonPaths;
         m_AllAssemblyJsonContents = allAssemblyJsonContents;
         m_AllAssemblyJsonGuids = guids;
+        m_AsmdefData = null;
+        m_AsmdefIndexByName = null;
+        m_AsmdefIndexByDllName = null;
+        m_CustomScriptAssemblies = null;
+        m_CustomScriptAssemblyReferences = null;
+    }
+
+    private void EnsureAsmdefIndex()
+    {
+        if (m_AsmdefIndexByName != null)
+            return;
+
+        var len = Math.Min(m_AllAssemblyJsonContents.Length, m_AllAssemblyJsonPaths.Length);
+        var data = new CustomScriptAssemblyData[len];
+        var byName = new Dictionary<string, int>(len, StringComparer.Ordinal);
+        var byDllName = new Dictionary<string, int>(len, StringComparer.Ordinal);
+        for (int i = 0; i < len; i++)
+        {
+            try
+            {
+                data[i] = CustomScriptAssemblyData.FromJsonNoFieldValidation(m_AllAssemblyJsonContents[i]);
+            }
+            catch
+            {
+                continue;
+            }
+            var name = data[i]?.name;
+            if (name == null)
+                continue;
+
+            byName.TryAdd(name, i);
+            if (name.Length > 0)
+                byDllName.TryAdd(name.EndsWith(".dll", StringComparison.Ordinal) ? name : name + ".dll", i);
+        }
+
+        m_AsmdefData = data;
+        m_AsmdefIndexByDllName = byDllName;
+        m_AsmdefIndexByName = byName;
     }
 
     public void ClearCustomScriptAssemblies()
@@ -358,8 +664,15 @@ partial class MsBuildCompilation
         // No-op ?
     }
 
+    public bool DoesProjectFolderHaveAnyScripts()
+    {
+        return m_ProjectFolderHasAnyScripts;
+    }
+
     public void SetAllScripts(string[] allScripts)
     {
+        m_ProjectFolderHasAnyScripts = allScripts != null && allScripts.Length > 0;
+
         var allAssemblyReferenceJsons = new string[m_AllAssemblyReferenceJsons.Length];
         for (int i = 0; i < m_AllAssemblyReferenceJsons.Length; i++)
         {
@@ -373,6 +686,8 @@ partial class MsBuildCompilation
         }
 
         GetUserPrecompiledAssembliesForConverter(out var precompiledPaths, out var precompiledExplicitlyReferenced);
+
+        UnityEditorMSBuildPropsTargetsGeneration.InvalidateCache();
 
         var context = new ConversionContext()
         {
@@ -392,6 +707,7 @@ partial class MsBuildCompilation
             // The editor's analyzer registry: lets the converter classify analyzer DLLs without reading
             // .meta files, and invalidates its incremental cache when analyzers/labels change.
             roslynAnalyzerPaths = new PrecompiledAssemblyProvider().GetRoslynAnalyzerPaths(),
+            designTimeExtensions = GetDesignTimeExtensions(),
         };
 
         var conversionResult = _converter.Convert(context);
@@ -408,13 +724,23 @@ partial class MsBuildCompilation
         }
     }
 
+    // Matches what the IDE packages listed in the csproj before MSBU generated it.
+    internal static string[] GetDesignTimeExtensions()
+    {
+        var extensions = new List<string>(EditorSettings.projectGenerationBuiltinExtensions);
+        extensions.Add("asmdef");
+        extensions.AddRange(EditorSettings.projectGenerationUserExtensions);
+        return extensions.ToArray();
+    }
+
     internal async Task<CompilationMessages> RequestAnalysisCompilationAsync(string configuration, int parentProgressId, CancellationToken cancellationToken)
     {
-        // Reject if a build is already active or pending; conversely, once this build owns
-        // _currentBuildState the tick loop won't start a normal compile until it finishes (see
-        // TickCompilationPipeline). Reusing the same fields the normal path uses means IsCompiling() reports
-        // true and a later RequestMsBuildScriptCompilation cancels this build cleanly.
-        if (_requestedBuild || _currentBuildTask != null || _currentBuildState != null)
+        // A blocking caller keeps the editor from ticking, so only wait for the host to finish the in-flight build
+        while (_currentBuildTask != null && !_currentBuildTask.IsCompleted)
+            await WaitForBuildAsync(_currentBuildTask, cancellationToken);
+
+        // This build doesn't restore, and a requested compile waits for it (see TickCompilationPipeline)
+        if (_shouldRestore || _analysisBuildState != null)
         {
             return new CompilationMessages
             {
@@ -433,11 +759,12 @@ partial class MsBuildCompilation
             };
         }
 
-        _currentBuildState = new MSBuildCompilationBuildState(CompilerClient, parentProgressId);
-        using var _ = cancellationToken.Register(() => _currentBuildState.CancellationTokenSource.Cancel());
+        var buildState = new MSBuildCompilationBuildState(CompilerClient, parentProgressId);
+        _analysisBuildState = buildState;
+        using var _ = cancellationToken.Register(() => buildState.CancellationTokenSource.Cancel());
         try
         {
-            return await RunScriptCompilationAsync(configuration);
+            return await RunScriptCompilationAsync(buildState, configuration);
         }
         catch (OperationCanceledException)
         {
@@ -446,11 +773,21 @@ partial class MsBuildCompilation
         }
         finally
         {
-            _currentBuildState = null;
+            _analysisBuildState = null;
         }
     }
 
-    private async Task<CompilationMessages> RunScriptCompilationAsync(string configuration)
+    private static async Task WaitForBuildAsync(Task buildTask, CancellationToken cancellationToken)
+    {
+        var cancelled = new TaskCompletionSource<bool>();
+        using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
+        {
+            await Task.WhenAny(buildTask, cancelled.Task);
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
+    private async Task<CompilationMessages> RunScriptCompilationAsync(MSBuildCompilationBuildState buildState, string configuration)
     {
         // Derive BuildTarget from configuration string for Player analysis (Editor analysis uses the active target)
         BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
@@ -465,12 +802,13 @@ partial class MsBuildCompilation
         var globalAnalyzers = _globalAnalyzers.Length > 0
             ? _globalAnalyzers
             : UnityEditorMSBuildPropsTargetsGeneration.GetBuiltinRoslynAnalyzerPaths();
-        UnityEditorMSBuildPropsTargetsGeneration.UpdateDeferrablePropsInParallel(buildTarget, GetAnalysisCompilationOptions(configuration, buildTarget), globalAnalyzers);
+        UnityEditorMSBuildPropsTargetsGeneration.UpdateDeferrablePropsInParallel(buildTarget, GetAnalysisCompilationOptions(configuration, buildTarget), globalAnalyzers,
+            !configuration.EndsWith("+Analysis", StringComparison.Ordinal));
 
         var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value
             || Application.HasARGV("generate-binlog");
 
-        var buildTask = _currentBuildState.BuildAsync(
+        var buildTask = buildState.BuildAsync(
             restore: false,
             generateBinLog: generateBinLog,
             configuration: configuration,
@@ -478,7 +816,7 @@ partial class MsBuildCompilation
 
         var buildResult = await buildTask;
         UnityMSBuildLogger.LogProjectCacheSummary(buildResult);
-        return BuildScriptCompilationMessages(buildResult);
+        return BuildScriptCompilationMessages(buildResult, configuration);
     }
 
     // Map EditorCompilationInterface.GetManagedCodeVariantOptions to the MSBuild flags
@@ -519,7 +857,7 @@ partial class MsBuildCompilation
         return options;
     }
 
-    private static CompilationMessages BuildScriptCompilationMessages(BuildResultMessage buildResult)
+    private static CompilationMessages BuildScriptCompilationMessages(BuildResultMessage buildResult, string configuration)
     {
         var assemblies = new List<CompilationAssembly>();
         var messages = new List<CompilationMessage>();
@@ -534,6 +872,7 @@ partial class MsBuildCompilation
                 assemblies.Add(new CompilationAssembly
                 {
                     Name = projectResult.AssemblyName,
+                    OutputPath = Path.GetFullPath(Path.Combine("Library", "MSBuild", "artifacts", "Publish", configuration, projectResult.AssemblyName + ".dll")),
                     ReferencedAssemblyNames = new List<string>(projectResult.GetReferencedAssemblyNames())
                 });
             }
@@ -669,22 +1008,81 @@ partial class MsBuildCompilation
             ? reference.Substring(0, reference.Length - 4)
             : reference;
 
-        var len = Math.Min(m_AllAssemblyJsonContents.Length, m_AllAssemblyJsonPaths.Length);
-        for (int i = 0; i < len; i++)
+        EnsureAsmdefIndex();
+        return m_AsmdefIndexByName.TryGetValue(normalized, out var index) ? m_AllAssemblyJsonPaths[index] : null;
+    }
+
+    // MSBU replacement for EditorCompilation.FindCustomScriptAssemblyFromScriptPath, which sees no asmdefs under MSBU (UUM-161062).
+    // Returns null for a script in a predefined assembly such as Assembly-CSharp.
+    public CustomScriptAssembly FindCustomScriptAssemblyFromScriptPath(string scriptPath)
+    {
+        if (string.IsNullOrEmpty(scriptPath) || !EnsureCustomScriptAssemblies())
+            return null;
+
+        var graphBuilder = AssemblyGraphBuilderFactory.GetOrCreate(
+            Path.Combine(GetProjectDirectory(), "Assets"), m_CustomScriptAssemblies, m_CustomScriptAssemblyReferences);
+        foreach (var match in graphBuilder.Match(new[] { ToProjectFullPath(scriptPath) }))
+            return match.Key.IsPredefined ? null : match.Key;
+        return null;
+    }
+
+    private static string GetProjectDirectory() => Directory.GetParent(Application.dataPath).FullName;
+
+    // Same as LoadingAssemblyDefinition and EditorCompilation: the graph builder matches full paths, the inventory is project-relative.
+    private static string ToProjectFullPath(string path) =>
+        AssetPath.IsPathRooted(path) ? AssetPath.GetFullPath(path) : AssetPath.Combine(GetProjectDirectory(), path);
+
+    // Mirrors LoadingAssemblyDefinition without its validation, which the converter reports under MSBU.
+    private bool EnsureCustomScriptAssemblies()
+    {
+        if (m_CustomScriptAssemblies != null && m_CustomScriptAssemblyReferences != null)
+            return true;
+        if (m_AllAssemblyJsonPaths == null || m_AllAssemblyJsonContents == null || m_AllAssemblyJsonGuids == null)
+            return false;
+
+        EnsureAsmdefIndex();
+        var assemblies = new List<CustomScriptAssembly>();
+        var assemblyNames = new HashSet<string>(StringComparer.Ordinal);
+        var assembliesByGuid = new Dictionary<string, CustomScriptAssembly>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < m_AsmdefData.Length; i++)
         {
-            CustomScriptAssemblyData data;
+            // The graph builder indexes assemblies by name and GUID, so a duplicate would throw; legacy rejects it too.
+            if (m_AsmdefData[i]?.name == null || !assemblyNames.Add(m_AsmdefData[i].name))
+                continue;
+
+            var guid = i < m_AllAssemblyJsonGuids.Length ? m_AllAssemblyJsonGuids[i] : string.Empty;
+            var assembly = CustomScriptAssembly.FromCustomScriptAssemblyData(ToProjectFullPath(m_AllAssemblyJsonPaths[i]), guid, m_AsmdefData[i]);
+            if (assembly == null || !assembliesByGuid.TryAdd(assembly.GUID ?? string.Empty, assembly))
+                continue;
+            assemblies.Add(assembly);
+        }
+
+        var references = new List<CustomScriptAssemblyReference>();
+        var referenceCount = Math.Min(m_AllAssemblyReferenceJsons?.Length ?? 0, m_AllAssemblyReferenceJsonContents?.Length ?? 0);
+        for (int i = 0; i < referenceCount; i++)
+        {
+            CustomScriptAssemblyReference reference;
             try
             {
-                data = CustomScriptAssemblyData.FromJsonNoFieldValidation(m_AllAssemblyJsonContents[i]);
+                reference = CustomScriptAssemblyReference.FromCustomScriptAssemblyReferenceData(
+                    ToProjectFullPath(m_AllAssemblyReferenceJsons[i]), CustomScriptAssemblyReferenceData.FromJson(m_AllAssemblyReferenceJsonContents[i]));
             }
             catch
             {
                 continue;
             }
-            if (data != null && string.Equals(data.name, normalized, StringComparison.Ordinal))
-                return m_AllAssemblyJsonPaths[i];
+
+            if (reference == null)
+                continue;
+            if (GUIDReference.IsGUIDReference(reference.Reference)
+                && assembliesByGuid.TryGetValue(GUIDReference.GUIDReferenceToGUID(reference.Reference), out var referencedAssembly))
+                reference.Reference = referencedAssembly.Name;
+            references.Add(reference);
         }
-        return null;
+
+        m_CustomScriptAssemblies = assemblies.ToArray();
+        m_CustomScriptAssemblyReferences = references.ToArray();
+        return true;
     }
 
     // Legacy GetCustomTargetAssemblyFromName accepts both "MyAssembly" and "MyAssembly.dll";
@@ -704,37 +1102,18 @@ partial class MsBuildCompilation
             ? assemblyName
             : assemblyName + ".dll";
 
-        var len = Math.Min(m_AllAssemblyJsonContents.Length, m_AllAssemblyJsonPaths.Length);
-        for (int i = 0; i < len; i++)
-        {
-            CustomScriptAssemblyData data;
-            try
-            {
-                data = CustomScriptAssemblyData.FromJsonNoFieldValidation(m_AllAssemblyJsonContents[i]);
-            }
-            catch
-            {
-                continue;
-            }
-            if (data == null || string.IsNullOrEmpty(data.name))
-                continue;
+        EnsureAsmdefIndex();
+        if (!m_AsmdefIndexByDllName.TryGetValue(key, out var i))
+            return false;
 
-            var candidateKey = data.name.EndsWith(".dll", StringComparison.Ordinal)
-                ? data.name
-                : data.name + ".dll";
-            if (!string.Equals(candidateKey, key, StringComparison.Ordinal))
-                continue;
+        var guid = (m_AllAssemblyJsonGuids.Length > i) ? m_AllAssemblyJsonGuids[i] : string.Empty;
+        var csa = CustomScriptAssembly.FromCustomScriptAssemblyData(m_AllAssemblyJsonPaths[i], guid, m_AsmdefData[i]);
+        if (csa == null)
+            return false;
 
-            var guid = (m_AllAssemblyJsonGuids.Length > i) ? m_AllAssemblyJsonGuids[i] : string.Empty;
-            var csa = CustomScriptAssembly.FromCustomScriptAssemblyData(m_AllAssemblyJsonPaths[i], guid, data);
-            if (csa == null)
-                return false;
-
-            asmdefPath = m_AllAssemblyJsonPaths[i];
-            var dict = EditorBuildRules.CreateTargetAssemblies(new[] { csa });
-            return dict != null && dict.TryGetValue(key, out targetAssembly);
-        }
-        return false;
+        asmdefPath = m_AllAssemblyJsonPaths[i];
+        var dict = EditorBuildRules.CreateTargetAssemblies(new[] { csa });
+        return dict != null && dict.TryGetValue(key, out targetAssembly);
     }
 
     // MSBU replacement for CompilationPipeline.GetDefinesFromAssemblyName. Supplies MsBuildCompilation's

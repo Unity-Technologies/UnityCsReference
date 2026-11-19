@@ -201,7 +201,7 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
             if (m_Bindable == null && child is IBindable bindable)
             {
                 m_Bindable = bindable;
-                child.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
+                child.RegisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent, TrickleDown.TrickleDown);
                 if (child is PropertyField propertyField)
                     propertyField.reset += m_Decorator.OnPropertyFieldReset;
             }
@@ -211,7 +211,7 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
         {
             if (m_Bindable == child)
             {
-                child.UnregisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent);
+                child.UnregisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindEvent, TrickleDown.TrickleDown);
                 if (child is PropertyField propertyField)
                     propertyField.reset -= m_Decorator.OnPropertyFieldReset;
                 m_Bindable = null;
@@ -224,16 +224,26 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
             }
         }
 
+        // Handled on the way down: a field builds from this event in its own bubble-up handler, which runs before
+        // bubble-up callbacks, and the label has to be set by then.
         void OnSerializedPropertyBindEvent(SerializedPropertyBindEvent evt)
         {
-            m_Decorator.boundProperty = evt.bindProperty;
+            // Trickling down also reaches events sent to the bindable's descendants.
+            if (evt.target != m_Bindable)
+                return;
+
+            m_Decorator.m_FieldBuildsNext = true;
+            try
+            {
+                m_Decorator.boundProperty = evt.bindProperty;
+            }
+            finally
+            {
+                m_Decorator.m_FieldBuildsNext = false;
+            }
+
             m_Decorator.boundField = evt.elementTarget;
             m_IsPropertyBoundToBindable = true;
-
-            // boundProperty is assigned after PropertyField.reset fires during the initial bind,
-            // so OnPropertyFieldReset silently aborts on first dispatch. Call it here to ensure
-            // the ListView handlers are always wired up.
-            m_Decorator.OnPropertyFieldReset();
         }
     }
 
@@ -268,6 +278,7 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
     OverrideRow m_OverrideRow;
     BindingId? m_CachedFullBindingPath;
     RefreshBinding m_RefreshBinding;
+    bool m_FieldBuildsNext;
 
     event Action<ITrackablePropertyProvider, string, TrackedPropertyType> OnTrackedPropertyChanged;
     event Action<ITrackablePropertyProvider, string, bool, bool, bool> OnTrackedPropertySourceChanged;
@@ -314,6 +325,7 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
             m_Context?.editingController.UnregisterUxmlAttributeFieldDecorator(this);
 
             m_Context = value;
+            m_CachedFullBindingPath = null;
 
             m_Context?.editingController.RegisterUxmlAttributeFieldDecorator(this);
         }
@@ -764,15 +776,23 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
     {
         if (m_ContentContainer.bindable is PropertyField propertyField)
         {
+            string label;
             if (boundAttributeDescription != null)
             {
-                if (string.IsNullOrEmpty(propertyField.label))
-                    propertyField.label = StyleSheetUtility.ConvertDashToHuman(boundAttributeDescription.name);
+                if (!string.IsNullOrEmpty(propertyField.label))
+                    return;
+                label = StyleSheetUtility.ConvertDashToHuman(boundAttributeDescription.name);
             }
             else
             {
-                propertyField.label = string.Empty;
+                label = string.Empty;
             }
+
+            // The setter rebinds, which would build the field a first time just before it builds again.
+            if (m_FieldBuildsNext)
+                propertyField.SetLabelWithoutRebind(label);
+            else
+                propertyField.label = label;
         }
     }
 
@@ -899,7 +919,8 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
     }
 
     internal BindingId GetFullBindingPath() =>
-        m_CachedFullBindingPath ??= m_BoundProperty?.GetFullBindingPath() ?? string.Empty;
+        m_CachedFullBindingPath ??= SerializedPropertyExtensions.ResolveStoredComponentBindingId(
+            context?.element, m_BoundProperty?.GetFullBindingPath(context?.element) ?? string.Empty);
 
     /// <summary>
     /// Brings this field into view and puts the keyboard focus on it, for a caller that sent the user here to

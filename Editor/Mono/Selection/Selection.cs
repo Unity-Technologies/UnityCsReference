@@ -30,10 +30,6 @@ namespace UnityEditor
         [AutoStaticsCleanupOnCodeReload]
         internal static event System.Action<EntityId> nonSelectedObjectWasDestroyed;
 
-        [AutoStaticsCleanupOnCodeReload]
-        [PublicAPI] // Used by packages with internal access. Not actually intended for users.
-        internal static event System.Action postProcessSelectionMetadata;
-
         [UsedImplicitly, RequiredByNativeCode]
         private static void Internal_SelectedObjectWasDestroyed(EntityId entityId)
         {
@@ -49,12 +45,6 @@ namespace UnityEditor
         }
 
         [UsedImplicitly, RequiredByNativeCode]
-        private static void Internal_PostProcessSelectionMetadata()
-        {
-            postProcessSelectionMetadata?.Invoke();
-        }
-
-        [UsedImplicitly, RequiredByNativeCode]
         private static void Internal_CallSelectionChanged()
         {
             SelectionHistory.instance.OnSelectionChange();
@@ -62,17 +52,17 @@ namespace UnityEditor
                 evt();
         }
 
-        internal static void SetSelection(Object[] newSelection, Object newActiveObject = null, Object newActiveContext = null, DataMode newDataModeHint = default, bool notifyOnReselection = false)
+        internal static void SetSelection(Object[] newSelection, Object newActiveObject = null, Object newActiveContext = null, bool notifyOnReselection = false)
         {
-            SetFullSelection(newSelection, newActiveObject, newActiveContext, newDataModeHint, notifyOnReselection);
+            SetFullSelection(newSelection, newActiveObject, newActiveContext, notifyOnReselection);
         }
 
-        internal static void SetSelection(Object newActiveObject, Object newActiveContext = null, DataMode newDataModeHint = default, bool notifyOnReselection = false)
+        internal static void SetSelection(Object newActiveObject, Object newActiveContext = null, bool notifyOnReselection = false)
         {
             var activeObjectID = newActiveObject != null ? newActiveObject.GetEntityId() : EntityId.None;
             var activeContextID = newActiveContext != null ? newActiveContext.GetEntityId() : EntityId.None;
             k_SingleSelectionCache[0] = activeObjectID;
-            SetFullSelectionByID(k_SingleSelectionCache, activeObjectID, activeContextID, newDataModeHint, notifyOnReselection);
+            SetFullSelectionByID(k_SingleSelectionCache, activeObjectID, activeContextID, notifyOnReselection);
         }
 
         public static bool Contains(Object obj) { return Contains(obj.GetEntityId()); }
@@ -148,23 +138,14 @@ namespace UnityEditor
         public static void UnregisterCustomHandler(string key) => SelectionHistory.instance.UnregisterCustomHandler(key);
 
         public static void SetCustomSelection(string key, string data) => SelectionHistory.instance.SetCustomSelection(key, data, System.ReadOnlySpan<EntityId>.Empty, false);
-        internal static void SetCustomSelection(string key, string data, EntityId activeContextEid, DataMode dataMode)
-            => SelectionHistory.instance.SetCustomSelection(key, data, System.ReadOnlySpan<EntityId>.Empty, false, activeContextEid, dataMode);
 
         public static void SetCustomSelection(string key, string data, EntityId selectedEntityId)
         {
             System.ReadOnlySpan<EntityId> selection = MemoryMarshal.CreateReadOnlySpan(ref selectedEntityId, 1);
             SelectionHistory.instance.SetCustomSelection(key, data, selection, true);
         }
-        internal static void SetCustomSelection(string key, string data, EntityId selectedEntityId, EntityId activeContextEid, DataMode dataMode)
-        {
-            System.ReadOnlySpan<EntityId> selection = MemoryMarshal.CreateReadOnlySpan(ref selectedEntityId, 1);
-            SelectionHistory.instance.SetCustomSelection(key, data, selection, true, activeContextEid, dataMode);
-        }
 
         public static void SetCustomSelection(string key, string data, System.ReadOnlySpan<EntityId> selectedEntityIds) => SelectionHistory.instance.SetCustomSelection(key, data, selectedEntityIds, true);
-        internal static void SetCustomSelection(string key, string data, System.ReadOnlySpan<EntityId> selectedEntityIds, EntityId activeContextEid, DataMode dataMode)
-            => SelectionHistory.instance.SetCustomSelection(key, data, selectedEntityIds, true, activeContextEid, dataMode);
 
         /// <summary>
         /// The selected objects of type T that are in memory. Selected assets that are not loaded are skipped, not loaded:
@@ -174,14 +155,26 @@ namespace UnityEditor
         [VisibleToOtherModules]
         internal static List<T> GetLoadedObjects<T>() where T : Object
         {
-            var ids = entityIds;
-            var result = new List<T>(ids.Length);
-            foreach (var id in ids)
+            // Not Selection.count: it resolves every selected id, which loads unloaded assets.
+            var result = new List<T>(GetEntityIdsUnsafe().Length);
+            GetLoadedObjects(result);
+            return result;
+        }
+
+        /// <summary>
+        /// Replaces the contents of <paramref name="result"/> with <see cref="GetLoadedObjects{T}()"/>, without allocating
+        /// when <paramref name="result"/> has the capacity.
+        /// </summary>
+        [VisibleToOtherModules]
+        internal static void GetLoadedObjects<T>(List<T> result) where T : Object
+        {
+            result.Clear();
+            // The lookup never changes the selection, so the span stays valid for the loop.
+            foreach (var id in GetEntityIdsUnsafe())
             {
                 if (UnityEditorInternal.InternalEditorUtility.GetLoadedObjectFromEntityId(id) is T loaded)
                     result.Add(loaded);
             }
-            return result;
         }
     }
 }

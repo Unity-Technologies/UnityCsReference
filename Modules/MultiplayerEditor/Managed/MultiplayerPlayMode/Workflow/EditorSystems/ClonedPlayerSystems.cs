@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -30,11 +31,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
     class ClonedPlayerSystems
     {
-        const string k_InitializeMessageSent = "mppm_InitializeMessageSent";
+        [NoAutoStaticsCleanup] // Modules are never unloaded, so this survives code reloads; it holds no user code.
+        static bool s_InitializeMessageSent;
 
         // This is done because something like a EditorApplication.delayCall does not survive a domain reload
         // that could occur when going in or out of playmode
-        const string k_FrameAfterPlaymodeMessage = "frameAfterPlaymodeMessage";
+        [NoAutoStaticsCleanup] // Modules are never unloaded, so this survives code reloads; it holds no user code.
+        static bool s_FrameAfterPlaymodeMessage;
 
         readonly PlaymodeMessageQueue m_PlaymodeMessageQueue;
 
@@ -158,17 +161,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 if (EditorApplication.timeSinceStartup - initialTime > .05 && !EditorApplication.isCompiling && !EditorApplication.isUpdating)
                 {
-                    if (!SessionState.GetBool(k_InitializeMessageSent, false))
+                    if (!s_InitializeMessageSent)
                     {
-                        SessionState.SetBool(k_InitializeMessageSent, true);
+                        s_InitializeMessageSent = true;
                         messagingService.Broadcast(new PlayerInitializedMessage(VirtualProjectsEditor.CloneIdentifier));
                         ClonedPlayerApplicationEvents.InvokePlayerActive();
                     }
                 }
 
-                if (SessionState.GetBool(k_FrameAfterPlaymodeMessage, false))
+                if (s_FrameAfterPlaymodeMessage)
                 {
-                    SessionState.SetBool(k_FrameAfterPlaymodeMessage, false);
+                    s_FrameAfterPlaymodeMessage = false;
                     ClonedPlayerApplicationEvents.InvokeFrameAfterPlaymodeMessage();
                 }
 
@@ -194,11 +197,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
                                 break;
                             case PlayModeMessageTypes.Play:
                                 PlaymodeEvents.InvokePlay();
-                                SessionState.SetBool(k_FrameAfterPlaymodeMessage, true);
+                                s_FrameAfterPlaymodeMessage = true;
                                 break;
                             case PlayModeMessageTypes.Stop:
                                 PlaymodeEvents.InvokeStop();
-                                SessionState.SetBool(k_FrameAfterPlaymodeMessage, true);
+                                s_FrameAfterPlaymodeMessage = true;
                                 break;
                             default:
                                 throw new ArgumentOutOfRangeException($"{nameof(pm)}:{pm}");

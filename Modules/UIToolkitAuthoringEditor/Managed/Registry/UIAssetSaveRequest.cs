@@ -11,7 +11,6 @@ namespace Unity.UIToolkit.Editor;
 /// Raised when the last read-write holder of a dirty asset releases its reference. Carries the actions to
 /// resolve it so a listener can present its own UI without the registry depending on any window.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 readonly struct UIAssetSaveRequest
 {
     public readonly UnityEngine.Object Asset;
@@ -38,7 +37,6 @@ readonly struct UIAssetSaveRequest
 /// itself and notifies listeners of the <see cref="Choice"/> it made, so each tool can react (rebind its
 /// live views, and — for <see cref="UIAssetConflictChoice.SaveBackupAndUseImported"/> — preserve its work).
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 readonly struct UIAssetConflict
 {
     /// <summary>The asset whose in-memory edits conflicted with a fresh reimport from disk.</summary>
@@ -55,7 +53,6 @@ readonly struct UIAssetConflict
 }
 
 /// <summary>How to resolve an external-change conflict on an asset with unsaved edits.</summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 enum UIAssetConflictChoice
 {
     /// <summary>Restore the user's in-memory edits over the reimported content (stays dirty).</summary>

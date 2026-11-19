@@ -11,15 +11,27 @@ namespace Unity.Entities
     {
         [FreeFunction("EntitiesTransformDependencyBindings::CheckManagedLayout")]
         internal static extern void CheckManagedLayout(int jobHandleSize, int dependencyHandleSize, int writeFenceOffset,
-            int numReadFencesOffset, int typeIndexOffset, int maxReadFences, int nullDependencyHandleIndex);
+            int numReadFencesOffset, int typeIndexOffset, int maxReadFences, int nullDependencyHandleIndex, int atomicSafetyHandleSize,
+            int componentSafetyHandleSize, int safetyHandleOffset, int bufferHandleOffset, int safetyTypeIndexOffset);
 
-        // Returns the byte that marks native transform access as possibly having to wait for Entities jobs, or null.
+        // Returns the byte that marks native transform access as possibly having to wait for Entities jobs, or null. The
+        // safety arrays are null without collection checks.
+        internal static byte* RegisterWorld(WorldUnmanaged owner, void* typeArrayIndices, void* dependencyHandles, void* dependencyHandlesCount,
+            void* readJobFences, void* isInTransaction, void* exclusiveTransactionDependency, void* runningTransformSystemJobHandle,
+            void* safetyTypeArrayIndices, void* componentSafetyHandles) =>
+            RegisterWorld(&owner, typeArrayIndices, dependencyHandles, dependencyHandlesCount, readJobFences, isInTransaction,
+                exclusiveTransactionDependency, runningTransformSystemJobHandle, safetyTypeArrayIndices, componentSafetyHandles);
+
+        internal static void UnregisterWorld(WorldUnmanaged owner) => UnregisterWorld(&owner);
+
+        // The bindings generator can't marshal WorldUnmanaged
         [FreeFunction("EntitiesTransformDependencyBindings::RegisterWorld")]
-        internal static extern byte* RegisterWorld(ulong owner, void* typeArrayIndices, void* dependencyHandles, void* dependencyHandlesCount,
-            void* readJobFences, void* isInTransaction, void* exclusiveTransactionDependency, void* runningTransformSystemJobHandle);
+        static extern byte* RegisterWorld(void* owner, void* typeArrayIndices, void* dependencyHandles, void* dependencyHandlesCount,
+            void* readJobFences, void* isInTransaction, void* exclusiveTransactionDependency, void* runningTransformSystemJobHandle,
+            void* safetyTypeArrayIndices, void* componentSafetyHandles);
 
         [FreeFunction("EntitiesTransformDependencyBindings::UnregisterWorld")]
-        internal static extern void UnregisterWorld(ulong owner);
+        static extern void UnregisterWorld(void* owner);
 
         [FreeFunction("EntitiesTransformDependencyBindings::SetTransformTypeIndices")]
         static extern void SetTransformTypeIndices(int transformRef, int transformRefIndex,

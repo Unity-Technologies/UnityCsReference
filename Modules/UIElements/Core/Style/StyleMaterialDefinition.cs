@@ -15,6 +15,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The <see cref="Material"/> value.
         /// </summary>
+        /// <remarks>
+        /// A value read from <see cref="VisualElement.style"/> is a copy. To change the style, modify the value and assign it back.
+        /// The element stores its own copy of the property values, so later changes to an assigned value have no effect until it is assigned again.
+        /// </remarks>
         public MaterialDefinition value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default; }

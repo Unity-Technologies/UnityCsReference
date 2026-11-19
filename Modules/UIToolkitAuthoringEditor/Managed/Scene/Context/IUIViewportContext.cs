@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -15,6 +16,7 @@ namespace Unity.UIToolkit.Editor;
 /// every other source injects one for as long as the context is acquired. A context is a passive view over an
 /// already-resolved document, replaced rather than mutated when its source resolves to something else.
 /// </remarks>
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 interface IUIViewportContext
 {
     /// <summary>

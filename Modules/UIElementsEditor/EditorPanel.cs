@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed class EditorPanel : Panel
     {
         readonly EditorCursorManager m_CursorManager = new EditorCursorManager();

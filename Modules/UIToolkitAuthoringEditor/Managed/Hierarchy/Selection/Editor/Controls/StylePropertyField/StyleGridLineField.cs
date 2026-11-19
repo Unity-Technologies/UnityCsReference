@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
@@ -77,7 +78,7 @@ namespace Unity.UIToolkit.Editor
                 {
                     m_Number = parsed.line;
                     // A bare number keeps the current line/span unit; from auto it becomes a line.
-                    value = m_Unit.value == "span" ? GridLine.Span(m_Number) : GridLine.AtLine(m_Number);
+                    value = m_Unit.value == "span" && m_Number > 0 ? GridLine.Span(m_Number) : GridLine.AtLine(m_Number);
                 }
                 else value = GridLine.Auto;
             }
@@ -93,7 +94,7 @@ namespace Unity.UIToolkit.Editor
             value = evt.newValue switch
             {
                 "line" => GridLine.AtLine(m_Number),
-                "span" => GridLine.Span(m_Number),
+                "span" => GridLine.Span(Math.Max(1, Math.Abs(m_Number))),
                 _ => GridLine.Auto
             };
         }

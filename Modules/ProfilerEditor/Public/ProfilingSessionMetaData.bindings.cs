@@ -23,6 +23,7 @@ namespace Unity.Profiling.Editor
         ScreenshotVersion = 1,
         ScreenshotVersionV2 = 2,
         ScreenshotVersionV3 = 3,
+        ScreenshotVersionV4 = 4, // Screenshot pixels are RGB24 on the wire rather than RGBA32
     }
 
     // Must be in sync with UnityProfilingSessionMetaDataEntry in Profiler.h!

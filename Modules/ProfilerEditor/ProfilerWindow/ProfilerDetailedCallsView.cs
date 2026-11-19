@@ -57,7 +57,7 @@ namespace UnityEditorInternal.Profiling
             var targetInvertedHierarchy = frameDataView;
             if (frameDataView.viewMode.HasFlag(HierarchyFrameDataView.ViewModes.InvertHierarchy))
             {
-                topDownHierarchyData = ProfilerDriver.GetHierarchyFrameDataView(frameDataView.frameIndex, frameDataView.threadIndex,
+                topDownHierarchyData = ProfilerDriver.GetHierarchyFrameDataViewIncludingGpuThread(frameDataView.frameIndex, frameDataView.threadIndex,
                     frameDataView.viewMode ^ HierarchyFrameDataView.ViewModes.InvertHierarchy,
                     HierarchyFrameDataView.columnDontSort, false);
             }

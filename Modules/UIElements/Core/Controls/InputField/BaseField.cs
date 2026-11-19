@@ -170,12 +170,12 @@ namespace UnityEngine.UIElements
         }
 
         bool m_SkipValidation;
-        private protected bool isValidationIgnored => m_SkipValidation;
+        internal bool isValidationIgnored => m_SkipValidation;
 
         // Sent whenever we overwrite the value from view data.
         internal event Action viewDataRestored;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal BaseField(string label) : base(label)
         {
         }

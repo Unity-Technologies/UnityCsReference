@@ -68,6 +68,13 @@ internal unsafe struct NativeBufferContext
     public delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, void> registerGatheredRef;     // (transferState, object reference the callee takes ownership of: a GC handle on CoreCLR, whether the object is a UnityEngine.Object)
     public delegate* unmanaged[Cdecl]<IntPtr, byte*, void>  resolveGatheredMissingType;   // (transferState, NUL-terminated identifier); null when no missing types are live
     public ulong    basePosition;      // wire position at transfer start; native-only (alignment asserts), never read here
+
+    // SerializedDataHeap execution: out-of-line templates carry an 8-byte [length][handle]
+    // pair inline and put the payload in a per-array out-of-line allocation (contract in
+    // ManagedCommandWireFormat.h).
+    public void*    outOfLineState;         // native-only store and saved parent windows; null on classic transfers
+    public delegate* unmanaged[Cdecl]<NativeBufferContext*, int, int, byte**, uint> allocateOutOfLine;  // (ctx, count, byteSize, &data): the handle
+    public delegate* unmanaged[Cdecl]<NativeBufferContext*, int, int, void> openOutOfLineWindow;         // (ctx, count, byteSize): writes the handle, points the window at the allocation
 }
 
 // Read-side mirror of NativeBufferContext. ExecuteV2Read populates this once
@@ -90,17 +97,17 @@ internal unsafe struct NativeReadBufferContext
     public byte*    readerEnd;         // one past the readable region at readerPtr; updated by ensureReadable
     public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, int, void> ensureReadable;
     public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, byte*, int, int, int, int> readBytesDirect;
-    // Rewinds the CachedReader by the unconsumed region and empties the spill window
-    // before a SimpleNativeType dispatch reads straight off the CachedReader.
-    public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, void> syncReader;
+    // (ctx, dispatchFn, nativePtr): runs a native read dispatcher, from the open out-of-line window
+    // when there is one, otherwise straight off the CachedReader after rewinding the read-ahead.
+    public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, IntPtr, IntPtr, void> dispatchNative;
     public IntPtr   resolverHandle;    // ILSOIResolver*; forwarded to ReadUnityObjectFromBuffer. Null falls back to the global PersistentManager path.
     public int      flags;             // UnityObjectTransferFlags bits forwarded to ReadUnityObjectFromBuffer.
     public bool     warnAboutIgnoredEntries;  // True for serialized-file loads and Object.Instantiate clones; false for Inspector ApplyModifiedProperties and other in-memory transfers.
     // ShouldSuppressScriptedFakeNull(), resolved once per transfer. Applies to scripted field types
     // only.
     public byte     suppressScriptedFakeNull;
-    public byte     _pad1;
-    public byte     _pad2;             // align fuidContext to 8-byte boundary
+    public byte     skipReadCallbacks; // A clone read without an LSOI resolver: v1 calls no OnAfterDeserialize before the PPtrs are remapped.
+    public byte     _pad;              // align fuidContext to 8-byte boundary
     public IntPtr   fuidContext;       // native FieldUniqueIdentifierContext*; forwarded to ConsumeDictionaryRead for FUID Push/Pop bracketing. IntPtr.Zero when no transfer-side context is active.
     public EntityId hostingEntityId;   // Resolved once per managed block by the native dispatcher (FUID context's value first, falling back to TryGetHostingEntityIdForUnityObject in editor). EntityId.None when neither yields a value.
     public IntPtr   transferState;     // native ManagedReferencesTransferState*; forwarded to ReadManagedReferenceFromBuffer for the [SerializeReference] inline-RefId read opcode. IntPtr.Zero on transfers without managed references.
@@ -110,7 +117,24 @@ internal unsafe struct NativeReadBufferContext
     public byte*    pathSegments;      // template FUID segment table (V2PathSegment entries); null when the template has no FUID consumers.
     public byte*    pathNames;         // FUID segment name pool; paired with pathSegments.
     public int      readableBytes;     // total bytes from basePosition to the reader's end
-    public ulong    basePosition;      // wire position at transfer start; native-only (alignment asserts), never read here
+    public ulong    basePosition;      // wire position at transfer start
+    public IntPtr   mappedSource;      // native SafeBinaryRead* of a mapped read, for kMappedNativeRead; IntPtr.Zero otherwise
+    public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, ulong, int, void> seekReader;  // (position, ensureBytes)
+    public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, ulong> tellReader;
+    public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, void> syncReader;  // kMappedNativeRead: rewinds the reader before the dispatcher reads off it
+    // The window ensureReadable last filled and the wire position of its end; null once the reader left it.
+    public byte*    windowStart;
+    public ulong    windowEndPosition;
+    // A mapped read's stored position stack, and where the innermost stored area's slots start.
+    public ulong*   storedPositions;
+    public int      storedPositionCount;
+    public int      storedPositionCapacity;
+    public int      storedAreaBase;
+
+    // SerializedDataHeap read execution (see NativeBufferContext).
+    public void*    outOfLineState;         // native-only store and saved parent windows; null on classic transfers
+    public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, uint, int, byte**, int> lookupOutOfLine;  // (ctx, handle, stride, &data): the count; 0 when empty, -1 when unreadable
+    public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, uint, int, int> openOutOfLineWindow;             // (ctx, handle, stride): the count; 0 opens no window
 }
 
 [NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/WriteUnityObjectToBuffer.h")]
@@ -231,10 +255,8 @@ internal static unsafe partial class SerializationBackendManagedCommands
     // SimpleNativeType), so they are fetched once at type init and live here instead of
     // on the per-block NativeBufferContext. Clone / EntityId.None still pack inline
     // (PackEntityIdIntoLsoi) with no native call at all.
-    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<ulong, IntPtr, IntPtr, int, void> s_writeEntityIdToBuffer =
         (delegate* unmanaged[Cdecl]<ulong, IntPtr, IntPtr, int, void>)(void*)GetWriteEntityIdToBufferFunctionPointer();
-    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, ulong> s_readEntityIdFromBuffer =
         (delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, ulong>)(void*)GetReadEntityIdFromBufferFunctionPointer();
 
@@ -254,14 +276,12 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetWriteEntityIdsArrayToBufferFunctionPointer();
-    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, int, long, IntPtr, void> s_writeEntityIdsArrayToBuffer =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, int, long, IntPtr, void>)(void*)GetWriteEntityIdsArrayToBufferFunctionPointer();
 
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetWriteEntityIdsToBufferFunctionPointer();
-    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, IntPtr, int, void> s_writeEntityIdsToBuffer =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, IntPtr, int, void>)(void*)GetWriteEntityIdsToBufferFunctionPointer();
 
@@ -270,7 +290,6 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetWriteUnityObjectEntityIdsToBufferFunctionPointer();
-    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, int, void> s_writeUnityObjectEntityIdsToBuffer =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, int, void>)(void*)GetWriteUnityObjectEntityIdsToBufferFunctionPointer();
 
@@ -280,7 +299,6 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetReadEntityIdsArrayIntoElementsFunctionPointer();
-    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, int, long, IntPtr, void> s_readEntityIdsArrayIntoElements =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, int, long, IntPtr, void>)(void*)GetReadEntityIdsArrayIntoElementsFunctionPointer();
 
@@ -288,7 +306,6 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetReadEntityIdsIntoFieldsFunctionPointer();
-    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, IntPtr, int, void> s_readEntityIdsIntoFields =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, IntPtr, int, void>)(void*)GetReadEntityIdsIntoFieldsFunctionPointer();
 
@@ -346,6 +363,11 @@ internal static unsafe partial class SerializationBackendManagedCommands
     //   back as the window whenever the writer's tail or the reader's block can't hold
     //   the request. It caps a single ensureWritable / ensureReadable request.
     internal const int kManagedBlockSpillBufferSize = 1024;
+
+    // Must match SerializedDataHeap::kInvalidHandle (SerializedDataHeap.h). Paired
+    // with length 0 it is the out-of-line mode wire form of an empty or null collection /
+    // string: no allocation, no native crossing.
+    private const uint kV2OutOfLineInvalidHandle = 0;
 
     // Refills ctx->readerPtr / ctx->readerEnd so at least `needed` bytes
     // are addressable contiguously at the new readerPtr. Caller invariant: only

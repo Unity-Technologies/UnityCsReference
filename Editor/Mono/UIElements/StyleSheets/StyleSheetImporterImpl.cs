@@ -1123,7 +1123,7 @@ namespace UnityEditor.UIElements.StyleSheets
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIElementsModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIElementsModule")]
     internal class StyleSheetImporterImpl : StyleValueImporter
     {
         [NoAutoStaticsCleanup]

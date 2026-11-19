@@ -59,6 +59,25 @@ internal static unsafe partial class SerializationBackendManagedCommands
         s_V2Frames = frames;
     }
 
+    [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.ResetToDefaultValue)]
+    [ThreadStatic] private static ulong[] s_V2StoredPositions;
+
+    // A mapped read's stored position stack, taken and returned the way TakeV2Frames does for the same re-entrancy.
+    // Positions hold no references, so nothing is cleared on return.
+    private static ulong[] TakeV2StoredPositions(int slots)
+    {
+        ulong[] positions = s_V2StoredPositions;
+        s_V2StoredPositions = null;
+        if (positions == null || positions.Length < slots)
+            positions = new ulong[Math.Max(slots, 64)];
+        return positions;
+    }
+
+    private static void ReturnV2StoredPositions(ulong[] positions)
+    {
+        s_V2StoredPositions = positions;
+    }
+
     // Every ISerializationCallbackReceiver bracket runs through one of these
     // three. A throwing callback is reported and the transfer resumes at the
     // next command, so containment is per-callsite rather than per-object: one

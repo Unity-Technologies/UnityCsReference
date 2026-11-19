@@ -30,6 +30,7 @@ namespace UnityEngine.UIElements
         // Drag info
         bool m_DragResizeInPreviewMode;
         bool m_DragResizing = false;
+        bool m_StretchModeChangedDuringDrag;
         float m_DragStartPos;
         float m_DragLastPos;
         float m_DragInitialColumnWidth;
@@ -118,6 +119,18 @@ namespace UnityEngine.UIElements
             columns.columnAdded += OnColumnAdded;
             columns.columnRemoved += OnColumnRemoved;
             columns.columnReordered += OnColumnReordered;
+            columns.changed += OnColumnsChanged;
+        }
+
+        void OnColumnsChanged(ColumnsDataType type)
+        {
+            if (type != ColumnsDataType.StretchMode)
+                return;
+
+            if (m_DragResizing)
+                m_StretchModeChangedDuringDrag = true;
+            else
+                Dirty();
         }
 
         /// <summary>
@@ -948,6 +961,11 @@ namespace UnityEngine.UIElements
                 m_PreviewDesiredWidths.Clear();
             }
             m_DragResizing = false;
+            if (m_StretchModeChangedDuringDrag)
+            {
+                m_StretchModeChangedDuringDrag = false;
+                Dirty();
+            }
             m_DragStretchableColumns.Clear();
             m_DragFixedColumns.Clear();
             m_DragRelativeColumns.Clear();

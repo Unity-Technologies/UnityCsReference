@@ -10,7 +10,7 @@ using UnityEngine.UIElements.StyleSheets.Syntax;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal readonly struct StyleVariable
     {
         // UniqueStyleString id for the variable name; lets TryFindVariable compare ints
@@ -52,7 +52,7 @@ namespace UnityEngine.UIElements
         public override int GetHashCode() => hash;
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class StyleVariableContext
     {
         [NoAutoStaticsCleanup]
@@ -224,6 +224,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class StyleVariableResolver
     {
         private enum Result
@@ -282,6 +283,14 @@ namespace UnityEngine.UIElements
         public void AddValue(StyleValueHandle handle)
         {
             m_ResolvedValues.Add(new StylePropertyValue() {sheet = currentSheet, handle = handle});
+        }
+
+        // Resolves a variable the way a lone var() reference to it would, so cycle detection
+        // starts at the variable itself.
+        public bool ResolveVariableReference(int variableNameId)
+        {
+            m_ResolvedVarStack.Clear();
+            return ResolveVariable(variableNameId) == Result.Valid;
         }
 
         public bool ResolveVarFunction(ref int index)

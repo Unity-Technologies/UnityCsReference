@@ -2359,15 +2359,6 @@ public sealed partial class EditorGUILayout
                     s_SelectedDefault.value = false;
                 }
             }
-
-            // Repaint build window, if open.
-            Object[] buildWindows = Resources.FindObjectsOfTypeAll(typeof(BuildPlayerWindow));
-            foreach (Object t in buildWindows)
-            {
-                BuildPlayerWindow buildWindow = t as BuildPlayerWindow;
-                if (buildWindow != null)
-                    buildWindow.Repaint();
-            }
         }
 
         return selected;

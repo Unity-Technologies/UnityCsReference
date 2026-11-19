@@ -29,6 +29,22 @@ namespace Unity.PlayMode.Editor
         [IgnoreForUAL0015("Lazy scenario list rescanned by GetAllConfigs whenever it is null")]
         private static List<PlayModeScenario> s_AllConfigs;
 
+        [AutoStaticsCleanupOnCodeReload] // views holding a version are rebuilt on reload too, so restarting the count is safe
+        private static long s_Version;
+
+        /// <summary>
+        /// Changes whenever the scenario list is invalidated. Views compare it with the value they saw
+        /// on their last refresh to find out whether scenarios were added or removed in the meantime.
+        /// </summary>
+        internal static long Version
+        {
+            get
+            {
+                ClearCacheIfStale();
+                return s_Version;
+            }
+        }
+
         [Obsolete("Use PlayModeScenarioManager.RegisterScenarioType<T> instead.", false)]
         internal static void RegisterPlayModeConfigurationType<T>(string label, string newItemName = "NewPlayModeScenario") where T : PlayModeScenario
             => PlayModeScenarioManager.RegisterScenarioType<T>(label, newItemName);
@@ -52,6 +68,7 @@ namespace Unity.PlayMode.Editor
 
         internal static List<PlayModeScenario> GetAllConfigs()
         {
+            ClearCacheIfStale();
             if (s_AllConfigs == null)
             {
                 // We sort the scenarios by name, with the DefaultScenario always being first
@@ -66,6 +83,24 @@ namespace Unity.PlayMode.Editor
             }
 
             return s_AllConfigs;
+        }
+
+        // The cache also holds in-memory scenarios, which can be destroyed without an asset change.
+        static void ClearCacheIfStale()
+        {
+            if (s_AllConfigs != null && ContainsDestroyedScenario(s_AllConfigs))
+                ClearCache();
+        }
+
+        static bool ContainsDestroyedScenario(List<PlayModeScenario> scenarios)
+        {
+            foreach (var scenario in scenarios)
+            {
+                if (scenario == null)
+                    return true;
+            }
+
+            return false;
         }
 
         static IEnumerable<PlayModeScenario> EnumerateLoadedScenarios()
@@ -93,6 +128,20 @@ namespace Unity.PlayMode.Editor
             }
         }
 
+        static bool ValidateNameHasNoSlashes(string name)
+        {
+            if (name.IndexOf('/') < 0 && name.IndexOf('\\') < 0)
+                return true;
+
+            Debug.LogWarning("Scenario names cannot contain slashes.");
+            return false;
+        }
+
+        static void LogInvalidNameWarning(string failedOperation, string error)
+        {
+            Debug.LogWarning($"Failed to {failedOperation}. The name may contain invalid characters. Error: {error}");
+        }
+
         internal static PlayModeScenario CreatePlayModeConfig(string name, Type type)
         {
             Assert.IsTrue(typeof(PlayModeScenario).IsAssignableFrom(type), $"Type '{type}' is not a PlayModeConfiguration");
@@ -100,11 +149,8 @@ namespace Unity.PlayMode.Editor
             if (!Directory.Exists(k_ConfigAssetsPath))
                 Directory.CreateDirectory(k_ConfigAssetsPath);
 
-            if (name.IndexOf('/') >= 0 || name.IndexOf('\\') >= 0)
-            {
-                Debug.LogWarning("Scenario names cannot contain slashes.");
+            if (!ValidateNameHasNoSlashes(name))
                 return null;
-            }
             // If the scenario name exceeds the limit, trim it to k_MaxScenarioConfigName length and log a warning in the console
             if (name.Length > k_MaxScenarioConfigName)
             {
@@ -124,11 +170,26 @@ namespace Unity.PlayMode.Editor
             catch (Exception ex)
             {
                 ScriptableObject.DestroyImmediate(config);
-                Debug.LogWarning($"Failed to create scenario '{name}'. The name may contain invalid characters. Error: {ex.Message}");
+                LogInvalidNameWarning($"create scenario '{name}'", ex.Message);
                 return null;
             }
 
             return config;
+        }
+
+        internal static bool RenamePlayModeConfig(PlayModeScenario scenario, string newName)
+        {
+            if (!ValidateNameHasNoSlashes(newName))
+                return false;
+
+            var error = AssetDatabase.RenameAsset(AssetDatabase.GetAssetPath(scenario), newName);
+            if (!string.IsNullOrEmpty(error))
+            {
+                LogInvalidNameWarning($"rename scenario '{scenario.name}' to '{newName}'", error);
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -168,6 +229,17 @@ namespace Unity.PlayMode.Editor
         private static void ClearCache()
         {
             s_AllConfigs = null;
+            s_Version++;
+        }
+
+        /// <summary>
+        /// Clears the cached scenario list and raises <see cref="AssetsChanged"/>.
+        /// Use after creating or destroying a scenario without an AssetDatabase refresh.
+        /// </summary>
+        internal static void NotifyScenariosChanged()
+        {
+            ClearCache();
+            AssetsChanged?.Invoke();
         }
 
         /// <summary>
@@ -179,10 +251,7 @@ namespace Unity.PlayMode.Editor
                 string[] movedAssets, string[] movedFromAssetPaths)
             {
                 if (importedAssets.Length > 0 || deletedAssets.Length > 0)
-                {
-                    ClearCache();
-                    AssetsChanged?.Invoke();
-                }
+                    NotifyScenariosChanged();
             }
         }
     }

@@ -154,8 +154,10 @@ namespace UnityEngine.UIElements
             // And otherwise we only register them if ATG is effectively used
             (attachEvent.destinationPanel as BaseVisualElementPanel)?.textElementRegistry.Value.Add(this);
 
-            if (m_Text != null)
+            if (!m_IsTextBufferDirty)
                 textBuffer.CopyFrom(m_Text);
+
+            EnsureEditingManipulator();
 
             uitkTextHandle.ReleaseResourcesIfPossible();
         }
@@ -479,8 +481,8 @@ namespace UnityEngine.UIElements
             NotifyPropertyChanged(valueProperty);
             NotifyPropertyChanged(textProperty);
 
-            if (editingManipulator != null)
-                editingManipulator.editingUtilities.text = this.text;
+            if (m_EditingManipulator != null)
+                m_EditingManipulator.editingUtilities.text = this.text;
         }
         
         [MultilineTextField(displayName = "Text", lines = 3)]
@@ -754,7 +756,7 @@ namespace UnityEngine.UIElements
         private void UpdateTooltip()
         {
             // We set the tooltip text if text gets truncated
-            bool needsTooltip = displayTooltipWhenElided && isElided;
+            bool needsTooltip = displayTooltipWhenElided && isElided && !string.IsNullOrEmpty(text);
 
             if (needsTooltip)
             {
@@ -917,8 +919,8 @@ namespace UnityEngine.UIElements
             }
 
             // Always sync the manipulator if it exists even if the element is read-only or disabled. See issue UUM-8802
-            if (editingManipulator != null)
-                editingManipulator.editingUtilities.text = newValue;
+            if (m_EditingManipulator != null)
+                m_EditingManipulator.editingUtilities.text = newValue;
             else if (uitkTextHandle.IsCachedPermanentATG)
                 TextEditingService.SetText(uitkTextHandle.textGenerationInfo, newValue);
 

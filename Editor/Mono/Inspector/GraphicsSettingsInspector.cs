@@ -282,7 +282,48 @@ namespace UnityEditor
 
         void GenerateTabs()
         {
-            //Add BuiltInTab
+            var settingsPipelineFullTypeName = UserSettings.FromConfig().pipelineFullTypeName;
+            var currentRenderPipelineAssetType = GraphicsSettings.currentRenderPipelineAssetType;
+            var selectedTab = string.IsNullOrEmpty(settingsPipelineFullTypeName) ? currentRenderPipelineAssetType?.ToString() : settingsPipelineFullTypeName;
+
+            var builtinActive = false;
+            if (EditorGraphicsSettings.UsesBuiltInRenderPipeline())
+            {
+                builtinActive = string.IsNullOrEmpty(selectedTab) || selectedTab.Equals(GraphicsSettingsData.builtIn);
+                AddBuiltInTab(builtinActive);
+            }
+
+            TabButton currentPipelineTabButton = null;
+            foreach (var globalSettingsContainer in m_GlobalSettings)
+            {
+                var globalSettingsElement = new VisualElement();
+                var rpHelpBoxes = GraphicsSettingsInspectorUtility.CreateRPHelpBox(m_VisibilityController, globalSettingsContainer.renderPipelineAssetType);
+                globalSettingsElement.Add(rpHelpBoxes);
+
+                globalSettingsElement.Bind(globalSettingsContainer.serializedObject);
+                var propertyEditor = new PropertyField(globalSettingsContainer.property);
+                propertyEditor.AddToClassList(InspectorElement.uIEInspectorVariantUssClassName);
+                globalSettingsElement.Add(propertyEditor);
+
+                var srpTabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, globalSettingsContainer.name, globalSettingsElement,
+                    !builtinActive && string.Equals(selectedTab, globalSettingsContainer.renderPipelineAssetType.ToString()));
+                srpTabButton.userData = globalSettingsContainer.renderPipelineAssetType;
+
+                if (globalSettingsContainer.renderPipelineAssetType == currentRenderPipelineAssetType)
+                    currentPipelineTabButton = srpTabButton;
+            }
+
+            if (m_TabbedView.ActiveTab == null)
+            {
+                if (currentPipelineTabButton != null)
+                    m_TabbedView.Activate(currentPipelineTabButton);
+                else
+                    m_TabbedView.SelectTab(0);
+            }
+        }
+
+        void AddBuiltInTab(bool active)
+        {
             var builtInAsset = EditorGUIUtility.Load(GraphicsSettingsData.builtInTabContent) as VisualTreeAsset;
             var builtInTemplate = builtInAsset.Instantiate();
             builtInTemplate
@@ -301,30 +342,8 @@ namespace UnityEditor
             builtInSettingsContainer.Insert(0, builtInHelpBoxes);
             builtInHelpBoxes.MandatoryQ<HelpBox>("CurrentPipelineWarningHelpBox").text = GraphicsSettingsData.builtInWarningText.text;
 
-            // If we open the settings page for the first time we check the current render pipeline.
-            var settingsPipelineFullTypeName = UserSettings.FromConfig().pipelineFullTypeName;
-            var selectedTab = string.IsNullOrEmpty(settingsPipelineFullTypeName) ? GraphicsSettings.currentRenderPipelineAssetType?.ToString() : settingsPipelineFullTypeName;
-
-            var builtinActive = string.IsNullOrEmpty(selectedTab) || selectedTab.Equals(GraphicsSettingsData.builtIn);
-            var tabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, GraphicsSettingsData.builtIn, builtInSettingsContainer, builtinActive);
+            var tabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, GraphicsSettingsData.builtIn, builtInSettingsContainer, active);
             tabButton.userData = GraphicsSettingsData.builtIn;
-
-            //Add SRP tabs
-            foreach (var globalSettingsContainer in m_GlobalSettings)
-            {
-                var globalSettingsElement = new VisualElement();
-                var rpHelpBoxes = GraphicsSettingsInspectorUtility.CreateRPHelpBox(m_VisibilityController, globalSettingsContainer.renderPipelineAssetType);
-                globalSettingsElement.Add(rpHelpBoxes);
-
-                globalSettingsElement.Bind(globalSettingsContainer.serializedObject);
-                var propertyEditor = new PropertyField(globalSettingsContainer.property);
-                propertyEditor.AddToClassList(InspectorElement.uIEInspectorVariantUssClassName);
-                globalSettingsElement.Add(propertyEditor);
-
-                var srpTabButton = GraphicsSettingsInspectorUtility.CreateNewTab(m_TabbedView, globalSettingsContainer.name, globalSettingsElement,
-                    !builtinActive && selectedTab.Equals(globalSettingsContainer.renderPipelineAssetType.ToString()));
-                srpTabButton.userData = globalSettingsContainer.renderPipelineAssetType;
-            }
         }
 
         void SearchChanged()

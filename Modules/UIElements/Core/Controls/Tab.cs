@@ -149,7 +149,7 @@ namespace UnityEngine.UIElements
         // Needed by the UIBuilder for authoring in the viewport
         internal Label headerLabel
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_TabHeaderLabel;
         }
 

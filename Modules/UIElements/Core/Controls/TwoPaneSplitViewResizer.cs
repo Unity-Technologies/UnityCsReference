@@ -7,7 +7,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class TwoPaneSplitViewResizer : PointerManipulator
     {
         // Distance between the drag line and the anchor
@@ -82,6 +81,7 @@ namespace UnityEngine.UIElements
             target.RegisterCallback<PointerDownEvent>(OnPointerDown);
             target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
             target.RegisterCallback<PointerUpEvent>(OnPointerUp);
+            target.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -89,6 +89,7 @@ namespace UnityEngine.UIElements
             target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+            target.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
         }
 
         public void ApplyDelta(float delta)
@@ -219,6 +220,16 @@ namespace UnityEngine.UIElements
         }
 
         protected void OnPointerUp(PointerUpEvent e)
+        {
+            StopDrag(e);
+        }
+
+        void OnPointerCancel(PointerCancelEvent e)
+        {
+            StopDrag(e);
+        }
+
+        void StopDrag<T>(PointerEventBase<T> e) where T : PointerEventBase<T>, new()
         {
             if (!m_Active || !target.HasPointerCapture(e.pointerId) || !CanStopManipulation(e))
                 return;

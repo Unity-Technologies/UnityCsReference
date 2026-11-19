@@ -752,7 +752,7 @@ namespace UnityEditor
                     PropertyModification[] mods = PrefabUtility.GetPropertyModifications(assetRoot);
                     foreach (PropertyModification mod in mods)
                     {
-                        if (mod.target == null)
+                        if (mod.target == null && !DataComponentEntityId.IsDataComponent(mod.targetEntityId))
                             continue;
 
                         if (!PrefabUtility.IsDefaultOverride(mod))
@@ -761,9 +761,11 @@ namespace UnityEditor
                     break;
                 case 2:
                     m_OverridesCount[m_CurrentAssetIndex] += PrefabOverridesUtility.GetAddedComponents(assetRoot).Count;
+                    m_OverridesCount[m_CurrentAssetIndex] += PrefabOverridesUtility.GetAddedDataComponents(assetRoot).Count;
                     break;
                 case 3:
                     m_OverridesCount[m_CurrentAssetIndex] += PrefabOverridesUtility.GetRemovedComponents(assetRoot).Count;
+                    m_OverridesCount[m_CurrentAssetIndex] += PrefabOverridesUtility.GetRemovedDataComponents(assetRoot).Count;
                     break;
                 case 4:
                     m_OverridesCount[m_CurrentAssetIndex] += PrefabOverridesUtility.GetAddedGameObjects(assetRoot).Count;

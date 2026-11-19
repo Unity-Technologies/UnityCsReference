@@ -8,30 +8,30 @@ namespace Unity.UIToolkit.Editor;
 
 class GetCanvasThemeQuery : Command<GetCanvasThemeQuery>
 {
-    public static ThemeStyleSheet Get()
+    public static StyleSheet Get(AuthoringContext context)
     {
-        var result = default(ThemeStyleSheet);
-        UICommandQueue.RegisterHandler<QueryPayload>(Handler);
+        var result = default(StyleSheet);
+        context.Messages.RegisterHandler<QueryPayload>(Handler);
         try
         {
             using var command = GetPooled();
-            UICommandQueue.Execute(command);
+            context.Messages.Execute(command);
         }
         finally
         {
-            UICommandQueue.UnregisterHandler<QueryPayload>(Handler);
+            context.Messages.UnregisterHandler<QueryPayload>(Handler);
         }
         return result;
 
-        void Handler(in CommandContext context)
+        void Handler(in CommandContext commandContext)
         {
-            result = ((QueryPayload)context.Command).Payload;
+            result = ((QueryPayload)commandContext.Command).Payload;
         }
     }
 
     public class QueryPayload : Command<QueryPayload>
     {
-        public static QueryPayload GetPooled(object source, ThemeStyleSheet theme)
+        public static QueryPayload GetPooled(object source, StyleSheet theme)
         {
             var cmd = GetPooled();
             cmd.Source = source;
@@ -39,13 +39,13 @@ class GetCanvasThemeQuery : Command<GetCanvasThemeQuery>
             return cmd;
         }
 
-        public static void Execute(object source, ThemeStyleSheet theme)
+        public static void Execute(AuthoringContext context, object source, StyleSheet theme)
         {
             using var command = GetPooled(source, theme);
-            UICommandQueue.Execute(command);
+            context.Messages.Execute(command);
         }
 
-        public ThemeStyleSheet Payload { get; private set; }
+        public StyleSheet Payload { get; private set; }
 
         protected override void Init()
         {

@@ -6,7 +6,8 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class OpenManifestExternallyFoldoutGroup : PackageMultiSelectFoldoutGroup
 {
-    public OpenManifestExternallyFoldoutGroup() : base(new OpenManifestExternallyAction())
+    public OpenManifestExternallyFoldoutGroup(IInternalEditorUtilityProxy internalEditorUtilityProxy)
+        : base(new OpenManifestExternallyAction(internalEditorUtilityProxy))
     {
     }
 

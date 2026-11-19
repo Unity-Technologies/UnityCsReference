@@ -14,7 +14,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.UIElements
 {
     [UxmlElement]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class BackgroundField : BaseField<Background>
     {
         /// <summary>
@@ -49,6 +49,8 @@ namespace UnityEditor.UIElements
         readonly EnumField m_GradientSizeField;
         readonly Vector2Field m_GradientPositionField;
         bool m_SuppressGradientChange;
+        // The stops as authored. The Unity Gradient shown can't hold pixel or auto positions, so it only replaces them when edited.
+        BackgroundGradientStop[] m_GradientStops;
 
         public ObjectField objectField => m_ObjectField;
         public PopupField<string> typePopup => m_TypePopup;
@@ -110,7 +112,11 @@ namespace UnityEditor.UIElements
             {
                 tooltip = "The color stops of the gradient. Click to edit. Up to 4 stops are supported.",
             };
-            m_GradientColorsField.RegisterValueChangedCallback(_ => OnGradientControlChanged());
+            m_GradientColorsField.RegisterValueChangedCallback(_ =>
+            {
+                m_GradientStops = UnityGradientToBackgroundStops(m_GradientColorsField.value);
+                OnGradientControlChanged();
+            });
             m_GradientContainer.Add(m_GradientColorsField);
 
             m_GradientAngleField = CreateGradientAngleField(
@@ -182,7 +188,7 @@ namespace UnityEditor.UIElements
                 shape = (BackgroundGradientShape)m_GradientShapeField.value,
                 size = (BackgroundGradientSize)m_GradientSizeField.value,
                 position = m_GradientPositionField.value,
-                stops = UnityGradientToBackgroundStops(m_GradientColorsField.value),
+                stops = (BackgroundGradientStop[])m_GradientStops?.Clone() ?? UnityGradientToBackgroundStops(m_GradientColorsField.value),
             };
 
             value = Background.FromGradient(gradient);
@@ -191,7 +197,7 @@ namespace UnityEditor.UIElements
         // Sensible starting gradient (CSS "to bottom", black → white) shown when nothing is set.
         internal static BackgroundGradient defaultAuthoringGradient
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => BackgroundGradient.Linear(Mathf.PI,
                 BackgroundGradientStop.Percent(Color.black, 0f),
                 BackgroundGradientStop.Percent(Color.white, 1f));
@@ -210,6 +216,7 @@ namespace UnityEditor.UIElements
                 m_GradientSizeField.SetValueWithoutNotify(g.size);
                 m_GradientPositionField.SetValueWithoutNotify(g.position);
                 m_GradientColorsField.SetValueWithoutNotify(BackgroundGradientToUnityGradient(g));
+                m_GradientStops = (BackgroundGradientStop[])g.stops?.Clone();
             }
             finally
             {
@@ -218,7 +225,6 @@ namespace UnityEditor.UIElements
         }
 
         // Rounds like the USS writer, so 1rad reads back as 1 rather than 1.0000004 and 0.00001turn is not shown as 0.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Angle RadiansToAngle(float radians, AngleUnit unit)
         {
             var angle = Angle.Radians(radians);
@@ -228,7 +234,6 @@ namespace UnityEditor.UIElements
         }
 
         // A unit switch reports only the unit, so callers keep their unrounded angle.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static AngleField CreateGradientAngleField(Action<float, AngleUnit> angleChanged, Action<AngleUnit> unitChanged)
         {
             var field = new AngleField("Angle") { value = Angle.Degrees(180f) };
@@ -254,7 +259,6 @@ namespace UnityEditor.UIElements
         [IgnoreForUAL0015("Warn-once latch, only affects whether the warning is logged again")]
         static bool s_WarnedTooManyGradientKeys;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Gradient BackgroundGradientToUnityGradient(in BackgroundGradient bg)
         {
             var stops = bg.stops;
@@ -279,7 +283,6 @@ namespace UnityEditor.UIElements
             return new Gradient { colorKeys = colorKeys, alphaKeys = alphaKeys };
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static BackgroundGradientStop[] UnityGradientToBackgroundStops(Gradient g)
         {
             if (g == null)
@@ -294,7 +297,7 @@ namespace UnityEditor.UIElements
             var output = new List<BackgroundGradientStop>(times.Count);
             foreach (var t in times)
             {
-                output.Add(BackgroundGradientStop.Percent(g.Evaluate(t), Mathf.Clamp01(t)));
+                output.Add(BackgroundGradientStop.Percent(g.Evaluate(t), Mathf.Clamp01((float)System.Math.Round(t, 4))));
                 if (output.Count >= max) break;
             }
             if (output.Count < times.Count && !s_WarnedTooManyGradientKeys)

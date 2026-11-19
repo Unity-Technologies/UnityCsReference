@@ -1,0 +1,245 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
+
+namespace UnityEditor.Build.Profile.Elements
+{
+    /// <summary>
+    /// Additional script compilation defines stored under <see cref="BuildProfile.scriptingDefines"/>.
+    /// The internal flag <see cref="BuildProfile.hasScriptingDefines"/> determines settings visibility
+    /// in editor.
+    /// </summary>
+    internal class ScriptingDefinesSettings : IBuildProfileSettingsProvider
+    {
+        /// <summary>
+        /// Scripting define visual element handles comitting scripting define changes
+        /// to a build profile. Active profiles prompts for script recompilation when
+        /// navigating away from the editor window. Play mode must reflect active profiles
+        /// scripting defines.
+        /// </summary>
+        class ScriptingDefinesVisualElement : VisualElement
+        {
+            const string k_Uxml = "BuildProfile/UXML/VisualElement/ScriptingDefinesSettings.uxml";
+
+            SerializedObject m_SerializedObject;
+            BuildProfile m_Profile;
+            Button recompileDefinesButton;
+            Button revertDefinesButton;
+
+            public ScriptingDefinesVisualElement(BuildProfile profile, SerializedObject serializedObject)
+            {
+                var uxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
+                uxml.CloneTree(this);
+
+                m_Profile = profile;
+                m_SerializedObject = serializedObject;
+
+                recompileDefinesButton = this.Q<Button>("scripting-defines-apply-button");
+                revertDefinesButton = this.Q<Button>("scripting-defines-revert-button");
+                var listView = this.Q<ListView>("scripting-defines-listview");
+                var warningHelpbox = this.Q<HelpBox>("scripting-defines-warning-help-box");
+
+                warningHelpbox.text = TrText.scriptingDefinesWarningHelpbox;
+                revertDefinesButton.text = TrText.revert;
+                recompileDefinesButton.text = TrText.apply;
+
+                recompileDefinesButton.clicked += () => {
+                    m_Profile.SetAndApplyScriptingDefines(m_Profile.scriptingDefines);
+                };
+                revertDefinesButton.clicked += RevertScriptingDefines;
+
+                var property = serializedObject.FindProperty("m_ScriptingDefines");
+                listView.TrackPropertyValue(property, this.OnScriptingDefinePropertyChange);
+                listView.BindProperty(property);
+                listView.itemsAdded += (indices) =>
+                {
+                    var enumerator = indices.GetEnumerator();
+                    if (enumerator.MoveNext())
+                    {
+                        var element = property.GetArrayElementAtIndex(enumerator.Current);
+                        element.stringValue = "";
+                        property.serializedObject.ApplyModifiedProperties();
+                    }
+                };
+
+                if (!profile.IsActiveBuildProfileOrPlatform())
+                {
+                    recompileDefinesButton.Hide();
+                    revertDefinesButton.Hide();
+                    warningHelpbox.Hide();
+                }
+                else
+                {
+                    BuildProfileContext.instance.cachedEditorScriptingDefines = (string[])profile.scriptingDefines.Clone();
+                    var targetName = NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(profile.buildTarget));
+                    if (string.IsNullOrEmpty(PlayerSettings.GetScriptingDefineSymbols(targetName)))
+                    {
+                        warningHelpbox.Hide();
+                    }
+                }
+
+                this.OnScriptingDefinePropertyChange(property);
+
+                RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+                RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            }
+
+            void OnScriptingDefinePropertyChange(SerializedProperty property)
+            {
+                if (!m_Profile.IsActiveBuildProfileOrPlatform())
+                    return;
+
+                var lastCompiledDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+                if (property.arraySize < lastCompiledDefines.Length)
+                {
+                    recompileDefinesButton.SetEnabled(true);
+                    revertDefinesButton.SetEnabled(true);
+                    return;
+                }
+
+                for (int i = 0; i < property.arraySize; i++)
+                {
+                    var element = property.GetArrayElementAtIndex(i);
+                    if (i < lastCompiledDefines.Length)
+                    {
+                        if (element.stringValue != lastCompiledDefines[i])
+                        {
+                            recompileDefinesButton.SetEnabled(true);
+                            revertDefinesButton.SetEnabled(true);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(element.stringValue))
+                        {
+                            recompileDefinesButton.SetEnabled(true);
+                            revertDefinesButton.SetEnabled(true);
+                            return;
+                        }
+                    }
+                }
+
+                recompileDefinesButton.SetEnabled(false);
+                revertDefinesButton.SetEnabled(false);
+            }
+
+            void RevertScriptingDefines()
+            {
+                m_Profile.scriptingDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+                m_SerializedObject.Update();
+                recompileDefinesButton.SetEnabled(false);
+                revertDefinesButton.SetEnabled(false);
+            }
+
+            void OnAttachToPanel(AttachToPanelEvent evt)
+            {
+                EditorApplication.update += EditorUpdate;
+            }
+
+            void OnDetachFromPanel(DetachFromPanelEvent evt)
+            {
+                EditorApplication.update -= EditorUpdate;
+
+                if (m_Profile == null)
+                    return;
+
+                if (m_Profile != BuildProfileContext.activeProfile)
+                    return;
+
+                if (EditorApplication.isPlayingOrWillChangePlaymode)
+                    return;
+
+                var lastCompiledDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(BuildProfileContext.instance.cachedEditorScriptingDefines);
+                // Currently, the setter for scripting defines also applies the changes in SetAndApplyScriptingDefines(),
+                // But we want to compare sanitized defines before applying the changes,
+                // so we store the defines in local variables to avoid them being applied, and set them after the user chooses to in the dialog below.
+                var currentDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
+                if (ScriptingDefinesHelper.AreDefinesEquivalent(currentDefines, lastCompiledDefines))
+                {
+                    return;
+                }
+
+                bool isAutomatedEnvironment = UnityEngine.Application.isBatchMode || BuildPipeline.isBuildingPlayer;
+
+                if (isAutomatedEnvironment || EditorUtility.DisplayDialog(TrText.scriptingDefinesModified, TrText.scriptingDefinesModifiedBody, TrText.apply, TrText.revert))
+                {
+                    m_Profile.SetAndApplyScriptingDefines(currentDefines);
+                }
+                else
+                {
+                    m_Profile.scriptingDefines = lastCompiledDefines;
+                    EditorUtility.SetDirty(m_Profile);
+                }
+            }
+
+            void EditorUpdate()
+            {
+                bool isCompiling = EditorApplication.isCompiling || EditorApplication.isUpdating;
+                var guid = m_Profile.isMultiTarget ? m_Profile.selectedPlatformGuid : m_Profile.platformGuid;
+                bool isVirtualTexturingValid = BuildProfileModuleUtil.IsVirtualTexturingSettingsValid(guid);
+
+                if (!isVirtualTexturingValid || isCompiling)
+                {
+                    recompileDefinesButton?.SetEnabled(false);
+                    revertDefinesButton?.SetEnabled(false);
+                }
+            }
+        }
+
+        public string GetDisplayName()
+        {
+            return TrText.scriptingDefines;
+        }
+
+        public string GetTooltip()
+        {
+            return TrText.scriptingDefinesTooltip;
+        }
+
+        public bool HasSettings(BuildProfile profile)
+        {
+            return profile.hasScriptingDefines;
+        }
+
+        public void OnAdd(BuildProfile profile)
+        {
+            profile.hasScriptingDefines = true;
+            EditorUtility.SetDirty(profile);
+        }
+
+        public void OnRemove(BuildProfile profile)
+        {
+            profile.hasScriptingDefines = false;
+            profile.scriptingDefines = Array.Empty<string>();
+            EditorUtility.SetDirty(profile);
+
+            // Script recompilation required when removing non-empty
+            // scripting defines from the active build profile.
+            if (profile.IsActiveBuildProfileOrPlatform()
+                && BuildProfileContext.instance.cachedEditorScriptingDefines.Length != 0)
+            {
+                BuildProfileModuleUtil.RequestScriptCompilation(profile);
+            }
+        }
+
+        public Action<BuildProfile> GetResetAction() => null;
+
+        public Action<BuildProfile> OnCopy() => OnCopy;
+
+        public Action<BuildProfile> OnPaste() => OnPaste;
+
+        void OnCopy(BuildProfile profile) => BuildProfileModuleUtil.CopySerializedPropertyFromBuildProfile(profile, "m_ScriptingDefines");
+
+        void OnPaste(BuildProfile profile) => BuildProfileModuleUtil.PasteSerializedPropertyToBuildProfile(profile, "m_ScriptingDefines");
+
+        public VisualElement CreateInspectorGUI(BuildProfile profile, SerializedObject serializedObject)
+        {
+            return new ScriptingDefinesVisualElement(profile, serializedObject);
+        }
+    }
+}

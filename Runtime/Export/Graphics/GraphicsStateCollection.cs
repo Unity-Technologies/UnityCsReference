@@ -60,6 +60,28 @@ namespace UnityEngine.Rendering
             }
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct ComputeShaderVariant
+        {
+            public ComputeShader shader;
+            public int kernelIndex;
+            public LocalKeyword[] keywords;
+
+            public ComputeShaderVariant(ComputeShader shader, int kernelIndex, LocalKeyword[] keywords)
+            {
+                this.shader = shader;
+                this.kernelIndex = kernelIndex;
+                this.keywords = keywords;
+            }
+
+            public ComputeShaderVariant(ComputeShader shader, int kernelIndex)
+            {
+                this.shader = shader;
+                this.kernelIndex = kernelIndex;
+                this.keywords = shader.enabledKeywords;
+            }
+        }
+
         public GraphicsStateCollection() { SetEntityIdFromConstructor(Internal_Create()); }
         public GraphicsStateCollection(string filePath) { SetEntityIdFromConstructor(Internal_Create()); LoadFromFile(filePath); }
 

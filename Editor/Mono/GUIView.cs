@@ -43,31 +43,7 @@ namespace UnityEditor
         [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal bool SendEvent(Event e)
         {
-            int depth = SavedGUIState.Internal_GetGUIDepth();
-            if (depth > 0)
-            {
-                SavedGUIState oldState = SavedGUIState.Create();
-                var retval = Internal_SendEvent(e);
-                oldState.ApplyAndForget();
-                return retval;
-            }
-
-            {
-                var retval = Internal_SendEvent(e);
-                return retval;
-            }
-        }
-
-        [RequiredByNativeCode]
-        internal static void SaveReentrantLayoutState()
-        {
-            SavedGUIState.PushReentrantLayoutState();
-        }
-
-        [RequiredByNativeCode]
-        internal static void RestoreReentrantLayoutState()
-        {
-            SavedGUIState.PopReentrantLayoutState();
+            return Internal_SendEvent(e);
         }
 
         // This callback function allows to peek at events before they

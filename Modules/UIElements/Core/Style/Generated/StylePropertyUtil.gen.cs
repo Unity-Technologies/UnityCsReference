@@ -2132,7 +2132,6 @@ namespace UnityEngine.UIElements.StyleSheets
             }
                 };
 
-        [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
         internal static readonly VersionChangeType[] s_PropertyToChangeType = new VersionChangeType[]
         {
             0,

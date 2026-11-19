@@ -57,7 +57,7 @@ namespace Unity.Collections
         [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.EntitiesModule")]
         internal AtomicSafetyHandle       m_Safety;
 
-        internal unsafe ref DisposeSentinel.Dummy m_DisposeSentinel
+        internal readonly unsafe ref DisposeSentinel.Dummy m_DisposeSentinel
         {
             get
             {
@@ -189,7 +189,7 @@ namespace Unity.Collections
         }
 
         ///<summary>Number of elements in a <see cref="Unity.Collections.NativeArray{T}" />.</summary>
-        public int Length
+        public readonly int Length
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -220,7 +220,7 @@ namespace Unity.Collections
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        void CheckElementReadAccess(int index)
+        readonly void CheckElementReadAccess(int index)
         {
             if (index < m_MinIndex || index > m_MaxIndex)
                 FailOutOfRangeError(index);
@@ -243,7 +243,7 @@ namespace Unity.Collections
         public T this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
+            readonly get
             {
                 CheckElementReadAccess(index);
                 return UnsafeUtility.ReadArrayElement<T>(m_Buffer, index);
@@ -259,7 +259,7 @@ namespace Unity.Collections
         }
 
         ///<summary>Indicates that a <see cref="Unity.Collections.NativeArray{T}" /> has an allocated memory buffer.</summary>
-        public bool IsCreated
+        public readonly bool IsCreated
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => m_Buffer != null;
@@ -347,7 +347,7 @@ namespace Unity.Collections
         ///<summary>Copies all the elements from a <see cref="Unity.Collections.NativeArray{T}" /> or a managed array of the same length.</summary>
         ///<param name="array">The array to copy elements from.</param>
         [WriteAccessRequired]
-        public void CopyFrom(T[] array)
+        public readonly void CopyFrom(T[] array)
         {
             Copy(array, this);
         }
@@ -355,28 +355,28 @@ namespace Unity.Collections
         ///<summary>Copies all the elements from a <see cref="Unity.Collections.NativeArray{T}" /> or a managed array of the same length.</summary>
         ///<param name="array">The array to copy elements from.</param>
         [WriteAccessRequired]
-        public void CopyFrom(NativeArray<T> array)
+        public readonly void CopyFrom(NativeArray<T> array)
         {
             Copy(array, this);
         }
 
         ///<summary>Copies all the elements to another <see cref="Unity.Collections.NativeArray{T}" /> or a managed array of the same length.</summary>
         ///<param name="array">The array to copy elements to.</param>
-        public void CopyTo(T[] array)
+        public readonly void CopyTo(T[] array)
         {
             Copy(this, array);
         }
 
         ///<summary>Copies all the elements to another <see cref="Unity.Collections.NativeArray{T}" /> or a managed array of the same length.</summary>
         ///<param name="array">The array to copy elements to.</param>
-        public void CopyTo(NativeArray<T> array)
+        public readonly void CopyTo(NativeArray<T> array)
         {
             Copy(this, array);
         }
 
         ///<summary>Convert a <see cref="Unity.Collections.NativeArray{T}" /> to an array.</summary>
         ///<returns>The converted array.</returns>
-        public T[] ToArray()
+        public readonly T[] ToArray()
         {
             var array = new T[Length];
             Copy(this, array, Length);
@@ -384,7 +384,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        void FailOutOfRangeError(int index)
+        readonly void FailOutOfRangeError(int index)
         {
             if (index < Length && (m_MinIndex != 0 || m_MaxIndex != Length - 1))
                 throw new IndexOutOfRangeException(
@@ -428,7 +428,7 @@ namespace Unity.Collections
                 value = default;
             }
 
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -452,7 +452,7 @@ namespace Unity.Collections
             }
 
             // Let NativeArray indexer check for out of range.
-            public T Current
+            public readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
@@ -461,7 +461,7 @@ namespace Unity.Collections
                 }
             }
 
-            object IEnumerator.Current
+            readonly object IEnumerator.Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
@@ -476,7 +476,7 @@ namespace Unity.Collections
         ///have the same length.</remarks>
         ///<param name="other">The NativeArray to compare against.</param>
         ///<returns>True if the two NativeArray instances are the same, false otherwise.</returns>
-        public bool Equals(NativeArray<T> other)
+        public readonly bool Equals(NativeArray<T> other)
         {
             return m_Buffer == other.m_Buffer && m_Length == other.m_Length;
         }
@@ -485,7 +485,7 @@ namespace Unity.Collections
         ///<remarks>A NativeArray and an object are considered the same if they point to the same underlying memory buffer, and have the same length.</remarks>
         ///<param name="obj">The object to compare against.</param>
         ///<returns>True if the NativeArray and the object are the same, false otherwise.</returns>
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             return obj is NativeArray<T> && Equals((NativeArray<T>)obj);
@@ -493,7 +493,7 @@ namespace Unity.Collections
 
         ///<summary>Gets a hash code for the current instance.</summary>
         ///<returns>A hash code.</returns>
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             unchecked
             {
@@ -777,7 +777,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        void CheckReinterpretLoadRange<U>(int sourceIndex) where U : struct
+        readonly void CheckReinterpretLoadRange<U>(int sourceIndex) where U : struct
         {
             long tsize = UnsafeUtility.SizeOf<T>();
             AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
@@ -793,7 +793,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        void CheckReinterpretStoreRange<U>(int destIndex) where U : struct
+        readonly void CheckReinterpretStoreRange<U>(int destIndex) where U : struct
         {
             long tsize = UnsafeUtility.SizeOf<T>();
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -811,7 +811,7 @@ namespace Unity.Collections
         ///<summary>Reinterpret and load data starting at underlying index as a different type.</summary>
         ///<param name="sourceIndex">Index in the underlying array where the load should start.</param>
         ///<returns>The loaded data.</returns>
-        public U ReinterpretLoad<U>(int sourceIndex) where U : struct
+        public readonly U ReinterpretLoad<U>(int sourceIndex) where U : struct
         {
             CheckReinterpretLoadRange<U>(sourceIndex);
             byte* src_ptr = ((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * sourceIndex;
@@ -821,14 +821,14 @@ namespace Unity.Collections
         ///<summary>Reinterpret and store data starting at underlying index as a different type.</summary>
         ///<param name="destIndex">Index in the underlying array where the data is to be stored.</param>
         ///<param name="data">The data to store.</param>
-        public void ReinterpretStore<U>(int destIndex, U data) where U : struct
+        public readonly void ReinterpretStore<U>(int destIndex, U data) where U : struct
         {
             CheckReinterpretStoreRange<U>(destIndex);
             byte* dst_ptr = ((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * destIndex;
             UnsafeUtility.WriteArrayElement<U>(dst_ptr, 0, data);
         }
 
-        private NativeArray<U> InternalReinterpret<U>(int length) where U : struct
+        private readonly NativeArray<U> InternalReinterpret<U>(int length) where U : struct
         {
             var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<U>(m_Buffer, length, m_AllocatorLabel);
 
@@ -850,14 +850,14 @@ namespace Unity.Collections
         ///
         ///When an expected element size is given, this method allows you to create a view into memory that has a different element size and length compared to the source array. For example, you can reinterpret an array of float triples as an array of 3D vector structs. The expected element size serves as a checkpoint so that the underlying element size in the source array doesn't change size, which would otherwise make all future uses of the reinterpreted array invalid.</remarks>
         ///<returns>An alias of the same array, reinterpreted as the target type.</returns>
-        public NativeArray<U> Reinterpret<U>() where U : struct
+        public readonly NativeArray<U> Reinterpret<U>() where U : struct
         {
             CheckReinterpretSize<U>();
             return InternalReinterpret<U>(Length);
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        void CheckReinterpretSize<U>(long tSize, long uSize, int expectedTypeSize, long byteLen, long uLen)
+        readonly void CheckReinterpretSize<U>(long tSize, long uSize, int expectedTypeSize, long byteLen, long uLen)
         {
             if (tSize != expectedTypeSize)
             {
@@ -876,7 +876,7 @@ namespace Unity.Collections
         ///When an expected element size is given, this method allows you to create a view into memory that has a different element size and length compared to the source array. For example, you can reinterpret an array of float triples as an array of 3D vector structs. The expected element size serves as a checkpoint so that the underlying element size in the source array doesn't change size, which would otherwise make all future uses of the reinterpreted array invalid.</remarks>
         ///<param name="expectedTypeSize">The expected size (in bytes, as given by sizeof) of the current element type of the array.</param>
         ///<returns>An alias of the same array, reinterpreted as the target type.</returns>
-        public NativeArray<U> Reinterpret<U>(int expectedTypeSize) where U : struct
+        public readonly NativeArray<U> Reinterpret<U>(int expectedTypeSize) where U : struct
         {
             long tSize = UnsafeUtility.SizeOf<T>();
             long uSize = UnsafeUtility.SizeOf<U>();
@@ -889,7 +889,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        void CheckGetSubArrayArguments(int start, int length)
+        readonly void CheckGetSubArrayArguments(int start, int length)
         {
             if (start < 0)
             {
@@ -911,7 +911,7 @@ namespace Unity.Collections
         ///<param name="start">The start index of the sub array.</param>
         ///<param name="length">The length of the sub array.</param>
         ///<returns>A view into the array that aliases the original array, which can't be disposed.</returns>
-        public NativeArray<T> GetSubArray(int start, int length)
+        public readonly NativeArray<T> GetSubArray(int start, int length)
         {
             CheckGetSubArrayArguments(start, length);
             var result = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(((byte*)m_Buffer) + ((long)UnsafeUtility.SizeOf<T>()) * start, length, Allocator.None);
@@ -922,9 +922,9 @@ namespace Unity.Collections
 
         ///<summary>Casts a <see cref="Unity.Collections.NativeArray{T}" /> to read-only array.</summary>
         ///<returns>A read-only array.</returns>
-        public ReadOnly AsReadOnly()
+        public readonly ReadOnly AsReadOnly()
         {
-            return new ReadOnly(m_Buffer, m_Length, ref m_Safety);
+            return new ReadOnly(m_Buffer, m_Length, m_Safety);
         }
 
         ///<summary>Represents a <see cref="Unity.Collections.NativeArray{T}" /> interface constrained to read-only operations.</summary>
@@ -944,7 +944,7 @@ namespace Unity.Collections
             [VisibleToOtherModules("UnityEditor.CoreModule")]
             internal AtomicSafetyHandle m_Safety;
 
-            internal ReadOnly(void* buffer, int length, ref AtomicSafetyHandle safety)
+            internal ReadOnly(void* buffer, int length, in AtomicSafetyHandle safety)
             {
                 m_Buffer = buffer;
                 m_Length = length;
@@ -953,7 +953,7 @@ namespace Unity.Collections
 
 
             ///<summary>Provides the number of elements in the <see cref="Unity.Collections.NativeArray{T}.ReadOnly" />.</summary>
-            public int Length
+            public readonly int Length
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
@@ -964,15 +964,15 @@ namespace Unity.Collections
 
             ///<summary>Copies all elements to a <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> or managed array of the same length.</summary>
             ///<param name="array">The destination array to copy to.</param>
-            public void CopyTo(T[] array) => Copy(this, array);
+            public readonly void CopyTo(T[] array) => Copy(this, array);
 
             ///<summary>Copies all elements to a <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> or managed array of the same length.</summary>
             ///<param name="array">The destination array to copy to.</param>
-            public void CopyTo(NativeArray<T> array) => Copy(this, array);
+            public readonly void CopyTo(NativeArray<T> array) => Copy(this, array);
 
             ///<summary>Convert the data in a <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> to a managed array.</summary>
             ///<returns>A new managed array with the same contents as the given <see cref="Unity.Collections.NativeArray{T}.ReadOnly" />.</returns>
-            public T[] ToArray()
+            public readonly T[] ToArray()
             {
                 var array = new T[m_Length];
                 Copy(this, array, m_Length);
@@ -983,16 +983,16 @@ namespace Unity.Collections
             ///<remarks>The sizes of <c>T</c> and <c>U</c> must match. You can use this method to create a view into memory that has a different element size 
             ///and length compared to the source array. For example, an array of float triples can be reinterpreted as an array of 3D vector structs.</remarks>
             ///<returns>An alias of the <see cref="Unity.Collections.NativeArray{T}.ReadOnly" />, but reinterpreted as the target type.</returns>
-            public NativeArray<U>.ReadOnly Reinterpret<U>() where U : struct
+            public readonly NativeArray<U>.ReadOnly Reinterpret<U>() where U : struct
             {
                 CheckReinterpretSize<U>();
-                return new NativeArray<U>.ReadOnly(m_Buffer, m_Length, ref m_Safety);
+                return new NativeArray<U>.ReadOnly(m_Buffer, m_Length, m_Safety);
             }
 
             ///<summary>Provides read-only access to <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> elements by index.</summary>
             ///<remarks>The elements of the array are returned by value, not by reference. If you need the reference, use the <see cref="NativeArray{T}.ReadOnly.UnsafeElementAt(int)" /> method.</remarks>
             ///<seealso cref="ReadOnly.UnsafeElementAt" />
-            public T this[int index]
+            public readonly T this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
@@ -1064,7 +1064,7 @@ namespace Unity.Collections
             ///}
             ///]]></code>
             ///</example>
-            public ref readonly T UnsafeElementAt(int index)
+            public readonly ref readonly T UnsafeElementAt(int index)
             {
                 CheckElementReadAccess(index);
                 return ref UnsafeUtility.ArrayElementAsRef<T>(m_Buffer, index);
@@ -1072,7 +1072,7 @@ namespace Unity.Collections
 
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            void CheckElementReadAccess(int index)
+            readonly void CheckElementReadAccess(int index)
             {
                 if ((uint)index >= (uint)m_Length)
                 {
@@ -1083,7 +1083,7 @@ namespace Unity.Collections
             }
 
             ///<summary>Indicates that a <see cref="Unity.Collections.NativeArray{T}.ReadOnly" /> has an allocated memory buffer.</summary>
-            public bool IsCreated
+            public readonly bool IsCreated
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => m_Buffer != null;
@@ -1103,7 +1103,7 @@ namespace Unity.Collections
                     value = default;
                 }
 
-                public void Dispose()
+                public readonly void Dispose()
                 {
                 }
 
@@ -1127,28 +1127,28 @@ namespace Unity.Collections
                 }
 
                 // Let NativeArray indexer check for out of range.
-                public T Current
+                public readonly T Current
                 {
                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
                     get => value;
                 }
 
-                object IEnumerator.Current => Current;
+                readonly object IEnumerator.Current => Current;
             }
 
             ///<summary>Gets an enumerator.</summary>
             ///<returns>The enumerator.</returns>
-            public Enumerator GetEnumerator()
+            public readonly Enumerator GetEnumerator()
             {
                 return new Enumerator(this);
             }
 
-            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
             {
                 return GetEnumerator();
             }
 
-            IEnumerator IEnumerable.GetEnumerator()
+            readonly IEnumerator IEnumerable.GetEnumerator()
             {
                 return GetEnumerator();
             }

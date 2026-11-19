@@ -1116,7 +1116,9 @@ namespace UnityEditor
 
         void OnBeforeAssemblyReload()
         {
-            Undo.RevertAllDownToGroup(m_ModalUndoGroup);
+            // A selector that was never shown, or is already closed, has no undo group to revert
+            if (m_ModalUndoGroup >= 0)
+                Undo.RevertAllDownToGroup(m_ModalUndoGroup);
             m_ListArea?.InitSelection(Array.Empty<EntityId>());
             m_ObjectTreeWithSearch.Clear();
             SetSelectedInstanceID(EntityId.None);
@@ -1129,7 +1131,8 @@ namespace UnityEditor
         internal void Cancel()
         {
             // Undo changes we have done in the ObjectSelector
-            Undo.RevertAllDownToGroup(m_ModalUndoGroup);
+            if (m_ModalUndoGroup >= 0)
+                Undo.RevertAllDownToGroup(m_ModalUndoGroup);
 
             // Clear selection so that object field doesn't grab it
             m_ListArea?.InitSelection(Array.Empty<EntityId>());

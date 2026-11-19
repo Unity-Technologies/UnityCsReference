@@ -30,6 +30,8 @@ namespace UnityEngine.UIElements
         // into an unmanaged snapshot, flushed as one ApplyPropertyAnimation per (element, id).
         private Dictionary<(VisualElement element, StylePropertyId id), PendingBackground> m_PendingBackgroundWrites;
 
+        private Dictionary<(VisualElement element, StylePropertyId id), PendingGridLine> m_PendingGridLineWrites;
+
         private bool m_BatchingCompositeWrites;
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -66,7 +68,7 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < m_Elements.Count; i++)
             {
                 var element = m_Elements[i].Value;
-                if (element == null)
+                if (element == null || element.resourcesReleased)
                     continue;
 
                 element.computedStyle.InvalidateMatchingRulesCache();
@@ -85,7 +87,7 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < m_Elements.Count; i++)
             {
                 var element = m_Elements[i].Value;
-                if (element == null)
+                if (element == null || element.resourcesReleased)
                     continue;
 
                 element.IncrementVersion(VersionChangeType.Styles);
@@ -194,9 +196,19 @@ namespace UnityEngine.UIElements
                     e.computedStyle.ApplyPropertyAnimation(e, id, new Ratio(value));
                     break;
 
-                case PropertyType.Int or PropertyType.Enum or PropertyType.GridLine:
+                case PropertyType.Int or PropertyType.Enum:
                     e.computedStyle.ApplyPropertyAnimation(e, id, DecodeIntChannel(id, channel, value));
                     break;
+
+                case PropertyType.GridLine:
+                {
+                    var pending = GetOrLoadPendingGridLine(e, id);
+                    WriteGridLineChannel(ref pending, channel, BitConverter.SingleToInt32Bits(value));
+                    m_PendingGridLineWrites[(e, id)] = pending;
+                    if (!m_BatchingCompositeWrites)
+                        FlushPendingGridLineWrites();
+                    break;
+                }
 
                 case PropertyType.Length:
                 {
@@ -367,7 +379,8 @@ namespace UnityEngine.UIElements
                 PropertyType.Length => AnimationLengthChannel.ReadFloat(
                     element.computedStyle.ReadPropertyAnimationLength(id), channel),
                 PropertyType.Float => element.computedStyle.ReadPropertyAnimationFloat(id),
-                PropertyType.Int or PropertyType.Enum or PropertyType.GridLine => EncodeIntChannel(id, channel, element.computedStyle.ReadPropertyAnimationInt(id)),
+                PropertyType.Int or PropertyType.Enum => EncodeIntChannel(id, channel, element.computedStyle.ReadPropertyAnimationInt(id)),
+                PropertyType.GridLine => BitConverter.Int32BitsToSingle(ReadGridLineChannel(GridLine.FromRawValue(element.computedStyle.ReadPropertyAnimationInt(id)), channel)),
                 PropertyType.Color => element.computedStyle.ReadPropertyAnimationColor(id)[channel],
                 PropertyType.Translate => channel <= 1
                     ? AnimationLengthChannel.ReadFloat(element.computedStyle.ReadPropertyAnimationTranslate(id).x, channel)
@@ -943,8 +956,19 @@ namespace UnityEngine.UIElements
                 case 1: s.color.g = value; break;
                 case 2: s.color.b = value; break;
                 case 3: s.color.a = value; break;
-                case kBackgroundGradientStopPositionSubChannel: s.position = value; break;
-                case kBackgroundGradientStopIsPercentSubChannel: s.positionIsPercent = BitConverter.SingleToInt32Bits(value) != 0 ? 1 : 0; break;
+                case kBackgroundGradientStopPositionSubChannel:
+                    // An animated position is explicit, so it clears the auto flag that the unit channel keeps.
+                    // Writing back the auto stop's own placeholder (as a bound default does) leaves it auto.
+                    if (value != s.position)
+                    {
+                        s.position = value;
+                        s.positionFlags &= UnmanagedBackgroundGradientStop.PercentFlag;
+                    }
+                    break;
+                case kBackgroundGradientStopIsPercentSubChannel:
+                    s.positionFlags = (s.positionFlags & UnmanagedBackgroundGradientStop.AutoFlag)
+                        | (BitConverter.SingleToInt32Bits(value) != 0 ? UnmanagedBackgroundGradientStop.PercentFlag : 0);
+                    break;
             }
             g.stops[stopIndex] = s;
         }
@@ -977,7 +1001,7 @@ namespace UnityEngine.UIElements
                 2 => s.color.b,
                 3 => s.color.a,
                 kBackgroundGradientStopPositionSubChannel => s.position,
-                kBackgroundGradientStopIsPercentSubChannel => BitConverter.Int32BitsToSingle(s.positionIsPercent),
+                kBackgroundGradientStopIsPercentSubChannel => BitConverter.Int32BitsToSingle(s.positionFlags & UnmanagedBackgroundGradientStop.PercentFlag),
                 _ => 0f,
             };
         }
@@ -1007,6 +1031,66 @@ namespace UnityEngine.UIElements
                 m_PendingBackgroundWrites[(e, id)] = pending;
             }
             return pending;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal const int kGridLinePlacementChannel = 0;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal const int kGridLineValueChannel = 1;
+
+        // .placement and .value form one GridLine, and auto has no slot to keep the number, so both are staged until flush.
+        private struct PendingGridLine
+        {
+            public GridLinePlacement placement;
+            public int value;
+        }
+
+        // The GridLinePlacement, or the line number (negative counts from the end), the span count, or 0 for auto.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static int ReadGridLineChannel(GridLine gridLine, int channel) =>
+            channel == kGridLinePlacementChannel ? (int)gridLine.placement : gridLine.isSpan ? gridLine.span : gridLine.line;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static GridLine ComposeGridLine(GridLinePlacement placement, int value) => placement switch
+        {
+            GridLinePlacement.Line => GridLine.AtLine(value != 0 ? value : 1),
+            GridLinePlacement.Span => GridLine.Span(Math.Max(1, value)),
+            _ => GridLine.Auto,
+        };
+
+        private static PendingGridLine ToPendingGridLine(GridLine gridLine) => new PendingGridLine
+        {
+            placement = gridLine.placement,
+            value = ReadGridLineChannel(gridLine, kGridLineValueChannel),
+        };
+
+        private static void WriteGridLineChannel(ref PendingGridLine pending, int channel, int value)
+        {
+            if (channel == kGridLinePlacementChannel)
+                pending.placement = (GridLinePlacement)value;
+            else
+                pending.value = value;
+        }
+
+        private PendingGridLine GetOrLoadPendingGridLine(VisualElement e, StylePropertyId id)
+        {
+            m_PendingGridLineWrites ??= new Dictionary<(VisualElement, StylePropertyId), PendingGridLine>();
+            if (!m_PendingGridLineWrites.TryGetValue((e, id), out var pending))
+                pending = ToPendingGridLine(GridLine.FromRawValue(e.computedStyle.ReadPropertyAnimationInt(id)));
+            return pending;
+        }
+
+        internal void FlushPendingGridLineWrites()
+        {
+            if (m_PendingGridLineWrites == null || m_PendingGridLineWrites.Count == 0)
+                return;
+
+            foreach (var kvp in m_PendingGridLineWrites)
+            {
+                var (e, id) = kvp.Key;
+                e.computedStyle.ApplyPropertyAnimation(e, id, ComposeGridLine(kvp.Value.placement, kvp.Value.value).rawValue);
+            }
+            m_PendingGridLineWrites.Clear();
         }
 
         // Called after IterateOnBoundValues finishes (and after each non-batched Set*Value

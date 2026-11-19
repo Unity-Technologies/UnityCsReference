@@ -1080,43 +1080,7 @@ static void BurstSetup()
                 // A13 (equivalent to Armv8.4-A) and M1 seem to be the first CPUs we can claim HALFFP compatible
                 // Since we need to support older CPUs, have to use the "basic" Armv8A here
 
-                void AddSimulatorCombinations(AppleMobileArchitectureSimulator architecture)
-                {
-#pragma warning disable CS0618 // Type or member is obsolete
-                    switch (architecture)
-                    {
-                        case AppleMobileArchitectureSimulator.ARM64:
-                            combinations.Add(new BurstOutputCombination("StaticLibraries", new TargetCpus(BurstTargetCpu.ARMV8A_AARCH64)));
-                            break;
-
-                        case AppleMobileArchitectureSimulator.X86_64:
-                            combinations.Add(new BurstOutputCombination("StaticLibraries", new TargetCpus(BurstTargetCpu.X64_SSE4)));
-                            break;
-
-                        case AppleMobileArchitectureSimulator.Universal:
-                            // Burst does not yet support Universal simulator builds (lipo merging not implemented).
-                            break;
-
-                        default:
-                            throw new InvalidOperationException();
-                    }
-#pragma warning restore CS0618
-                }
-
-                switch (targetPlatform)
-                {
-                    case TargetPlatform.iOSSimulator:
-                        AddSimulatorCombinations(PlayerSettings.iOS.simulatorSdkArchitecture);
-                        break;
-
-                    case TargetPlatform.tvOSSimulator:
-                        AddSimulatorCombinations(PlayerSettings.tvOS.simulatorSdkArchitecture);
-                        break;
-
-                    default:
-                        combinations.Add(new BurstOutputCombination("StaticLibraries", new TargetCpus(BurstTargetCpu.ARMV8A_AARCH64)));
-                        break;
-                }
+                combinations.Add(new BurstOutputCombination("StaticLibraries", new TargetCpus(BurstTargetCpu.ARMV8A_AARCH64)));
             }
             else if (targetPlatform == TargetPlatform.Android)
             {

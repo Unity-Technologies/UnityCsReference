@@ -62,9 +62,8 @@ namespace UnityEngine.Audio
     unsafe struct ControlHeader
     {
         internal Unity.Audio.Handle Handle;
-        // Needs to be a pointer as this structure is natively allocated. This can be optimized later.
         internal IntPtr ManagedTransport;
-        // More stuff here, careful.
+        // Mirrors only the leading fields of native audio::ControlHeader; do not add fields here.
     }
 
     /// <summary>
@@ -612,8 +611,7 @@ namespace UnityEngine.Audio
         {
             m_Handle.CheckValidOrThrow();
 
-            // Cannot use processor.Handle.CheckValidOrThrow() here, as the handle may be in process of being disposed.
-            // This will only be called from within Processor.Communication.GetAvailableData.
+            // Only WasCreated is checked, as the handle may be mid-dispose when reached through Pipe.GetAvailableData.
             if (!handle.WasCreated)
                 throw new InvalidOperationException("Invalid handle provided to GetAvailableData");
 
@@ -645,7 +643,6 @@ namespace UnityEngine.Audio
         {
             if (header.ManagedTransport != IntPtr.Zero)
             {
-                // If the header has a managed transport, we need to free it.
                 var gcHandle = GCHandle.FromIntPtr(header.ManagedTransport);
                 if (gcHandle.IsAllocated)
                 {

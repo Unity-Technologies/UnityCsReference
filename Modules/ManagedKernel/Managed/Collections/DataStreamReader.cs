@@ -167,7 +167,7 @@ namespace Unity.Collections
         /// Gets the number of bytes read from the data stream.
         /// </summary>
         /// <returns>Number of bytes read.</returns>
-        public int GetBytesRead()
+        public readonly int GetBytesRead()
         {
             return (m_BitPos + 7) >> 3;
         }
@@ -176,7 +176,7 @@ namespace Unity.Collections
         /// Gets the number of bits read from the data stream.
         /// </summary>
         /// <returns>Number of bits read.</returns>
-        public int GetBitsRead()
+        public readonly int GetBitsRead()
         {
             return m_BitPos;
         }

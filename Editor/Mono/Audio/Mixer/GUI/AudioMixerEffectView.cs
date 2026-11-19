@@ -48,22 +48,18 @@ namespace UnityEditor
             Type pluginType = typeof(IAudioEffectPluginGUI);
             foreach (var assembly in CurrentAssemblies.GetLoadedAssemblies())
             {
-                //Debug.Log("Assembly: " + assembly.FullName);
                 try
                 {
                     var types = assembly.GetTypes();
-                    //Debug.Log("Contained types: " + types.ToString());
 #pragma warning disable UAC2001 // Avoid Linq
                     foreach (Type t in types.Where(t => !t.IsAbstract && pluginType.IsAssignableFrom(t)))
 #pragma warning restore UAC2001
                     {
-                        //Debug.Log("Instantiating type: " + t.FullName);
                         RegisterCustomGUI(Activator.CreateInstance(t) as IAudioEffectPluginGUI);
                     }
                 }
                 catch (System.Exception)
                 {
-                    //Debug.Log("Failed getting types in assembly: " + assembly.FullName);
                 }
             }
         }

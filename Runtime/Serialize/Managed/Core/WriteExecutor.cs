@@ -145,6 +145,11 @@ internal static unsafe partial class SerializationBackendManagedCommands
             // entries index off it. Native memory, so a raw pointer.
             byte* output = null;
 
+            // The root region is staged like any other (doc §12): the ensure ahead of a region
+            // stages its whole sum, a block and the header of the command that ends it.
+            output = ctx->writerPtr;
+            ctx->writerPtr += ((V2CmdStreamHeader*)streamStart - 1)->rootEnsureSum;
+
             // Whether the most recent EnterObject materialized its null slot.
             // Consumed by the class-flavor callback bracket the composer
             // places directly after the enter: a materialized instance fires
@@ -172,26 +177,19 @@ internal static unsafe partial class SerializationBackendManagedCommands
                 // instance or a collection's backing array. Shared by the
                 // enter arms and the tails that push their frame.
                 object instance;
+                // What the collection enters hand CollectionFramingTail.
+                int collectionCount;
+                uint collectionWireStride;
                 switch ((V2OpCode)pos[0])
                 {
-                    case V2OpCode.FixedBlock:
-                    {
-                        // Unchecked staging (doc §12): the preceding ensure
-                        // point covered this block's bytes.
-                        var cmd = (V2CmdFixedBlock*)pos;
-                        output = ctx->writerPtr;
-                        ctx->writerPtr += (int)cmd->wireBytes;
-                        break;
-                    }
-
                     case V2OpCode.FixedBlockGuarded:
                     {
-                        // Ensures its own bytes plus the trailing static sum.
+                        // Ensures and stages its own region: the block plus any trailing header.
                         var cmd = (V2CmdFixedBlockGuarded*)pos;
                         if (ctx->writerEnd - ctx->writerPtr < (int)cmd->ensureSum)
                             ctx->ensureWritable(ctx, (int)cmd->ensureSum);
                         output = ctx->writerPtr;
-                        ctx->writerPtr += (int)cmd->wireBytes;
+                        ctx->writerPtr += (int)cmd->ensureSum;
                         break;
                     }
 
@@ -474,8 +472,16 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     {
                         var cmd = (V2CmdString*)pos;
                         string value = V2FieldRef<string>(ref baseAddr, (nint)cmd->fieldOffset) ?? string.Empty;
-                        V2WriteFramedString(ctx, value.AsSpan());
                         ensureSpace = cmd->ensureSum;
+                        if (V2IsOutOfLine(ctx))
+                        {
+                            // The handle ends the staged region; the body goes to an allocation.
+                            V2WriteOutOfLineString(ctx, value.AsSpan(), ctx->writerPtr - 4);
+                            goto EnsureAndAdvance;
+                        }
+                        // The staged region ends with the length slot; the framed writer starts there.
+                        ctx->writerPtr -= 4;
+                        V2WriteFramedString(ctx, value.AsSpan());
                         goto EnsureAndAdvance;
                     }
 
@@ -486,9 +492,29 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     case V2OpCode.LinearCollectionMemCpyFactory:
                     {
                         var cmd = (V2CmdLinearCollectionMemCpy*)pos;
+                        bool hasBacking = V2GetCollectionBacking(ref baseAddr, cmd->fieldOffset, cmd->kind, out byte[] dataAsBytes, out int count);
+                        if (V2IsOutOfLine(ctx))
+                        {
+                            // The handle ends the staged region; the element bytes go to an
+                            // allocation that keeps the count.
+                            uint handle = kV2OutOfLineInvalidHandle;
+                            if (hasBacking && count > 0)
+                            {
+                                int heapBytes = checked((int)((long)count * cmd->elementStride));
+                                handle = V2AllocateOutOfLine(ctx, count, heapBytes, out byte* allocation);
+                                fixed (byte* dataPtr = dataAsBytes)
+                                {
+                                    Unsafe.CopyBlockUnaligned(allocation, dataPtr, (uint)heapBytes);
+                                }
+                            }
+                            Unsafe.WriteUnaligned(ctx->writerPtr - 4, handle);
+                            ensureSpace = cmd->ensureSum;
+                            goto EnsureAndAdvance;
+                        }
 
-                        // The count is covered by the preceding ensure point.
-                        if (!V2GetCollectionBacking(ref baseAddr, cmd->fieldOffset, cmd->kind, out byte[] dataAsBytes, out int count))
+                        // The staged region ends with the count slot; the framing below starts there.
+                        ctx->writerPtr -= 4;
+                        if (!hasBacking)
                         {
                             Unsafe.WriteUnaligned(ctx->writerPtr, 0);
                             ctx->writerPtr += 4;
@@ -529,7 +555,39 @@ internal static unsafe partial class SerializationBackendManagedCommands
                             ctx->writerPtr += head;
                             ctx->writeBytesDirect(ctx, dataPtr + head, totalBytes - head, padBytes, cmd->ensureSum);
                         }
-                        break;
+                        ensureSpace = cmd->ensureSum;
+                        goto StageAndAdvance;
+                    }
+
+                    // LinearCollectionMemCpy over an unmanaged span: no pin needed.
+                    case V2OpCode.SpanMemCpy:
+                    {
+                        var cmd = (V2CmdLinearCollectionMemCpy*)pos;
+                        var span = (V2SpanHost*)Unsafe.AsPointer(ref Unsafe.AddByteOffset(ref baseAddr, (nint)cmd->fieldOffset));
+
+                        // The count is the tail of the staged region (doc §12).
+                        Unsafe.WriteUnaligned(ctx->writerPtr - 4, span->count);
+
+                        int totalBytes = checked((int)((long)span->count * cmd->elementStride));
+                        int padBytes = (4 - (totalBytes & 3)) & 3;
+                        int room = (int)(ctx->writerEnd - ctx->writerPtr);
+                        if (room >= totalBytes + padBytes)
+                        {
+                            if (totalBytes > 0)
+                                Buffer.MemoryCopy(span->elements, ctx->writerPtr, totalBytes, totalBytes);
+                            if (padBytes > 0)
+                                Unsafe.InitBlockUnaligned(ctx->writerPtr + totalBytes, 0, (uint)padBytes);
+                            ctx->writerPtr += totalBytes + padBytes;
+                            ensureSpace = cmd->ensureSum;
+                            goto EnsureAndAdvance;
+                        }
+
+                        int head = Math.Min(room, totalBytes);
+                        Buffer.MemoryCopy(span->elements, ctx->writerPtr, head, head);
+                        ctx->writerPtr += head;
+                        ctx->writeBytesDirect(ctx, span->elements + head, totalBytes - head, padBytes, cmd->ensureSum);
+                        ensureSpace = cmd->ensureSum;
+                        goto StageAndAdvance;
                     }
 
                     // Collection loop: one test, Offset + stride <= EndOffset,
@@ -539,40 +597,28 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     case V2OpCode.CollectionEnterOrSkip:
                     case V2OpCode.CollectionEnterOrSkipFactory:
                     {
+                        // The managed side only; CollectionFramingTail writes the header. An empty
+                        // collection pushes no frame, and its cursorEnd 0 is how RepeatOrExit
+                        // tells "no frame of ours".
                         var cmd = (V2CmdCollectionEnterOrSkip*)pos;
-
-                        // The count is covered by the preceding ensure point.
-                        if (!V2GetCollectionBacking(ref baseAddr, cmd->fieldOffset, cmd->kind, out byte[] dataAsBytes, out int count))
-                            count = 0;  // dataAsBytes stays null: an empty frame is never rebased into
-                        Unsafe.WriteUnaligned(ctx->writerPtr, count);
-                        ctx->writerPtr += 4;
-
-                        if (count == 0)
-                        {
-                            // Nothing to iterate: push no frame at all (a null
-                            // collection has none to frame anyway). Every test
-                            // on the way out fails against cursorEnd 0, and
-                            // RepeatOrExit reads that as "no frame of ours".
-                            cursorEnd = 0;
-                            next += cmd->delta;
-                            ensureSpace = cmd->exitEnsureSum;
-                            goto EnsureAndAdvance;
-                        }
+                        if (!V2GetCollectionBacking(ref baseAddr, cmd->fieldOffset, cmd->kind, out byte[] dataAsBytes, out collectionCount))
+                            collectionCount = 0;
+                        instance = dataAsBytes;
+                        collectionWireStride = cmd->wireStride;
+                        cursorEnd = collectionCount == 0 ? 0 : V2LayoutFacts.ArrayDataOffset + (nint)((long)collectionCount * cmd->elementStride);
 
                         // The frame is pushed on the skip arm too: the bulk tail
                         // it lands on iterates the same frame.
-                        instance = dataAsBytes;
-                        cursorEnd = V2LayoutFacts.ArrayDataOffset + (nint)((long)count * cmd->elementStride);
                         if (cursorEnd - V2LayoutFacts.ArrayDataOffset >= (nint)cmd->stride)
                         {
                             ensureSpace = cmd->bodyEnsureSum;
                         }
                         else
                         {
-                            next += cmd->delta;  // skip the body
-                            ensureSpace = cmd->exitEnsureSum;
+                            next += cmd->delta;  // skip the body; the latch or bulk tail ensures
+                            ensureSpace = 0;
                         }
-                        goto PushCollectionFrame;
+                        goto CollectionFramingTail;
                     }
 
                     case V2OpCode.CollectionBulkTail:
@@ -638,6 +684,81 @@ internal static unsafe partial class SerializationBackendManagedCommands
                         // touched the register copy.
                         cursorOffset = top.Offset;
                         cursorEnd = top.EndOffset;
+                        ensureSpace = cmd->exitEnsureSum;
+                        goto EnsureAndAdvance;
+                    }
+
+                    // Span loop: the collection loop over an unmanaged
+                    // V2SpanHost. The cursor pair holds element addresses and
+                    // no frame is pushed, so the enter keeps the field base in
+                    // parentBase (span bodies hold no object enter) and OrExit
+                    // restores it.
+                    case V2OpCode.SpanEnterOrSkip:
+                    {
+                        var cmd = (V2CmdCollectionEnterOrSkip*)pos;
+                        var span = (V2SpanHost*)Unsafe.AsPointer(ref Unsafe.AddByteOffset(ref baseAddr, (nint)cmd->fieldOffset));
+
+                        // The count is the tail of the staged region (doc §12).
+                        Unsafe.WriteUnaligned(ctx->writerPtr - 4, span->count);
+
+                        parentBase = ref baseAddr;
+                        cursorOffset = (nint)span->elements;
+                        cursorEnd = cursorOffset + (nint)((long)span->count * cmd->elementStride);
+                        if (cursorEnd - cursorOffset >= (nint)cmd->stride)
+                        {
+                            baseAddr = ref Unsafe.AsRef<byte>((void*)cursorOffset);
+                            ensureSpace = cmd->bodyEnsureSum;
+                        }
+                        else
+                        {
+                            next += cmd->delta;  // skip the body; the latch or bulk tail ensures
+                            ensureSpace = 0;
+                        }
+                        goto EnsureAndAdvance;
+                    }
+
+                    case V2OpCode.SpanBulkTail:
+                    {
+                        var cmd = (V2CmdCollectionBulkTail*)pos;
+                        if (cursorEnd - cursorOffset >= (nint)cmd->stride)
+                        {
+                            baseAddr = ref Unsafe.AsRef<byte>((void*)cursorOffset);
+                            ensureSpace = cmd->bodyEnsureSum;
+                        }
+                        else
+                        {
+                            next += cmd->delta;
+                            ensureSpace = cmd->exitEnsureSum;
+                        }
+                        goto EnsureAndAdvance;
+                    }
+
+                    case V2OpCode.SpanRepeatOrFallthrough:
+                    {
+                        var cmd = (V2CmdCollectionRepeat*)pos;
+                        cursorOffset += (nint)cmd->stride;
+                        if (cursorEnd - cursorOffset >= (nint)cmd->stride)
+                        {
+                            baseAddr = ref Unsafe.AsRef<byte>((void*)cursorOffset);
+                            next -= cmd->delta;
+                            ensureSpace = cmd->bodyEnsureSum;
+                            goto EnsureAndAdvance;
+                        }
+                        break;
+                    }
+
+                    case V2OpCode.SpanRepeatOrExit:
+                    {
+                        var cmd = (V2CmdCollectionRepeat*)pos;
+                        cursorOffset += (nint)cmd->stride;
+                        if (cursorEnd - cursorOffset >= (nint)cmd->stride)
+                        {
+                            baseAddr = ref Unsafe.AsRef<byte>((void*)cursorOffset);
+                            next -= cmd->delta;
+                            ensureSpace = cmd->bodyEnsureSum;
+                            goto EnsureAndAdvance;
+                        }
+                        baseAddr = ref parentBase;
                         ensureSpace = cmd->exitEnsureSum;
                         goto EnsureAndAdvance;
                     }
@@ -809,45 +930,38 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     {
                         var cmd = (V2CmdEnterElementSource*)pos;
 
-                        // A null collection writes count 0 with no FUID frame
-                        // and no handler call; v1's ConsumeDictionary pushes
-                        // after its null check and never bridges a null.
+                        // A null collection gets no FUID frame and no handler call; v1's
+                        // ConsumeDictionary pushes after its null check and never bridges a null.
                         object collection = V2FieldRef<object>(ref baseAddr, (nint)cmd->fieldOffset);
-                        if (collection == null)
-                        {
-                            Unsafe.WriteUnaligned(ctx->writerPtr, 0);
-                            ctx->writerPtr += 4;
-                            next += cmd->bodyBytes;
-                            ensureSpace = cmd->exitEnsureSum;
-                            goto EnsureAndAdvance;
-                        }
-
-                        // Install the consumer's FUID frame before the source
-                        // handler runs; the native identifier formatter resolves
-                        // against the active frame. The wrapper's finally
-                        // rebalances on a thrown transfer.
+                        Array elements = null;
                         bool pushedFuidFrame = false;
-                        if ((cmd->pad0 & kV2Pad0FlagPushFuidFrame) != 0)
+                        if (collection != null)
                         {
-                            pushedFuidFrame = PushDictionaryFUIDFrame(ctx->fuidContext);
-                            if (pushedFuidFrame)
-                                ++openDictFrames;
+                            // Install the consumer's FUID frame before the source
+                            // handler runs; the native identifier formatter resolves
+                            // against the active frame. The wrapper's finally
+                            // rebalances on a thrown transfer.
+                            if ((cmd->pad0 & kV2Pad0FlagPushFuidFrame) != 0)
+                            {
+                                pushedFuidFrame = PushDictionaryFUIDFrame(ctx->fuidContext);
+                                if (pushedFuidFrame)
+                                    ++openDictFrames;
+                            }
+
+                            // The registered source handler stages the element array
+                            // (for Dictionary, v1's GetEntries bridge with its dedup,
+                            // warnings, and FUID row keying). It touches only managed
+                            // state, so the header slot staged ahead of this command
+                            // is still ours.
+                            var fuid = new V2FuidBuilder(pathSegments, pathNames, cmd->segmentIndex, frames);
+                            elements = ((delegate*<object, ref V2FuidBuilder, EntityId, ulong, Array>)(void*)cmd->sourceHandler)(
+                                collection, ref fuid, ctx->hostingEntityId, cmd->sourceUserData);
                         }
 
-                        // The registered source handler stages the element array
-                        // (for Dictionary, v1's GetEntries bridge with its dedup,
-                        // warnings, and FUID row keying). The FUID builder gives
-                        // it on-demand access to the resolved identifier.
-                        var fuid = new V2FuidBuilder(pathSegments, pathNames, cmd->segmentIndex, frames);
-                        Array elements = ((delegate*<object, ref V2FuidBuilder, NativeBufferContext*, ulong, Array>)(void*)cmd->sourceHandler)(
-                            collection, ref fuid, ctx, cmd->sourceUserData);
-
-                        // The source handler stages nothing, so the preceding
-                        // ensure point still covers the count.
-                        int count = elements != null ? elements.Length : 0;
-                        Unsafe.WriteUnaligned(ctx->writerPtr, count);
-                        ctx->writerPtr += 4;
-                        if (count == 0)
+                        instance = elements;
+                        collectionCount = elements != null ? elements.Length : 0;
+                        collectionWireStride = cmd->wireStride;
+                        if (collectionCount == 0)
                         {
                             if (pushedFuidFrame)
                             {
@@ -856,7 +970,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
                             }
                             next += cmd->bodyBytes;
                             ensureSpace = cmd->exitEnsureSum;
-                            goto EnsureAndAdvance;
+                            goto CollectionFramingTail;
                         }
 
                         // Remember the successful push at the staging frame's
@@ -864,14 +978,11 @@ internal static unsafe partial class SerializationBackendManagedCommands
                         if (pushedFuidFrame)
                             pushedDictFrames |= 1ul << (V2FrameIndexOf(frames, ref top) + 1);
 
-                        // Element frame over the staged array (tracked, no
-                        // pin); the body is the ordinary composed element
-                        // template ending in its exec exit. No tail pad:
-                        // composed element bodies are 4-byte multiples.
-                        instance = elements;
-                        cursorEnd = V2LayoutFacts.ArrayDataOffset + (nint)((long)count * cmd->elementStride);
+                        // Element frame over the staged array (tracked, no pin); the body is
+                        // the ordinary composed element template ending in its exec exit.
+                        cursorEnd = V2LayoutFacts.ArrayDataOffset + (nint)((long)collectionCount * cmd->elementStride);
                         ensureSpace = cmd->bodyEnsureSum;
-                        goto PushCollectionFrame;
+                        goto CollectionFramingTail;
                     }
 
                     case V2OpCode.InvokeCallback:
@@ -961,7 +1072,16 @@ internal static unsafe partial class SerializationBackendManagedCommands
                 // Collection and element-source frames: the cursor starts at
                 // the first element, and the register copy mirrors the frame.
                 // Falls through to the ensure for the arm's chosen path.
-            PushCollectionFrame:
+                // Collection framing, shared by the collection enters: the arms set up the
+                // managed side, this writes the header, and a collection that iterates pushes
+                // its frame. The header is the tail of the staged region.
+            CollectionFramingTail:
+                if (collectionCount == 0)
+                {
+                    V2WriteEmptyCollection(ctx);
+                    goto EnsureAndAdvance;
+                }
+                V2BeginCollection(ctx, collectionCount, collectionWireStride);
                 cursorOffset = V2LayoutFacts.ArrayDataOffset;
                 top = ref Unsafe.Add(ref top, 1);
                 top.Instance = instance;
@@ -976,6 +1096,11 @@ internal static unsafe partial class SerializationBackendManagedCommands
             EnsureAndAdvance:
                 if (ctx->writerEnd - ctx->writerPtr < ensureSpace)
                     ctx->ensureWritable(ctx, ensureSpace);
+            StageAndAdvance:
+                // Stage the region the sum covers: the next block, then the header of the
+                // command that ends the region, which that command addresses from writerPtr.
+                output = ctx->writerPtr;
+                ctx->writerPtr += ensureSpace;
                 pos = next;
             }
         }

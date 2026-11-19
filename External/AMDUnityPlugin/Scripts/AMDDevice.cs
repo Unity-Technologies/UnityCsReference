@@ -172,9 +172,9 @@ namespace UnityEngine.AMD
         private GraphicsDevice(){}
         private bool Initialize() { return AMDUP_InitApi(); }
         private void Shutdown() { AMDUP_ShutdownApi(); }
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Shuts down the native API when the singleton is collected, for example on domain reload; no explicit shutdown path exists.
         ~GraphicsDevice() { Shutdown(); }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         private void InsertEventCall(CommandBuffer cmd, PluginEvent pluginEvent, IntPtr ptr)
         {

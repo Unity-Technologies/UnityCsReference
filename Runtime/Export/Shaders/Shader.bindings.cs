@@ -56,6 +56,32 @@ namespace UnityEngine
         [FreeFunction("ShaderScripting::GetTrackedChangedGlobalNameIdsAndClear")] extern internal static void GetTrackedChangedGlobalNameIdsAndClear(List<int> nameIds);
         [FreeFunction("ShaderScripting::GetTrackedChangedGlobalKeywordsAndClear")] extern internal static void GetTrackedChangedGlobalKeywordsAndClear(List<GlobalKeyword> globalKeywords);
 
+        [FreeFunction("ShaderScripting::SetGlobalShaderPropertyBackedByConstantBuffer")] extern private static void SetGlobalShaderPropertyBackedByConstantBufferImpl(int nameID, string warning);
+        [FreeFunction("ShaderScripting::ClearConstantBufferBackedPropertyWarnings")] extern private static void ClearConstantBufferBackedPropertyWarningsImpl();
+        [FreeFunction("ShaderScripting::EnableConstantBufferBackedPropertyWarnings")] extern private static void EnableConstantBufferBackedPropertyWarningsImpl(bool enable);
+        [FreeFunction("ShaderScripting::AreConstantBufferBackedPropertyWarningsEnabled")] extern internal static bool AreConstantBufferBackedPropertyWarningsEnabled();
+
+        // The first loose-uniform write to the property logs the warning, see ConstantBufferBackedPropertyWarnings.h.
+        [System.Diagnostics.Conditional("UNITY_ENABLE_CHECKS")]
+        internal static void SetGlobalShaderPropertyBackedByConstantBuffer(int nameID, string warning)
+        {
+            if (string.IsNullOrEmpty(warning))
+                throw new ArgumentException("A property backed by a constant buffer needs the warning to log.", nameof(warning));
+            SetGlobalShaderPropertyBackedByConstantBufferImpl(nameID, warning);
+        }
+
+        [System.Diagnostics.Conditional("UNITY_ENABLE_CHECKS")]
+        internal static void ClearConstantBufferBackedPropertyWarnings()
+        {
+            ClearConstantBufferBackedPropertyWarningsImpl();
+        }
+
+        [System.Diagnostics.Conditional("UNITY_ENABLE_CHECKS")]
+        internal static void EnableConstantBufferBackedPropertyWarnings(bool enable)
+        {
+            EnableConstantBufferBackedPropertyWarningsImpl(enable);
+        }
+
         [FreeFunction("keywords::GetEnabledGlobalKeywords")] extern internal static GlobalKeyword[] GetEnabledGlobalKeywords();
         [FreeFunction("keywords::GetAllGlobalKeywords")] extern internal static GlobalKeyword[] GetAllGlobalKeywords();
 

@@ -9,20 +9,15 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
-using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
     [MovedFrom(true, "Unity.UI.Builder", "UnityEditor.UIBuilderModule")]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UxmlElement]
     partial class CheckerboardBackground : VisualElement
     {
-        [NoAutoStaticsCleanup] // custom-style-property descriptor, safe to persist
         static readonly CustomStyleProperty<int> k_CellSizeProperty = new CustomStyleProperty<int>("--cell-size");
-        [NoAutoStaticsCleanup] // custom-style-property descriptor, safe to persist
         static readonly CustomStyleProperty<Color> k_OddCellColorProperty = new CustomStyleProperty<Color>("--odd-cell-color");
-        [NoAutoStaticsCleanup] // custom-style-property descriptor, safe to persist
         static readonly CustomStyleProperty<Color> k_EvenCellColorProperty = new CustomStyleProperty<Color>("--even-cell-color");
 
         const int k_DefaultCellSize = 50;

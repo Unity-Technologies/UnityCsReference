@@ -2,6 +2,8 @@
 <Project>
   <PropertyGroup>
     <BaseIntermediateOutputPath>../../../artifacts/BeeBuildProgramCommon.Data.dll</BaseIntermediateOutputPath>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
@@ -18,8 +20,6 @@
     <Deterministic>true</Deterministic>
     <RootNamespace>BeeBuildProgramCommon.Data</RootNamespace>
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
-    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
-    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
   </PropertyGroup>
   <PropertyGroup>
     <HomeDir Condition="'$(HOME.Length)' != '0'">$(HOME)</HomeDir>
@@ -30,6 +30,6 @@
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_pm5lbiyz/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen__cke1_rb/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
 </Project>

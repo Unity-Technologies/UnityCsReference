@@ -19,6 +19,12 @@ static class UICommandQueue
     static readonly CommandSystem s_CommandSystem = new();
 
     /// <summary>
+    /// The command system behind this queue, which is also <see cref="AuthoringContext.Global"/>'s
+    /// <see cref="AuthoringContext.Messages"/>.
+    /// </summary>
+    internal static CommandSystem CommandSystem => s_CommandSystem;
+
+    /// <summary>
     /// Registers a handler to receive command execution results for a specific command type.
     /// The handler will only be invoked for the exact type specified. For grouping multiple command types,
     /// use RegisterHandlerForCategory instead.

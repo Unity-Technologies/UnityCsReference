@@ -533,7 +533,7 @@ namespace UnityEngine.InputForUI
             var direction = NavigationEvent.DetermineMoveDirection(move);
             if (direction == NavigationEvent.Direction.None)
                 _navigationEventRepeatHelper.Reset();
-            else if (_navigationEventRepeatHelper.ShouldSendMoveEvent(currentTime, direction, axesButtonWerePressed))
+            else if (_navigationEventRepeatHelper.ShouldSendMoveEvent(new DiscreteTime(_time.unscaledTime), direction, axesButtonWerePressed))
             {
                 EventSource eventSource = GetEventSourceFromPressedKey();
 
@@ -989,11 +989,13 @@ namespace UnityEngine.InputForUI
         internal interface ITime
         {
             Unity.IntegerTime.RationalTime timeAsRational { get; }
+            double unscaledTime { get; }
         }
 
         private class Time : ITime
         {
             public Unity.IntegerTime.RationalTime timeAsRational => UnityEngine.Time.timeAsRational;
+            public double unscaledTime => UnityEngine.Time.unscaledTimeAsDouble;
         }
     }
 }

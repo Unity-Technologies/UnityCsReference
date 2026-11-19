@@ -660,10 +660,8 @@ namespace UnityEngine.Audio
     {
         // Native can build and send built-in messages on its own (through GeneratorHandle::SendSeekMessage)
         // without managed ever constructing a SeekMessage, so a type's static constructor is too late to
-        // register its hash; native calls this before its first such send instead. No native sender exists
-        // today - AudioSource::SetSamplePosition no longer seeks generator instances - but the registration
-        // keeps that entry point safe. Idempotent: the hashes are compile-time constants, so repeat calls
-        // store the same values.
+        // register its hash; native calls this before its first such send instead. Idempotent: the hashes are
+        // compile-time constants, so repeat calls store the same values.
         [RequiredByNativeCode(GenerateProxy = true)]
         internal static void RegisterAll()
         {

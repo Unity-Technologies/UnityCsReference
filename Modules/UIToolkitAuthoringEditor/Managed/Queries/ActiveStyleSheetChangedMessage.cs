@@ -16,10 +16,10 @@ class ActiveStyleSheetChangedMessage : Command<ActiveStyleSheetChangedMessage>
         return command;
     }
 
-    public static void Execute(CommandSources.CommandSource source, StyleSheet activeStyleSheet)
+    public static void Execute(AuthoringContext context, CommandSources.CommandSource source, StyleSheet activeStyleSheet)
     {
         using var command = GetPooled(source, activeStyleSheet);
-        UICommandQueue.Execute(command);
+        context.Messages.Execute(command);
     }
 
     public override CommandCategory Category => CommandCategory.None;

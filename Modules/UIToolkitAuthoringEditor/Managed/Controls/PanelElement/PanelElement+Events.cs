@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,6 +13,9 @@ namespace Unity.UIToolkit.Editor;
 sealed partial class PanelElement
 {
     bool m_ForwardHierarchicalEvents;
+    Vector2 m_LastPointerPosition;
+    bool m_HasLastPointerPosition;
+    Event m_NestedIMGUIEvent;
 
     public bool ForwardHierarchicalEvents
     {
@@ -89,12 +93,37 @@ sealed partial class PanelElement
                 DispatchNestedPointerEvent(pointerMoveEvent, convertedPosition, EventType.MouseMove, PointerMoveEvent.GetPooled);
                 break;
             case KeyDownEvent keyDownEvent:
-                DispatchNestedKeyEvent(keyDownEvent, KeyDownEvent.GetPooled);
+                DispatchNestedKeyEvent(keyDownEvent, EventType.KeyDown, KeyDownEvent.GetPooled);
                 break;
             case KeyUpEvent keyUpEvent:
-                DispatchNestedKeyEvent(keyUpEvent, KeyUpEvent.GetPooled);
+                DispatchNestedKeyEvent(keyUpEvent, EventType.KeyUp, KeyUpEvent.GetPooled);
+                break;
+            case TooltipEvent tooltipEvent:
+                ForwardTooltipEvent(tooltipEvent);
                 break;
         }
+    }
+
+    // Tooltip events carry no position: the sub-panel element under the last forwarded pointer answers it.
+    void ForwardTooltipEvent(TooltipEvent original)
+    {
+        if (SubPanel is not EditorAuthoringPanel || !m_HasLastPointerPosition)
+            return;
+
+        var target = SubPanel.Pick(m_LastPointerPosition);
+        if (target == null)
+            return;
+
+        using var nestedEvt = TooltipEvent.GetPooled();
+        nestedEvt.elementTarget = target;
+        target.SendEvent(nestedEvt);
+        if (string.IsNullOrEmpty(nestedEvt.tooltip))
+            return;
+
+        var host = (IEditorAuthoringPanelHost)this;
+        original.tooltip = nestedEvt.tooltip;
+        original.rect = host.hostElement.LocalToWorld(host.PanelToHost(nestedEvt.rect));
+        original.StopImmediatePropagation();
     }
 
     internal void ForwardEventBubbleUp(EventBase evt)
@@ -176,14 +205,19 @@ sealed partial class PanelElement
         Func<EventType, Vector3, Vector2, int, int, EventModifiers, int, T> getPooled)
         where T : PointerEventBase<T>, new()
     {
-        using var nestedEvt = getPooled(
-            type,
-            convertedPosition,
-            original.deltaPosition,
-            original.button,
-            original.clickCount,
-            original.modifiers,
-            ((IPointerEventInternal)original).displayIndex);
+        m_LastPointerPosition = convertedPosition;
+        m_HasLastPointerPosition = true;
+
+        using var nestedEvt = SubPanel is EditorAuthoringPanel
+            ? GetPooledWithIMGUIEvent(original, convertedPosition, type)
+            : getPooled(
+                type,
+                convertedPosition,
+                original.deltaPosition,
+                original.button,
+                original.clickCount,
+                original.modifiers,
+                ((IPointerEventInternal)original).displayIndex);
         nestedEvt.propagation = original.propagation;
         SubPanel.SendEvent(nestedEvt);
 
@@ -191,15 +225,46 @@ sealed partial class PanelElement
             original.StopImmediatePropagation();
     }
 
+    // IMGUIContainer only reacts to pointer events that carry an IMGUI event.
+    T GetPooledWithIMGUIEvent<T>(T original, Vector2 position, EventType type)
+        where T : PointerEventBase<T>, new()
+    {
+        var imguiEvent = m_NestedIMGUIEvent ??= new Event();
+        imguiEvent.type = original.imguiEvent?.rawType ??
+            (type == EventType.MouseMove && original.pressedButtons != 0 ? EventType.MouseDrag : type);
+        imguiEvent.mousePosition = position;
+        imguiEvent.delta = original.deltaPosition;
+        imguiEvent.button = Math.Max(original.button, 0);
+        imguiEvent.clickCount = original.clickCount;
+        imguiEvent.modifiers = original.modifiers;
+        imguiEvent.displayIndex = ((IPointerEventInternal)original).displayIndex;
+        return PointerEventBase<T>.GetPooled(imguiEvent);
+    }
+
+    // IMGUIContainer only reacts to keyboard events that carry an IMGUI event.
+    T GetPooledWithIMGUIEvent<T>(T original, EventType type)
+        where T : KeyboardEventBase<T>, new()
+    {
+        var imguiEvent = m_NestedIMGUIEvent ??= new Event();
+        imguiEvent.type = original.imguiEvent?.rawType ?? type;
+        imguiEvent.character = original.character;
+        imguiEvent.keyCode = original.keyCode;
+        imguiEvent.modifiers = original.modifiers;
+        return KeyboardEventBase<T>.GetPooled(imguiEvent);
+    }
+
     void DispatchNestedKeyEvent<T>(
         T original,
+        EventType type,
         Func<char, KeyCode, EventModifiers, T> getPooled)
         where T : KeyboardEventBase<T>, new()
     {
-        using var nestedEvt = getPooled(
-            original.character,
-            original.keyCode,
-            original.modifiers);
+        using var nestedEvt = SubPanel is EditorAuthoringPanel
+            ? GetPooledWithIMGUIEvent(original, type)
+            : getPooled(
+                original.character,
+                original.keyCode,
+                original.modifiers);
         nestedEvt.propagation = original.propagation;
         SubPanel.SendEvent(nestedEvt);
 

@@ -6,7 +6,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
-using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Search
 {
@@ -19,9 +18,7 @@ namespace UnityEditor.Search
         readonly int m_StartIndex;
         readonly int m_EndIndex;
 
-        [NoAutoStaticsCleanup]
         public static readonly StringView nil = default;
-        [NoAutoStaticsCleanup]
         public static readonly StringView empty = new StringView(string.Empty);
 
         public bool valid => m_BaseString != null;

@@ -2590,7 +2590,9 @@ namespace Unity.Entities
         public void SetComponentEnabled<T>(EntityQuery query, bool value) where T : unmanaged, IEnableableComponent
         {
             var typeIndex = TypeManager.GetTypeIndex<T>();
-            query._GetImpl()->SetEnabledBitsOnAllChunks(typeIndex, value);
+            var impl = query._GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.SetEnabledBitsOnAllChunks, impl);
+            impl->SetEnabledBitsOnAllChunks(typeIndex, value);
         }
 
         /// <summary>
@@ -2616,7 +2618,11 @@ namespace Unity.Entities
         /// <seealso cref="IsComponentEnabled(Entity,ComponentType)"/>
         /// <seealso cref="ComponentLookup{T}.SetComponentEnabled(Entity,bool)"/>
         public void SetComponentEnabled(EntityQuery query, ComponentType componentType, bool value)
-            => query._GetImpl()->SetEnabledBitsOnAllChunks(componentType.TypeIndex, value);
+        {
+            var impl = query._GetImpl();
+            using var profilerScope = new EntityQueryProfiler.CallScope(EntityQueryProfiler.Operation.SetEnabledBitsOnAllChunks, impl);
+            impl->SetEnabledBitsOnAllChunks(componentType.TypeIndex, value);
+        }
 
         /// <summary>
         /// Enable or disable <see cref="ComponentType"/> on the specified <see cref="Entity"/>.
@@ -4287,8 +4293,6 @@ namespace Unity.Entities
                 MoveChunksFromFiltered(chunks, entityRemapping, srcAccess->EntityComponentStore, srcAccess->CompanionComponentStore);
 
                 selfAccess->EntityComponentStore->EndArchetypeChangeTracking(archetypeChanges, selfAccess->EntityQueryManager);
-                selfAccess->EntityComponentStore->InvalidateChunkListCacheForChangedArchetypes();
-                srcAccess->EntityComponentStore->InvalidateChunkListCacheForChangedArchetypes();
             }
         }
 
@@ -4314,7 +4318,6 @@ namespace Unity.Entities
             MoveChunksFromAll(entityRemapping, srcAccess->EntityComponentStore, srcAccess->CompanionComponentStore);
 
             selfAccess->EndStructuralChanges(ref archetypeChanges);
-            srcAccess->EntityComponentStore->InvalidateChunkListCacheForChangedArchetypes();
         }
 
         [BurstCompile]
@@ -4465,9 +4468,6 @@ namespace Unity.Entities
 
                     remapArchetypes[archetypeIndex] = new RemapArchetype
                     { srcArchetype = srcArchetype, dstArchetype = dstArchetype };
-
-                    srcEntityComponentStore->m_ChunkListChangesTracker.TrackArchetype(srcArchetype);
-                    ecs->m_ChunkListChangesTracker.TrackArchetype(dstArchetype);
 
                     for (var j = 0; j < srcArchetype->Chunks.Count; ++j)
                     {

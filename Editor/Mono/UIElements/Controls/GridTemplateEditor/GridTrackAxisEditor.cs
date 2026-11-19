@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     // wrap the row's sizing as repeat(auto-fill|auto-fit|<count>, …).
     internal enum GridTemplateRepeatMode { None, AutoFill, AutoFit, Count }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class GridTrackAxisEditor : VisualElement
     {
         class Entry

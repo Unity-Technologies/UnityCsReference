@@ -32,12 +32,12 @@ namespace UnityEngine.Networking
 
         internal UploadHandler() {}
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Releases the native handler; ReleaseFromScripting is thread-safe, so it is the safety net when Dispose is missed.
         ~UploadHandler()
         {
             Dispose();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         ///<summary>Signals that this <see cref="UploadHandler" /> is no longer being used, and should clean up any resources it is using.</summary>
         ///<remarks>This method must be called once you have finished using an <see cref="UploadHandler" /> object.

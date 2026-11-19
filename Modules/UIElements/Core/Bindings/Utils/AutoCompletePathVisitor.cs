@@ -16,6 +16,9 @@ namespace UnityEngine.UIElements.Internal
             public HashSet<Type> types { get; } = new();
             public PropertyPath current { get; set; }
             public int currentDepth { get; set; }
+            public int maxResults { get; set; } = int.MaxValue;
+
+            public bool limitReached => propertyPathInfos != null && propertyPathInfos.Count >= maxResults;
         }
 
         VisitContext m_VisitContext = new();
@@ -27,7 +30,13 @@ namespace UnityEngine.UIElements.Internal
 
         public int maxDepth { get; set; }
 
-        bool HasReachedEnd(Type containerType) => m_VisitContext.currentDepth >= maxDepth || m_VisitContext.types.Contains(containerType);
+        public int maxResults
+        {
+            get => m_VisitContext.maxResults;
+            set => m_VisitContext.maxResults = value;
+        }
+
+        bool HasReachedEnd(Type containerType) => m_VisitContext.currentDepth >= maxDepth || m_VisitContext.limitReached || m_VisitContext.types.Contains(containerType);
 
         public void Reset()
         {
@@ -35,6 +44,7 @@ namespace UnityEngine.UIElements.Internal
             m_VisitContext.propertyPathInfos = null;
             m_VisitContext.types.Clear();
             m_VisitContext.currentDepth = 0;
+            m_VisitContext.maxResults = int.MaxValue;
         }
 
         /// <inheritdoc/>
@@ -50,6 +60,9 @@ namespace UnityEngine.UIElements.Internal
 
             foreach (var property in bag.GetProperties())
             {
+                if (m_VisitContext.limitReached)
+                    break;
+
                 using var propertyScope = new VisitedPropertyScope(m_VisitContext, property);
                 VisitPropertyType(property.DeclaredValueType());
             }
@@ -84,6 +97,9 @@ namespace UnityEngine.UIElements.Internal
                 {
                     foreach (var property in properties.GetProperties(ref container))
                     {
+                        if (m_VisitContext.limitReached)
+                            break;
+
                         using var propertyScope = new VisitedPropertyScope(m_VisitContext, property);
                         property.Accept(this, ref container);
                     }
@@ -141,18 +157,13 @@ namespace UnityEngine.UIElements.Internal
                 using var propertyScope = new VisitedPropertyScope(m_VisitContext, 0, elementType);
                 untypedBag?.Accept(this);
             }
-            else if (type.IsGenericType)
+            else if (TypePathVisitor.GetElementType(type) is { } elementType)
             {
-                if (type.GetGenericTypeDefinition().IsAssignableFrom(typeof(List<>)) ||
-                    type.GetGenericTypeDefinition().IsAssignableFrom(typeof(IList<>)))
-                {
-                    var elementType = type.GenericTypeArguments[0];
-                    var untypedBag = PropertyBag.GetPropertyBag(elementType);
-                    using var propertyScope = new VisitedPropertyScope(m_VisitContext, 0, elementType);
-                    untypedBag?.Accept(this);
-                }
+                var untypedBag = PropertyBag.GetPropertyBag(elementType);
+                using var propertyScope = new VisitedPropertyScope(m_VisitContext, 0, elementType);
+                untypedBag?.Accept(this);
             }
-            else
+            else if (!type.IsGenericType)
             {
                 var bag = PropertyBag.GetPropertyBag(type);
                 bag?.Accept(this);

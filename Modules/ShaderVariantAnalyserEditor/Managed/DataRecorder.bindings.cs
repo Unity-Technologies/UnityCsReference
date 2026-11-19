@@ -6,7 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderVariantAnalyser
 {
-    [NativeHeader("ShaderVariantAnalyser/DataRecorder.h")]
+    [NativeHeader("Modules/ShaderVariantAnalyserEditor/Public/DataRecorder.h")]
     class DataRecorder
     {
         [FreeFunction("ShaderVariantAnalyser::DataRecorder::InitializeAt")]

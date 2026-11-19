@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements.UIR
         ViewChange,
     }
 
-    partial class UIRenderDevice : IDisposable
+    partial class UIRenderDevice : IDisposable, IPooledNativeStore
     {
         public static class Testing
         {
@@ -230,6 +230,7 @@ namespace UnityEngine.UIElements.UIR
             });
 
             m_CommandListManager = new(m_VertexDecl, m_DefaultStencilState);
+            PooledNativeStores.Register(this);
         }
 
         static int ReserveExtrasOffset(ExtraVertexChannels channel, ExtraVertexChannels mask, ref int cursor)
@@ -328,6 +329,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
+                PooledNativeStores.Unregister(this);
                 m_Profiler.Dispose();
 
                 unsafe
@@ -691,7 +693,8 @@ namespace UnityEngine.UIElements.UIR
             TextureSlotCount defaultTextureSlotCount,
             bool isRenderingNestedTreeRT,
             ref Exception immediateException,
-            BaseVisualElementPanel panel)
+            BaseVisualElementPanel panel,
+            List<NestedChain> nestedChains = null)
         {
             EntityId owner = panel?.ownerObject != null ? panel.ownerObject.GetEntityId() : EntityId.None;
             bool isEditorPanel = panel != null && panel.contextType == ContextType.Editor;
@@ -746,8 +749,41 @@ namespace UnityEngine.UIElements.UIR
             if (batchProfilerEnabled)
                 m_Profiler.BeginPanel(in m_DrawStats);
 
-            while (head != null)
+            int nextNestedChain = 1;
+            while (true)
             {
+                if (head == null)
+                {
+                    if (nestedChains == null || nextNestedChain == nestedChains.Count)
+                        break;
+
+                    // The next chain draws elsewhere in the same texture: only the view changes, the render state is kept
+                    if (curDrawRange.indexCount > 0)
+                    {
+                        ranges[(rangesStart + rangesReady++) & rangesCountMinus1] = curDrawRange;
+                        curDrawRange = new DrawBufferRange();
+                        m_DrawStats.drawRangeCount++;
+                    }
+
+                    if (rangesReady > 0)
+                    {
+                        ApplyBatchState(ref st);
+                        KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList, KickRangesReason.ViewChange);
+                        m_TextureSlotManager.StartNewBatch(FlagsToTextureSlotCount(st.flags));
+
+                        if (batchProfilerEnabled)
+                            m_Profiler.AppendBatch(owner, isRenderingNestedTreeRT, KickRangesReason.ViewChange, in m_DrawStats);
+                    }
+
+                    var chain = nestedChains[nextNestedChain++];
+                    head = chain.head;
+                    SetNestedChainView(chain);
+                    drawParams.Reset();
+                    drawParams.SetProjection(chain.bounds, chain.pixelsPerPoint);
+                    RenderChainCommand.PushScissor(drawParams, chain.bounds);
+                    continue;
+                }
+
                 if ((head.type & CommandType.AnyDisable) != 0)
                 {
                     m_DrawStats.commandCount++;
@@ -1044,6 +1080,39 @@ namespace UnityEngine.UIElements.UIR
             ResetScreenSpaceMaterials();
         }
 
+        // A nested render tree: its bounds, in points, map onto the viewport of the active render texture
+        public struct NestedChain
+        {
+            public RenderChainCommand head;
+            public RectInt viewport;
+            public Rect bounds;
+            public float pixelsPerPoint;
+        }
+
+        // The chains draw into the active render texture with one setup of the render state
+        public void EvaluateNestedChains(
+            List<NestedChain> chains,
+            Material defaultMat,
+            Texture gradientSettings,
+            ShaderInfoAllocator shaderInfoAllocator,
+            TextureSlotCount defaultTextureSlotCount,
+            ref Exception immediateException,
+            BaseVisualElementPanel panel)
+        {
+            var first = chains[0];
+            SetNestedChainView(first);
+            EvaluateChain(first.head, defaultMat, gradientSettings, shaderInfoAllocator, first.bounds, first.bounds, first.pixelsPerPoint,
+                false, defaultTextureSlotCount, true, ref immediateException, panel, chains);
+        }
+
+        static void SetNestedChainView(in NestedChain chain)
+        {
+            var bounds = chain.bounds;
+            GL.Viewport(UIRUtility.CastToRect(chain.viewport));
+            GL.LoadProjectionMatrix(ProjectionUtils.Ortho(bounds.xMin, bounds.xMax, bounds.yMax, bounds.yMin, -0.001f, 1.001f));
+            GL.modelview = Matrix4x4.identity;
+        }
+
         // Counterpart of EvaluateChain for panels that skip rendering: calls the immediate commands it would execute, without rendering.
         // viewport is in the space of the bounds the chain would be rendered with, as used for culling.
         public static void CallImmediateCommands(RenderChainCommand head, Rect viewport)
@@ -1269,6 +1338,32 @@ namespace UnityEngine.UIElements.UIR
         internal AllocationStatistics GatherAllocationStatistics()
         {
             return m_MeshManager.GatherAllocationStatistics();
+        }
+
+        string IPooledNativeStore.storeName => "RendererPages";
+
+        long IPooledNativeStore.GetBytesReserved() => GetPageBytes(false);
+
+        long IPooledNativeStore.GetBytesUsed() => GetPageBytes(true);
+
+        void IPooledNativeStore.ReleasePendingSlots()
+        {
+            // A freed mesh gives its range back once its GPU fence has passed
+        }
+
+        long GetPageBytes(bool allocatedOnly)
+        {
+            if (m_MeshManager == null)
+                return 0;
+
+            var bytes = 0L;
+            foreach (var page in m_MeshManager.GatherAllocationStatistics().pages)
+            {
+                var vertices = allocatedOnly ? page.vertices.allocatedSize : page.vertices.totalSize;
+                var indices = allocatedOnly ? page.indices.allocatedSize : page.indices.totalSize;
+                bytes += vertices * (long)vertexStride + indices * (long)sizeof(ushort);
+            }
+            return bytes;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

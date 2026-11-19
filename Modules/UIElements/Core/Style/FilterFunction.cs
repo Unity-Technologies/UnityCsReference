@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements.Layout; // For FixedBuffer4<T>
+using UnityEngine.UIElements.StyleSheets;
 using System.Data.Common;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
@@ -110,6 +111,16 @@ namespace UnityEngine.UIElements
             set => m_ColorValue = value;
         }
 
+        // Authored USS unit of a float value, kept so that editors can write it back.
+        [SerializeField]
+        private Dimension.Unit m_Unit;
+
+        internal Dimension.Unit unit
+        {
+            get => m_Unit;
+            set => m_Unit = value;
+        }
+
         /// <summary>
         /// Creates a float filter parameter.
         /// </summary>
@@ -119,6 +130,13 @@ namespace UnityEngine.UIElements
             m_Type = FilterParameterType.Float;
             m_FloatValue = value;
             m_ColorValue = Color.clear;
+            m_Unit = Dimension.Unit.Unitless;
+        }
+
+        internal FilterParameter(float value, Dimension.Unit unit)
+            : this(value)
+        {
+            m_Unit = unit;
         }
 
         /// <summary>
@@ -130,6 +148,7 @@ namespace UnityEngine.UIElements
             m_Type = FilterParameterType.Color;
             m_ColorValue = value;
             m_FloatValue = 0.0f;
+            m_Unit = Dimension.Unit.Unitless;
         }
 
         /// <undoc/>
@@ -138,7 +157,7 @@ namespace UnityEngine.UIElements
             if (a.type != b.type)
                 return false;
             if (a.type == FilterParameterType.Float)
-                return a.floatValue == b.floatValue;
+                return a.floatValue == b.floatValue && a.unit == b.unit;
             return a.colorValue == b.colorValue;
         }
 
@@ -163,7 +182,7 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public override int GetHashCode()
         {
-            return type == FilterParameterType.Float ? floatValue.GetHashCode() : colorValue.GetHashCode();
+            return type == FilterParameterType.Float ? HashCode.Combine(floatValue, unit) : colorValue.GetHashCode();
         }
 
         /// <undoc/>
@@ -381,7 +400,7 @@ namespace UnityEngine.UIElements
             m_CustomDefinition = customDefinition;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal FilterFunctionDefinition GetDefinition()
         {
             if (m_Type == FilterFunctionType.Custom)
@@ -409,7 +428,7 @@ namespace UnityEngine.UIElements
 
                 float clamped = declarations[i].ClampFloat(p.floatValue);
                 if (clamped != p.floatValue)
-                    result.m_Parameters[i] = new FilterParameter(clamped);
+                    result.m_Parameters[i] = new FilterParameter(clamped, p.unit);
             }
 
             return result;
@@ -484,7 +503,7 @@ namespace UnityEngine.UIElements
     /// Unmanaged equivalent of FilterFunction, for ComputedStyle.
     /// </summary>
     /// <seealso cref="FilterFunction"/>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [StructLayout(LayoutKind.Sequential)]
     internal readonly struct UnmanagedFilterFunction : IEquatable<UnmanagedFilterFunction>
     {

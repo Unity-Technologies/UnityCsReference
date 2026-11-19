@@ -606,8 +606,20 @@ namespace UnityEditor.AssetImporters
 
             serializedObject.SetIsDifferentCacheDirty();
             extraDataSerializedObject?.SetIsDifferentCacheDirty();
+            var reimportPaths = new List<string>();
             for (int i = 0; i < targets.Length; ++i)
+            {
                 RevertObject(targets[i]);
+                // Still dirty when the reverted edits were already written to the .meta
+                if (EditorUtility.IsDirty(targets[i]))
+                    reimportPaths.Add(((AssetImporter)targets[i]).assetPath);
+            }
+            if (needsApplyRevert && reimportPaths.Count > 0)
+            {
+                ImportAssets(reimportPaths);
+                for (int i = 0; i < targets.Length; i++)
+                    UpdateSavedData(targets[i]);
+            }
             extraDataSerializedObject?.Update();
             serializedObject.Update();
         }
@@ -678,7 +690,12 @@ namespace UnityEditor.AssetImporters
                 applyButton.text = "Apply";
                 applyButton.style.maxWidth = 50;
                 applyButton.name = "applyButton";
-                applyButton.clicked += editor.SaveChanges;
+                applyButton.clicked += () =>
+                {
+                    editor.SaveChanges();
+                    // Apply changes no tracked value, and a locked Inspector is not rebuilt after it
+                    enabledSelf = editor.hasUnsavedChanges;
+                };
 
                 var revertButton = new UnityEngine.UIElements.Button();
                 revertButton.text = "Revert";
@@ -697,13 +714,18 @@ namespace UnityEditor.AssetImporters
 
                 Add(applyButton);
                 Add(revertButton);
+                editor.hasUnsavedChanges = editor.HasModified();
                 enabledSelf = editor.hasUnsavedChanges;
 
-                BindingExtensions.TrackSerializedObjectValue(this, editor.serializedObject,
-                    (e) => {
-                        enabledSelf = editor.HasModified();
-                    }
-                );
+                Action<SerializedObject> updateUnsavedChanges = (e) =>
+                {
+                    editor.hasUnsavedChanges = editor.HasModified();
+                    enabledSelf = editor.hasUnsavedChanges;
+                };
+                BindingExtensions.TrackSerializedObjectValue(this, editor.serializedObject, updateUnsavedChanges);
+                // An element tracks a single SerializedObject
+                if (editor.extraDataSerializedObject != null)
+                    BindingExtensions.TrackSerializedObjectValue(applyButton, editor.extraDataSerializedObject, updateUnsavedChanges);
                 RegisterCallback<AttachToPanelEvent>(
                     (e) =>
                     {

@@ -10,7 +10,7 @@ namespace UnityEditor.UIElements
     // Builds the inline documentation "?" icon shared by foldout headers in the UI Builder
     // (PersistedFoldout) and the UI Toolkit authoring style inspector (OverrideFoldout), so the
     // two stay in sync (UUM-147138).
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class DocumentationLinkIcon
     {
         internal const string iconName = "documentation-link-icon";
@@ -19,7 +19,7 @@ namespace UnityEditor.UIElements
         // `url` is non-empty the icon opens it on click. No-op when `tooltip` is empty, `label` is
         // unparented, or the icon already exists. Pointer/click events are isolated so clicking the
         // icon doesn't also toggle the surrounding foldout.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void AddAfterLabel(Label label, string tooltip, string url = null)
         {
             if (string.IsNullOrEmpty(tooltip) || label?.parent == null || label.parent.Q(iconName) != null)

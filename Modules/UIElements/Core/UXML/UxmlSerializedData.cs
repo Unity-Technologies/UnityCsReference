@@ -79,7 +79,7 @@ namespace UnityEngine.UIElements
             DefaultValue = 2,
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [SerializeField, UxmlIgnore, HideInInspector]
         internal int uxmlAssetId;
 
@@ -118,7 +118,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="flags"></param>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void Deserialize(object obj, UxmlAttributeFlags flags)
         {
             try

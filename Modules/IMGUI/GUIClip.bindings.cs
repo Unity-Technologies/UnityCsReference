@@ -8,7 +8,7 @@ namespace UnityEngine
 {
     [NativeHeader("Modules/IMGUI/GUIClip.h"),
      NativeHeader("Modules/IMGUI/GUIState.h")]
-    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal partial class GUIClip
     {
         internal static extern bool enabled {[FreeFunction("GetGUIState().m_CanvasGUIState.m_GUIClipState.GetEnabled")] get; }
@@ -21,7 +21,6 @@ namespace UnityEngine
         internal static extern Rect topmostRect
         {
             [FreeFunction("GetGUIState().m_CanvasGUIState.m_GUIClipState.GetTopMostPhysicalRect")]
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get;
         }
 

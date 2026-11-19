@@ -14,7 +14,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class StyleSheetExtensions
     {
         [NoAutoStaticsCleanup]
@@ -24,7 +24,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Copies selectors and properties from one StyleRule to another, preserving multi-selector rules.
         /// </summary>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void SwallowStyleRule(StyleSheet toStyleSheet, StyleRule toRule, StyleSheet fromStyleSheet, StyleRule fromRule)
         {
             // Copy each selector individually to preserve multi-selector rules

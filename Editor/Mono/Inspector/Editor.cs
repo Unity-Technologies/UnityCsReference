@@ -60,7 +60,7 @@ namespace UnityEditor
         protected UnityObject[] m_Targets;
         protected int m_ReferenceTargetIndex;
 
-#pragma warning disable UA5000 // Intentional leak warning: logs an error when the ObjectPreview was not cleaned up.
+#pragma warning disable UAC0045 // Intentional leak warning: logs an error when the ObjectPreview was not cleaned up.
         ~ObjectPreview()
         {
             // Watch out for Editor classes implementing OnDisableINTERNAL and not calling cleanup (GenericInspector).
@@ -68,7 +68,7 @@ namespace UnityEditor
                 $"the Cleanup method. If you are implementing this in an Editor or EditorWindow, don't " +
                 $"forget to call ObjectPreview.Cleanup in OnDisable.");
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public virtual void Cleanup()
         {
@@ -131,7 +131,10 @@ namespace UnityEditor
                 else
                     title += ObjectNames.NicifyVariableName(ObjectNames.GetClassName(target));
 
-                title += "s";
+                if (Editor.EndsWithConsonantY(title))
+                    title = title.Substring(0, title.Length - 1) + "ies";
+                else
+                    title += "s";
             }
 
             return title;
@@ -379,7 +382,7 @@ namespace UnityEditor
 
         // The object currently inspected by this editor.
         UnityObject[] m_Targets;
-        // One per target. For data-component and entity editors m_Targets is null-filled and only these carry the targets.
+        // One per target. Data-component and entity editors have no m_Targets, so only these carry their targets.
         internal EntityId[] m_TargetEntityIds;
         // AssemblyQualifiedName of m_NonObjectTargetType; unlike the Type, it survives a domain reload.
         string m_NonObjectTargetTypeName;
@@ -413,11 +416,6 @@ namespace UnityEditor
                 }
             }
         }
-
-        internal DataMode dataMode =>
-            propertyViewer is EditorWindow editorWindow
-                ? editorWindow.dataModeController.dataMode
-                : DataMode.Disabled;
 
         internal static readonly float kLineHeight = EditorGUI.kSingleLineHeight;
 
@@ -558,7 +556,7 @@ namespace UnityEditor
         }
 
         // The object being inspected.
-        public UnityObject target { get { return m_Targets[referenceTargetIndex]; } set { throw new InvalidOperationException("You can't set the target on an editor."); } }
+        public UnityObject target { get { return hasUnityObjectTargets ? m_Targets[referenceTargetIndex] : null; } set { throw new InvalidOperationException("You can't set the target on an editor."); } }
 
         // An array of all the object being inspected.
         public UnityObject[] targets
@@ -567,26 +565,32 @@ namespace UnityEditor
             {
                 if (!m_AllowMultiObjectAccess)
                     Debug.LogError("The targets array should not be used inside OnSceneGUI or OnPreviewGUI. Use the single target property instead.");
-                return m_Targets;
+                return hasUnityObjectTargets ? m_Targets : Array.Empty<UnityObject>();
             }
         }
 
         internal virtual int referenceTargetIndex
         {
-            get { return Mathf.Clamp(m_ReferenceTargetIndex, 0, m_Targets.Length - 1); }
+            get { return targetCount > 0 ? Mathf.Clamp(m_ReferenceTargetIndex, 0, targetCount - 1) : 0; }
             // Modulus that works for negative numbers as well
-            set { m_ReferenceTargetIndex = (Math.Abs(value * m_Targets.Length) + value) % m_Targets.Length; }
+            set { m_ReferenceTargetIndex = targetCount > 0 ? (Math.Abs(value * targetCount) + value) % targetCount : 0; }
         }
 
         internal virtual string targetTitle
         {
             get
             {
-                if (m_Targets.Length == 1 || !m_AllowMultiObjectAccess)
+                if (targetCount == 1 || !m_AllowMultiObjectAccess)
                     return GetSingleTargetInspectorTitle();
-                return m_Targets.Length + " " + ObjectNames.NicifyVariableName(GetMultiTargetTypeName()) + "s";
+                var typeName = ObjectNames.NicifyVariableName(GetMultiTargetTypeName());
+                if (EndsWithConsonantY(typeName))
+                    return targetCount + " " + typeName.Substring(0, typeName.Length - 1) + "ies";
+                return targetCount + " " + typeName + "s";
             }
         }
+
+        internal static bool EndsWithConsonantY(string name)
+            => name.Length > 1 && name[name.Length - 1] == 'y' && "aeiou".IndexOf(name[name.Length - 2]) < 0;
 
         internal string GetInspectorTitle(bool multiEditing)
             => hasUnityObjectTargets ? ObjectNames.GetInspectorTitle(target, multiEditing) : targetTitle;
@@ -696,6 +700,12 @@ namespace UnityEditor
             return CreateEditorWithContext(targetObjects, null, editorType);
         }
 
+        // For targets with no Object, such as data components.
+        internal static Editor CreateEditorForEntityIds(EntityId[] targetEntityIds)
+        {
+            return CreateEditorForEntityIdsInternal(targetEntityIds);
+        }
+
         internal void CleanupPropertyEditor()
         {
             if (m_SerializedObject != null)
@@ -717,6 +727,7 @@ namespace UnityEditor
         {
             if (m_SerializedObject == null)
             {
+                RepairNonObjectTargetTypeIfNeeded();
                 CreateSerializedObject();
             }
 
@@ -734,8 +745,6 @@ namespace UnityEditor
             {
                 m_SerializedObject = new SerializedObject(m_TargetEntityIds, m_Context);
                 m_SerializedObject.inspectorMode = inspectorMode;
-                if (m_SerializedObject.inspectorDataMode != dataMode)
-                    m_SerializedObject.inspectorDataMode = dataMode;
 
                 AssignCachedProperties(this, m_SerializedObject.GetIterator());
                 m_EnabledProperty = m_SerializedObject.FindProperty("m_Enabled");
@@ -815,13 +824,7 @@ namespace UnityEditor
         }
 
         // Called from native for data-component and entity editors, which have no Objects.
-        // They get a null-filled m_Targets of the right length so downstream target iteration sees a proper array.
-        internal void InternalSetTargetEntityIds(EntityId[] ids)
-        {
-            m_TargetEntityIds = ids;
-            if (ids != null && ids.Length > 0)
-                m_Targets = new UnityObject[ids.Length];
-        }
+        internal void InternalSetTargetEntityIds(EntityId[] ids) => m_TargetEntityIds = ids;
 
         internal void InternalSetHidden(bool hidden) { hideInspector = hidden; }
         internal void InternalSetContextObject(UnityObject context) { m_Context = context; }
@@ -835,12 +838,13 @@ namespace UnityEditor
             => m_TargetEntityIds != null && m_TargetEntityIds.Length > 0 && DataComponentEntityId.IsDataComponent(m_TargetEntityIds[0]);
 
         // False for data-component and entity editors, whose targets are EntityIds with no UnityEngine.Object.
-        internal bool hasUnityObjectTargets
-            => !(m_TargetEntityIds != null && m_TargetEntityIds.Length > 0 && m_TargetEntityIds[0] != EntityId.None
-                && m_Targets.Length > 0 && ReferenceEquals(m_Targets[0], null));
+        internal bool hasUnityObjectTargets => string.IsNullOrEmpty(m_NonObjectTargetTypeName);
 
         // An Object editor whose target was destroyed. Editors without Object targets always have a null target.
         internal bool hasDestroyedObjectTarget => hasUnityObjectTargets && target == null;
+
+        // Counts targets of every kind. Editor.targets returns only Objects.
+        internal int targetCount => m_TargetEntityIds != null ? m_TargetEntityIds.Length : 0;
 
         internal EntityId targetEntityId => m_TargetEntityIds != null && m_TargetEntityIds.Length > 0
             ? m_TargetEntityIds[0]
@@ -896,31 +900,25 @@ namespace UnityEditor
             if (m_SerializedObject != null)
             {
                 m_SerializedObject.SetIsDifferentCacheDirty();
-                if (!hasUnityObjectTargets)
-                {
-                    // Native SerializedObject caches a ScriptingClass* that went stale when
-                    // the managed domain unloaded. Dispose so the lazy getter rebuilds
-                    // against the current TypeManager. Keeps the targets, which are
-                    // EntityIds rather than Objects.
-                    m_SerializedObject.Dispose();
-                    m_SerializedObject = null;
-                    RepairNonObjectTargetTypeAfterReload();
-                }
-                else
-                {
-                    // Native memory PPtr list holds new EntityIds after reload; sync managed
-                    // m_Targets so the C# and native views agree.
+                // Need to make sure internal target list PPtr have been updated from a native memory
+                // When assets are reloaded they are destroyed and recreated and the managed list does not get updated
+                // The m_SerializedObject is a native object thus its targetObjects is a native memory PPtr list which have the new PPtr ids.
+                // Editors without Object targets keep their targets in m_TargetEntityIds.
+                if (hasUnityObjectTargets)
                     InternalSetTargets(m_SerializedObject.targetObjects);
-                }
+                // GetSerializedObjectInternal already repaired the target type before creating m_SerializedObject
                 return;
             }
 
-            if (!hasUnityObjectTargets && !string.IsNullOrEmpty(m_NonObjectTargetTypeName))
-                RepairNonObjectTargetTypeAfterReload();
+            RepairNonObjectTargetTypeIfNeeded();
         }
 
-        private void RepairNonObjectTargetTypeAfterReload()
+        // A code reload restores the type name but not the Type, and can give the type a new TypeId
+        void RepairNonObjectTargetTypeIfNeeded()
         {
+            if (hasUnityObjectTargets || m_NonObjectTargetType != null || string.IsNullOrEmpty(m_NonObjectTargetTypeName))
+                return;
+
             var freshType = Type.GetType(m_NonObjectTargetTypeName, throwOnError: false);
             if (freshType == null)
                 return;
@@ -940,8 +938,6 @@ namespace UnityEditor
             for (int i = 0; i < m_TargetEntityIds.Length; ++i)
             {
                 EntityId ownerId = DataComponentEntityId.GetOwner(m_TargetEntityIds[i]);
-                uint staleTypeId = DataComponentEntityId.GetTypeId(m_TargetEntityIds[i]);
-                EntityComponentDataAccessTestBridge.RemapDataComponentTypeId(ownerId, staleTypeId, freshTypeId);
                 m_TargetEntityIds[i] = DataComponentEntityId.Make(ownerId, freshTypeId);
             }
             m_NonObjectTargetType = freshType;
@@ -1352,8 +1348,17 @@ namespace UnityEditor
 
             if (showMenu)
             {
-                EditorUtility.DisplayObjectContextMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), editor.targets, 0);
-                evt.Use();
+                var menuPosition = new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0);
+                if (editor.isDataComponentEditor)
+                {
+                    EditorGUI.DisplayDataComponentContextMenu(menuPosition, editor);
+                    evt.Use();
+                }
+                else if (editor.hasUnityObjectTargets)
+                {
+                    EditorUtility.DisplayObjectContextMenu(menuPosition, editor.targets, 0);
+                    evt.Use();
+                }
             }
 
             return fullRect;
@@ -1546,8 +1551,6 @@ namespace UnityEditor
             else
                 m_SerializedObject.Update();
             m_SerializedObject.inspectorMode = inspectorMode;
-            if (m_SerializedObject.inspectorDataMode != dataMode)
-                m_SerializedObject.inspectorDataMode = dataMode;
 
             return CanBeExpandedViaAFoldoutWithoutUpdate();
         }

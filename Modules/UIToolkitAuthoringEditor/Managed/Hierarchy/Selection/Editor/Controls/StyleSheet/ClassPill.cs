@@ -8,7 +8,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UxmlElement]
     internal partial class ClassPill : VisualElement
     {

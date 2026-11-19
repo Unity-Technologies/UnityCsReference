@@ -23,9 +23,10 @@ internal sealed class PasteElementsCommand : Command<PasteElementsCommand>
         return cmd;
     }
 
-    public static void Execute(object source, string copiedContent, VisualElementAsset copyIntoAsset)
+    public static void Execute(object source, string copiedContent, VisualElementAsset copyIntoAsset, AuthoringContext requestingContext = null)
     {
         using var command = GetPooled(source, copiedContent, copyIntoAsset);
+        command.RequestingContext = requestingContext;
         UICommandQueue.Execute(command);
     }
 
@@ -96,7 +97,7 @@ internal sealed class PasteElementsCommand : Command<PasteElementsCommand>
             Object.DestroyImmediate(pasteVta);
         }
 
-        UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(RequestingContext, toSelectAssets);
         return CommandExecutionStatus.Success;
     }
 }

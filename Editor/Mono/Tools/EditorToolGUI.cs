@@ -241,7 +241,6 @@ namespace UnityEditor
         static readonly List<EditorTool> s_ToolList = new List<EditorTool>();
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)] // non-trivial initializer but Clearing is enough
         static readonly List<EditorTool> s_EditorToolModes = new List<EditorTool>(8);
-        [NoAutoStaticsCleanup] // toolbar button layout constant from style sheet; safe to persist
         public static readonly StyleRect s_ButtonRect = EditorResources.GetStyle("AppToolbar-Button").GetRect(StyleCatalogKeyword.size, StyleRect.Size(22, 22));
 
         internal static Rect GetToolbarEntryRect(Rect pos)

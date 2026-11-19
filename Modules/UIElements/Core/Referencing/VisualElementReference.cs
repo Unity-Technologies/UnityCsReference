@@ -69,9 +69,9 @@ public class VisualElementReference : IVisualElementReferenceHandler, IEquatable
         SetReference(renderer, path);
     }
 
-#pragma warning disable UA5000 // Prunes the weak reference from the table provider when Dispose is missed; Dispose(false) does real work.
+#pragma warning disable UAC0045 // Prunes the weak reference from the table provider when Dispose is missed; Dispose(false) does real work.
     ~VisualElementReference() => Dispose(false);
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
     /// <summary>
     /// Sets the reference to point to the given document and path.

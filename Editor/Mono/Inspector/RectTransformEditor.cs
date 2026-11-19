@@ -163,11 +163,11 @@ namespace UnityEditor
                 linePoints.CopyTo(lineSegments);
             }
 
-            public void FillShadowSegments(Camera camera)
+            public void FillShadowSegments(in HandleUtility.ScreenOffsetProjection shadowOffset)
             {
                 shadowSegments = GetBufferOfLength(shadowSegments, linePoints.Count);
                 for (int i = 0; i < linePoints.Count; i++)
-                    shadowSegments[i] = HandleUtility.WorldPointWithScreenOffset(camera, linePoints[i], kShadowOffset);
+                    shadowSegments[i] = shadowOffset.Apply(linePoints[i]);
             }
 
             static Vector3[] GetBufferOfLength(Vector3[] buffer, int length)
@@ -942,12 +942,13 @@ namespace UnityEditor
                 return;
 
             Color previousColor = Handles.color;
+            var shadowOffset = new HandleUtility.ScreenOffsetProjection(camera, kShadowOffset);
 
             // Shadows go first so that no rect's line is covered by another rect's shadow.
             for (int i = 0; i < m_ActiveParentRectGroupCount; i++)
             {
                 var group = m_ParentRectGroups[i];
-                group.FillShadowSegments(camera);
+                group.FillShadowSegments(shadowOffset);
                 Handles.color = group.shadowColor;
                 Handles.DrawDottedLines(group.shadowSegments, kDottedLineSize);
             }

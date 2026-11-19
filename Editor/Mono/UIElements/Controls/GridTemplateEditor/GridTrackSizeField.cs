@@ -11,7 +11,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class GridTrackSizeField : VisualElement
     {
         // Unit popup values. "min"/"max"/"fit" are short labels for min-content/max-content/fit-content.

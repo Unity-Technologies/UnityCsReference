@@ -13,7 +13,7 @@ namespace Unity.U2D.Physics
     /// All callback interfaces and targets.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial record struct PhysicsCallbacks
+    public readonly partial struct PhysicsCallbacks
     {
         #region Interfaces
 
@@ -333,13 +333,13 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Contains all the body update callback targets returned from <see cref="PhysicsWorld.GetBodyUpdateCallbackTargets(Unity.Collections.Allocator)"/>.
         /// </summary>
-        public readonly record struct BodyUpdateCallbackTargets : IDisposable
+        public readonly struct BodyUpdateCallbackTargets : IDisposable
         {
             /// <summary>
             /// Body update event target for callbacks.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct BodyUpdateTarget
+            public readonly struct BodyUpdateTarget
             {
                 /// <summary>
                 /// The event.
@@ -391,13 +391,13 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Contains all the trigger callback targets returned from <see cref="PhysicsWorld.GetTriggerCallbackTargets(Unity.Collections.Allocator)"/>.
         /// </summary>
-        public readonly record struct TriggerCallbackTargets : IDisposable
+        public readonly struct TriggerCallbackTargets : IDisposable
         {
             /// <summary>
             /// Trigger begin event target for callbacks.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct TriggerBeginTarget
+            public readonly struct TriggerBeginTarget
             {
                 /// <summary>
                 /// The trigger begin event.
@@ -445,7 +445,7 @@ namespace Unity.U2D.Physics
             /// Trigger end event target for callbacks.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct TriggerEndTarget
+            public readonly struct TriggerEndTarget
             {
                 /// <summary>
                 /// The trigger end event.
@@ -519,13 +519,13 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Contains all the contact callback targets returned from <see cref="PhysicsWorld.GetContactCallbackTargets(Unity.Collections.Allocator)"/>.
         /// </summary>
-        public readonly record struct ContactCallbackTargets : IDisposable
+        public readonly struct ContactCallbackTargets : IDisposable
         {
             /// <summary>
             /// Contact begin event target for callbacks.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct ContactBeginTarget
+            public readonly struct ContactBeginTarget
             {
                 /// <summary>
                 /// The event.
@@ -573,7 +573,7 @@ namespace Unity.U2D.Physics
             /// Contact end event target for callbacks.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct ContactEndTarget
+            public readonly struct ContactEndTarget
             {
                 /// <summary>
                 /// The event.
@@ -647,13 +647,13 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Contains all the joint callback targets returned from <see cref="PhysicsWorld.GetJointThresholdCallbackTargets(Unity.Collections.Allocator)"/>.
         /// </summary>
-        public readonly record struct JointThresholdCallbackTargets : IDisposable
+        public readonly struct JointThresholdCallbackTargets : IDisposable
         {
             /// <summary>
             /// Joint threshold event target for callbacks.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct JointThresholdTarget
+            public readonly struct JointThresholdTarget
             {
                 /// <summary>
                 /// The event.

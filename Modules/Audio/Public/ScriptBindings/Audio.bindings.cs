@@ -628,7 +628,6 @@ namespace UnityEngine
     ///<seealso cref="AudioSource.GetSpectrumData" />
     public enum FFTWindow
     {
-        // w[n] = 1.0
         ///<summary>Rectangular (no) window for FFT spectrum analysis.</summary>
         ///<remarks>Window function: <c>W[n] = 1.0</c> (no tapering), where <c>n</c> is the sample index and <c>N</c> is the window length.
         ///
@@ -638,7 +637,6 @@ namespace UnityEngine
         ///<seealso cref="FFTWindow" />
         ///<seealso cref="FFTWindow.Hamming" />
         Rectangular = 0,
-        // w[n] = TRI(2n/N)
         ///<summary>Triangular (Bartlett) window for FFT spectrum analysis.</summary>
         ///<remarks>Window function: <c>W[n] = 1 - abs(2n/N - 1)</c>, where <c>n</c> is the sample index and <c>N</c> is the window length.
         ///
@@ -649,7 +647,6 @@ namespace UnityEngine
         ///<seealso cref="FFTWindow.Rectangular" />
         ///<seealso cref="FFTWindow.Hanning" />
         Triangle = 1,
-        // w[n] = 0.54 - (0.46 * COS(n/N) )
         ///<summary>Hamming window for FFT spectrum analysis.</summary>
         ///<remarks>Window function: <c>W[n] = 0.54 - 0.46 * cos(2π * n/N)</c>, where <c>n</c> is the sample index and <c>N</c> is the window length.
         ///
@@ -659,7 +656,6 @@ namespace UnityEngine
         ///<seealso cref="FFTWindow" />
         ///<seealso cref="FFTWindow.Hanning" />
         Hamming = 2,
-        // w[n] = 0.5 * (1.0 - COS(n/N) )
         ///<summary>Hanning (Hann) window for FFT spectrum analysis.</summary>
         ///<remarks>Window function: <c>W[n] = 0.5 * (1.0 - cos(2π * n/N))</c>, where <c>n</c> is the sample index and <c>N</c> is the window length. This is also known as the Hann window.
         ///
@@ -669,7 +665,6 @@ namespace UnityEngine
         ///<seealso cref="FFTWindow" />
         ///<seealso cref="FFTWindow.Hamming" />
         Hanning = 3,
-        // w[n] = 0.42 - (0.5 * COS(n/N) ) + (0.08 * COS(2.0 * n/N) )
         ///<summary>Blackman window for FFT spectrum analysis.</summary>
         ///<remarks>Window function: <c>W[n] = 0.42 - 0.5 * cos(2π * n/N) + 0.08 * cos(4π * n/N)</c>, where <c>n</c> is the sample index and <c>N</c> is the window length.
         ///
@@ -680,7 +675,6 @@ namespace UnityEngine
         ///<seealso cref="FFTWindow.BlackmanHarris" />
         ///<seealso cref="FFTWindow.Hamming" />
         Blackman = 4,
-        // w[n] = 0.35875 - (0.48829 * COS(1.0 * n/N)) + (0.14128 * COS(2.0 * n/N)) - (0.01168 * COS(3.0 * n/N))
         ///<summary>Blackman-Harris window for FFT spectrum analysis.</summary>
         ///<remarks>Window function: <c>W[n] = 0.35875 - 0.48829 * cos(2π * n/N) + 0.14128 * cos(4π * n/N) - 0.01168 * cos(6π * n/N)</c>, where <c>n</c> is the sample index and <c>N</c> is the window length.
         ///
@@ -692,7 +686,6 @@ namespace UnityEngine
         BlackmanHarris = 5
     }
 
-    // Rolloff modes that a 3D sound can have in an audio source.
     ///<summary>Rolloff modes that a 3D sound can have in an audio source.</summary>
     public enum AudioRolloffMode
     {
@@ -919,7 +912,6 @@ namespace UnityEngine
 
         extern static internal int profilerCaptureFlags { get; }
 
-        // Returns the current time of the audio system. This is based on the number of samples the audio system processes and is therefore more exact than the time obtained via the Time.time property.
         ///<summary>Returns the current time of the audio system.</summary>
         ///<remarks>This is a value specified in seconds and based on the actual number of samples the audio system processes and is therefore much more precise than the time obtained via the <see cref="Time.time" /> property.</remarks>
         ///<example>
@@ -1379,7 +1371,6 @@ namespace UnityEngine
         }
     }
 
-    // A container for audio data.
     ///<summary>A container for audio data.</summary>
     ///<remarks>An AudioClip stores the audio file either compressed as ogg vorbis or uncompressed.
     ///AudioClips are referenced and used by AudioSources to play sounds.</remarks>
@@ -1397,7 +1388,7 @@ namespace UnityEngine
         extern static private AudioClip Construct_Internal();
 
         extern private string GetName();
-        extern private void CreateUserSound(string name, int lengthSamples, int channels, int frequency, bool stream);
+        extern private bool CreateUserSound(string name, int lengthSamples, int channels, int frequency, bool stream);
         extern private bool IsLegacyFormat();
 
         ///<summary>The length of the audio clip in seconds. (RO)</summary>
@@ -1475,7 +1466,6 @@ namespace UnityEngine
         [NativeProperty("LengthSec")]
         extern public float length { get; }
 
-        // The length of the audio clip in samples (read-only)
         ///<summary>The length of the audio clip in samples. (RO)</summary>
         ///<remarks>Until the audio data is loaded (see <see cref="AudioClip.loadState" />), this reports the length of the imported clip.
         ///
@@ -2108,7 +2098,9 @@ namespace UnityEngine
         ///
         ///**Note**: Unity expects you to pass an array with valid audio data (floating-point samples between -1.0 and 1.0) to <c>PCMReaderCallback</c>. If no audio data is available, you must fill the array with zeros. Otherwise it will result in unexpected noise or other unwanted sounds during playback.
         ///
-        ///**Note**: You must use persistent, imported audio clips for generator functionality in the Scriptable Audio Pipeline. You can't use <c>AudioClip.CreateInstance</c> with clips you generate at runtime via <c>AudioClip.Create</c>.</remarks>
+        ///**Note**: You must use persistent, imported audio clips for generator functionality in the Scriptable Audio Pipeline. You can't use <c>AudioClip.CreateInstance</c> with clips you generate at runtime via <c>AudioClip.Create</c>.
+        ///
+        ///**Note**: The maximum number of channels depends on the audio system configuration. In the Editor it's 16. In the Player it's 12, or 16 if an ambisonic decoder plugin is selected in the Audio settings. On WebGL it's 32.</remarks>
         ///<param name="name">Name of clip.</param>
         ///<param name="lengthSamples">Number of sample frames.</param>
         ///<param name="channels">Number of channels per frame.</param>
@@ -2117,6 +2109,7 @@ namespace UnityEngine
         ///<param name="pcmreadercallback">This callback is invoked to generate a block of sample data. Non-streamed clips call this only once at creation time while streamed clips call this continuously.</param>
         ///<param name="pcmsetpositioncallback">This callback is invoked whenever the clip loops or changes playback position.</param>
         ///<returns>A reference to the created AudioClip.</returns>
+        ///<exception cref="ArgumentException">Thrown if <paramref name="lengthSamples" />, <paramref name="channels" /> or <paramref name="frequency" /> is 0 or less, or if <paramref name="channels" /> exceeds the maximum the audio system supports.</exception>
         ///<example>
         ///  <code><![CDATA[
         ///using UnityEngine;
@@ -2167,7 +2160,11 @@ namespace UnityEngine
             if (pcmsetpositioncallback != null)
                 clip.m_PCMSetPositionCallback += pcmsetpositioncallback;
 
-            clip.CreateUserSound(name, lengthSamples, channels, frequency, stream);
+            if (!clip.CreateUserSound(name, lengthSamples, channels, frequency, stream))
+            {
+                DestroyImmediate(clip);
+                throw new ArgumentException($"Number of channels in created clip ({channels}) exceeds the maximum supported by the audio system");
+            }
 
             return clip;
         }
@@ -2460,7 +2457,6 @@ namespace UnityEngine
         }
     }
 
-    // A representation of audio sources in 3D.
     ///<summary>A representation of audio sources in 3D.</summary>
     ///<remarks>Attach an AudioSource to a <see cref="GameObject" /> to play back sounds in a 3D environment.
     ///To play 3D sounds you also need to have an <see cref="AudioListener" />.
@@ -2548,7 +2544,9 @@ namespace UnityEngine
         extern static private void PlayHelper([NotNull] AudioSource source, UInt64 delay);
         extern private void Play(double delay);
 
-        extern static private void PlayOneShotHelper([NotNull] AudioSource source, [NotNull] AudioClip clip, float volumeScale);
+        extern static private bool PlayOneShotHelper([NotNull] AudioSource source, [NotNull] AudioClip clip, float volumeScale);
+
+        extern static private bool HasOneShots([NotNull] AudioSource source);
 
         extern private void Stop(bool stopOneShots);
 
@@ -2911,7 +2909,6 @@ namespace UnityEngine
         [NativeConditional("PLATFORM_SUPPORTS_GAMEPAD_AUDIO")]
         extern public GamepadSpeakerOutputType gamepadSpeakerOutputType { get; set; }
 
-        // Plays the ::ref::clip with a certain delay (the optional delay argument is deprecated since 4.1a3) and the functionality has been replaced by PlayDelayed.
         [ExcludeFromDocs]
         public void Play()
         {
@@ -3072,7 +3069,6 @@ namespace UnityEngine
             Play((time < 0.0) ? 0.0 : time);
         }
 
-        // Plays an [[AudioClip]], and scales the [[AudioSource]] volume by volumeScale.
         [ExcludeFromDocs]
         public void PlayOneShot(AudioClip clip)
         {
@@ -3119,7 +3115,31 @@ namespace UnityEngine
                 return;
             }
 
-            PlayOneShotHelper(this, clip, volumeScale);
+            if (PlayOneShotHelper(this, clip, volumeScale) && oneShotPlayed != null)
+                RaiseOneShotPlayed(clip, volumeScale);
+        }
+
+        // Broadcast to internal consumers when script code starts a one-shot, which has no other managed trace.
+        [AutoStaticsCleanupOnCodeReload]
+        internal static event Action<AudioSource, AudioClip, float> oneShotPlayed;
+
+        void RaiseOneShotPlayed(AudioClip clip, float volumeScale)
+        {
+            var handlers = oneShotPlayed;
+            if (handlers == null)
+                return;
+
+            foreach (Action<AudioSource, AudioClip, float> handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(this, clip, volumeScale);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
         }
 
         ///<summary>Changes the time at which a sound that has already been scheduled to play will start.</summary>
@@ -3292,7 +3312,40 @@ namespace UnityEngine
         ///<seealso cref="Pause" />
         public void Stop()
         {
+            if (stopped == null)
+            {
+                Stop(true);
+                return;
+            }
+
+            // isPlaying misses one-shots under an assigned container or while paused, and Stop() ends those too.
+            var wasPlaying = isPlaying || HasOneShots(this);
             Stop(true);
+            if (wasPlaying)
+                RaiseStopped();
+        }
+
+        // Broadcast to internal consumers when script code stops a playing source, which also ends its one-shots.
+        [AutoStaticsCleanupOnCodeReload]
+        internal static event Action<AudioSource> stopped;
+
+        void RaiseStopped()
+        {
+            var handlers = stopped;
+            if (handlers == null)
+                return;
+
+            foreach (Action<AudioSource> handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(this);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
         }
 
         ///<summary>Pauses playing the <see cref="clip" />.</summary>
@@ -3458,6 +3511,13 @@ namespace UnityEngine
             get;
         }
 
+        // Like isPlaying, but ignores one-shots, which play independently of the assigned resource.
+        internal extern bool isPlayingExcludingOneShots
+        {
+            [NativeName("IsPlayingExcludingOneShots")]
+            get;
+        }
+
         internal extern bool isContainerPlaying
         {
             [NativeName("IsContainerPlaying")]
@@ -3482,7 +3542,6 @@ namespace UnityEngine
             get;
         }
 
-        // Plays the clip at position. Automatically cleans up the audio source after it has finished playing.
         [ExcludeFromDocs]
         static public void PlayClipAtPoint(AudioClip clip, Vector3 position)
         {
@@ -3773,7 +3832,6 @@ namespace UnityEngine
         ///**WebGL:** This setting doesn't affect WebGL because there is no limit on the number of audio channels in the WebGL platform.</remarks>
         extern public int priority { get; set; }
 
-        // Un- / Mutes the AudioSource. Mute sets the volume=0, Un-Mute restore the original volume.
         ///<summary>Un- / Mutes the AudioSource. Mute sets the volume=0, Un-Mute restore the original volume.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -3956,11 +4014,9 @@ namespace UnityEngine
     {
         internal AudioReverbZone(global::UnityEngine.EntityId id) : base(id) {}
         public AudioReverbZone() {}
-        //  The distance from the centerpoint that the reverb will have full effect at. Default = 10.0.
         ///<summary>The distance from the centerpoint that the reverb will have full effect at. Default = 10.0.</summary>
         extern public float minDistance { get; set; }
 
-        //  The distance from the centerpoint that the reverb will not have any effect. Default = 15.0.
         ///<summary>The distance from the centerpoint that the reverb will not have any effect. Default = 15.0.</summary>
         extern public float maxDistance { get; set; }
 
@@ -4034,7 +4090,6 @@ namespace UnityEngine
             set { SetCustomLowpassLevelCurveHelper(this, value); }
         }
 
-        // Lowpass cutoff frequency in hz. 10.0 to 22000.0. Default = 5000.0.
         ///<summary>Cutoff frequency in hertz for the low-pass filter.</summary>
         ///<remarks>The cutoff frequency is usually defined by the point on the smooth curve where attenuation hits -3 dB (~0.71) and is also the center frequency where high values of <see cref="AudioLowPassFilter.lowpassResonanceQ" /> causes a boost. Frequencies at and below this value are gradually much less affected by the filter. A lower cutoff frequency attenuates more high-frequency content. A higher cutoff frequency attenuates less high-frequency content.
         ///
@@ -4104,7 +4159,6 @@ namespace UnityEngine
     {
         internal AudioHighPassFilter(global::UnityEngine.EntityId id) : base(id) {}
         public AudioHighPassFilter() {}
-        // Highpass cutoff frequency in hz. 10.0 to 22000.0. Default = 5000.0.
         ///<summary>Highpass cutoff frequency in hz. 10.0 to 22000.0. Default = 5000.0.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4160,7 +4214,6 @@ namespace UnityEngine
     {
         internal AudioDistortionFilter(global::UnityEngine.EntityId id) : base(id) {}
         public AudioDistortionFilter() {}
-        // Distortion value. 0.0 to 1.0. Default = 0.5.
         ///<summary>Distortion value. 0.0 to 1.0. Default = 0.5.</summary>
         extern public float distortionLevel { get; set; }
     }
@@ -4173,7 +4226,6 @@ namespace UnityEngine
     {
         internal AudioEchoFilter(global::UnityEngine.EntityId id) : base(id) {}
         public AudioEchoFilter() {}
-        // Echo delay in ms. 10 to 5000. Default = 500.
         ///<summary>Echo delay in ms. 10 to 5000. Default = 500.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4194,7 +4246,6 @@ namespace UnityEngine
         ///</example>
         extern public float delay { get; set; }
 
-        // Echo decay per delay. 0 to 1. 1.0 = No decay, 0.0 = total decay (i.e. simple 1 line delay). Default = 0.5.
         ///<summary>Echo decay per delay. 0 to 1. 1.0 = No decay, 0.0 = total decay (i.e. simple 1 line delay). Default = 0.5.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4215,7 +4266,6 @@ namespace UnityEngine
         ///</example>
         extern public float decayRatio { get; set; }
 
-        // Volume of original signal to pass to output. 0.0 to 1.0. Default = 1.0.
         ///<summary>Volume of original signal to pass to output. 0.0 to 1.0. Default = 1.0.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4238,7 +4288,6 @@ namespace UnityEngine
         ///</example>
         extern public float dryMix { get; set; }
 
-        // Volume of echo signal to pass to output. 0.0 to 1.0. Default = 1.0.
         ///<summary>Volume of echo signal to pass to output. 0.0 to 1.0. Default = 1.0.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4271,7 +4320,6 @@ namespace UnityEngine
     {
         internal AudioChorusFilter(global::UnityEngine.EntityId id) : base(id) {}
         public AudioChorusFilter() {}
-        // Volume of original signal to pass to output. 0.0 to 1.0. Default = 0.5.
         ///<summary>Volume of original signal to pass to output. 0.0 to 1.0. Default = 0.5.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4290,7 +4338,6 @@ namespace UnityEngine
         ///</example>
         extern public float dryMix { get; set; }
 
-        // Volume of 1st chorus tap. 0.0 to 1.0. Default = 0.5.
         ///<summary>Volume of 1st chorus tap. 0.0 to 1.0. Default = 0.5.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4320,7 +4367,6 @@ namespace UnityEngine
         ///</example>
         extern public float wetMix1 { get; set; }
 
-        // Volume of 2nd chorus tap. This tap is 90 degrees out of phase of the first tap. 0.0 to 1.0. Default = 0.5.
         ///<summary>Volume of 2nd chorus tap. This tap is 90 degrees out of phase of the first tap. 0.0 to 1.0. Default = 0.5.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4350,7 +4396,6 @@ namespace UnityEngine
         ///</example>
         extern public float wetMix2 { get; set; }
 
-        // Volume of 3rd chorus tap. This tap is 90 degrees out of phase of the second tap. 0.0 to 1.0. Default = 0.5.
         ///<summary>Volume of 3rd chorus tap. This tap is 90 degrees out of phase of the second tap. 0.0 to 1.0. Default = 0.5.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4380,7 +4425,6 @@ namespace UnityEngine
         ///</example>
         extern public float wetMix3 { get; set; }
 
-        // Chorus delay in ms. 0.1 to 100.0. Default = 40.0 ms.
         ///<summary>Chorus delay in ms. 0.1 to 100.0. Default = 40.0 ms.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4400,7 +4444,6 @@ namespace UnityEngine
         ///</example>
         extern public float delay { get; set; }
 
-        // Chorus modulation rate in hz. 0.0 to 20.0. Default = 0.8 hz.
         ///<summary>Chorus modulation rate in hz. 0.0 to 20.0. Default = 0.8 hz.</summary>
         ///<example>
         ///  <code><![CDATA[
@@ -4420,7 +4463,6 @@ namespace UnityEngine
         ///</example>
         extern public float rate { get; set; }
 
-        //  Chorus modulation depth. 0.0 to 1.0. Default = 0.03.
         ///<summary>Chorus modulation depth. 0.0 to 1.0. Default = 0.03.</summary>
         extern public float depth { get; set; }
     }

@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Hierarchy;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -90,6 +91,13 @@ namespace UnityEngine.UIElements
         /// <param name="rebuildTree">Whether to refresh the tree data immediately. If <c>false</c>, call <see cref="BaseVerticalCollectionView.RefreshItems()"/>.</param>
         public virtual void AddItem(in TreeViewItemData<T> item, int parentId, int childIndex, bool rebuildTree = true)
         {
+            using var pooledAncestorIds = HashSetPool<int>.Get(out var ancestorIds);
+            if (!TryGetAncestorIds(parentId, item.id, ancestorIds))
+            {
+                Debug.LogError("TreeView item id " + item.id + " is already used by one of its ancestors. The item was ignored.");
+                return;
+            }
+
             HierarchyNode node;
 
             if (parentId == BaseTreeView.invalidId)
@@ -118,10 +126,8 @@ namespace UnityEngine.UIElements
                 treeDataController.ConvertTreeViewItemDataToHierarchy(
                     item.children,
                     (itemNode) => CreateNode(itemNode == HierarchyNode.Null ? parentNode : itemNode),
-                    (id, newNode) =>
-                {
-                    UpdateIdToNodeDictionary(id, newNode);
-                });
+                    (id, newNode) => UpdateIdToNodeDictionary(id, newNode),
+                    ancestorIds);
             }
 
             if (baseTreeView.autoExpand)

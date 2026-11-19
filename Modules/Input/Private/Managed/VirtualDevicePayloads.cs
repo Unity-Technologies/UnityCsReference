@@ -20,7 +20,7 @@ namespace UnityEngineInternal.Input
         /// </summary>
         PollingThread = 1,
 
-        /// <summary>Every state publish is held until <see cref="VirtualDeviceBackend.ReleaseDeferred"/>.</summary>
+        /// <summary>Everything the device reports, its registration and removal included, is held in order until <see cref="VirtualDeviceBackend.ReleaseDeferred"/>.</summary>
         Deferred = 2,
     }
 
@@ -88,11 +88,20 @@ namespace UnityEngineInternal.Input
     }
 
     /// <summary>
-    /// Payload for destroy, disconnect, reconfigure and poll-now.
+    /// Payload for destroy, disconnect and poll-now.
     /// </summary>
     internal struct VirtualDeviceHandleOnlyPayload
     {
         public int handle;
+    }
+
+    /// <summary>
+    /// Payload for reconfigure.
+    /// </summary>
+    internal struct VirtualDeviceReconfigurePayload
+    {
+        public int handle;
+        public Reconfiguration changed;
     }
 
     /// <summary>

@@ -116,7 +116,6 @@ internal readonly ref struct CommandContext
 /// duration of the <see cref="CommandSystem.GroupEnded"/> callback. Copy its contents if you need to
 /// retain them beyond the callback.
 /// </remarks>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal readonly ref struct GroupEndedContext
 {
     readonly HashSet<UnityEngine.Object> m_UndoObjects;

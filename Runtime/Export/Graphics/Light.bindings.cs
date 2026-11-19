@@ -113,12 +113,15 @@ namespace UnityEngine
 
         extern public void SetLightDirty();
 
+#pragma warning disable CS0618 // LightEvent and ShadowMapPass are obsolete
+        [Obsolete("Light.AddCommandBuffer is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void AddCommandBuffer(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer)
         {
             AddCommandBuffer(evt, buffer, UnityEngine.Rendering.ShadowMapPass.All);
         }
 
 
+        [Obsolete("Light.AddCommandBuffer is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void AddCommandBuffer(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask)
         {
             if (GraphicsSettings.isScriptableRenderPipelineEnabled)
@@ -129,11 +132,13 @@ namespace UnityEngine
         [FreeFunction("Light_Bindings::AddCommandBuffer", HasExplicitThis = true)]
         internal extern void AddCommandBufferInternal(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask);
 
+        [Obsolete("Light.AddCommandBufferAsync is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void AddCommandBufferAsync(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ComputeQueueType queueType)
         {
             AddCommandBufferAsync(evt, buffer, UnityEngine.Rendering.ShadowMapPass.All, queueType);
         }
 
+        [Obsolete("Light.AddCommandBufferAsync is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void AddCommandBufferAsync(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask, UnityEngine.Rendering.ComputeQueueType queueType)
         {
             if (GraphicsSettings.isScriptableRenderPipelineEnabled)
@@ -146,6 +151,7 @@ namespace UnityEngine
         [FreeFunction("Light_Bindings::AddCommandBufferAsync", HasExplicitThis = true)]
         internal extern void AddCommandBufferAsyncInternal(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask, UnityEngine.Rendering.ComputeQueueType queueType);
 
+        [Obsolete("Light.RemoveCommandBuffer is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void RemoveCommandBuffer(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer)
         {
             if (GraphicsSettings.isScriptableRenderPipelineEnabled)
@@ -156,6 +162,7 @@ namespace UnityEngine
         }
         [NativeMethod("RemoveCommandBuffer")]extern internal void RemoveCommandBufferInternal(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer);
 
+        [Obsolete("Light.RemoveCommandBuffers is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void RemoveCommandBuffers(UnityEngine.Rendering.LightEvent evt)
         {
             if (GraphicsSettings.isScriptableRenderPipelineEnabled)
@@ -166,6 +173,7 @@ namespace UnityEngine
         }
         [NativeMethod("RemoveCommandBuffers")] extern internal void RemoveCommandBuffersInternal(UnityEngine.Rendering.LightEvent evt);
 
+        [Obsolete("Light.RemoveAllCommandBuffers is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public void RemoveAllCommandBuffers()
         {
             if (GraphicsSettings.isScriptableRenderPipelineEnabled)
@@ -176,6 +184,7 @@ namespace UnityEngine
         }
         [NativeMethod("RemoveAllCommandBuffers")] extern internal void RemoveAllCommandBuffersInternal();
 
+        [Obsolete("Light.GetCommandBuffers is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.LightEvent evt)
         {
             if(GraphicsSettings.isScriptableRenderPipelineEnabled)
@@ -188,7 +197,9 @@ namespace UnityEngine
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal UnityEngine.Rendering.CommandBuffer[] GetCommandBuffersInternal(UnityEngine.Rendering.LightEvent evt);
 
+        [Obsolete("Light.commandBufferCount is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
         extern public int commandBufferCount { get; }
+#pragma warning restore CS0618
 
         [NativeProperty("LightType")] extern public LightType type { get; set; }
 

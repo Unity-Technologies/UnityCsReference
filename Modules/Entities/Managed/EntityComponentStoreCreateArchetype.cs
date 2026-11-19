@@ -153,7 +153,12 @@ namespace Unity.Entities
                 removedTypes += 2;
             }
 
-            return removedTypes > 0 ? GetOrCreateArchetype(types, count - removedTypes) : srcArchetype;
+            var typeCount = count - removedTypes;
+            var addGameObjectTag = srcArchetype->HasCompanionComponents && !srcArchetype->HasGameObjectEntities;
+            if (addGameObjectTag)
+                SortingUtilities.InsertSorted(types, typeCount++, ComponentType.FromTypeIndex(TypeManager.GetTypeIndex<GameObjectComponentStoreBridge.IsGameObject>()));
+
+            return removedTypes > 0 || addGameObjectTag ? GetOrCreateArchetype(types, typeCount) : srcArchetype;
         }
 
         // ----------------------------------------------------------------------------------------------------------

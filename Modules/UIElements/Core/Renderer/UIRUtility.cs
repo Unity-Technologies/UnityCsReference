@@ -9,7 +9,9 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Profiling;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Profiling;
+using UnityEngine.Rendering;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -360,6 +362,13 @@ namespace UnityEngine.UIElements
         // Copies srcRect of source 1:1 into target at dstPos (bottom-origin texels), keeping the stored bytes.
         public static void CopyRegion(RenderTexture source, RectInt srcRect, RenderTexture target, Vector2Int dstPos)
         {
+            if (CanCopyTexture(source, target))
+            {
+                Graphics.CopyTexture(source, 0, 0, srcRect.x, srcRect.y, srcRect.width, srcRect.height,
+                    target, 0, 0, dstPos.x, dstPos.y);
+                return;
+            }
+
             bool sourceDecodes = ConvertsSRGB(source);
             bool targetEncodes = ConvertsSRGB(target);
 
@@ -416,6 +425,55 @@ namespace UnityEngine.UIElements
                 Graphics.SetRenderTarget(previousActive);
                 GL.Viewport(CastToRect(previousViewport));
             }
+        }
+
+        // Stretches sourceUVRect of source over the whole target, filtered with the source's own filter mode. A
+        // negative rect height flips the rows. gammaToLinear decodes the sampled values once more, on top of any sRGB decode.
+        public static void Resample(RenderTexture source, Rect sourceUVRect, RenderTexture target, bool gammaToLinear)
+        {
+            var previousActive = RenderTexture.active;
+            var previousViewport = UIR.Utility.GetActiveViewport();
+            GL.PushMatrix();
+            try
+            {
+                s_PropertyBlock.Clear();
+                s_PropertyBlock.SetTexture(s_MainTexId, source);
+                s_PropertyBlock.SetFloat(s_ColorConversionId, gammaToLinear ? -1f : 0f);
+
+                GL.LoadPixelMatrix(0, target.width, 0, target.height);
+                Graphics.SetRenderTarget(target);
+                copyMaterial.SetPass(0);
+                UIR.Utility.SetPropertyBlock(s_PropertyBlock);
+
+                GL.Begin(GL.QUADS);
+                GL.TexCoord2(sourceUVRect.xMin, sourceUVRect.yMin);
+                GL.Vertex3(0f, 0f, 0f);
+                GL.TexCoord2(sourceUVRect.xMin, sourceUVRect.yMax);
+                GL.Vertex3(0f, target.height, 0f);
+                GL.TexCoord2(sourceUVRect.xMax, sourceUVRect.yMax);
+                GL.Vertex3(target.width, target.height, 0f);
+                GL.TexCoord2(sourceUVRect.xMax, sourceUVRect.yMin);
+                GL.Vertex3(target.width, 0f, 0f);
+                GL.End();
+            }
+            finally
+            {
+                GL.PopMatrix();
+                Graphics.SetRenderTarget(previousActive);
+                GL.Viewport(CastToRect(previousViewport));
+            }
+        }
+
+        // For the GL draws that write their vertex colors over the target, with blending off
+        public static void SetVertexColorPass() => copyMaterial.SetPass(1);
+
+        // Region CopyTexture is a silent no-op without copy support (WebGL 2). A raw copy between the sRGB and
+        // linear variants of a format stores the same bytes as the CopyRegion draw.
+        static bool CanCopyTexture(RenderTexture source, RenderTexture target)
+        {
+            return (SystemInfo.copyTextureSupport & CopyTextureSupport.Basic) != 0
+                && GraphicsFormatUtility.GetLinearFormat(source.graphicsFormat) == GraphicsFormatUtility.GetLinearFormat(target.graphicsFormat)
+                && source.antiAliasing == 1 && target.antiAliasing == 1;
         }
 
         // RenderTexture.sRGB reports the requested format; Gamma projects never decode or encode on read/write.

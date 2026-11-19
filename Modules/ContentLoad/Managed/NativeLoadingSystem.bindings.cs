@@ -93,6 +93,11 @@ namespace Unity.Loading.LowLevel
 
         public static extern void ReleaseAsync(ResourceHandle* handles, int count, LoadingResponseQueue resultQueue);
 
+        // Hands the handles' holds to the GC: each file is released once an UnloadUnusedAssets
+        // sweep finds none of its objects reachable (caller-owned holds always win). The handles are
+        // consumed: ReleaseAsync on them afterwards reports a failed release.
+        public static extern void ReleaseToCollector(ResourceHandle* handles, int count);
+
         public static extern void WaitForLoadCompletion(ResourceHandle* handles, int count);
 
         public static extern void WaitForReleaseCompletion(ResourceHandle* handles, int count);

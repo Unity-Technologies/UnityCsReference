@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Modules;
 using UnityEditor.Build;
@@ -11,11 +9,6 @@ using UnityEngine;
 
 internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtension
 {
-    private GUIContent m_StandaloneTarget = L10n.TextContent("Target Platform", "Destination platform for standalone build", null, null);
-    private GUIContent m_Architecture = L10n.TextContent("Architecture", "Build m_Architecture for standalone", null, null);
-    private BuildTarget[] m_StandaloneSubtargets;
-    private GUIContent[] m_StandaloneSubtargetStrings;
-
     protected bool m_HasIl2CppPlayers;
     protected bool m_HasCoreCLRPlayers;
     protected bool m_HasServerIl2CppPlayers;
@@ -32,47 +25,13 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         return namedBuildTarget == NamedBuildTarget.Server ? m_HasServerCoreCLRPlayers : m_HasCoreCLRPlayers;
     }
 
-    public static void SetArchitectureForPlatform(BuildTarget buildTarget, OSArchitecture architecture)
-    {
-        EditorUserBuildSettings.SetPlatformSettings(BuildPipeline.GetBuildTargetName(buildTarget), EditorUserBuildSettings.kSettingArchitecture, architecture.ToString().ToLower());
-    }
-
     public DesktopStandaloneBuildWindowExtension(bool hasIl2CppPlayers, bool hasCoreCLRPlayers, bool hasServerIl2CppPlayers, bool hasServerCoreCLRPlayers)
     {
-        #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
-        SetupStandaloneSubtargets();
-        #pragma warning restore UAL0015
-
         m_IsRunningOnHostPlatform = Application.platform == GetHostPlatform();
         m_HasIl2CppPlayers = hasIl2CppPlayers;
         m_HasCoreCLRPlayers = hasCoreCLRPlayers;
         m_HasServerIl2CppPlayers = hasServerIl2CppPlayers;
         m_HasServerCoreCLRPlayers = hasServerCoreCLRPlayers;
-    }
-
-    private void SetupStandaloneSubtargets()
-    {
-        List<BuildTarget> standaloneSubtargetsList = new List<BuildTarget>();
-        List<GUIContent> standaloneSubtargetStringsList = new List<GUIContent>();
-
-        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneWindows))
-        {
-            standaloneSubtargetsList.Add(BuildTarget.StandaloneWindows);
-            standaloneSubtargetStringsList.Add(L10n.TextContent("Windows", null, null, null));
-        }
-        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX))
-        {
-            standaloneSubtargetsList.Add(BuildTarget.StandaloneOSX);
-            standaloneSubtargetStringsList.Add(L10n.TextContent("macOS", null, null, null));
-        }
-        if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64))
-        {
-            standaloneSubtargetsList.Add(BuildTarget.StandaloneLinux64);
-            standaloneSubtargetStringsList.Add(L10n.TextContent("Linux", null, null, null));
-        }
-
-        m_StandaloneSubtargets = standaloneSubtargetsList.ToArray();
-        m_StandaloneSubtargetStrings = standaloneSubtargetStringsList.ToArray();
     }
 
     internal static BuildTarget GetBestStandaloneTarget(BuildTarget selectedTarget)
@@ -90,106 +49,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         return BuildTarget.StandaloneWindows64;
     }
 
-    struct BuildTargetInfo
-    {
-        public BuildTarget buildTarget;
-        public OSArchitecture architecture;
-    }
-
-    private static BuildTarget DefaultTargetForPlatform(BuildTarget target)
-    {
-        switch (target)
-        {
-            case BuildTarget.StandaloneWindows:
-            case BuildTarget.StandaloneWindows64:
-                return BuildTarget.StandaloneWindows64;
-                // Deprecated
-#pragma warning disable 612, 618
-            case BuildTarget.StandaloneLinux:
-            case BuildTarget.StandaloneLinuxUniversal:
-#pragma warning restore 612, 618
-            case BuildTarget.StandaloneLinux64:
-                return BuildTarget.StandaloneLinux64;
-            case BuildTarget.StandaloneOSX:
-                // Deprecated
-#pragma warning disable 612, 618
-            case BuildTarget.StandaloneOSXIntel:
-            case BuildTarget.StandaloneOSXIntel64:
-#pragma warning restore 612, 618
-                return BuildTarget.StandaloneOSX;
-            default:
-                return target;
-        }
-    }
-
-    private static BuildTargetInfo DefaultArchitectureForTarget(BuildTarget target)
-    {
-        switch (target)
-        {
-            case BuildTarget.StandaloneWindows:
-            case BuildTarget.StandaloneWindows64:
-                return new BuildTargetInfo
-                {
-                    buildTarget = BuildTarget.StandaloneWindows64,
-                    architecture = OSArchitecture.x64
-                };
-                // Deprecated
-#pragma warning disable 612, 618
-            case BuildTarget.StandaloneLinux:
-            case BuildTarget.StandaloneLinuxUniversal:
-#pragma warning restore 612, 618
-            case BuildTarget.StandaloneLinux64:
-                return new BuildTargetInfo
-                {
-                    buildTarget = BuildTarget.StandaloneLinux64,
-                    architecture = OSArchitecture.x64
-                };
-            case BuildTarget.StandaloneOSX:
-                // Deprecated
-#pragma warning disable 612, 618
-            case BuildTarget.StandaloneOSXIntel:
-            case BuildTarget.StandaloneOSXIntel64:
-#pragma warning restore 612, 618
-                return new BuildTargetInfo
-                {
-                    buildTarget = BuildTarget.StandaloneOSX,
-                    architecture = OSArchitecture.ARM64
-                };
-            default:
-                return new BuildTargetInfo
-                {
-                    buildTarget = target,
-                    architecture = OSArchitecture.x64
-                };
-        }
-    }
-
     protected virtual void ShowArchitectureSpecificOptions() {}
-
-    public override void ShowPlatformBuildOptions()
-    {
-        BuildTarget selectedTarget = GetBestStandaloneTarget(EditorUserBuildSettings.selectedStandaloneTarget);
-        BuildTargetInfo newTarget = new BuildTargetInfo {buildTarget = EditorUserBuildSettings.selectedStandaloneTarget};
-
-        int selectedIndex = Math.Max(0, Array.IndexOf(m_StandaloneSubtargets, DefaultTargetForPlatform(selectedTarget)));
-        int newIndex = EditorGUILayout.Popup(m_StandaloneTarget, selectedIndex, m_StandaloneSubtargetStrings);
-
-        if (newIndex != selectedIndex)
-        {
-            newTarget = DefaultArchitectureForTarget(m_StandaloneSubtargets[newIndex]);
-        }
-
-        if (newTarget.buildTarget != EditorUserBuildSettings.selectedStandaloneTarget)
-        {
-            // setting selectedStandaloneTarget has side-effect: stops playmode
-            EditorUserBuildSettings.selectedStandaloneTarget = newTarget.buildTarget;
-            SetArchitectureForPlatform(newTarget.buildTarget, newTarget.architecture);
-            GUIUtility.ExitGUI();
-        }
-
-        ShowArchitectureSpecificOptions();
-        ShowBackendErrorIfNeeded();
-    }
 
     protected void ShowBackendErrorIfNeeded()
     {
@@ -251,9 +111,4 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 
     protected abstract RuntimePlatform GetHostPlatform();
     protected abstract string GetHostPlatformName();
-
-    public override bool ShouldDrawWaitForManagedDebugger()
-    {
-        return true;
-    }
 }

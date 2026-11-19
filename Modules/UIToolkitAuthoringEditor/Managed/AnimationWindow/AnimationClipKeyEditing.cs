@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 using Object = UnityEngine.Object;
 
 namespace Unity.UIToolkit.Editor
@@ -121,6 +123,7 @@ namespace Unity.UIToolkit.Editor
 
         internal static void AddOrReplaceDiscreteKey(AnimationClip clip, EditorCurveBinding binding, float time, int value)
         {
+            MigrateLegacyGridLineCurve(clip, binding);
             var curve = AnimationUtility.GetDiscreteCurve(clip, binding) ?? Array.Empty<DiscreteKeyframe>();
             curve = AddOrReplaceDiscreteKey(curve, time, value);
             AnimationUtility.SetDiscreteCurve(clip, binding, curve);
@@ -181,6 +184,62 @@ namespace Unity.UIToolkit.Editor
 
             AnimationUtility.SetObjectReferenceCurve(clip, binding, keys);
             AnimationUtility.SetObjectReferenceCurve(clip, legacy, null);
+        }
+
+        static bool IsGridLineProperty(string name) => name switch
+        {
+            nameof(StylePropertyId.GridColumnStart) or nameof(StylePropertyId.GridColumnEnd)
+                or nameof(StylePropertyId.GridRowStart) or nameof(StylePropertyId.GridRowEnd) => true,
+            _ => false,
+        };
+
+        // Grid line clips from 6.7 betas hold the raw GridLine value on the bare property, which no longer binds.
+        internal static void MigrateLegacyGridLineCurve(AnimationClip clip, EditorCurveBinding binding)
+        {
+            var suffix = UIAnimationPath.SubChannelSuffix(binding.propertyName);
+            if (suffix != ".placement" && suffix != ".value")
+                return;
+            if (!IsGridLineProperty(UIAnimationPath.BaseName(binding.propertyName)))
+                return;
+
+            var legacy = binding;
+            legacy.propertyName = binding.propertyName.Substring(0, binding.propertyName.Length - suffix.Length);
+            var legacyKeys = AnimationUtility.GetDiscreteCurve(clip, legacy);
+            if (legacyKeys == null || legacyKeys.Length == 0)
+                return;
+
+            MergeLegacyGridLineKeys(clip, legacy, ".placement", UIAnimationBinder.kGridLinePlacementChannel, legacyKeys);
+            MergeLegacyGridLineKeys(clip, legacy, ".value", UIAnimationBinder.kGridLineValueChannel, legacyKeys);
+            AnimationUtility.SetDiscreteCurve(clip, legacy, null);
+        }
+
+        static void MergeLegacyGridLineKeys(AnimationClip clip, EditorCurveBinding legacy, string suffix, int channel, DiscreteKeyframe[] legacyKeys)
+        {
+            var binding = legacy;
+            binding.propertyName = legacy.propertyName + suffix;
+            var keys = AnimationUtility.GetDiscreteCurve(clip, binding) ?? Array.Empty<DiscreteKeyframe>();
+
+            // Keys already recorded under the new name win on time collisions.
+            var merged = new List<DiscreteKeyframe>(keys);
+            foreach (var legacyKey in legacyKeys)
+            {
+                bool collides = false;
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    if (Mathf.Approximately(keys[i].time, legacyKey.time))
+                    {
+                        collides = true;
+                        break;
+                    }
+                }
+                if (!collides)
+                {
+                    var gridLine = GridLine.FromRawValue(legacyKey.value);
+                    merged.Add(new DiscreteKeyframe { time = legacyKey.time, value = UIAnimationBinder.ReadGridLineChannel(gridLine, channel) });
+                }
+            }
+            merged.Sort((a, b) => a.time.CompareTo(b.time));
+            AnimationUtility.SetDiscreteCurve(clip, binding, merged.ToArray());
         }
 
         internal static void AddOrReplaceFloatKey(AnimationCurve curve, float time, float value)

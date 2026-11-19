@@ -24,55 +24,27 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private const string k_LayoutWindowDir = "Library/UserSettings/Layouts";
         private const string k_LayoutWindowExt = "wlt";
 
-        private const string k_CurrentModeKey = "vpmode";
-        private const string k_CurrentWindowIdKey = "vpwindow-id";
-        private const string k_CurrentWindowSetKey = "vpwindow-set";
 
         private const string k_WindowId = "VPWindow";
 
         private const string k_UnknownPlayerWindowTitle = "Unknown Player";
 
+        [NoAutoStaticsCleanup] // Modules are never unloaded, so this survives code reloads; it holds no user code.
+        static string s_CurrentMode;
+        // The window is kept by id, not by proxy: the proxy wraps a native window that can be destroyed.
+        [NoAutoStaticsCleanup] // Modules are never unloaded, so this survives code reloads; it holds no user code.
+        static EntityId? s_CurrentWindowId;
+
         private static string CurrentMode
         {
-            get => SessionState.GetString(k_CurrentModeKey, string.Empty);
-            set
-            {
-                if (value == null)
-                {
-                    SessionState.EraseString(k_CurrentModeKey);
-                }
-                else
-                {
-                    SessionState.SetString(k_CurrentModeKey, value);
-                }
-            }
+            get => s_CurrentMode ?? string.Empty;
+            set => s_CurrentMode = value;
         }
 
         public static ContainerWindowProxy CurrentWindow
         {
-            get
-            {
-                if (SessionState.GetBool(k_CurrentWindowSetKey, false))
-                {
-                    var value = SessionState.GetEntityId(k_CurrentWindowIdKey, EntityId.None);
-                    return ContainerWindowProxy.FromInstanceID(value);
-                }
-
-                return null;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    SessionState.EraseEntityId(k_CurrentWindowIdKey);
-                    SessionState.EraseBool(k_CurrentWindowSetKey);
-                }
-                else
-                {
-                    SessionState.SetEntityId(k_CurrentWindowIdKey, value.GetEntityId());
-                    SessionState.SetBool(k_CurrentWindowSetKey, true);
-                }
-            }
+            get => s_CurrentWindowId is { } id ? ContainerWindowProxy.FromInstanceID(id) : null;
+            set => s_CurrentWindowId = value?.GetEntityId();
         }
 
         [NoAutoStaticsCleanup] // sourced from FileSystem.Delegates, itself local to this long-living module assembly; never goes stale on ordinary CodeReload
@@ -181,6 +153,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (!forceRebuild && File.Exists(cachedLayoutWindowPath))
                 {
                     CurrentWindow = WindowLayout.LoadWindowLayout(k_WindowId, cachedLayoutWindowPath);
+
+                    // UUM-155623: layouts cached while the Play Mode Tools window name was not recognized were saved
+                    // without that window, so rebuild them instead of reusing them.
+                    if (IsLayoutWindowMissing(CurrentWindow, layoutFlags, LayoutFlags.EntitiesPlayModeToolsWindow))
+                    {
+                        CurrentWindow.Close();
+                        CurrentWindow = null;
+                    }
                 }
 
                 // Else dynamically build a .WLT window representing this layout flag config.
@@ -245,6 +225,22 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 CurrentWindow.Close();
                 CurrentWindow = null;
             }
+        }
+
+        // Whether the given flag is enabled and supported but none of its windows is open in the VP container.
+        internal static bool IsLayoutWindowMissing(ContainerWindowProxy vp, LayoutFlags layoutFlags, LayoutFlags flag)
+        {
+            if (!vp || !layoutFlags.HasFlag(flag) || !LayoutFlagsUtil.IsLayoutSupported(flag))
+                return false;
+
+            var container = vp.BackingObject;
+            foreach (var window in Resources.FindObjectsOfTypeAll<EditorWindow>())
+            {
+                if (window?.m_Parent?.window == container && LayoutFlagsUtil.IsWindowTypeForLayout(flag, window.GetType().FullName))
+                    return false;
+            }
+
+            return true;
         }
 
         // Iterates hierarchy windows in the VP container and delegates each to the core

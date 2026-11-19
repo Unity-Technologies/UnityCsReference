@@ -9,7 +9,7 @@ namespace UnityEngine.UIElements;
 // Cascade tier of a style sheet, compared before selector specificity. Sorting rank is
 // Builtin < UserTheme < Default, so regular sheets override themes, which override Unity content.
 // Default doubles as "unset": imported sheets with Default inherit the importing entry's tier.
-[VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+[VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
 internal enum StyleSheetPriority
 {
     Default,

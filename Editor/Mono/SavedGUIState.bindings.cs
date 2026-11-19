@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 using UnityEngineInternal;
 
 namespace UnityEditor
@@ -82,24 +83,29 @@ namespace UnityEditor
             }
         }
 
-        // UUM-145914: managed-only backup used by the native re-entrancy path (GUIView::OnInputEvent).
+        // UUM-145914: managed-only backup used by the native re-entrancy path (GUIState::SaveReentrantState).
         [AutoStaticsCleanupOnCodeReload] // cleared on reload so no captured layout state survives a domain reload
-        static readonly Stack<(SavedGUIState guiState, SavedEditorGUIState editorState)> s_ReentrantLayoutStates = new();
+        static readonly Stack<(SavedGUIState guiState, SavedEditorGUIState editorState, Event currentEvent)> s_ReentrantLayoutStates = new();
 
+        [RequiredByNativeCode]
         internal static void PushReentrantLayoutState()
         {
             SavedGUIState state = new SavedGUIState();
             state.CaptureManaged();
-            s_ReentrantLayoutStates.Push((state, SavedEditorGUIState.Capture()));
+            s_ReentrantLayoutStates.Push((state, SavedEditorGUIState.Capture(), Event.current));
         }
 
+        [RequiredByNativeCode]
         internal static void PopReentrantLayoutState()
         {
             if (s_ReentrantLayoutStates.Count > 0)
             {
-                var (guiState, editorState) = s_ReentrantLayoutStates.Pop();
+                var (guiState, editorState, currentEvent) = s_ReentrantLayoutStates.Pop();
                 editorState.Apply();
                 guiState.ApplyManaged();
+                // A nested root on another display makes its own master event current
+                if (currentEvent != null)
+                    Event.current = currentEvent;
             }
         }
     }

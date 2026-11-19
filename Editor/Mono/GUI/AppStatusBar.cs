@@ -21,9 +21,7 @@ namespace UnityEditor
         {
             public const int spacing = 4;
 
-            [NoAutoStaticsCleanup]
             public static readonly GUILayoutOption progressBarWidth = GUILayout.Width(180);
-            [NoAutoStaticsCleanup]
             public static readonly GUILayoutOption progressLabelMaxWidth = GUILayout.MaxWidth(230);
             public static readonly GUIStyle background = "AppToolbar";
             public static readonly GUIStyle statusLabel = EditorStyles.FromUSS(EditorStyles.label, "status-bar-label");

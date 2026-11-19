@@ -14,3 +14,4 @@ using System.Runtime.CompilerServices;
 
 // tests specific
 [assembly: InternalsVisibleTo("Assembly-CSharp-firstpass-testable")]
+[assembly: InternalsVisibleTo("Unity.Modules.UnityWebRequest.Tests.Playmode")]

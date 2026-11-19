@@ -38,19 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshActionButton(UIError error, IPackageVersion packageVersion)
         {
             Action buttonAction;
-            if (error.errorCode is UIErrorCode.UpmError_NotAcquired)
-            {
-                var productUrl = packageVersion?.package?.product?.productUrl;
-                if (string.IsNullOrEmpty(productUrl))
-                    return;
-                buttonAction = () =>
-                {
-                    m_Application.OpenURL(productUrl);
-                    PackageManagerWindowAnalytics.SendEvent("viewProductInAssetStoreFromAlertHelpBox", packageVersion.uniqueId);
-                };
-                SetCustomLinkButton(L10n.Tr("View in Asset Store", null), buttonAction, productUrl);
-            }
-            else if (!string.IsNullOrEmpty(error.readMoreURL))
+            if (!string.IsNullOrEmpty(error.readMoreURL))
             {
                 buttonAction = () =>
                 {

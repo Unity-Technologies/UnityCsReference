@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Unity.Scripting.LifecycleManagement;
-using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -173,9 +172,9 @@ static partial class VisualElementUtility
 
     public static PanelSettings GetPanelSettings(this VisualElement element)
     {
-        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
+        if (AuthoringContext.For(element).Session is { } session)
         {
-            return stage.Context.PanelSettings;
+            return session.Document.PanelSettings;
         }
 
         var panelComponent = element.GetFirstOfType<IPanelComponentRootElement>()?.panelComponent;

@@ -1899,6 +1899,11 @@ namespace UnityEditorInternal
             GetSampleTimeInNeighboringFrames(false, selectedSampleIndex, selectedMarkerId, frameIndex, selectedThreadIndex, selectedThreadId, s_CachedSamplesContinuedInNextFrame, ref totalAsyncDurationNs, ref totalAsyncFramesCount);
         }
 
+        internal static string FormatSelectionDuration(float durationMs)
+        {
+            return string.Format(CultureInfo.InvariantCulture, durationMs >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", durationMs);
+        }
+
         void DoSelectionTooltip(int frameIndex, Rect fullRect)
         {
             // Draw selected tooltip
@@ -1908,7 +1913,7 @@ namespace UnityEditorInternal
             bool hasCallStack = m_SelectedEntry.hasCallstack;
             if (callStackNeedsRegeneration || m_SelectedEntry.cachedSelectionTooltipContent == null)
             {
-                string durationString = string.Format(m_SelectedEntry.duration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.duration);
+                string durationString = FormatSelectionDuration(m_SelectedEntry.duration);
 
                 System.Text.StringBuilder text = new System.Text.StringBuilder();
                 if (m_SelectedEntry.nonProxyName != null)
@@ -1936,7 +1941,7 @@ namespace UnityEditorInternal
                 if (totalAsyncFramesCount > 1)
                 {
                     var totalAsyncDuration = totalAsyncDurationNs * 1e-6f;
-                    var totalAsyncDurationString = string.Format(totalAsyncDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", totalAsyncDuration);
+                    var totalAsyncDurationString = FormatSelectionDuration(totalAsyncDuration);
                     text.Append(string.Format(styles.localizedStringTotalAcrossFrames, totalAsyncDurationString, totalAsyncFramesCount, selectedThreadName));
                 }
 
@@ -1947,13 +1952,13 @@ namespace UnityEditorInternal
 
                     if (m_SelectedEntry.instanceCountForThread > 1)
                     {
-                        string totalDurationForThreadString = string.Format(m_SelectedEntry.totalDurationForThread >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDurationForThread);
+                        string totalDurationForThreadString = FormatSelectionDuration(m_SelectedEntry.totalDurationForThread);
                         text.Append(string.Format(styles.localizedStringTotalInThread, totalDurationForThreadString, m_SelectedEntry.instanceCountForThread, selectedThreadName));
                     }
 
                     if (m_SelectedEntry.instanceCountForFrame > m_SelectedEntry.instanceCountForThread)
                     {
-                        string totalDurationForFrameString = string.Format(m_SelectedEntry.totalDurationForFrame >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDurationForFrame);
+                        string totalDurationForFrameString = FormatSelectionDuration(m_SelectedEntry.totalDurationForFrame);
                         text.Append(string.Format(styles.localizedStringTotalInFrame, totalDurationForFrameString, m_SelectedEntry.instanceCountForFrame, m_SelectedEntry.threadCount));
                     }
                 }

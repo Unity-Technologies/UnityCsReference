@@ -3,17 +3,23 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class OpenManifestExternallyAction : PackageAction
 {
+    private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
+
+    public OpenManifestExternallyAction(IInternalEditorUtilityProxy internalEditorUtilityProxy)
+    {
+        m_InternalEditorUtilityProxy = internalEditorUtilityProxy;
+    }
+
     private bool TryOpenManifest(IPackageVersion version)
     {
         var path = IOUtils.PathsCombine(version.localPath, "package.json");
-        if (InternalEditorUtility.OpenFileAtLineExternal(path, 1, 0))
+        if (m_InternalEditorUtilityProxy.OpenFileAtLineExternal(path, 1, 0))
             return true;
 
         Debug.LogError($"[PackageManagerWindow] Could not open package manifest {path} externally. Please check that the file exists and that your script editor is set up correctly.");

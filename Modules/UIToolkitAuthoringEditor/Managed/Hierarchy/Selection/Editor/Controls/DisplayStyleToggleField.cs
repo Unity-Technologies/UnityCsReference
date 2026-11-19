@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using Unity.Scripting.LifecycleManagement;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -17,7 +16,6 @@ namespace Unity.UIToolkit.Editor
         static readonly string s_TextModifierClassName = "unity-toggle-button-group_display-style-field--text";
 
         // Immutable button descriptor table (name/enum/label/tooltip); holds no reloadable references.
-        [NoAutoStaticsCleanup]
         static readonly (string name, DisplayStyle value, string label, string tooltip)[] k_Buttons =
         {
             ("flex", DisplayStyle.Flex, "Flex", "Turns the element into a flexible container for aligning and distributing items."),

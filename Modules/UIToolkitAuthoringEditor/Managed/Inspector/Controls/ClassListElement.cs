@@ -59,7 +59,8 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
 
     VisualElement m_Target;
     bool m_IsReadOnly;
-    ThemeStyleSheet m_ThemeStyleSheet;
+    StyleSheet m_ThemeStyleSheet;
+    AuthoringContext m_Context;
 
     public VisualElement Target
     {
@@ -71,6 +72,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
             Release(m_Target);
             m_Target = value;
             Acquire(m_Target);
+            UpdateContext();
             RefreshClassList();
         }
     }
@@ -123,13 +125,12 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
         {
             case AttachToPanelEvent:
             {
-                UICommandQueue.RegisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
-                m_ThemeStyleSheet = GetCanvasThemeQuery.Get();
+                UpdateContext();
                 break;
             }
             case DetachFromPanelEvent:
             {
-                UICommandQueue.UnregisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
+                SetContext(null);
                 break;
             }
         }
@@ -169,6 +170,24 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
         if (evt.destinationPanel is Panel p)
             p.RegisterChangeProcessor(this);
         RefreshClassList();
+    }
+
+    // The context of the target element answers the theme query and sends theme changes. Followed while this
+    // list is on a panel.
+    void UpdateContext() => SetContext(panel != null ? AuthoringContext.For(m_Target) : null);
+
+    void SetContext(AuthoringContext context)
+    {
+        if (m_Context == context)
+            return;
+
+        m_Context?.Messages.UnregisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
+        m_Context = context;
+        if (m_Context == null)
+            return;
+
+        m_Context.Messages.RegisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
+        m_ThemeStyleSheet = GetCanvasThemeQuery.Get(m_Context);
     }
 
     void OnPreviewThemeChanged(in CommandContext context)
@@ -376,7 +395,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
 
             using (var _ = UICommandQueue.BeginGroup(ExtractInlineStylesToNewClassCommand.CommandUndoName))
             {
-                var activeStyleSheet = GetActiveStyleSheetQuery.Get();
+                var activeStyleSheet = GetActiveStyleSheetQuery.Get(AuthoringContext.For(target));
                 if (activeStyleSheet == null)
                 {
                     var ussPath = StyleSheetAssetUtilities.DisplaySaveFileDialogForUSS();
@@ -384,7 +403,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
                         return;
 
                     CreateStyleSheetCommand.Execute(CommandSources.Inspector, vta, ussPath);
-                    activeStyleSheet = GetActiveStyleSheetQuery.Get();
+                    activeStyleSheet = GetActiveStyleSheetQuery.Get(AuthoringContext.For(target));
                 }
 
                 if (activeStyleSheet == null)
@@ -486,12 +505,11 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
 
         if (StyleSheetUtility.TryGetFirstRuleWithSimpleClassSelector(sheets, className, out var rule))
         {
-            using var selectRuleCommand = RequestSelectionQuery<StyleRule>.GetPooled(CommandSources.Inspector, rule);
-            UICommandQueue.Execute(selectRuleCommand);
+            RequestSelectionQuery<StyleRule>.Execute(AuthoringContext.For(target), CommandSources.Inspector, rule);
             return;
         }
 
-        var activeStyleSheet = GetActiveStyleSheetQuery.Get();
+        var activeStyleSheet = GetActiveStyleSheetQuery.Get(AuthoringContext.For(target));
         if (activeStyleSheet == null)
         {
             var ussPath = StyleSheetAssetUtilities.DisplaySaveFileDialogForUSS();
@@ -499,7 +517,7 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
                 return;
 
             CreateStyleSheetCommand.Execute(CommandSources.Inspector, vta, ussPath);
-            activeStyleSheet = GetActiveStyleSheetQuery.Get();
+            activeStyleSheet = GetActiveStyleSheetQuery.Get(AuthoringContext.For(target));
         }
 
         if (activeStyleSheet == null)
@@ -514,7 +532,8 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
 
         AddStyleRuleCommand.Execute(CommandSources.Inspector, activeStyleSheet, selectorString);
 
-        RequestSelectionQuery<StyleRule>.Execute(CommandSources.Inspector, activeStyleSheet.rules[^1]);
+        RequestSelectionQuery<StyleRule>.Execute(AuthoringContext.For(target), CommandSources.Inspector,
+            activeStyleSheet.rules[^1]);
     }
 
     void ResizeClassList(VisualElement element, int count, CodeLoadScopedPool<ClassPill> pool)

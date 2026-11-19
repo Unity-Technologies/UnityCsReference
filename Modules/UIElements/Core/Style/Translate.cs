@@ -91,7 +91,6 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private bool m_isNone;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool IsNone() => m_isNone;
 
         /// <undoc/>

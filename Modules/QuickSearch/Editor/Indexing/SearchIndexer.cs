@@ -11,7 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Unity.Profiling;
-using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -25,7 +24,6 @@ namespace UnityEditor.Search
         /// <summary>
         /// Represents a null search result.
         /// </summary>
-        [NoAutoStaticsCleanup]
         public static readonly SearchResult nil = new SearchResult(-1);
 
         /// <summary>Id of the document containing that result.</summary>
@@ -151,7 +149,6 @@ namespace UnityEditor.Search
     /// </summary>
     public readonly struct SearchDocument : IEquatable<SearchDocument>, IComparable<SearchDocument>
     {
-        [NoAutoStaticsCleanup]
         internal static readonly SearchDocument invalid = new SearchDocument();
 
         public readonly string id;
@@ -379,12 +376,12 @@ namespace UnityEditor.Search
             m_Storage = storage;
         }
 
-#pragma warning disable UA5000 // Frees the native LMDB storage; Destroy is thread-safe, so the finalizer is the sole safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Frees the native LMDB storage; Destroy is thread-safe, so the finalizer is the sole safety net when Dispose is missed.
         ~SearchIndexer()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public void Dispose()
         {

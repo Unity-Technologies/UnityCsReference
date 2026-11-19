@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements
     /// Makes a field for entering aspect ratio.
     /// </summary>
     [UxmlElement]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class RatioField : TextValueField<Ratio>
     {
         /// <summary>

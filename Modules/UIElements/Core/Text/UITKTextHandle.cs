@@ -400,8 +400,8 @@ namespace UnityEngine.UIElements
 
         public bool IsElided()
         {
-            if (string.IsNullOrEmpty(m_TextElement.text)) // impossible to differentiate between an empty string and a fully truncated string.
-                return true;
+            if (string.IsNullOrEmpty(m_TextElement.text) && !m_TextElement.showPlaceholderText)
+                return false;
 
             return m_IsElided;
         }

@@ -12,7 +12,7 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial struct MatchedRule
     {
         public readonly SelectorMatchRecord matchRecord;
@@ -68,7 +68,7 @@ namespace UnityEngine.UIElements
         public static IEqualityComparer<MatchedRule> lineNumberFullPathComparer = new LineNumberFullPathEqualityComparer();
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class MatchedRulesExtractor
     {
         [NoAutoStaticsCleanup]
@@ -76,11 +76,9 @@ namespace UnityEngine.UIElements
 
         private Func<StyleSheet, string> m_GetStyleSheetPath;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal HashSet<MatchedRule> selectedElementRules = new HashSet<MatchedRule>(MatchedRule.lineNumberFullPathComparer);
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal HashSet<string> selectedElementStylesheets = new HashSet<string>();
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal List<SelectorMatchRecord> matchRecords = new List<SelectorMatchRecord>();
 
         public IEnumerable<MatchedRule> GetMatchedRules() => selectedElementRules;

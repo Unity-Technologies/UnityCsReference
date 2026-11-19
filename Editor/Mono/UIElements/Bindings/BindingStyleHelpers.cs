@@ -12,7 +12,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.EntitiesModule")]
     internal static partial class BindingsStyleHelpers
     {
         enum DrivenPropertyState
@@ -45,11 +45,11 @@ namespace UnityEditor.UIElements
 
         const string k_ScrollTrackingHookedKey = "unity-prefab-override-scroll-tracked";
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal delegate void HandleRightClickMenuDelegate(VisualElement element, ref bool handled);
 
         // Lets us bypass the default right click menu to show our own.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [AutoStaticsCleanupOnCodeReload]
         // Optional hook installed by the inspector UIs that provide their own context menu; each of them
         // re-installs it through its own lifecycle after a code reload.
@@ -125,6 +125,7 @@ namespace UnityEditor.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.EntitiesModule")]
         internal static void UpdateElementStyle(VisualElement element, SerializedProperty prop)
         {
             if (element == null)
@@ -278,6 +279,14 @@ namespace UnityEditor.UIElements
                 PrefabUtility.GetCorrespondingObjectFromSource(comp) == null;
         }
 
+        // A data component has no Object, so it is checked by EntityId.
+        static bool IsAddedComponentOverride(SerializedObject serializedObject)
+        {
+            if (serializedObject.isTargetDataComponent)
+                return PrefabUtility.IsAddedDataComponentOverride(serializedObject.targetEntityId);
+            return ComponentIsPrefabOverride(serializedObject.targetObject as Component);
+        }
+
         private static void UpdatePrefabStateStyleFromProperty(VisualElement element, SerializedProperty prop)
         {
             bool handlePrefabState = false;
@@ -286,7 +295,7 @@ namespace UnityEditor.UIElements
             {
                 // This can throw if the serialized object changes type under our feet
                 handlePrefabState = prop.isInstantiatedPrefab &&
-                    (prop.prefabOverride || ComponentIsPrefabOverride(prop.serializedObject.targetObject as Component));
+                    (prop.prefabOverride || IsAddedComponentOverride(prop.serializedObject));
             }
             catch
             {
@@ -549,6 +558,7 @@ namespace UnityEditor.UIElements
             field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, CallbackOptions.TrickleDown);
         }
 
+        [VisibleToOtherModules("UnityEditor.EntitiesModule")]
         internal static void RegisterRightClickMenu<TValue>(BaseField<TValue> field, SerializedProperty property)
         {
             field.userData = property.Copy();

@@ -67,6 +67,8 @@ namespace UnityEditor.UIElements
                 if (m_ColorSpace == value)
                     return;
                 m_ColorSpace = value;
+                if (panel != null)
+                    UpdateGradientTexture();
                 NotifyPropertyChanged(colorSpaceProperty);
             }
         }
@@ -210,6 +212,11 @@ namespace UnityEditor.UIElements
             if (isShowingGradientPicker)
                 GradientPicker.CloseWindow(false);
 
+            DestroyPreviewTexture();
+        }
+
+        void DestroyPreviewTexture()
+        {
             if (m_GradientPreview.style.backgroundImage.value.texture != null)
             {
                 Object.DestroyImmediate(m_GradientPreview.style.backgroundImage.value.texture);
@@ -285,12 +292,12 @@ namespace UnityEditor.UIElements
             if (m_ValueNull || showMixedValue)
             {
                 visualInput.style.backgroundImage = m_DefaultBackground;
-                m_GradientPreview.style.backgroundImage = m_DefaultBackground;
+                DestroyPreviewTexture();
             }
             else
             {
                 visualInput.style.backgroundImage = StyleKeyword.Null;
-                Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, m_GradientPreview.resolvedStyle.backgroundImage.texture, colorSpace == ColorSpace.Linear);
+                Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, m_GradientPreview.style.backgroundImage.value.texture, colorSpace == ColorSpace.Linear);
                 m_GradientPreview.style.backgroundImage = gradientTexture;
                 IncrementVersion(VersionChangeType.Repaint); // since the Texture2D object can be reused, force dirty because the backgroundImage change will only trigger the Dirty if the Texture2D objects are different.
             }
@@ -315,6 +322,9 @@ namespace UnityEditor.UIElements
 
         public override void SetValueWithoutNotify(Gradient newValue)
         {
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
+
             m_ValueNull = newValue == null;
             if (newValue != null)
             {

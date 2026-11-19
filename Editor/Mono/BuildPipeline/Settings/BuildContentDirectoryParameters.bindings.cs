@@ -117,6 +117,10 @@ namespace UnityEditor
         /// When set, script compilation is skipped and the provided TypeDB is serialized to disk for use by the build pipeline.
         /// </summary>
         internal Build.Player.TypeDB precompiledTypeDB { get; set; }
+
+        // Internal: player data build. The global game managers are written as content files. Set by the
+        // content-directory player build and by its tests.
+        internal bool playerDataBuild { get; set; }
     }
 }
 

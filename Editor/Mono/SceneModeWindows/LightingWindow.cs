@@ -25,7 +25,6 @@ namespace UnityEditor
             {
                 L10n.TextContent("Scene", null, null, null),
                 L10n.TextContent("Environment", null, null, null),
-                L10n.TextContent("Realtime Lightmaps", null, null, null),
                 L10n.TextContent("Baked Lightmaps", null, null, null)
             };
 
@@ -101,7 +100,6 @@ namespace UnityEditor
         {
             LightingSettings = 0,
             EnvironmentSettings,
-            RealtimeLightmaps,
             BakedLightmaps
         }
 
@@ -120,7 +118,6 @@ namespace UnityEditor
         [AutoStaticsCleanupOnCodeReload]
         static SerializedObject m_LightingSettings = null;
 
-        bool m_IsRealtimeSupported = false;
         bool m_IsBakedSupported = false;
         bool m_IsEnvironmentSupported = false;
 
@@ -154,7 +151,6 @@ namespace UnityEditor
         {
             m_Tabs.Add(Mode.LightingSettings, new LightingWindowLightingTab());
             m_Tabs.Add(Mode.EnvironmentSettings, new LightingWindowEnvironmentTab());
-            m_Tabs.Add(Mode.RealtimeLightmaps, new LightingWindowLightmapPreviewTab(LightmapType.DynamicLightmap));
             m_Tabs.Add(Mode.BakedLightmaps, new LightingWindowLightmapPreviewTab(LightmapType.StaticLightmap));
 
             var customWindowTabs = TypeCache.GetTypesDerivedFrom<LightingWindowTab>();
@@ -276,16 +272,14 @@ namespace UnityEditor
                 m_Modes = new List<Mode>();
             }
 
-            bool isRealtimeSupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
             bool isBakedSupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
             bool isEnvironmentSupported = !(SupportedRenderingFeatures.active.overridesEnvironmentLighting && SupportedRenderingFeatures.active.overridesFog && SupportedRenderingFeatures.active.overridesOtherLightingSettings);
 
-            if (m_IsRealtimeSupported != isRealtimeSupported || m_IsBakedSupported != isBakedSupported || m_IsEnvironmentSupported != isEnvironmentSupported)
+            if (m_IsBakedSupported != isBakedSupported || m_IsEnvironmentSupported != isEnvironmentSupported)
             {
                 m_Modes.Clear();
 
                 m_IsBakedSupported = isBakedSupported;
-                m_IsRealtimeSupported = isRealtimeSupported;
                 m_IsEnvironmentSupported = isEnvironmentSupported;
             }
 
@@ -302,12 +296,6 @@ namespace UnityEditor
             {
                 m_Modes.Add(Mode.EnvironmentSettings);
                 modeStringList.Add(Styles.modeStrings[(int)Mode.EnvironmentSettings]);
-            }
-
-            if (m_IsRealtimeSupported)
-            {
-                m_Modes.Add(Mode.RealtimeLightmaps);
-                modeStringList.Add(Styles.modeStrings[(int)Mode.RealtimeLightmaps]);
             }
 
             if (m_IsBakedSupported)
@@ -744,30 +732,6 @@ namespace UnityEditor
             Lightmapping.BakeAllReflectionProbesSnapshots();
         }
 
-        internal static VisualisationGITexture[] GetRealTimeLightmaps()
-        {
-            return LightmapVisualizationUtility.GetRealtimeGITextures(GITextureType.Irradiance);
-        }
-
-        internal static void GatherRealTimeLightmapStats(ref int lightmapCount, ref long totalMemorySize, ref Dictionary<LightmapSize, int> sizes)
-        {
-            var realTimeLightMaps = GetRealTimeLightmaps();
-            foreach (var lmap in realTimeLightMaps)
-            {
-                if (lmap.texture == null)
-                    continue;
-                lightmapCount++;
-
-                LightmapSize ls = new() { width = lmap.texture.width, height = lmap.texture.height};
-                if (sizes.ContainsKey(ls))
-                    sizes[ls]++;
-                else
-                    sizes.Add(ls, 1);
-
-                totalMemorySize += TextureUtil.GetStorageMemorySizeLong(lmap.texture);
-            }
-        }
-
         internal static void GatherRunningBakeLightmapStats(ref int lightmapCount, ref long totalMemorySize, ref Dictionary<LightmapSize, int> sizes, ref bool shadowmaskMode)
         {
             RunningBakeInfo info = Lightmapping.GetRunningBakeInfo();
@@ -930,20 +894,6 @@ namespace UnityEditor
                     outputString.Append(shadowmaskMode && bakedLightmapCount > 1 ? "s" : string.Empty);
                     FormatSizesString(ref outputString, bakedLightmapSizes);
                     DisplaySummaryLine(outputString.ToString(), bakedLightmapCount, bakedTotalMemorySize);
-                    outputString.Clear();
-                }
-
-                // Gather and show realtime lightmap stats
-                long rtTotalMemorySize = 0;
-                int rtLightmapCount = 0;
-                var rtLightmapSizes = new Dictionary<LightmapSize, int>();
-                GatherRealTimeLightmapStats(ref rtLightmapCount, ref rtTotalMemorySize, ref rtLightmapSizes);
-                if (rtLightmapCount > 0)
-                {
-                    outputString.Append($"{prefix}{rtLightmapCount.ToString("N0")} realtime lightmap");
-                    outputString.Append(rtLightmapCount > 1 ? "s" : string.Empty);
-                    FormatSizesString(ref outputString, rtLightmapSizes);
-                    DisplaySummaryLine(outputString.ToString(), rtLightmapCount, rtTotalMemorySize);
                     outputString.Clear();
                 }
             }

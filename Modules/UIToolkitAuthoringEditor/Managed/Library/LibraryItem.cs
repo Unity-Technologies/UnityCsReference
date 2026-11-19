@@ -10,7 +10,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class LibraryItem
     {
         public const string DragDataKey = "LibraryItem";
@@ -75,6 +74,34 @@ namespace Unity.UIToolkit.Editor
             var assetIcon = GetAssetIcon();
             icon = assetIcon;
             largeIcon = assetIcon;
+        }
+
+        /// <summary>
+        /// Starts dragging the item: <see cref="SetDragData"/>, then a drag titled with its name.
+        /// </summary>
+        public void StartDrag()
+        {
+            SetDragData();
+            DragAndDrop.StartDrag(name);
+        }
+
+        /// <summary>
+        /// Prepares a drag that carries the item the way the drop targets expect it: a control as generic data
+        /// under <see cref="DragDataKey"/>, a UXML document as its asset and path.
+        /// </summary>
+        public void SetDragData()
+        {
+            DragAndDrop.PrepareStartDrag();
+
+            if (isAsset)
+            {
+                DragAndDrop.objectReferences = new UnityEngine.Object[] { visualTreeAsset };
+                DragAndDrop.paths = new[] { assetPath };
+            }
+            else
+            {
+                DragAndDrop.SetGenericData(DragDataKey, this);
+            }
         }
 
         static Background GetAssetIcon()

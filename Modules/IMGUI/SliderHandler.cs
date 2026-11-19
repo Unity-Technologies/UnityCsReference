@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Scripting;
 
@@ -35,7 +36,7 @@ namespace UnityEngine
         readonly int id;
 
         [AutoStaticsCleanupOnCodeReload]
-        private static Dictionary<string, GUIStyle> s_SliderTrackStyleCache = new();
+        private static ConditionalWeakTable<GUISkin, Dictionary<string, GUIStyle>> s_SliderTrackStyleCache = new();
 
         public static GUIStyle GetTrackStyle(GUIStyle style)
         {
@@ -43,11 +44,12 @@ namespace UnityEngine
                 return null;
 
             var skin = GUISkin.current;
-            var cacheKey = skin.name + "|" + style.name;
-            if (!s_SliderTrackStyleCache.TryGetValue(cacheKey, out var trackStyle))
+            var styles = s_SliderTrackStyleCache.GetValue(skin, _ => new Dictionary<string, GUIStyle>());
+            var styleName = style.name;
+            if (!styles.TryGetValue(styleName, out var trackStyle))
             {
-                trackStyle = skin.FindStyle(style.name + "Track");
-                s_SliderTrackStyleCache[cacheKey] = trackStyle;
+                trackStyle = skin.FindStyle(styleName + "Track");
+                styles[styleName] = trackStyle;
             }
             return trackStyle;
         }

@@ -307,48 +307,9 @@ namespace UnityEditor.Modules
     // NOTE: You probably want to inherit from DefaultBuildWindowExtension class
     internal interface IBuildWindowExtension
     {
-        void ShowPlatformBuildOptions();
-
-        void ShowPlatformBuildWarnings();
-
-        // Use this for "developer" Unity builds
-        void ShowInternalPlatformBuildOptions();
-
         bool EnabledBuildButton();
 
         bool EnabledBuildAndRunButton();
-
-        void GetBuildButtonTitles(out GUIContent buildButtonTitle, out GUIContent buildAndRunButtonTitle);
-
-        // Show path location dialog during Build or Build & Run click
-        bool AskForBuildLocation();
-
-        bool ShouldDrawRunLastBuildButton();
-        void DoRunLastBuildButtonGui();
-
-        bool ShouldDrawScriptDebuggingCheckbox();
-
-        bool ShouldDrawProfilerCheckbox();
-
-        bool ShouldDrawDevelopmentPlayerCheckbox();
-
-        bool ShouldDrawExplicitNullCheckbox();
-
-        bool ShouldDrawExplicitDivideByZeroCheckbox();
-
-        bool ShouldDrawExplicitArrayBoundsCheckbox();
-
-        // Force full optimisations for script complilation in Development builds.
-        // Useful for forcing optimized compiler for IL2CPP when profiling.
-        bool ShouldDrawForceOptimizeScriptsCheckbox();
-
-        // Enables a dialog "Wait For Managed debugger", which halts program execution until managed debugger is connected
-        bool ShouldDrawWaitForManagedDebugger();
-
-        bool ShouldDrawManagedDebuggerFixedPort();
-
-        // Grays out managed debugger options
-        bool ShouldDisableManagedDebuggerCheckboxes();
     }
 
     // Extension point to add platform-specific texture import settings.
@@ -370,7 +331,13 @@ namespace UnityEditor.Modules
         public bool Selected { get; set; }
         public string Tooltip;
         public GUID PlatformGuid { get; }
-        public PreconfiguredSettingsVariant(string name, bool selectedInitially, string description = "", string tooltip = "", GUID platformGuid = default)
+
+        /// <summary>
+        /// Qualified names of the platform's recommended packages that are required when this variant is selected.
+        /// </summary>
+        public string[] RequiredPackages { get; }
+
+        public PreconfiguredSettingsVariant(string name, bool selectedInitially, string description = "", string tooltip = "", GUID platformGuid = default, string[] requiredPackages = null)
         {
             Name = name;
             Description = description;
@@ -378,6 +345,7 @@ namespace UnityEditor.Modules
             Selected = selectedInitially;
             Tooltip = tooltip;
             PlatformGuid = platformGuid;
+            RequiredPackages = requiredPackages ?? Array.Empty<string>();
         }
     }
 

@@ -16,7 +16,6 @@ using Object = UnityEngine.Object;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UxmlElement]
     partial class VariablesInspector : VisualElement, ITrackablePropertyProvider
     {

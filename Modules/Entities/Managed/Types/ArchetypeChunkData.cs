@@ -17,11 +17,25 @@ namespace Unity.Entities
     internal unsafe struct ArchetypeChunkData
     {
         void* m_Data;
-        public int Capacity { get; private set; } // maximum number of chunks that can be tracked before Grow() must be called
-        public int Count { get; private set; } // number of chunks currently tracked [0..Capacity]
+        int m_Capacity;
+        int m_Count;
+        public int Capacity => m_Capacity; // maximum number of chunks that can be tracked before Grow() must be called
+        public int Count => m_Count; // number of chunks currently tracked [0..Capacity]
 
-        readonly int SharedComponentCount;
-        readonly int ComponentCount; // including shared components
+        int SharedComponentCount;
+        int ComponentCount; // including shared components
+
+        // For the check of the native mirror, EntityQueryInternal::ArchetypeChunkData in Modules/Entities/Source/EntityQuery.cpp
+        internal static void GetFieldOffsets(out int data, out int capacity, out int count, out int sharedComponentCount, out int componentCount)
+        {
+            var chunkData = default(ArchetypeChunkData);
+            var start = (byte*)&chunkData;
+            data = (int)((byte*)&chunkData.m_Data - start);
+            capacity = (int)((byte*)&chunkData.m_Capacity - start);
+            count = (int)((byte*)&chunkData.m_Count - start);
+            sharedComponentCount = (int)((byte*)&chunkData.SharedComponentCount - start);
+            componentCount = (int)((byte*)&chunkData.ComponentCount - start);
+        }
 
         // ChangeVersions and SharedComponentValues stored like:
         //    type0: chunk0 chunk1 chunk2 ...
@@ -77,8 +91,8 @@ namespace Unity.Entities
         public ArchetypeChunkData(int componentCount, int sharedComponentCount)
         {
             m_Data = null;
-            Capacity = 0;
-            Count = 0;
+            m_Capacity = 0;
+            m_Count = 0;
             SharedComponentCount = sharedComponentCount;
             ComponentCount = componentCount;
         }
@@ -140,7 +154,7 @@ namespace Unity.Entities
             Memory.Unmanaged.Free(m_Data, Allocator.Persistent);
 
             m_Data = nextChunkData;
-            Capacity = nextCapacity;
+            m_Capacity = nextCapacity;
         }
 
         public bool InsideAllocation(ulong addr)
@@ -323,7 +337,7 @@ namespace Unity.Entities
 
         public void Add(ChunkIndex chunk, SharedComponentValues sharedComponentIndices, uint changeVersion)
         {
-            var chunkIndex = Count++;
+            var chunkIndex = m_Count++;
 
             ChunkIndices[chunkIndex] = chunk;
 
@@ -344,17 +358,12 @@ namespace Unity.Entities
 
             UnsafeUtility.MemCpy(ChunkIndices + Count, srcChunks.ChunkIndices, sizeof(ChunkIndex) * srcChunks.Count);
 
-            Count += srcChunks.Count;
-        }
-
-        public void AddToCachedChunkList(ref UnsafeCachedChunkList chunkList, int matchingArchetypeIndex, int startIndex = 0)
-        {
-            chunkList.Append(ChunkIndices + startIndex, Count - startIndex, matchingArchetypeIndex);
+            m_Count += srcChunks.Count;
         }
 
         public void RemoveAtSwapBack(int chunkIndex)
         {
-            Count--;
+            m_Count--;
 
             if (chunkIndex == Count)
                 return;
@@ -383,8 +392,8 @@ namespace Unity.Entities
         {
             Memory.Unmanaged.Free(m_Data, Allocator.Persistent);
             m_Data = null;
-            Capacity = 0;
-            Count = 0;
+            m_Capacity = 0;
+            m_Count = 0;
         }
     }
 }

@@ -17,8 +17,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         string displayName { get; }
         VersionsInfo availableVersions { get; }
         bool isDiscoverable { get; }
-        bool isDeprecated { get; }
-        string deprecationMessage { get; }
+        bool isLifecycleDeprecated { get; }
+        string lifecycleDeprecationMessage { get; }
         PackageCompliance compliance { get; }
         PackageInfo GetSearchInfo(string version);
         bool IsVersionDeprecated(string version);
@@ -34,9 +34,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string name { get; }
         public string displayName { get; }
         public VersionsInfo availableVersions { get; }
-        public bool isDiscoverable => mainSearchInfo != null;
-        public bool isDeprecated { get; }
-        public string deprecationMessage { get; }
+        public bool isDiscoverable { get; }
+        public bool isLifecycleDeprecated { get; }
+        public string lifecycleDeprecationMessage { get; }
         public PackageCompliance compliance { get; }
 
         private readonly Dictionary<string, PackageInfo> m_ExtraSearchInfos;
@@ -62,8 +62,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             compliance = newerInfo.compliance;
 
             availableRegistryType = searchInfoFirst.GetAvailableRegistryType();
-            isDeprecated = searchInfoFirst.isDeprecated;
-            deprecationMessage = searchInfoFirst.deprecationMessage;
+            isDiscoverable = searchInfoFirst.unityLifecycle?.isDiscoverable ?? false;
+            isLifecycleDeprecated = searchInfoFirst.unityLifecycle?.isDeprecated ?? false;
+            lifecycleDeprecationMessage = searchInfoFirst.unityLifecycle?.deprecationMessage;
 
             displayName = installedInfoFirst.displayName;
         }

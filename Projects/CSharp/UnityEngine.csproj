@@ -2,6 +2,8 @@
 <Project>
   <PropertyGroup>
     <BaseIntermediateOutputPath>../../artifacts/UnityEngine.dll</BaseIntermediateOutputPath>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
@@ -19,8 +21,6 @@
     <Deterministic>true</Deterministic>
     <RootNamespace>UnityEngine</RootNamespace>
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
-    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
-    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
     <UnityEnableAutoStaticsCleanupCodeGen>false</UnityEnableAutoStaticsCleanupCodeGen>
   </PropertyGroup>
   <PropertyGroup>
@@ -48,6 +48,9 @@
     </Compile>
     <Compile Include="..\..\External\CoreCLR\SourceCopiesToRemove\UnmanagedCallersOnlyAttribute.cs">
       <Link>External\CoreCLR\SourceCopiesToRemove\UnmanagedCallersOnlyAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\CoreCLR\SourceCopiesToRemove\UnsafeAccessorAttribute.cs">
+      <Link>External\CoreCLR\SourceCopiesToRemove\UnsafeAccessorAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\External\LibTessDotNet\Dict.cs">
       <Link>External\LibTessDotNet\Dict.cs</Link>
@@ -673,11 +676,200 @@
     <Compile Include="..\..\Modules\AndroidJNI\Configuration\AndroidUiModeType.cs">
       <Link>Modules\AndroidJNI\Configuration\AndroidUiModeType.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\AssemblyInfo.cs">
+      <Link>Modules\AnimationCore\Managed\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Bindings\BindingSet.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Bindings\BindingSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Bindings\BindingUtility.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Bindings\BindingUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Blobs\BlobBuilderExtension.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Blobs\BlobBuilderExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Clip\AnimationEventUtility.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Clip\AnimationEventUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Clip\ClipBlob.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Clip\ClipBlob.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Clip\ClipInstance.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Clip\ClipInstance.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Clip\ClipInstanceCreate.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Clip\ClipInstanceCreate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Clip\ClipSampler.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Clip\ClipSampler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStream.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStreamImpl.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStreamImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStreamMask.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStreamMask.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStreamUnsafeUtility.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStreamUnsafeUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStreamValidation.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStreamValidation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\BlendSpaceUtility.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\BlendSpaceUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\ChannelMask.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\ChannelMask.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\Constraints.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\Constraints.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\Core.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\Core.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\CoreBlend.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\CoreBlend.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\CoreEvaluateClip.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\CoreEvaluateClip.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\CoreRootMotion.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\CoreRootMotion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\CoreTime.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\CoreTime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\CoreValidation.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\CoreValidation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\DiscreteTimeInterval.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\DiscreteTimeInterval.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\FreeformBlendSpace2DData.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\FreeformBlendSpace2DData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\InertialBlendingCoefficients.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\InertialBlendingCoefficients.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\InertialMotionBlending.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\InertialMotionBlending.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\Interpolators.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\Interpolators.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\MathUtility.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\MathUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\Quaternion4.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\Quaternion4.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\SpinLock.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\SpinLock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\TRS.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\TRS.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\TimeComponents.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\TimeComponents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\UnsafeBitArrayExtensions.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\UnsafeBitArrayExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\AnimationBuffers.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\AnimationBuffers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\AvatarBaking.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\AvatarBaking.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\AvatarExtensions.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\AvatarExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\PlayableBindings.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\PlayableBindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\PoseCaching\PoseCacheBuffers.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\PoseCaching\PoseCacheBuffers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigBuilder.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigBuilderCreate.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigBuilderCreate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigComponents.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigComponents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigComponentsCreate.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigComponentsCreate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigDebugView.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigDebugView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigDefinitionUtility.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigDefinitionUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigRemapTable.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigRemapTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigRemapTableCreate.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigRemapTableCreate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigRemapTableExtensions.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigRemapTableExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\RootMotion\RootMotionUtility.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\RootMotion\RootMotionUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Utils\BlobObjectExtensions.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Utils\BlobObjectExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Utils\CollectionUtility.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Utils\CollectionUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Utils\StringHash.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Utils\StringHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Utils\TransformUtility.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Utils\TransformUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\WeightMask\AvatarMaskBaking.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\WeightMask\AvatarMaskBaking.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\WeightMask\AvatarMaskExtensions.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\WeightMask\AvatarMaskExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\WeightMask\WeightMask.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\WeightMask\WeightMask.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\WeightMask\WeightMaskBuilder.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\WeightMask\WeightMaskBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\WeightMask\WeightMaskBuilderCreate.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\WeightMask\WeightMaskBuilderCreate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\WeightMask\WeightMaskInstanceCreate.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\WeightMask\WeightMaskInstanceCreate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\WeightMask\WeightMaskSampler.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\WeightMask\WeightMaskSampler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Animation\BlobObject\AssemblyInfo.cs">
       <Link>Modules\Animation\BlobObject\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Animation\BlobObject\BlobAssetExtensions.cs">
+      <Link>Modules\Animation\BlobObject\BlobAssetExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Animation\BlobObject\BlobObject.bindings.cs">
       <Link>Modules\Animation\BlobObject\BlobObject.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\BlobObject\BlobObjectReferenceT.cs">
+      <Link>Modules\Animation\BlobObject\BlobObjectReferenceT.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\BlobObject\NestedBlobAssetReference.cs">
+      <Link>Modules\Animation\BlobObject\NestedBlobAssetReference.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Animation\Managed\Animation.deprecated.cs">
       <Link>Modules\Animation\Managed\Animation.deprecated.cs</Link>
@@ -822,6 +1014,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Animation\ScriptBindings\Motion.bindings.cs">
       <Link>Modules\Animation\ScriptBindings\Motion.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Animation\ScriptBindings\MotionProxy.cs">
+      <Link>Modules\Animation\ScriptBindings\MotionProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Animation\ScriptBindings\MuscleHandle.bindings.cs">
       <Link>Modules\Animation\ScriptBindings\MuscleHandle.bindings.cs</Link>
@@ -1126,107 +1321,116 @@
     <Compile Include="..\..\Modules\ClusterRenderer\ClusterSerialization.bindings.cs">
       <Link>Modules\ClusterRenderer\ClusterSerialization.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\AssemblyInfo.cs">
-      <Link>Modules\CommandStateObserver\AssemblyInfo.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\AssemblyInfo.cs">
+      <Link>Modules\CommandStateObserver\Managed\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\CommandHandlerFunctor.cs">
-      <Link>Modules\CommandStateObserver\Commands\CommandHandlerFunctor.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Commands\CommandHandlerFunctor.cs">
+      <Link>Modules\CommandStateObserver\Managed\Commands\CommandHandlerFunctor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\CommandHandlerRegistrar.cs">
-      <Link>Modules\CommandStateObserver\Commands\CommandHandlerRegistrar.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Commands\CommandHandlerRegistrar.cs">
+      <Link>Modules\CommandStateObserver\Managed\Commands\CommandHandlerRegistrar.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\CommandHandlerUtilities.cs">
-      <Link>Modules\CommandStateObserver\Commands\CommandHandlerUtilities.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Commands\CommandHandlerUtilities.cs">
+      <Link>Modules\CommandStateObserver\Managed\Commands\CommandHandlerUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\HierarchicalCommandTargetExtensions.cs">
-      <Link>Modules\CommandStateObserver\Commands\HierarchicalCommandTargetExtensions.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Commands\HierarchicalCommandTargetExtensions.cs">
+      <Link>Modules\CommandStateObserver\Managed\Commands\HierarchicalCommandTargetExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\ICommand.cs">
-      <Link>Modules\CommandStateObserver\Commands\ICommand.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Commands\ICommand.cs">
+      <Link>Modules\CommandStateObserver\Managed\Commands\ICommand.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\ICommandHandlerFunctor.cs">
-      <Link>Modules\CommandStateObserver\Commands\ICommandHandlerFunctor.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Commands\ICommandHandlerFunctor.cs">
+      <Link>Modules\CommandStateObserver\Managed\Commands\ICommandHandlerFunctor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\ICommandTarget.cs">
-      <Link>Modules\CommandStateObserver\Commands\ICommandTarget.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Commands\ICommandTarget.cs">
+      <Link>Modules\CommandStateObserver\Managed\Commands\ICommandTarget.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\IHierarchicalCommandTarget.cs">
-      <Link>Modules\CommandStateObserver\Commands\IHierarchicalCommandTarget.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Commands\IHierarchicalCommandTarget.cs">
+      <Link>Modules\CommandStateObserver\Managed\Commands\IHierarchicalCommandTarget.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\ModelCommand.cs">
-      <Link>Modules\CommandStateObserver\Commands\ModelCommand.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Commands\ModelCommand.cs">
+      <Link>Modules\CommandStateObserver\Managed\Commands\ModelCommand.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Commands\UndoableCommand.cs">
-      <Link>Modules\CommandStateObserver\Commands\UndoableCommand.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Commands\UndoableCommand.cs">
+      <Link>Modules\CommandStateObserver\Managed\Commands\UndoableCommand.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\CsoTool.cs">
-      <Link>Modules\CommandStateObserver\CsoTool.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\CsoTool.cs">
+      <Link>Modules\CommandStateObserver\Managed\CsoTool.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Dispatcher.cs">
-      <Link>Modules\CommandStateObserver\Dispatcher.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Dispatcher.cs">
+      <Link>Modules\CommandStateObserver\Managed\Dispatcher.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\ListUtilities.cs">
-      <Link>Modules\CommandStateObserver\ListUtilities.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\ListUtilities.cs">
+      <Link>Modules\CommandStateObserver\Managed\ListUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\ObserverManager.cs">
-      <Link>Modules\CommandStateObserver\ObserverManager.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\ObserverManager.cs">
+      <Link>Modules\CommandStateObserver\Managed\ObserverManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\IStateObserver.cs">
-      <Link>Modules\CommandStateObserver\Observers\IStateObserver.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Observers\IStateObserver.cs">
+      <Link>Modules\CommandStateObserver\Managed\Observers\IStateObserver.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\Observation.cs">
-      <Link>Modules\CommandStateObserver\Observers\Observation.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Observers\Observation.cs">
+      <Link>Modules\CommandStateObserver\Managed\Observers\Observation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\StateComponentVersion.cs">
-      <Link>Modules\CommandStateObserver\Observers\StateComponentVersion.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Observers\StateComponentVersion.cs">
+      <Link>Modules\CommandStateObserver\Managed\Observers\StateComponentVersion.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\StateObserver.cs">
-      <Link>Modules\CommandStateObserver\Observers\StateObserver.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Observers\StateObserver.cs">
+      <Link>Modules\CommandStateObserver\Managed\Observers\StateObserver.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\StateObserverExtensions.cs">
-      <Link>Modules\CommandStateObserver\Observers\StateObserverExtensions.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Observers\StateObserverExtensions.cs">
+      <Link>Modules\CommandStateObserver\Managed\Observers\StateObserverExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\StateObserverHelper.cs">
-      <Link>Modules\CommandStateObserver\Observers\StateObserverHelper.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Observers\StateObserverHelper.cs">
+      <Link>Modules\CommandStateObserver\Managed\Observers\StateObserverHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\UpdateType.cs">
-      <Link>Modules\CommandStateObserver\Observers\UpdateType.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Observers\UpdateType.cs">
+      <Link>Modules\CommandStateObserver\Managed\Observers\UpdateType.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Observers\UpdateTypeExtensions.cs">
-      <Link>Modules\CommandStateObserver\Observers\UpdateTypeExtensions.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Observers\UpdateTypeExtensions.cs">
+      <Link>Modules\CommandStateObserver\Managed\Observers\UpdateTypeExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\ChangesetManager.cs">
-      <Link>Modules\CommandStateObserver\States\ChangesetManager.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\States\ChangesetManager.cs">
+      <Link>Modules\CommandStateObserver\Managed\States\ChangesetManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\IChangeset.cs">
-      <Link>Modules\CommandStateObserver\States\IChangeset.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\States\IChangeset.cs">
+      <Link>Modules\CommandStateObserver\Managed\States\IChangeset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\IChangesetManager.cs">
-      <Link>Modules\CommandStateObserver\States\IChangesetManager.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\States\IChangesetManager.cs">
+      <Link>Modules\CommandStateObserver\Managed\States\IChangesetManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\IState.cs">
-      <Link>Modules\CommandStateObserver\States\IState.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\States\IState.cs">
+      <Link>Modules\CommandStateObserver\Managed\States\IState.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\IStateComponent.cs">
-      <Link>Modules\CommandStateObserver\States\IStateComponent.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\States\IStateComponent.cs">
+      <Link>Modules\CommandStateObserver\Managed\States\IStateComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\IStateComponentUpdater.cs">
-      <Link>Modules\CommandStateObserver\States\IStateComponentUpdater.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\States\IStateComponentUpdater.cs">
+      <Link>Modules\CommandStateObserver\Managed\States\IStateComponentUpdater.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\State.cs">
-      <Link>Modules\CommandStateObserver\States\State.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\States\State.cs">
+      <Link>Modules\CommandStateObserver\Managed\States\State.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\StateComponent.cs">
-      <Link>Modules\CommandStateObserver\States\StateComponent.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\States\StateComponent.cs">
+      <Link>Modules\CommandStateObserver\Managed\States\StateComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\Undo\IUndoableStateComponent.cs">
-      <Link>Modules\CommandStateObserver\Undo\IUndoableStateComponent.cs</Link>
+    <Compile Include="..\..\Modules\CommandStateObserver\Managed\Undo\IUndoableStateComponent.cs">
+      <Link>Modules\CommandStateObserver\Managed\Undo\IUndoableStateComponent.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\AssemblyInfo.cs">
       <Link>Modules\ContentLoad\Managed\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\BuildManifest.cs">
       <Link>Modules\ContentLoad\Managed\BuildManifest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\ContentDirectoryDiagnostics.cs">
+      <Link>Modules\ContentLoad\Managed\ContentDirectoryDiagnostics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\ContentDirectoryLoadInfo.cs">
+      <Link>Modules\ContentLoad\Managed\ContentDirectoryLoadInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\ContentFileIdentity.cs">
+      <Link>Modules\ContentLoad\Managed\ContentFileIdentity.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\ContentLoad.bindings.cs">
       <Link>Modules\ContentLoad\Managed\ContentLoad.bindings.cs</Link>
@@ -1237,6 +1441,9 @@
     <Compile Include="..\..\Modules\ContentLoad\Managed\ContentLoadManagerExt.cs">
       <Link>Modules\ContentLoad\Managed\ContentLoadManagerExt.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\ContentLoadState.cs">
+      <Link>Modules\ContentLoad\Managed\ContentLoadState.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\ContentLoadingSystem.cs">
       <Link>Modules\ContentLoad\Managed\ContentLoadingSystem.cs</Link>
     </Compile>
@@ -1245,6 +1452,12 @@
     </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\Loadable.cs">
       <Link>Modules\ContentLoad\Managed\Loadable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\LoadedContentFileInfo.cs">
+      <Link>Modules\ContentLoad\Managed\LoadedContentFileInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ContentLoad\Managed\LoadedSceneInfo.cs">
+      <Link>Modules\ContentLoad\Managed\LoadedSceneInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ContentLoad\Managed\NativeLoadingSystem.bindings.cs">
       <Link>Modules\ContentLoad\Managed\NativeLoadingSystem.bindings.cs</Link>
@@ -1432,9 +1645,6 @@
     <Compile Include="..\..\Modules\Entities\Managed\DefaultWorld.cs">
       <Link>Modules\Entities\Managed\DefaultWorld.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\DefaultWorldInitialization.cs">
-      <Link>Modules\Entities\Managed\DefaultWorldInitialization.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\Diff\DynamicBlobAssetBatch.cs">
       <Link>Modules\Entities\Managed\Diff\DynamicBlobAssetBatch.cs</Link>
     </Compile>
@@ -1447,14 +1657,17 @@
     <Compile Include="..\..\Modules\Entities\Managed\EditorLightShim.cs">
       <Link>Modules\Entities\Managed\EditorLightShim.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\EntitiesLightShim.cs">
-      <Link>Modules\Entities\Managed\EntitiesLightShim.cs</Link>
+    <Compile Include="..\..\Modules\Entities\Managed\EntitiesInitialization.cs">
+      <Link>Modules\Entities\Managed\EntitiesInitialization.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\EntitiesWorldHooks.cs">
-      <Link>Modules\Entities\Managed\EntitiesWorldHooks.cs</Link>
+    <Compile Include="..\..\Modules\Entities\Managed\EntitiesMemorySetup.bindings.cs">
+      <Link>Modules\Entities\Managed\EntitiesMemorySetup.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\EntityBatchInChunk.cs">
       <Link>Modules\Entities\Managed\EntityBatchInChunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStore.bindings.cs">
+      <Link>Modules\Entities\Managed\EntityComponentStore.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStore.cs">
       <Link>Modules\Entities\Managed\EntityComponentStore.cs</Link>
@@ -1464,6 +1677,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStoreChunk.cs">
       <Link>Modules\Entities\Managed\EntityComponentStoreChunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStoreComponentObjectState.cs">
+      <Link>Modules\Entities\Managed\EntityComponentStoreComponentObjectState.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\EntityComponentStoreCreateArchetype.cs">
       <Link>Modules\Entities\Managed\EntityComponentStoreCreateArchetype.cs</Link>
@@ -1510,6 +1726,9 @@
     <Compile Include="..\..\Modules\Entities\Managed\ForeachQueryEnumerable.cs">
       <Link>Modules\Entities\Managed\ForeachQueryEnumerable.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\GameObjectComponentStoreBridge.bindings.cs">
+      <Link>Modules\Entities\Managed\GameObjectComponentStoreBridge.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\GameObjectComponentStoreBridge.cs">
       <Link>Modules\Entities\Managed\GameObjectComponentStoreBridge.cs</Link>
     </Compile>
@@ -1518,6 +1737,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\GlobalEntityManager.cs">
       <Link>Modules\Entities\Managed\GlobalEntityManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\GlobalEntityManagerNativeBridge.cs">
+      <Link>Modules\Entities\Managed\GlobalEntityManagerNativeBridge.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\IComponentData.cs">
       <Link>Modules\Entities\Managed\IComponentData.cs</Link>
@@ -1585,8 +1807,26 @@
     <Compile Include="..\..\Modules\Entities\Managed\Iterators\EntityQueryManager.cs">
       <Link>Modules\Entities\Managed\Iterators\EntityQueryManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EntityQueryNativeBridge.cs">
+      <Link>Modules\Entities\Managed\Iterators\EntityQueryNativeBridge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\EntityQueryTestsHelper.bindings.cs">
+      <Link>Modules\Entities\Managed\Iterators\EntityQueryTestsHelper.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\Iterators\EntityStorageInfoLookup.cs">
       <Link>Modules\Entities\Managed\Iterators\EntityStorageInfoLookup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\QueryCache.cs">
+      <Link>Modules\Entities\Managed\Iterators\QueryCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\QueryChunks.cs">
+      <Link>Modules\Entities\Managed\Iterators\QueryChunks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\QueryDescription.cs">
+      <Link>Modules\Entities\Managed\Iterators\QueryDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\QueryMemoryStats.cs">
+      <Link>Modules\Entities\Managed\Iterators\QueryMemoryStats.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\Iterators\RefRO.cs">
       <Link>Modules\Entities\Managed\Iterators\RefRO.cs</Link>
@@ -1600,11 +1840,35 @@
     <Compile Include="..\..\Modules\Entities\Managed\Iterators\UnsafeChunkCacheIterator.cs">
       <Link>Modules\Entities\Managed\Iterators\UnsafeChunkCacheIterator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Iterators\UnsafeUntypedDynamicBuffer.cs">
+      <Link>Modules\Entities\Managed\Iterators\UnsafeUntypedDynamicBuffer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\LowLevel\SpinLock.cs">
       <Link>Modules\Entities\Managed\LowLevel\SpinLock.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntitiesProfilerPackageCalls.cs">
       <Link>Modules\Entities\Managed\ProfilerModules\EntitiesProfilerPackageCalls.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+ArchetypeMatchingScope.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+ArchetypeMatchingScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+CallScope.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+CallScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+CreationScope.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+CreationScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+Data.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+Data.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+JobWaitScope.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+JobWaitScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+Operation.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler+Operation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler.cs">
+      <Link>Modules\Entities\Managed\ProfilerModules\EntityQueryProfiler.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\ProfilerModules\ProfilerClock.bindings.cs">
       <Link>Modules\Entities\Managed\ProfilerModules\ProfilerClock.bindings.cs</Link>
@@ -1729,6 +1993,9 @@
     <Compile Include="..\..\Modules\Entities\Managed\Types\ArchetypeChunkData.cs">
       <Link>Modules\Entities\Managed\Types\ArchetypeChunkData.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\Types\ArchetypeRef.cs">
+      <Link>Modules\Entities\Managed\Types\ArchetypeRef.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\Types\BufferHeader.cs">
       <Link>Modules\Entities\Managed\Types\BufferHeader.cs</Link>
     </Compile>
@@ -1830,6 +2097,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\WorldUnmanagedImpl.Memory.cs">
       <Link>Modules\Entities\Managed\WorldUnmanagedImpl.Memory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\WorldUnmanagedNativeBridge.cs">
+      <Link>Modules\Entities\Managed\WorldUnmanagedNativeBridge.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\WorldUpdateAllocator.cs">
       <Link>Modules\Entities\Managed\WorldUpdateAllocator.cs</Link>
@@ -1947,6 +2217,9 @@
     </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyUIDInfo.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyUIDInfo.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyUpdateStage.bindings.cs">
+      <Link>Modules\HierarchyCore\ScriptBindings\HierarchyUpdateStage.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyViewModel.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyViewModel.bindings.cs</Link>
@@ -2224,8 +2497,14 @@
     <Compile Include="..\..\Modules\Input\Private\Managed\InputCommonTypes.cs">
       <Link>Modules\Input\Private\Managed\InputCommonTypes.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Input\Private\Managed\InputDeviceConfigurationChangedEvent.cs">
+      <Link>Modules\Input\Private\Managed\InputDeviceConfigurationChangedEvent.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Input\Private\Managed\InputFocusEvent.cs">
       <Link>Modules\Input\Private\Managed\InputFocusEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Input\Private\Managed\Reconfiguration.cs">
+      <Link>Modules\Input\Private\Managed\Reconfiguration.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Input\Private\Managed\VirtualDevice.cs">
       <Link>Modules\Input\Private\Managed\VirtualDevice.cs</Link>
@@ -2260,11 +2539,8 @@
     <Compile Include="..\..\Modules\JSONSerialize\Public\JsonUtility.bindings.cs">
       <Link>Modules\JSONSerialize\Public\JsonUtility.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntime\AssemblyInfo.cs">
-      <Link>Modules\LocalizationRuntime\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntime\Bindings\SystemLocale.bindings.cs">
-      <Link>Modules\LocalizationRuntime\Bindings\SystemLocale.bindings.cs</Link>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\AssemblyInfo.cs">
+      <Link>Modules\LocalizationRuntime\Managed\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\LocalizationRuntime\Managed\AwaitableUtility.cs">
       <Link>Modules\LocalizationRuntime\Managed\AwaitableUtility.cs</Link>
@@ -2404,6 +2680,9 @@
     <Compile Include="..\..\Modules\LocalizationRuntime\Managed\ResourceRelease.cs">
       <Link>Modules\LocalizationRuntime\Managed\ResourceRelease.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\ScriptBindings\SystemLocale.bindings.cs">
+      <Link>Modules\LocalizationRuntime\Managed\ScriptBindings\SystemLocale.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Settings\IStartupLocaleSelector.cs">
       <Link>Modules\LocalizationRuntime\Managed\Settings\IStartupLocaleSelector.cs</Link>
     </Compile>
@@ -2421,6 +2700,9 @@
     </Compile>
     <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Settings\StartupLocaleSelectors.cs">
       <Link>Modules\LocalizationRuntime\Managed\Settings\StartupLocaleSelectors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Settings\StartupSelectorsAttribute.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Settings\StartupSelectorsAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\AssetEntries.cs">
       <Link>Modules\LocalizationRuntime\Managed\Tables\AssetEntries.cs</Link>
@@ -3463,158 +3745,158 @@
     <Compile Include="..\..\Modules\Physics\ScriptBindings\SpringJoint.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\SpringJoint.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+Accept.cs">
-      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+Accept.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer+Accept.cs">
+      <Link>Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer+Accept.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+GetProperty.cs">
-      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+GetProperty.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer+GetProperty.cs">
+      <Link>Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer+GetProperty.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+GetValue.cs">
-      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+GetValue.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer+GetValue.cs">
+      <Link>Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer+GetValue.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+Path.cs">
-      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+Path.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer+Path.cs">
+      <Link>Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer+Path.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer+SetValue.cs">
-      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer+SetValue.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer+SetValue.cs">
+      <Link>Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer+SetValue.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\PropertyContainer.cs">
-      <Link>Modules\Properties\Runtime\Algorithms\PropertyContainer.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer.cs">
+      <Link>Modules\Properties\Managed\Runtime\Algorithms\PropertyContainer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Algorithms\VisitReturnCode.cs">
-      <Link>Modules\Properties\Runtime\Algorithms\VisitReturnCode.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Algorithms\VisitReturnCode.cs">
+      <Link>Modules\Properties\Managed\Runtime\Algorithms\VisitReturnCode.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\AssemblyInfo.cs">
-      <Link>Modules\Properties\Runtime\AssemblyInfo.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\AssemblyInfo.cs">
+      <Link>Modules\Properties\Managed\Runtime\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Attributes.cs">
-      <Link>Modules\Properties\Runtime\Attributes.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Attributes.cs">
+      <Link>Modules\Properties\Managed\Runtime\Attributes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Exceptions.cs">
-      <Link>Modules\Properties\Runtime\Exceptions.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Exceptions.cs">
+      <Link>Modules\Properties\Managed\Runtime\Exceptions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Properties\AttributesScope.cs">
-      <Link>Modules\Properties\Runtime\Properties\AttributesScope.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Properties\AttributesScope.cs">
+      <Link>Modules\Properties\Managed\Runtime\Properties\AttributesScope.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Properties\DelegateProperty.cs">
-      <Link>Modules\Properties\Runtime\Properties\DelegateProperty.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Properties\DelegateProperty.cs">
+      <Link>Modules\Properties\Managed\Runtime\Properties\DelegateProperty.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Properties\ICollectionElementProperty.cs">
-      <Link>Modules\Properties\Runtime\Properties\ICollectionElementProperty.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Properties\ICollectionElementProperty.cs">
+      <Link>Modules\Properties\Managed\Runtime\Properties\ICollectionElementProperty.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Properties\Internal\IAttributes.cs">
-      <Link>Modules\Properties\Runtime\Properties\Internal\IAttributes.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Properties\Internal\IAttributes.cs">
+      <Link>Modules\Properties\Managed\Runtime\Properties\Internal\IAttributes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Properties\Property.cs">
-      <Link>Modules\Properties\Runtime\Properties\Property.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Properties\Property.cs">
+      <Link>Modules\Properties\Managed\Runtime\Properties\Property.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Properties\PropertyPath.cs">
-      <Link>Modules\Properties\Runtime\Properties\PropertyPath.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Properties\PropertyPath.cs">
+      <Link>Modules\Properties\Managed\Runtime\Properties\PropertyPath.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Properties\ReflectedMemberProperty.cs">
-      <Link>Modules\Properties\Runtime\Properties\ReflectedMemberProperty.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Properties\ReflectedMemberProperty.cs">
+      <Link>Modules\Properties\Managed\Runtime\Properties\ReflectedMemberProperty.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\ArrayPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\ArrayPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\ArrayPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\ArrayPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\ContainerPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\ContainerPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\ContainerPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\ContainerPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\DictionaryPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\DictionaryPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\DictionaryPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\DictionaryPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\HashSetPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\HashSetPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\HashSetPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\HashSetPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\IPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\IPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\IPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\IPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\IndexedCollectionPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\IndexedCollectionPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\IndexedCollectionPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\IndexedCollectionPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\Internal\PropertiesInitialization.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\Internal\PropertiesInitialization.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\Internal\PropertiesInitialization.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\Internal\PropertiesInitialization.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\Internal\PropertyBagStore.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\Internal\PropertyBagStore.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\Internal\PropertyBagStore.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\Internal\PropertyBagStore.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\KeyValueCollectionPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\KeyValueCollectionPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\KeyValueCollectionPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\KeyValueCollectionPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\KeyValuePairPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\KeyValuePairPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\KeyValuePairPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\KeyValuePairPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\ListPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\ListPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\ListPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\ListPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\PropertyBag+Accept.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\PropertyBag+Accept.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\PropertyBag+Accept.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\PropertyBag+Accept.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\PropertyBag+Registration.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\PropertyBag+Registration.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\PropertyBag+Registration.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\PropertyBag+Registration.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\PropertyBag+TypeConstruction.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\PropertyBag+TypeConstruction.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\PropertyBag+TypeConstruction.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\PropertyBag+TypeConstruction.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\PropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\PropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\PropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\PropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\PropertyCollection.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\PropertyCollection.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\PropertyCollection.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\PropertyCollection.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\SetPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\SetPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyBags\SetPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyBags\SetPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\Adapters\IExcludePropertyAdapter.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\Adapters\IExcludePropertyAdapter.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\Adapters\IExcludePropertyAdapter.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\Adapters\IExcludePropertyAdapter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\Adapters\IVisitPrimitivesPropertyAdapter.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\Adapters\IVisitPrimitivesPropertyAdapter.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\Adapters\IVisitPrimitivesPropertyAdapter.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\Adapters\IVisitPrimitivesPropertyAdapter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\Adapters\IVisitPropertyAdapter.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\Adapters\IVisitPropertyAdapter.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\Adapters\IVisitPropertyAdapter.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\Adapters\IVisitPropertyAdapter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\ConcreteTypeVisitor.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\ConcreteTypeVisitor.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\ConcreteTypeVisitor.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\ConcreteTypeVisitor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\ExcludeContext.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\ExcludeContext.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\ExcludeContext.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\ExcludeContext.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\IAccept.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\IAccept.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\IAccept.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\IAccept.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\IVisitor.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\IVisitor.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\IVisitor.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\IVisitor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\Internal\ReadOnlyAdapterCollection.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\Internal\ReadOnlyAdapterCollection.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\Internal\ReadOnlyAdapterCollection.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\Internal\ReadOnlyAdapterCollection.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\PathVisitor.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\PathVisitor.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\PathVisitor.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\PathVisitor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\PropertyVisitor.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\PropertyVisitor.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\PropertyVisitor.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\PropertyVisitor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyVisitors\VisitContext.cs">
-      <Link>Modules\Properties\Runtime\PropertyVisitors\VisitContext.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\PropertyVisitors\VisitContext.cs">
+      <Link>Modules\Properties\Managed\Runtime\PropertyVisitors\VisitContext.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Reflection\Internal\ReflectedPropertyBag.cs">
-      <Link>Modules\Properties\Runtime\Reflection\Internal\ReflectedPropertyBag.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Reflection\Internal\ReflectedPropertyBag.cs">
+      <Link>Modules\Properties\Managed\Runtime\Reflection\Internal\ReflectedPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Reflection\Internal\ReflectedPropertyBagProvider.cs">
-      <Link>Modules\Properties\Runtime\Reflection\Internal\ReflectedPropertyBagProvider.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Reflection\Internal\ReflectedPropertyBagProvider.cs">
+      <Link>Modules\Properties\Managed\Runtime\Reflection\Internal\ReflectedPropertyBagProvider.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Reflection\Internal\ReflectionUtilities.cs">
-      <Link>Modules\Properties\Runtime\Reflection\Internal\ReflectionUtilities.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Reflection\Internal\ReflectionUtilities.cs">
+      <Link>Modules\Properties\Managed\Runtime\Reflection\Internal\ReflectionUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Utility\TypeConversion.cs">
-      <Link>Modules\Properties\Runtime\Utility\TypeConversion.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Utility\TypeConversion.cs">
+      <Link>Modules\Properties\Managed\Runtime\Utility\TypeConversion.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Utility\TypeTraits.cs">
-      <Link>Modules\Properties\Runtime\Utility\TypeTraits.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Utility\TypeTraits.cs">
+      <Link>Modules\Properties\Managed\Runtime\Utility\TypeTraits.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\Utility\TypeUtility.cs">
-      <Link>Modules\Properties\Runtime\Utility\TypeUtility.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Managed\Runtime\Utility\TypeUtility.cs">
+      <Link>Modules\Properties\Managed\Runtime\Utility\TypeUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\RenderAs2D\AssemblyInfo.cs">
       <Link>Modules\RenderAs2D\AssemblyInfo.cs</Link>
@@ -3772,233 +4054,233 @@
     <Compile Include="..\..\Modules\Scripting\Scripting\Unsafe\UnsafeUtilityPatched.cs">
       <Link>Modules\Scripting\Scripting\Unsafe\UnsafeUtilityPatched.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\AssemblyInfo.cs">
-      <Link>Modules\SmartStrings\AssemblyInfo.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\AssemblyInfo.cs">
+      <Link>Modules\SmartStrings\Managed\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\FormatDetails.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\FormatDetails.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\FormatDetails.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\FormatDetails.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\FormatterBase.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\FormatterBase.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\FormatterBase.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\FormatterBase.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\FormattingException.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\FormattingException.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\FormattingException.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\FormattingException.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\FormattingInfo.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\FormattingInfo.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\FormattingInfo.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\FormattingInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\IFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\IFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\IFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\IFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\IFormatterLiteralExtractor.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\IFormatterLiteralExtractor.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\IFormatterLiteralExtractor.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\IFormatterLiteralExtractor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\IFormattingExtensionsToggle.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\IFormattingExtensionsToggle.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\IFormattingExtensionsToggle.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\IFormattingExtensionsToggle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\IFormattingInfo.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\IFormattingInfo.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\IFormattingInfo.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\IFormattingInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\IInitializer.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\IInitializer.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\IInitializer.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\IInitializer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Formatting\ISelectorInfo.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Formatting\ISelectorInfo.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\ISelectorInfo.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Formatting\ISelectorInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Output\IOutput.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Output\IOutput.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Output\IOutput.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Output\IOutput.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Output\NullOutput.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Output\NullOutput.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Output\NullOutput.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Output\NullOutput.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Output\StringOutput.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Output\StringOutput.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Output\StringOutput.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Output\StringOutput.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Output\TextWriterOutput.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Output\TextWriterOutput.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Output\TextWriterOutput.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Output\TextWriterOutput.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\AdditionalFormatData.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\AdditionalFormatData.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\AdditionalFormatData.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\AdditionalFormatData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\CharSet.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\CharSet.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\CharSet.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\CharSet.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\EscapedLiteral.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\EscapedLiteral.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\EscapedLiteral.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\EscapedLiteral.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\Format.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\Format.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\Format.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\Format.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\FormatItem.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\FormatItem.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\FormatItem.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\FormatItem.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\LiteralText.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\LiteralText.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\LiteralText.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\LiteralText.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\Parser.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\Parser.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\Parser.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\Parser.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\ParsingErrorEventArgs.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\ParsingErrorEventArgs.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\ParsingErrorEventArgs.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\ParsingErrorEventArgs.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\ParsingErrors.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\ParsingErrors.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\ParsingErrors.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\ParsingErrors.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\Placeholder.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\Placeholder.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\Placeholder.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\Placeholder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\Selector.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\Selector.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\Selector.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\Selector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Parsing\SplitList.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Parsing\SplitList.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\SplitList.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Parsing\SplitList.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Settings\CaseSensitivityType.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Settings\CaseSensitivityType.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Settings\CaseSensitivityType.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Settings\CaseSensitivityType.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Settings\FormatErrorAction.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Settings\FormatErrorAction.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Settings\FormatErrorAction.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Settings\FormatErrorAction.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Settings\FormatterSettings.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Settings\FormatterSettings.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Settings\FormatterSettings.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Settings\FormatterSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Settings\ParseErrorAction.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Settings\ParseErrorAction.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Settings\ParseErrorAction.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Settings\ParseErrorAction.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Settings\ParserSettings.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Settings\ParserSettings.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Settings\ParserSettings.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Settings\ParserSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Settings\SelectorFilterType.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Settings\SelectorFilterType.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Settings\SelectorFilterType.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Settings\SelectorFilterType.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Settings\SmartSettings.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Settings\SmartSettings.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Settings\SmartSettings.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Settings\SmartSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Sources\ISource.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Sources\ISource.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Sources\ISource.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Sources\ISource.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Core\Sources\Source.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Core\Sources\Source.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Core\Sources\Source.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Core\Sources\Source.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions.Time\TimeFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions.Time\TimeFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\TimeFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\TimeFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions.Time\Utilities\CommonLanguagesTimeTextInfo.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions.Time\Utilities\CommonLanguagesTimeTextInfo.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\Utilities\CommonLanguagesTimeTextInfo.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\Utilities\CommonLanguagesTimeTextInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions.Time\Utilities\TimeSpanFormatOptions.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions.Time\Utilities\TimeSpanFormatOptions.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\Utilities\TimeSpanFormatOptions.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\Utilities\TimeSpanFormatOptions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions.Time\Utilities\TimeSpanFormatOptionsConverter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions.Time\Utilities\TimeSpanFormatOptionsConverter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\Utilities\TimeSpanFormatOptionsConverter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\Utilities\TimeSpanFormatOptionsConverter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions.Time\Utilities\TimeSpanUtility.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions.Time\Utilities\TimeSpanUtility.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\Utilities\TimeSpanUtility.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\Utilities\TimeSpanUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions.Time\Utilities\TimeTextInfo.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions.Time\Utilities\TimeTextInfo.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\Utilities\TimeTextInfo.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions.Time\Utilities\TimeTextInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\ChooseFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\ChooseFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\ChooseFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\ChooseFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\ConditionalFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\ConditionalFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\ConditionalFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\ConditionalFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\DefaultFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\DefaultFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\DefaultFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\DefaultFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\DefaultSource.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\DefaultSource.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\DefaultSource.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\DefaultSource.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\DictionarySource.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\DictionarySource.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\DictionarySource.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\DictionarySource.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\IsMatchFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\IsMatchFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\IsMatchFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\IsMatchFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\KeyValuePairSource.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\KeyValuePairSource.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\KeyValuePairSource.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\KeyValuePairSource.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\ListFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\ListFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\ListFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\ListFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\NullFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\NullFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\NullFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\NullFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariablesSource.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariablesSource.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariablesSource.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariablesSource.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.binding.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.binding.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariables\PersistentVariables.binding.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariables\PersistentVariables.binding.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariables\PersistentVariables.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariables\PersistentVariables.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableEditorHooks.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableEditorHooks.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariables\VariableEditorHooks.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariables\VariableEditorHooks.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableInterfaces.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariableInterfaces.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariables\VariableInterfaces.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariables\VariableInterfaces.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariablesGroupAsset.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\VariablesGroupAsset.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariables\VariablesGroupAsset.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\PersistentVariables\VariablesGroupAsset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PluralLocalizationFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\PluralLocalizationFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\PluralLocalizationFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\PluralLocalizationFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PropertiesSource.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\PropertiesSource.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\PropertiesSource.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\PropertiesSource.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\StringSource.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\StringSource.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\StringSource.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\StringSource.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\SubStringFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\SubStringFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\SubStringFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\SubStringFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\TemplateFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\TemplateFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\TemplateFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\TemplateFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\WellKnownExtensionTypes.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Extensions\WellKnownExtensionTypes.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Extensions\WellKnownExtensionTypes.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Extensions\WellKnownExtensionTypes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\FormattingErrorEventArgs.cs">
-      <Link>Modules\SmartStrings\SmartFormat\FormattingErrorEventArgs.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\FormattingErrorEventArgs.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\FormattingErrorEventArgs.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Pooling\PoolingException.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Pooling\PoolingException.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Pooling\PoolingException.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Pooling\PoolingException.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Pooling\SmartPools.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Pooling\SmartPools.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Pooling\SmartPools.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Pooling\SmartPools.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Smart.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Smart.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Smart.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Smart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\SmartExtensions.cs">
-      <Link>Modules\SmartStrings\SmartFormat\SmartExtensions.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\SmartExtensions.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\SmartExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\SmartFormatter.cs">
-      <Link>Modules\SmartStrings\SmartFormat\SmartFormatter.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\SmartFormatter.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\SmartFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\SmartFormatterLiteralCharacterExtractor.cs">
-      <Link>Modules\SmartStrings\SmartFormat\SmartFormatterLiteralCharacterExtractor.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\SmartFormatterLiteralCharacterExtractor.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\SmartFormatterLiteralCharacterExtractor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\StringExtensionMethods.cs">
-      <Link>Modules\SmartStrings\SmartFormat\StringExtensionMethods.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\StringExtensionMethods.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\StringExtensionMethods.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Utilities\FormatDelegate.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Utilities\FormatDelegate.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Utilities\FormatDelegate.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Utilities\FormatDelegate.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Utilities\PluralRules.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Utilities\PluralRules.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Utilities\PluralRules.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Utilities\PluralRules.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Utilities\SystemTime.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Utilities\SystemTime.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Utilities\SystemTime.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Utilities\SystemTime.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Utilities\Validation.cs">
-      <Link>Modules\SmartStrings\SmartFormat\Utilities\Validation.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartFormat\Utilities\Validation.cs">
+      <Link>Modules\SmartStrings\Managed\SmartFormat\Utilities\Validation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStrings\SmartStringsSettings.cs">
-      <Link>Modules\SmartStrings\SmartStringsSettings.cs</Link>
+    <Compile Include="..\..\Modules\SmartStrings\Managed\SmartStringsSettings.cs">
+      <Link>Modules\SmartStrings\Managed\SmartStringsSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SpriteMask\Public\ScriptBindings\SpriteMask.bindings.cs">
       <Link>Modules\SpriteMask\Public\ScriptBindings\SpriteMask.bindings.cs</Link>
@@ -4396,464 +4678,464 @@
     <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs">
       <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\AssemblyInfo.cs">
-      <Link>Modules\TimelineFoundation\Runtime\AssemblyInfo.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\AssemblyInfo.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Commands\CommandHandlerFunctor.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Commands\CommandHandlerFunctor.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Commands\CommandHandlerFunctor.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Commands\CommandHandlerFunctor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Commands\ICommand.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Commands\ICommand.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Commands\ICommand.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Commands\ICommand.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Commands\ICommandTarget.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Commands\ICommandTarget.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Commands\ICommandTarget.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Commands\ICommandTarget.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Dispatcher.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Dispatcher.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Dispatcher.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Dispatcher.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\DispatcherExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\DispatcherExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\DispatcherExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\DispatcherExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\ObserverManager.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\ObserverManager.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\ObserverManager.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\ObserverManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\IInternalStateObserver.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\IInternalStateObserver.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\IInternalStateObserver.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\IInternalStateObserver.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\IStateObserver.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\IStateObserver.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\IStateObserver.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\IStateObserver.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\Observation.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\Observation.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\Observation.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\Observation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\StateComponentVersion.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\StateComponentVersion.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\StateComponentVersion.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\StateComponentVersion.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\StateObserver.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\StateObserver.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\StateObserver.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\StateObserver.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\StateObserverExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\StateObserverExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\StateObserverExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\StateObserverExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\UpdateType.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\UpdateType.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\UpdateType.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\UpdateType.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\UpdateTypeExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Observers\UpdateTypeExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\UpdateTypeExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Observers\UpdateTypeExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Serialization\SerializedReferenceDictionary.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Serialization\SerializedReferenceDictionary.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Serialization\SerializedReferenceDictionary.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Serialization\SerializedReferenceDictionary.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\Serialization\SerializedValueDictionary.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\Serialization\SerializedValueDictionary.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Serialization\SerializedValueDictionary.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\Serialization\SerializedValueDictionary.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\States\ChangesetManager.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\States\ChangesetManager.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\ChangesetManager.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\ChangesetManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\States\IChangeset.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\States\IChangeset.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\IChangeset.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\IChangeset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\States\IChangesetManager.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\States\IChangesetManager.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\IChangesetManager.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\IChangesetManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\States\IState.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\States\IState.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\IState.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\IState.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\States\IStateComponent.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\States\IStateComponent.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\IStateComponent.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\IStateComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\States\IStateComponentUpdater.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\States\IStateComponentUpdater.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\IStateComponentUpdater.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\IStateComponentUpdater.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\States\State.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\States\State.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\State.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\State.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\States\StateComponent.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\States\StateComponent.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\StateComponent.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\StateComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\CommandStateObserver\States\StateComponentHelper.cs">
-      <Link>Modules\TimelineFoundation\Runtime\CommandStateObserver\States\StateComponentHelper.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\StateComponentHelper.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\CommandStateObserver\States\StateComponentHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Common\Algorithm.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Common\Algorithm.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Common\Algorithm.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Common\Algorithm.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Common\CollectionUtilities.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Common\CollectionUtilities.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Common\CollectionUtilities.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Common\CollectionUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Common\IItemContent.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Common\IItemContent.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Common\IItemContent.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Common\IItemContent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Common\ITrackMetadata.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Common\ITrackMetadata.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Common\ITrackMetadata.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Common\ITrackMetadata.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Common\IdLookupExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Common\IdLookupExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Common\IdLookupExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Common\IdLookupExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Common\UniqueID.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Common\UniqueID.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Common\UniqueID.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Common\UniqueID.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Interfaces\ISelectionProvider.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Interfaces\ISelectionProvider.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Interfaces\ISelectionProvider.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Interfaces\ISelectionProvider.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Interfaces\SequenceSelection.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Interfaces\SequenceSelection.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Interfaces\SequenceSelection.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Interfaces\SequenceSelection.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Player\IPlayer.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Player\IPlayer.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Player\IPlayer.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Player\IPlayer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Player\IPlayerEvents.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Player\IPlayerEvents.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Player\IPlayerEvents.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Player\IPlayerEvents.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Player\ITimeSource.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Player\ITimeSource.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Player\ITimeSource.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Player\ITimeSource.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Player\TimeSourceData.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Player\TimeSourceData.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Player\TimeSourceData.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Player\TimeSourceData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\ClipBuilderExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\ClipBuilderExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\ClipBuilderExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\ClipBuilderExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\CutList.Builder.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\CutList.Builder.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\CutList.Builder.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\CutList.Builder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\CutList.ClipBuilder.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\CutList.ClipBuilder.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\CutList.ClipBuilder.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\CutList.ClipBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\CutList.GapBuilder.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\CutList.GapBuilder.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\CutList.GapBuilder.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\CutList.GapBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\CutList.ItemBuilder.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\CutList.ItemBuilder.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\CutList.ItemBuilder.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\CutList.ItemBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\GapBuilderExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\GapBuilderExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\GapBuilderExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\GapBuilderExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\ItemBuilderExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Builder\ItemBuilderExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\ItemBuilderExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Builder\ItemBuilderExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutList.Editor.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutList.Editor.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutList.Editor.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutList.Editor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutList.Item.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutList.Item.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutList.Item.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutList.Item.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutList.Iterator.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutList.Iterator.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutList.Iterator.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutList.Iterator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutList.Transition.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutList.Transition.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutList.Transition.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutList.Transition.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutList.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutList.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutList.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutList.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutListData.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\CutListData.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutListData.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\CutListData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\ContentHandlerExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\ContentHandlerExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\ContentHandlerExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\ContentHandlerExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\CutListEditorExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\CutListEditorExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\CutListEditorExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\CutListEditorExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\CutListExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\CutListExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\CutListExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\CutListExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\CutListInsertExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\CutListInsertExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\CutListInsertExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\CutListInsertExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\EditorMixExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\EditorMixExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\EditorMixExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\EditorMixExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\EditorReplaceExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\EditorReplaceExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\EditorReplaceExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\EditorReplaceExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\EditorRippleExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\EditorRippleExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\EditorRippleExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\EditorRippleExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\IContentHandler.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\Extensions\IContentHandler.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\IContentHandler.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\Extensions\IContentHandler.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\ItemData.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\CutList\ItemData.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\ItemData.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\CutList\ItemData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\ISequence.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\ISequence.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\ISequence.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\ISequence.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\Markers\Marker.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\Markers\Marker.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\Markers\Marker.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\Markers\Marker.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\Markers\MarkerList.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\Markers\MarkerList.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\Markers\MarkerList.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\Markers\MarkerList.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\Markers\MarkerListBuilderExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\Markers\MarkerListBuilderExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\Markers\MarkerListBuilderExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\Markers\MarkerListBuilderExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\Markers\MarkerListEditor.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\Markers\MarkerListEditor.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\Markers\MarkerListEditor.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\Markers\MarkerListEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Model\Sequence\SequenceEvents.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Model\Sequence\SequenceEvents.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\SequenceEvents.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Model\Sequence\SequenceEvents.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Time\AssemblyInfo.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Time\AssemblyInfo.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Time\AssemblyInfo.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Time\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Time\DiscreteTime.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Time\DiscreteTime.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Time\DiscreteTime.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Time\DiscreteTime.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Time\DiscreteTimeComparer.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Time\DiscreteTimeComparer.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Time\DiscreteTimeComparer.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Time\DiscreteTimeComparer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Time\FrameRate.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Time\FrameRate.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Time\FrameRate.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Time\FrameRate.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Time\TimeConverter.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Time\TimeConverter.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Time\TimeConverter.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Time\TimeConverter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Time\TimeRange.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Time\TimeRange.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Time\TimeRange.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Time\TimeRange.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Time\TimeTransform.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Time\TimeTransform.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Time\TimeTransform.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Time\TimeTransform.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Time\TimeViewUtility.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Time\TimeViewUtility.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Time\TimeViewUtility.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Time\TimeViewUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Time\TimelineCode.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Time\TimelineCode.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Time\TimelineCode.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Time\TimelineCode.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\Time\TimelineEditorCode.cs">
-      <Link>Modules\TimelineFoundation\Runtime\Time\TimelineEditorCode.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\Time\TimelineEditorCode.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\Time\TimelineEditorCode.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\DefaultReducers.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\DefaultReducers.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\DefaultReducers.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\DefaultReducers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\Manipulations\MoveActions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\Manipulations\MoveActions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Manipulations\MoveActions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Manipulations\MoveActions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\Manipulations\MoveReducers.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\Manipulations\MoveReducers.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Manipulations\MoveReducers.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Manipulations\MoveReducers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\Player\PlayerActions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\Player\PlayerActions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Player\PlayerActions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Player\PlayerActions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\Player\PlayerReducers.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\Player\PlayerReducers.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Player\PlayerReducers.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Player\PlayerReducers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\Selection\SelectionActions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\Selection\SelectionActions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Selection\SelectionActions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Selection\SelectionActions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\Selection\SelectionReducers.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\Selection\SelectionReducers.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Selection\SelectionReducers.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Selection\SelectionReducers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\Sequence\SequenceCommands.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\Sequence\SequenceCommands.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Sequence\SequenceCommands.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Sequence\SequenceCommands.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\Sequence\SequenceReducers.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\Sequence\SequenceReducers.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Sequence\SequenceReducers.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Sequence\SequenceReducers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\Time\TimeCommands.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\Time\TimeCommands.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Time\TimeCommands.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Time\TimeCommands.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\Time\TimeReducers.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\Time\TimeReducers.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Time\TimeReducers.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\Time\TimeReducers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\View\ViewDataActions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\View\ViewDataActions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\View\ViewDataActions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\View\ViewDataActions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Commands\View\ViewDataReducers.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Commands\View\ViewDataReducers.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\View\ViewDataReducers.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Commands\View\ViewDataReducers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Context\ManipulationContext.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Context\ManipulationContext.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Context\ManipulationContext.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Context\ManipulationContext.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Context\ManipulationContextBuilder.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Context\ManipulationContextBuilder.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Context\ManipulationContextBuilder.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Context\ManipulationContextBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Context\ManipulationContextExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Context\ManipulationContextExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Context\ManipulationContextExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Context\ManipulationContextExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Context\ViewContext.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Context\ViewContext.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Context\ViewContext.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Context\ViewContext.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\IManipulationHandler.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\IManipulationHandler.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\IManipulationHandler.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\IManipulationHandler.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\InsertionParameters.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\InsertionParameters.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\InsertionParameters.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\InsertionParameters.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\ItemManipulator.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\ItemManipulator.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\ItemManipulator.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\ItemManipulator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\ManipulationHandlerExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\ManipulationHandlerExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\ManipulationHandlerExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\ManipulationHandlerExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\MarkerManipulator.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\MarkerManipulator.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\MarkerManipulator.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\MarkerManipulator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\MixMoveBehaviour.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\MixMoveBehaviour.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\MixMoveBehaviour.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\MixMoveBehaviour.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\MoveBehaviour.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\MoveBehaviour.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\MoveBehaviour.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\MoveBehaviour.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\MoveManipulationResult.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\MoveManipulationResult.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\MoveManipulationResult.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\MoveManipulationResult.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\MoveStateBundle.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\MoveStateBundle.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\MoveStateBundle.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\MoveStateBundle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\ReplaceMoveBehaviour.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\ReplaceMoveBehaviour.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\ReplaceMoveBehaviour.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\ReplaceMoveBehaviour.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\RippleMoveBehaviour.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Move\RippleMoveBehaviour.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\RippleMoveBehaviour.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Move\RippleMoveBehaviour.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Selection\ISelectionBehaviour.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Selection\ISelectionBehaviour.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Selection\ISelectionBehaviour.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Selection\ISelectionBehaviour.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Selection\SelectionBehaviour.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Selection\SelectionBehaviour.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Selection\SelectionBehaviour.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Selection\SelectionBehaviour.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Snapping\SnapEngine.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Snapping\SnapEngine.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Snapping\SnapEngine.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Snapping\SnapEngine.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Snapping\SnapEngineExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Snapping\SnapEngineExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Snapping\SnapEngineExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Snapping\SnapEngineExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Trim\MixTrimBehaviour.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Trim\MixTrimBehaviour.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Trim\MixTrimBehaviour.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Trim\MixTrimBehaviour.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Trim\ReplaceTrimBehaviour.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Trim\ReplaceTrimBehaviour.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Trim\ReplaceTrimBehaviour.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Trim\ReplaceTrimBehaviour.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Trim\RippleTrimBehaviour.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Trim\RippleTrimBehaviour.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Trim\RippleTrimBehaviour.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Trim\RippleTrimBehaviour.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Trim\TrimBehaviour.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Manipulators\Trim\TrimBehaviour.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Trim\TrimBehaviour.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Manipulators\Trim\TrimBehaviour.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\SequenceViewModel\ISequenceViewModel.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\SequenceViewModel\ISequenceViewModel.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\SequenceViewModel\ISequenceViewModel.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\SequenceViewModel\ISequenceViewModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\SequenceViewModel\IViewModel.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\SequenceViewModel\IViewModel.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\SequenceViewModel\IViewModel.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\SequenceViewModel\IViewModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\SequenceViewModel\SequenceViewModel.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\SequenceViewModel\SequenceViewModel.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\SequenceViewModel\SequenceViewModel.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\SequenceViewModel\SequenceViewModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\SequenceViewModel\ViewModelBase.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\SequenceViewModel\ViewModelBase.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\SequenceViewModel\ViewModelBase.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\SequenceViewModel\ViewModelBase.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\SequenceViewModel\ViewModelExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\SequenceViewModel\ViewModelExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\SequenceViewModel\ViewModelExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\SequenceViewModel\ViewModelExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Events\HierarchyDiff.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Events\HierarchyDiff.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Events\HierarchyDiff.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Events\HierarchyDiff.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Events\SequenceDiff.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Events\SequenceDiff.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Events\SequenceDiff.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Events\SequenceDiff.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Events\SequenceDiffGenerator.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Events\SequenceDiffGenerator.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Events\SequenceDiffGenerator.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Events\SequenceDiffGenerator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Events\SequenceEventStream.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Events\SequenceEventStream.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Events\SequenceEventStream.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Events\SequenceEventStream.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Events\TrackChange.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Events\TrackChange.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Events\TrackChange.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Events\TrackChange.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Items\Item.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Items\Item.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Items\Item.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Items\Item.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Items\ItemExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Items\ItemExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Items\ItemExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Items\ItemExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Items\ItemFactory.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Items\ItemFactory.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Items\ItemFactory.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Items\ItemFactory.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Items\ItemTypeFlags.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Items\ItemTypeFlags.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Items\ItemTypeFlags.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Items\ItemTypeFlags.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Items\ItemView.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Items\ItemView.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Items\ItemView.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Items\ItemView.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Sequence.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Sequence.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Sequence.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Sequence.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\SequenceQuery.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\SequenceQuery.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\SequenceQuery.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\SequenceQuery.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Snapshot\SequenceSnapshot.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Snapshot\SequenceSnapshot.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Snapshot\SequenceSnapshot.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Snapshot\SequenceSnapshot.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Stack.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Stack.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Stack.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Stack.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Track.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\Track.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Track.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\Track.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\Sequence\TrackExtensions.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\Sequence\TrackExtensions.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\TrackExtensions.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\Sequence\TrackExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\ManipulationData.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\ManipulationData.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\ManipulationData.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\ManipulationData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\PlayerData.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\PlayerData.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\PlayerData.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\PlayerData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\SelectionContainer.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\SelectionContainer.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\SelectionContainer.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\SelectionContainer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\SelectionData.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\SelectionData.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\SelectionData.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\SelectionData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\SequenceData.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\SequenceData.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\SequenceData.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\SequenceData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\SequenceLookup.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\SequenceLookup.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\SequenceLookup.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\SequenceLookup.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\TimeData.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\TimeData.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\TimeData.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\TimeData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\ViewData.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\ComponentData\ViewData.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\ViewData.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\ComponentData\ViewData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\DefaultTimeSource.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\DefaultTimeSource.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\DefaultTimeSource.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\DefaultTimeSource.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\Manager\Component.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\Manager\Component.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\Manager\Component.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\Manager\Component.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\Manager\ComponentObserver.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\Manager\ComponentObserver.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\Manager\ComponentObserver.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\Manager\ComponentObserver.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\Manager\UpdateScope.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\Manager\UpdateScope.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\Manager\UpdateScope.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\Manager\UpdateScope.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\ManipulationComponent.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\ManipulationComponent.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\ManipulationComponent.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\ManipulationComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\PlayerComponent.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\PlayerComponent.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\PlayerComponent.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\PlayerComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\SelectionComponent.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\SelectionComponent.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\SelectionComponent.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\SelectionComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\SequenceSourceComponent.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\SequenceSourceComponent.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\SequenceSourceComponent.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\SequenceSourceComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\StateComponentHelpers.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\StateComponentHelpers.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\StateComponentHelpers.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\StateComponentHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\TimeComponent.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\TimeComponent.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\TimeComponent.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\TimeComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\State\Component\ViewComponent.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\State\Component\ViewComponent.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\ViewComponent.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\State\Component\ViewComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\TimelineFoundation\Runtime\ViewModel\WindowViewModel\WindowViewModel.cs">
-      <Link>Modules\TimelineFoundation\Runtime\ViewModel\WindowViewModel\WindowViewModel.cs</Link>
+    <Compile Include="..\..\Modules\TimelineFoundation\Managed\Runtime\ViewModel\WindowViewModel\WindowViewModel.cs">
+      <Link>Modules\TimelineFoundation\Managed\Runtime\ViewModel\WindowViewModel\WindowViewModel.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TypeRegistry\AssemblyInfo.cs">
       <Link>Modules\TypeRegistry\AssemblyInfo.cs</Link>
@@ -5002,6 +5284,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Bindings\ComponentBinding.cs">
       <Link>Modules\UIElements\Core\Bindings\ComponentBinding.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\ComponentBindingSelector.cs">
+      <Link>Modules\UIElements\Core\Bindings\ComponentBindingSelector.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Bindings\ConverterGroup.cs">
       <Link>Modules\UIElements\Core\Bindings\ConverterGroup.cs</Link>
     </Compile>
@@ -5091,6 +5376,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Collections\DictionaryExtensions.cs">
       <Link>Modules\UIElements\Core\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Collections\ObservableList.cs">
+      <Link>Modules\UIElements\Core\Collections\ObservableList.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Collections\SortedPairListExtensions.cs">
       <Link>Modules\UIElements\Core\Collections\SortedPairListExtensions.cs</Link>
@@ -5271,6 +5559,15 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\GenericDropdownMenu.cs">
       <Link>Modules\UIElements\Core\Controls\GenericDropdownMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\GridViewComponent.cs">
+      <Link>Modules\UIElements\Core\Controls\GridViewComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\GridViewComponentState.cs">
+      <Link>Modules\UIElements\Core\Controls\GridViewComponentState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\GridViewControl.cs">
+      <Link>Modules\UIElements\Core\Controls\GridViewControl.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\GroupBox.cs">
       <Link>Modules\UIElements\Core\Controls\GroupBox.cs</Link>
@@ -5938,6 +6235,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\PointerManipulator.cs">
       <Link>Modules\UIElements\Core\PointerManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\PooledNativeStores.cs">
+      <Link>Modules\UIElements\Core\PooledNativeStores.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\ProjectionUtils.cs">
       <Link>Modules\UIElements\Core\ProjectionUtils.cs</Link>
     </Compile>
@@ -6025,6 +6325,15 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIREntryRecorder.cs">
       <Link>Modules\UIElements\Core\Renderer\UIREntryRecorder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRFilterInstanceBatch.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRFilterInstanceBatch.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRFilterParameterValues.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRFilterParameterValues.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRFilterParameterWriter.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRFilterParameterWriter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRGpuUpdater.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRGpuUpdater.cs</Link>
     </Compile>
@@ -6091,6 +6400,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRPerGlyphTextCoreSettings.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRPerGlyphTextCoreSettings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRectPacker.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRectPacker.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderData.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderData.cs</Link>
     </Compile>
@@ -6102,6 +6414,15 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeAtlas.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeAtlas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.AtlasPlanner.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.AtlasPlanner.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.BatchScheduler.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.BatchScheduler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.EffectDrawer.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.EffectDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs</Link>
@@ -6126,6 +6447,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRShaders.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRShaders.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRShelfPacker.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRShelfPacker.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRTempAllocator.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRTempAllocator.cs</Link>
@@ -6582,6 +6906,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDataAllocator.bindings.cs">
       <Link>Modules\UIElements\Core\Style\StyleDataAllocator.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDataPoolStore.cs">
+      <Link>Modules\UIElements\Core\Style\StyleDataPoolStore.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDataRef.cs">
       <Link>Modules\UIElements\Core\Style\StyleDataRef.cs</Link>
@@ -7072,11 +7399,11 @@
     <Compile Include="..\..\Modules\UnityWebRequestTexture\UnityWebRequestTexture.cs">
       <Link>Modules\UnityWebRequestTexture\UnityWebRequestTexture.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UnityWebRequestWWW\Public\WWW.bindings.cs">
-      <Link>Modules\UnityWebRequestWWW\Public\WWW.bindings.cs</Link>
+    <Compile Include="..\..\Modules\UnityWebRequestWWW\Managed\Public\WWW.bindings.cs">
+      <Link>Modules\UnityWebRequestWWW\Managed\Public\WWW.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UnityWebRequestWWW\Public\WWW.cs">
-      <Link>Modules\UnityWebRequestWWW\Public\WWW.cs</Link>
+    <Compile Include="..\..\Modules\UnityWebRequestWWW\Managed\Public\WWW.cs">
+      <Link>Modules\UnityWebRequestWWW\Managed\Public\WWW.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityWebRequest\FriendAttributes.cs">
       <Link>Modules\UnityWebRequest\FriendAttributes.cs</Link>
@@ -7135,50 +7462,50 @@
     <Compile Include="..\..\Modules\VFX\Public\ScriptBindings\VisualEffect.bindings.cs">
       <Link>Modules\VFX\Public\ScriptBindings\VisualEffect.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\AssemblyInfo.cs">
-      <Link>Modules\VectorGraphics\AssemblyInfo.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\AssemblyInfo.cs">
+      <Link>Modules\VectorGraphics\Managed\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\AssemblyInfo.cs">
-      <Link>Modules\VectorGraphics\Runtime\AssemblyInfo.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\AssemblyInfo.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\Matrix2D.cs">
-      <Link>Modules\VectorGraphics\Runtime\Matrix2D.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\Matrix2D.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\Matrix2D.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\SVGParser.cs">
-      <Link>Modules\VectorGraphics\Runtime\SVGParser.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\SVGParser.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\SVGParser.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\SVGStyleSheet.cs">
-      <Link>Modules\VectorGraphics\Runtime\SVGStyleSheet.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\SVGStyleSheet.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\SVGStyleSheet.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\VectorClip.cs">
-      <Link>Modules\VectorGraphics\Runtime\VectorClip.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\VectorClip.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\VectorClip.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\VectorEllipse.cs">
-      <Link>Modules\VectorGraphics\Runtime\VectorEllipse.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\VectorEllipse.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\VectorEllipse.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\VectorImageUtils.cs">
-      <Link>Modules\VectorGraphics\Runtime\VectorImageUtils.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\VectorImageUtils.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\VectorImageUtils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\VectorRasterization.cs">
-      <Link>Modules\VectorGraphics\Runtime\VectorRasterization.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\VectorRasterization.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\VectorRasterization.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\VectorRectangle.cs">
-      <Link>Modules\VectorGraphics\Runtime\VectorRectangle.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\VectorRectangle.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\VectorRectangle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\VectorScene.cs">
-      <Link>Modules\VectorGraphics\Runtime\VectorScene.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\VectorScene.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\VectorScene.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\VectorSceneTessellation.cs">
-      <Link>Modules\VectorGraphics\Runtime\VectorSceneTessellation.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\VectorSceneTessellation.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\VectorSceneTessellation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\VectorSprite.cs">
-      <Link>Modules\VectorGraphics\Runtime\VectorSprite.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\VectorSprite.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\VectorSprite.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\VectorTessellation.cs">
-      <Link>Modules\VectorGraphics\Runtime\VectorTessellation.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\VectorTessellation.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\VectorTessellation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VectorGraphics\Runtime\VectorUtils.cs">
-      <Link>Modules\VectorGraphics\Runtime\VectorUtils.cs</Link>
+    <Compile Include="..\..\Modules\VectorGraphics\Managed\Runtime\VectorUtils.cs">
+      <Link>Modules\VectorGraphics\Managed\Runtime\VectorUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Vehicles\Vehicles.bindings.cs">
       <Link>Modules\Vehicles\Vehicles.bindings.cs</Link>
@@ -7546,11 +7873,26 @@
     <Compile Include="..\..\Runtime\Export\Entities\CoreModuleLightShimHooks.cs">
       <Link>Runtime\Export\Entities\CoreModuleLightShimHooks.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Entities\DefaultWorldInitialization.bindings.cs">
+      <Link>Runtime\Export\Entities\DefaultWorldInitialization.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Entities\DefaultWorldInitialization.cs">
+      <Link>Runtime\Export\Entities\DefaultWorldInitialization.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Entities\EntitiesCoreCallbacks.bindings.cs">
       <Link>Runtime\Export\Entities\EntitiesCoreCallbacks.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Entities\EntitiesWorldHooks.cs">
+      <Link>Runtime\Export\Entities\EntitiesWorldHooks.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Entities\GUIDHash128Conversions.cs">
       <Link>Runtime\Export\Entities\GUIDHash128Conversions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Entities\RuntimeApplicationPlayerLoop.cs">
+      <Link>Runtime\Export\Entities\RuntimeApplicationPlayerLoop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Entities\ScriptBehaviourUpdateOrder.cs">
+      <Link>Runtime\Export\Entities\ScriptBehaviourUpdateOrder.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Entities\UnityObjectRef.cs">
       <Link>Runtime\Export\Entities\UnityObjectRef.cs</Link>
@@ -7833,6 +8175,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Handheld\Handheld.bindings.cs">
       <Link>Runtime\Export\Handheld\Handheld.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Hashing\Crc32Utility.bindings.cs">
+      <Link>Runtime\Export\Hashing\Crc32Utility.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Hashing\HashUtilities.cs">
       <Link>Runtime\Export\Hashing\HashUtilities.cs</Link>
@@ -8449,6 +8794,9 @@
     <Compile Include="..\..\Runtime\Export\Shaders\BindingInfo.bindings.cs">
       <Link>Runtime\Export\Shaders\BindingInfo.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Shaders\ChunkEvictionStrategy.bindings.cs">
+      <Link>Runtime\Export\Shaders\ChunkEvictionStrategy.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Shaders\ComputeBuffer.bindings.cs">
       <Link>Runtime\Export\Shaders\ComputeBuffer.bindings.cs</Link>
     </Compile>
@@ -8698,11 +9046,11 @@
     <Compile Include="..\..\Runtime\Jobs\Managed\IJobParallelForTransform.cs">
       <Link>Runtime\Jobs\Managed\IJobParallelForTransform.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Misc\EntitiesMemorySetup.bindings.cs">
-      <Link>Runtime\Misc\EntitiesMemorySetup.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\NameFormatter\NameFormatter.bindings.cs">
       <Link>Runtime\NameFormatter\NameFormatter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Profiler\ScriptBindings\AsyncProfilerMarker.bindings.cs">
+      <Link>Runtime\Profiler\ScriptBindings\AsyncProfilerMarker.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\FrameDebugger.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\FrameDebugger.bindings.cs</Link>
@@ -8898,7 +9246,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_pm5lbiyz/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen__cke1_rb/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

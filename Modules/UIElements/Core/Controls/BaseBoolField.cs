@@ -26,11 +26,11 @@ namespace UnityEngine.UIElements
         // Needed by the UIBuilder for authoring in the viewport
         internal Label boolFieldLabelElement
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_Label;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool acceptClicksIfDisabled
         {
             get => m_Clickable.acceptClicksIfDisabled;
@@ -45,7 +45,7 @@ namespace UnityEngine.UIElements
         public bool toggleOnLabelClick { get; set; } = true;
 
         // Used by foldout
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool toggleOnTextClick { get; set; } = true;
 
         /// <summary>
@@ -157,10 +157,16 @@ namespace UnityEngine.UIElements
         /// <param name="newValue"></param>
         public override void SetValueWithoutNotify(bool newValue)
         {
-            visualInput.SetCheckedPseudoState(newValue);
-            SetCheckedPseudoState(newValue);
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
 
-            base.SetValueWithoutNotify(newValue);
+            using (IgnoreValidation())
+            {
+                visualInput.SetCheckedPseudoState(newValue);
+                SetCheckedPseudoState(newValue);
+
+                base.SetValueWithoutNotify(newValue);
+            }
         }
 
         void OnClickEvent(EventBase evt)

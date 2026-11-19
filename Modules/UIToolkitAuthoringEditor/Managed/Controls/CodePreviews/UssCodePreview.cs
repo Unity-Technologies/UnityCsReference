@@ -5,12 +5,14 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.UIElements;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
 
 namespace Unity.UIToolkit.Editor;
 
 [UxmlElement(visibility = LibraryVisibility.Hidden)]
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 sealed partial class UssCodePreview : CodePreview<StyleSheet>
 {
     internal class StyleSheetHighlightExporter : StyleSheetExporter
@@ -50,6 +52,8 @@ sealed partial class UssCodePreview : CodePreview<StyleSheet>
 
     internal readonly StyleSheetHighlightExporter Exporter = new ();
 
+    AuthoringContext m_Context = AuthoringContext.Global;
+
     StyleSheetExporter.UssExportOptions Options
     {
         get
@@ -81,11 +85,12 @@ sealed partial class UssCodePreview : CodePreview<StyleSheet>
         switch (evt)
         {
             case AttachToPanelEvent:
-                UICommandQueue.RegisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
+                m_Context = AuthoringContext.For(this);
+                m_Context.Messages.RegisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
                 break;
 
             case DetachFromPanelEvent:
-                UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
+                m_Context.Messages.UnregisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
                 break;
             case PointerOverLinkTagEvent overTagEvent:
             {
@@ -94,7 +99,7 @@ sealed partial class UssCodePreview : CodePreview<StyleSheet>
                     break;
 
                 var rule = Asset.rules[index];
-                HighlightUtility.RequestHighlights(rule, CommandSources.UssPreview);
+                HighlightUtility.RequestHighlights(m_Context, rule, CommandSources.UssPreview);
                 break;
             }
             case PointerMoveLinkTagEvent overTagEvent:
@@ -104,11 +109,11 @@ sealed partial class UssCodePreview : CodePreview<StyleSheet>
                     break;
 
                 var rule = Asset.rules[index];
-                HighlightUtility.RequestHighlights(rule, CommandSources.UssPreview);
+                HighlightUtility.RequestHighlights(m_Context, rule, CommandSources.UssPreview);
                 break;
             }
             case PointerOutLinkTagEvent outTagEvent:
-                HighlightUtility.ClearHighlights();
+                HighlightUtility.ClearHighlights(m_Context);
                 break;
         }
         base.HandleEventBubbleUp(evt);

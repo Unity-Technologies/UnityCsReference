@@ -20,7 +20,6 @@ namespace UnityEngine.UIElements
 {
     // This is basically the same as the standard layout update except for 1 thing :
     // - Only call dirty repaint when the layout rect has changed instead of "layoutNode.HasNewLayout"
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class VisualTreeLayoutUpdater : BaseVisualTreeUpdater
     {
          // When changing this value, we always consider that some controls may require multiple passes to compute their layout.
@@ -101,13 +100,13 @@ namespace UnityEngine.UIElements
             sb.AppendLine();
 
             // Cause
-            sb.AppendLine($"One or more elements are responding to GeometryChangedEvent by modifying layout properties, creating a recursive loop where layout changes trigger new layout changes.");
+            sb.AppendLine(layoutInstabilityCause);
             sb.AppendLine($"Panel: {panel.ownerObject.name}");
             sb.AppendLine();
 
             // Solution
-            sb.AppendLine("Identify elements that modify layout in response to geometry changes and refactor them to:");
-            sb.AppendLine("  1. Avoid modifying layout properties (size, position, flex) in GeometryChangedEvent callbacks");
+            sb.AppendLine("Identify elements that modify layout in response to geometry changes or during layout and refactor them to:");
+            sb.AppendLine("  1. Avoid modifying layout properties (size, position, flex, text) in GeometryChangedEvent callbacks, measure callbacks or IMGUIContainer onGUI");
             sb.AppendLine("  2. Use static sizing instead of dynamic calculations that depend on current layout");
             sb.AppendLine("  3. Break circular dependencies between parent and child size calculations");
             sb.AppendLine();
@@ -240,6 +239,9 @@ namespace UnityEngine.UIElements
             if ((versionChangeType & (VersionChangeType.Layout | VersionChangeType.Hierarchy)) == 0)
                 return;
 
+            if (panel.duringLayoutPhase)
+                m_LayoutChangedDuringLayoutPhase = true;
+
             var layoutNode = ve.layoutNode;
             if (layoutNode != LayoutNode.Undefined && layoutNode.UsesMeasure)
             {
@@ -247,12 +249,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        bool m_LayoutChangedDuringLayoutPhase;
+
+        string layoutInstabilityCause => m_LayoutChangedDuringLayoutPhase
+            ? "One or more elements modify layout while layout is being computed (for example text or styles changed from a measure callback or an IMGUIContainer onGUI), so every layout pass leaves the tree dirty."
+            : "One or more elements are responding to GeometryChangedEvent by modifying layout properties, creating a recursive loop where layout changes trigger new layout changes.";
+
         List<(Rect, Rect, VisualElement)> changeEventsList = new();
         List<VisualElement> missedHierarchyChangeEventsList = new();
 
         public override void Update()
         {
             m_TextJobSystem.PrepareShapingBeforeLayout(panel);
+            m_LayoutChangedDuringLayoutPhase = false;
 
             // update flex once
             int validateLayoutCount = 0;

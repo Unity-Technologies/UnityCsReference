@@ -152,19 +152,19 @@ namespace Unity.Entities
 
         public int GetChildEntities(ulong* outChildEntities, int maxCount) => IsValid ? GetChildEntities(Hierarchy, Index, outChildEntities, maxCount) : 0;
 
-        public static HierarchyTransformAccess CreateHierarchy(IntPtr entityComponentStore, float3 worldPosition, quaternion rotation, float3 scale, ulong entity, uint capacity, ulong ecsOwner)
+        public static HierarchyTransformAccess CreateHierarchy(IntPtr entityComponentStore, float3 worldPosition, quaternion rotation, float3 scale, ulong entity, uint capacity, WorldUnmanaged ecsOwner)
         {
             var result = default(HierarchyTransformAccess);
-            CreateHierarchy(entityComponentStore, &worldPosition, &rotation, &scale, entity, capacity, ecsOwner, &result.Hierarchy, &result.Index);
+            CreateHierarchy(entityComponentStore, &worldPosition, &rotation, &scale, entity, capacity, &ecsOwner, &result.Hierarchy, &result.Index);
             return result;
         }
 
         public static HierarchyTransformAccess SetParent(IntPtr entityComponentStore, HierarchyTransformAccess parent,
-            float3 worldPosition, quaternion rotation, float3 scale, ulong childEntity, ulong ecsOwner)
+            float3 worldPosition, quaternion rotation, float3 scale, ulong childEntity, WorldUnmanaged ecsOwner)
         {
             var result = default(HierarchyTransformAccess);
             SetParentWithoutHierarchy(entityComponentStore, parent.Hierarchy, parent.Index,
-                &worldPosition, &rotation, &scale, childEntity, ecsOwner, &result.Hierarchy, &result.Index);
+                &worldPosition, &rotation, &scale, childEntity, &ecsOwner, &result.Hierarchy, &result.Index);
             return result;
         }
 
@@ -235,11 +235,11 @@ namespace Unity.Entities
 
         [FreeFunction("EntitiesTransformBindings::CreateHierarchy")]
         static extern void CreateHierarchy(IntPtr entityComponentStore, void* worldPosition, void* rotation, void* scale,
-            ulong entity, uint capacity, ulong ecsOwner, IntPtr* outHierarchy, int* outIndex);
+            ulong entity, uint capacity, void* ecsOwner, IntPtr* outHierarchy, int* outIndex);
 
         [FreeFunction("EntitiesTransformBindings::SetParentWithoutHierarchy")]
         static extern void SetParentWithoutHierarchy(IntPtr entityComponentStore, IntPtr parentHierarchy, int parentIndex,
-            void* worldPosition, void* rotation, void* scale, ulong childEntity, ulong ecsOwner, IntPtr* outHierarchy, int* outIndex);
+            void* worldPosition, void* rotation, void* scale, ulong childEntity, void* ecsOwner, IntPtr* outHierarchy, int* outIndex);
 
         [FreeFunction("EntitiesTransformBindings::SetParentWithHierarchy")]
         static extern void SetParentWithHierarchy(IntPtr entityComponentStore, IntPtr parentHierarchy, int parentIndex,

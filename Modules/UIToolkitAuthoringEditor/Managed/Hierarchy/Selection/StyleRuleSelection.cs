@@ -4,10 +4,12 @@
 
 using Unity.Properties;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal class StyleRuleSelection : UISelectionObject
 {
     public static readonly BindingId StyleRuleProperty = nameof(StyleRule);

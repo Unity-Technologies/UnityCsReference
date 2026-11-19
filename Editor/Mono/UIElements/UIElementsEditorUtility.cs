@@ -13,7 +13,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class UIElementsEditorUtility
     {
         internal static readonly string s_DefaultCommonDarkStyleSheetPath = "StyleSheets/Generated/DefaultCommonDark.uss.asset";
@@ -89,6 +89,76 @@ namespace UnityEditor.UIElements
             }
 
             return s_DefaultCommonLightStyleSheet;
+        }
+
+        // Reloads the cached per-font style sheets (e.g. after an editor font change) and swaps the
+        // old ones on every live panel, which otherwise keep referencing the previous assets.
+        internal static void ReloadCommonStyleSheets()
+        {
+            var swaps = new List<(StyleSheet oldSheet, StyleSheet newSheet)>();
+
+            var oldDark = s_DefaultCommonDarkStyleSheet;
+            var oldLight = s_DefaultCommonLightStyleSheet;
+            s_DefaultCommonDarkStyleSheet = null;
+            s_DefaultCommonLightStyleSheet = null;
+            if (oldDark != null)
+                AddStyleSheetSwap(swaps, oldDark, GetCommonDarkStyleSheet());
+            if (oldLight != null)
+                AddStyleSheetSwap(swaps, oldLight, GetCommonLightStyleSheet());
+
+            Toolbar.ReloadStyleSheets(swaps);
+
+            SwapStyleSheetsInAllPanels(swaps);
+        }
+
+        internal static void AddStyleSheetSwap(List<(StyleSheet oldSheet, StyleSheet newSheet)> swaps, StyleSheet oldSheet, StyleSheet newSheet)
+        {
+            if (oldSheet != null && newSheet != null && oldSheet != newSheet)
+                swaps.Add((oldSheet, newSheet));
+        }
+
+        static void SwapStyleSheetsInAllPanels(List<(StyleSheet oldSheet, StyleSheet newSheet)> swaps)
+        {
+            if (swaps.Count == 0)
+                return;
+
+            var iterator = UIElementsUtility.GetPanelsIterator();
+            while (iterator.MoveNext())
+            {
+                SwapStyleSheetsInTree(iterator.Current.Value.visualTree, swaps);
+            }
+        }
+
+        // Window backends snapshot these settings into the panel root's inline style at creation,
+        // so a preference change must be pushed onto panels that already exist.
+        internal static void ApplyEditorTextSettingsToLivePanels()
+        {
+            var renderingMode = EditorTextSettings.GetEditorTextRenderingMode();
+            var generatorType = EditorTextSettings.GetEditorTextGeneratorType();
+
+            var iterator = UIElementsUtility.GetPanelsIterator();
+            while (iterator.MoveNext())
+            {
+                var panel = iterator.Current.Value;
+                if (panel.contextType != ContextType.Editor)
+                    continue;
+
+                var rootStyle = panel.visualTree.style;
+                rootStyle.unityEditorTextRenderingMode = renderingMode;
+                rootStyle.unityTextGenerator = generatorType;
+            }
+        }
+
+        static void SwapStyleSheetsInTree(VisualElement element, List<(StyleSheet oldSheet, StyleSheet newSheet)> swaps)
+        {
+            foreach (var (oldSheet, newSheet) in swaps)
+            {
+                if (element.styleSheets.Contains(oldSheet))
+                    element.styleSheets.Swap(oldSheet, newSheet);
+            }
+
+            for (int i = 0; i < element.hierarchy.childCount; i++)
+                SwapStyleSheetsInTree(element.hierarchy[i], swaps);
         }
 
         internal static int GetCursorId(StyleSheet sheet, StyleValueHandle handle)

@@ -832,7 +832,8 @@ namespace UnityEngine.UIElements
         private void Refresh(VisualElement element, in ResolutionContext context)
         {
             bool notify;
-            var inlineStyle = GetInlineStyle(element, context.propertiesMatchPreviousRefresh, out var refreshInlineValues);
+            var inlineStyleAccess = GetInlineStyle(element, context.propertiesMatchPreviousRefresh, out var refreshInlineValues);
+            IStyle inlineStyle = inlineStyleAccess;
 
             var layoutDataUnchanged = UpdateComputedStyleSnapshot(ref m_LayoutDataSnapshot, in element.computedStyle.layoutData.Read()) && context.propertiesMatchPreviousRefresh;
             var visualDataUnchanged = UpdateComputedStyleSnapshot(ref m_VisualDataSnapshot, in element.computedStyle.visualData.Read()) && context.propertiesMatchPreviousRefresh;
@@ -873,7 +874,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_AnimationDelay, inlineStyle.animationDelay);
+                notify |= SetInlineValue(ref m_AnimationDelay, inlineStyleAccess.GetStoredStyleList<float>(StylePropertyId.AnimationDelay));
             notify |= SetComputedValue(ref m_AnimationDelay, element.computedStyle.animationDelay);
             if (context.uxmlDataChanged[(int)StylePropertyId.AnimationDelay])
                 notify |= ApplyContext(ref m_AnimationDelay, in context);
@@ -882,7 +883,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_AnimationDirection, inlineStyle.animationDirection);
+                notify |= SetInlineValue(ref m_AnimationDirection, inlineStyleAccess.GetStoredStyleList<AnimationDirection>(StylePropertyId.AnimationDirection));
             notify |= SetComputedValue(ref m_AnimationDirection, element.computedStyle.animationDirection);
             if (context.uxmlDataChanged[(int)StylePropertyId.AnimationDirection])
                 notify |= ApplyContext(ref m_AnimationDirection, in context);
@@ -891,7 +892,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_AnimationDuration, inlineStyle.animationDuration);
+                notify |= SetInlineValue(ref m_AnimationDuration, inlineStyleAccess.GetStoredStyleList<float>(StylePropertyId.AnimationDuration));
             notify |= SetComputedValue(ref m_AnimationDuration, element.computedStyle.animationDuration);
             if (context.uxmlDataChanged[(int)StylePropertyId.AnimationDuration])
                 notify |= ApplyContext(ref m_AnimationDuration, in context);
@@ -900,7 +901,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_AnimationIterationCount, inlineStyle.animationIterationCount);
+                notify |= SetInlineValue(ref m_AnimationIterationCount, inlineStyleAccess.GetStoredStyleList<AnimationIterationCount>(StylePropertyId.AnimationIterationCount));
             notify |= SetComputedValue(ref m_AnimationIterationCount, element.computedStyle.animationIterationCount);
             if (context.uxmlDataChanged[(int)StylePropertyId.AnimationIterationCount])
                 notify |= ApplyContext(ref m_AnimationIterationCount, in context);
@@ -909,7 +910,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_AnimationNames, inlineStyle.animationNames);
+                notify |= SetInlineValue(ref m_AnimationNames, inlineStyleAccess.GetStoredStyleList<UIAnimationClip>(StylePropertyId.AnimationNames));
             notify |= SetComputedValue(ref m_AnimationNames, element.computedStyle.animationNames);
             if (context.uxmlDataChanged[(int)StylePropertyId.AnimationNames])
                 notify |= ApplyContext(ref m_AnimationNames, in context);
@@ -918,7 +919,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_AnimationPlayStates, inlineStyle.animationPlayStates);
+                notify |= SetInlineValue(ref m_AnimationPlayStates, inlineStyleAccess.GetStoredStyleList<AnimationPlayState>(StylePropertyId.AnimationPlayStates));
             notify |= SetComputedValue(ref m_AnimationPlayStates, element.computedStyle.animationPlayStates);
             if (context.uxmlDataChanged[(int)StylePropertyId.AnimationPlayStates])
                 notify |= ApplyContext(ref m_AnimationPlayStates, in context);
@@ -937,7 +938,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_BackdropFilter, inlineStyle.backdropFilter);
+                notify |= SetInlineValue(ref m_BackdropFilter, inlineStyleAccess.GetStoredStyleList<FilterFunction>(StylePropertyId.BackdropFilter));
             notify |= SetComputedValue(ref m_BackdropFilter, element.computedStyle.backdropFilter);
             if (context.uxmlDataChanged[(int)StylePropertyId.BackdropFilter])
                 notify |= ApplyContext(ref m_BackdropFilter, in context);
@@ -956,7 +957,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_BackgroundImage, inlineStyle.backgroundImage);
+                notify |= SetInlineValue(ref m_BackgroundImage, inlineStyleAccess.GetStoredStyleBackground(StylePropertyId.BackgroundImage));
             notify |= SetComputedValue(ref m_BackgroundImage, element.computedStyle.backgroundImage);
             if (context.uxmlDataChanged[(int)StylePropertyId.BackgroundImage])
                 notify |= ApplyContext(ref m_BackgroundImage, in context);
@@ -1185,7 +1186,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_Filter, inlineStyle.filter);
+                notify |= SetInlineValue(ref m_Filter, inlineStyleAccess.GetStoredStyleList<FilterFunction>(StylePropertyId.Filter));
             notify |= SetComputedValue(ref m_Filter, element.computedStyle.filter);
             if (context.uxmlDataChanged[(int)StylePropertyId.Filter])
                 notify |= ApplyContext(ref m_Filter, in context);
@@ -1254,7 +1255,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_GridAutoColumns, inlineStyle.gridAutoColumns);
+                notify |= SetInlineValue(ref m_GridAutoColumns, inlineStyleAccess.GetStoredStyleList<GridTrackSize>(StylePropertyId.GridAutoColumns));
             notify |= SetComputedValue(ref m_GridAutoColumns, element.computedStyle.gridAutoColumns);
             if (context.uxmlDataChanged[(int)StylePropertyId.GridAutoColumns])
                 notify |= ApplyContext(ref m_GridAutoColumns, in context);
@@ -1273,7 +1274,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_GridAutoRows, inlineStyle.gridAutoRows);
+                notify |= SetInlineValue(ref m_GridAutoRows, inlineStyleAccess.GetStoredStyleList<GridTrackSize>(StylePropertyId.GridAutoRows));
             notify |= SetComputedValue(ref m_GridAutoRows, element.computedStyle.gridAutoRows);
             if (context.uxmlDataChanged[(int)StylePropertyId.GridAutoRows])
                 notify |= ApplyContext(ref m_GridAutoRows, in context);
@@ -1322,7 +1323,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_GridTemplateColumns, inlineStyle.gridTemplateColumns);
+                notify |= SetInlineValue(ref m_GridTemplateColumns, inlineStyleAccess.GetStoredStyleList<GridTrackSize>(StylePropertyId.GridTemplateColumns));
             notify |= SetComputedValue(ref m_GridTemplateColumns, element.computedStyle.gridTemplateColumns);
             if (context.uxmlDataChanged[(int)StylePropertyId.GridTemplateColumns])
                 notify |= ApplyContext(ref m_GridTemplateColumns, in context);
@@ -1331,7 +1332,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_GridTemplateRows, inlineStyle.gridTemplateRows);
+                notify |= SetInlineValue(ref m_GridTemplateRows, inlineStyleAccess.GetStoredStyleList<GridTrackSize>(StylePropertyId.GridTemplateRows));
             notify |= SetComputedValue(ref m_GridTemplateRows, element.computedStyle.gridTemplateRows);
             if (context.uxmlDataChanged[(int)StylePropertyId.GridTemplateRows])
                 notify |= ApplyContext(ref m_GridTemplateRows, in context);
@@ -1630,7 +1631,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_TransitionDelay, inlineStyle.transitionDelay);
+                notify |= SetInlineValue(ref m_TransitionDelay, inlineStyleAccess.GetStoredStyleList<TimeValue>(StylePropertyId.TransitionDelay));
             notify |= SetComputedValue(ref m_TransitionDelay, element.computedStyle.transitionDelay);
             if (context.uxmlDataChanged[(int)StylePropertyId.TransitionDelay])
                 notify |= ApplyContext(ref m_TransitionDelay, in context);
@@ -1639,7 +1640,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_TransitionDuration, inlineStyle.transitionDuration);
+                notify |= SetInlineValue(ref m_TransitionDuration, inlineStyleAccess.GetStoredStyleList<TimeValue>(StylePropertyId.TransitionDuration));
             notify |= SetComputedValue(ref m_TransitionDuration, element.computedStyle.transitionDuration);
             if (context.uxmlDataChanged[(int)StylePropertyId.TransitionDuration])
                 notify |= ApplyContext(ref m_TransitionDuration, in context);
@@ -1648,7 +1649,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_TransitionProperty, inlineStyle.transitionProperty);
+                notify |= SetInlineValue(ref m_TransitionProperty, inlineStyleAccess.GetStoredStyleList<StylePropertyName>(StylePropertyId.TransitionProperty));
             notify |= SetComputedValue(ref m_TransitionProperty, element.computedStyle.transitionProperty);
             if (context.uxmlDataChanged[(int)StylePropertyId.TransitionProperty])
                 notify |= ApplyContext(ref m_TransitionProperty, in context);
@@ -1657,7 +1658,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_TransitionTimingFunction, inlineStyle.transitionTimingFunction);
+                notify |= SetInlineValue(ref m_TransitionTimingFunction, inlineStyleAccess.GetStoredStyleList<EasingFunction>(StylePropertyId.TransitionTimingFunction));
             notify |= SetComputedValue(ref m_TransitionTimingFunction, element.computedStyle.transitionTimingFunction);
             if (context.uxmlDataChanged[(int)StylePropertyId.TransitionTimingFunction])
                 notify |= ApplyContext(ref m_TransitionTimingFunction, in context);
@@ -1735,7 +1736,7 @@ namespace UnityEngine.UIElements
 
             notify = false;
             if (refreshInlineValues)
-                notify |= SetInlineValue(ref m_UnityMaterial, inlineStyle.unityMaterial);
+                notify |= SetInlineValue(ref m_UnityMaterial, inlineStyleAccess.GetStoredStyleMaterialDefinition(StylePropertyId.UnityMaterial));
             notify |= SetComputedValue(ref m_UnityMaterial, element.computedStyle.unityMaterial);
             if (context.uxmlDataChanged[(int)StylePropertyId.UnityMaterial])
                 notify |= ApplyContext(ref m_UnityMaterial, in context);

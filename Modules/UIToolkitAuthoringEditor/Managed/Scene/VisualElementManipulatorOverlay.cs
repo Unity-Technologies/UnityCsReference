@@ -87,12 +87,18 @@ sealed class VisualElementManipulatorOverlay : VisualElement
 
         style.left = origin.x / ppp;
         style.top = origin.y / ppp;
-        style.width = pt.MultiplyVector(new Vector3(targetLayout.width, 0, 0)).magnitude / ppp;
-        style.height = pt.MultiplyVector(new Vector3(0, targetLayout.height, 0)).magnitude / ppp;
+        var scaleX = pt.MultiplyVector(Vector3.right).magnitude / ppp;
+        var scaleY = pt.MultiplyVector(Vector3.up).magnitude / ppp;
+        style.width = targetLayout.width * scaleX;
+        style.height = targetLayout.height * scaleY;
 
+        var translate = m_Target.computedStyle.translate;
+        style.translate = new Translate(ToOverlaySpace(translate.x, scaleX), ToOverlaySpace(translate.y, scaleY));
         style.rotate = m_Target.computedStyle.rotate;
         style.scale = m_Target.computedStyle.scale.value;
-        style.transformOrigin = m_Target.computedStyle.transformOrigin;
+        var transformOrigin = m_Target.computedStyle.transformOrigin;
+        style.transformOrigin = new TransformOrigin(ToOverlaySpace(transformOrigin.x, scaleX),
+            ToOverlaySpace(transformOrigin.y, scaleY), transformOrigin.z);
 
         m_Mover.ZoomScale = ZoomScale;
         m_Resizer.ZoomScale = ZoomScale;
@@ -101,12 +107,17 @@ sealed class VisualElementManipulatorOverlay : VisualElement
         m_Mover.UpdateStyles();
     }
 
+    // Percentages resolve against the overlay, which has the target's size; pixels have to follow the zoom.
+    static Length ToOverlaySpace(Length length, float scale)
+        => length.unit == LengthUnit.Pixel ? Length.Pixels(length.value * scale) : length;
+
     void ClearLayout()
     {
         style.left = StyleKeyword.Null;
         style.top = StyleKeyword.Null;
         style.width = StyleKeyword.Null;
         style.height = StyleKeyword.Null;
+        style.translate = StyleKeyword.Null;
         style.rotate = StyleKeyword.Null;
         style.scale = StyleKeyword.Null;
         style.transformOrigin = StyleKeyword.Null;

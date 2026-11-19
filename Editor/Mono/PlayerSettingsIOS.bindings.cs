@@ -420,6 +420,7 @@ namespace UnityEditor
                 [NativeMethod("SetiOSSimulatorArchitecture")]
                 set;
             }
+            [Obsolete("The iOS Simulator architecture is always ARM64. This property has no effect.", false)]
             public static AppleMobileArchitectureSimulator simulatorSdkArchitecture
             {
                 get { return (AppleMobileArchitectureSimulator)simulatorSdkArchitectureInternal; }

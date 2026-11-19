@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Color = UnityEngine.Color;
@@ -58,7 +57,6 @@ namespace UnityEditor.Audio.UIElements
             element.GetColorsFromStylesheet();
         }
 
-        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         private static readonly CustomStyleProperty<Color> s_TickmarkColorProperty = new("--tickmark-color");
 
         private Color m_TickmarkColor;

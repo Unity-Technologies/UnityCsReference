@@ -18,6 +18,7 @@ using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditor.Search;
+using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -79,9 +80,11 @@ internal partial class VisualElementNodeHandler :
     public const string HierarchyItemUssClassName = HierarchyItemClassName + "__element-uss-class";
     public const string HierarchyItemTemplatePath = HierarchyItemClassName + "__template-path";
     public const string HierarchyItemDocumentExtensionClassName = HierarchyItemClassName + "__document-extension";
+    public const string HierarchyItemDocumentNodeClassName = HierarchyItemClassName + "__document-node";
     public const string HierarchyItemDisabledClassName = HierarchyItemClassName + "__disabled";
     public const string HierarchyItemAttributeOverrideBarClassName = HierarchyItemClassName + "__attribute-override-bar";
     internal const string MissingTemplateLabel = "(missing)";
+    internal const string BuiltInDocumentName = "Preview";
 
     private const string k_StyleSheetPath = "UIToolkitAuthoring/Hierarchy/VisualElementNodeTypeHandler.uss";
 
@@ -226,6 +229,7 @@ internal partial class VisualElementNodeHandler :
     VisualElement m_HoveredElement;
 
     NodeHandlerStageStrategy m_StageStrategy;
+    AuthoringContext m_Context = AuthoringContext.Global;
 
     // The live root of the document the stage edits, when it edits a single one. Resolved on initialization and
     // on every re-clone of that document.
@@ -325,13 +329,15 @@ internal partial class VisualElementNodeHandler :
 
     protected internal NodeHandlerStageStrategy StageStrategy => m_StageStrategy;
 
+    internal AuthoringContext Context => m_Context;
+
     NodeHandlerStageStrategy CreateStrategyFromStage()
     {
         var stage = HierarchyWindow.GetStage(Hierarchy);
         return stage switch
         {
             MainStage or PrefabStage => new MainStageNodeHandlerStrategy(stage),
-            VisualElementEditingStage mainStage => new UIStageNodeHandlerStrategy(mainStage),
+            VisualElementEditingStage uiStage => new UIDocumentSessionStrategy(uiStage.GetOrCreateSession(), uiStage),
             _ => new UnsupportedNodeHandlerStrategy(stage)
         };
     }
@@ -380,9 +386,9 @@ internal partial class VisualElementNodeHandler :
                 return;
             m_HoveredElement = value;
             if (m_HoveredElement != null)
-                HighlightUtility.RequestHighlights(m_HoveredElement, CommandSources.Hierarchy);
+                HighlightUtility.RequestHighlights(m_Context, m_HoveredElement, CommandSources.Hierarchy);
             else
-                HighlightUtility.ClearHighlights();
+                HighlightUtility.ClearHighlights(m_Context);
         }
     }
 
@@ -397,7 +403,6 @@ internal partial class VisualElementNodeHandler :
 
     protected override void Initialize()
     {
-        UICommandQueue.RegisterHandler<HighlightCommand>(ProcessHighlightElementsCommand);
         UICommandQueue.RegisterHandler<AddClassCommand>(OnClassAddedToElement);
         UICommandQueue.RegisterHandler<CutElementsCommand>(OnElementsCut);
         UICommandQueue.RegisterHandler<CopyElementsCommand>(ClearCutFlagsOnSuccess);
@@ -408,6 +413,10 @@ internal partial class VisualElementNodeHandler :
         UICommandQueue.GroupEnded += OnCommandGroupEnded;
 
         m_StageStrategy = CreateStageStrategy();
+        m_Context = m_StageStrategy.Context;
+        m_Context.Messages.RegisterHandler<HighlightCommand>(ProcessHighlightElementsCommand);
+        if (!m_Context.IsGlobal)
+            m_Context.ElementHandler = this;
         m_StageStrategy.DocumentCloned += OnDocumentCloned;
         m_StageStrategy.Initialize(this);
 
@@ -431,7 +440,9 @@ internal partial class VisualElementNodeHandler :
         HoveredElement = null;
         UnregisterAllPanels();
         UIToolkitAuthoringSettings.DisplayOptionsChanged -= OnDisplayOptionsChanged;
-        UICommandQueue.UnregisterHandler<HighlightCommand>(ProcessHighlightElementsCommand);
+        m_Context.Messages.UnregisterHandler<HighlightCommand>(ProcessHighlightElementsCommand);
+        if (m_Context.ElementHandler == this)
+            m_Context.ElementHandler = null;
         UICommandQueue.UnregisterHandler<AddClassCommand>(OnClassAddedToElement);
         UICommandQueue.UnregisterHandler<CutElementsCommand>(OnElementsCut);
         UICommandQueue.UnregisterHandler<CopyElementsCommand>(ClearCutFlagsOnSuccess);
@@ -688,11 +699,11 @@ internal partial class VisualElementNodeHandler :
 
             if (selectionSet)
             {
-                Selection.Add(entityId);
+                m_Context.Selection.Add(entityId);
             }
             else
             {
-                Selection.activeEntityId = entityId;
+                m_Context.Selection.ActiveEntityId = entityId;
                 selectionSet = true;
             }
         }
@@ -716,6 +727,21 @@ internal partial class VisualElementNodeHandler :
     /// </remarks>
     void FrameAndBeginRename(in HierarchyNode node)
     {
+        // A local context has its own hierarchy view, not one of the Hierarchy windows.
+        if (!m_Context.IsGlobal)
+        {
+            foreach (var weakRef in m_Views)
+            {
+                if (weakRef.TryGetTarget(out var boundView))
+                {
+                    boundView.ScheduleFrameAndBeginRename(in node);
+                    return;
+                }
+            }
+
+            return;
+        }
+
         var window = HierarchyWindow.LastInteractedWindow;
         var view = window ? window.View : null;
         if (view == null || !IsBoundView(view))
@@ -936,6 +962,14 @@ internal partial class VisualElementNodeHandler :
         if (VisualElementReferenceTools.TryGetInMemoryPath(element, pathBuffer))
             return true;
 
+        // A document node stands for its whole scope: the marker alone is a path no element has.
+        if (StageStrategy.GetDocumentNodeAsset(element) != null)
+        {
+            pathBuffer.Clear();
+            pathBuffer.Add(k_NonAssetPathMarker);
+            return true;
+        }
+
         using var _ = ListPool<int>.Get(out var indexChain);
 
         var node = element;
@@ -1044,11 +1078,16 @@ internal partial class VisualElementNodeHandler :
         // Rows recycle without an unbind, so drop any extension label left over from a previous binding.
         item.Q<Label>(className: HierarchyItemDocumentExtensionClassName)?.RemoveFromHierarchy();
 
-        if (element is IPanelComponentRootElement rootElement)
+        var isDocumentNode = StageStrategy.GetDocumentNodeAsset(element) != null;
+        item.RowContainer.EnableInClassList(HierarchyItemDocumentNodeClassName, isDocumentNode);
+
+        if (TryGetDocumentRowAsset(element, out var document))
         {
-            // The row shows only the file name here; the extension and unsaved marker sit in a separate,
-            // non-editable label so renaming the row edits the name part alone.
-            BindDocumentExtension(item, rootElement);
+            // A renamable row shows only the file name here; the extension and unsaved marker sit in a separate,
+            // non-editable label so renaming the row edits the name part alone. The document node is never
+            // renamed, so it reads as one label, like a style sheet row.
+            if (!isDocumentNode)
+                BindDocumentExtension(item, document);
             return;
         }
 
@@ -1082,13 +1121,13 @@ internal partial class VisualElementNodeHandler :
 
     // The non-editable part of a document root row, right after the renamable name label (see
     // GetDocumentRowParts, which derives both).
-    void BindDocumentExtension(HierarchyViewItem item, IPanelComponentRootElement rootElement)
+    void BindDocumentExtension(HierarchyViewItem item, VisualTreeAsset document)
     {
         var nameElement = item.Q(className: "hierarchy-item__name");
         if (nameElement == null)
             return;
 
-        GetDocumentRowParts(rootElement, out _, out var suffix);
+        GetDocumentRowParts(document, out _, out var suffix);
         if (string.IsNullOrEmpty(suffix))
             return;
 
@@ -1109,7 +1148,14 @@ internal partial class VisualElementNodeHandler :
         bool includeUnsavedMarker = true)
     {
         var panelComponent = rootElement.panelComponent;
-        var vta = panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null;
+        GetDocumentRowParts(panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null, out name, out suffix,
+            includeUnsavedMarker);
+    }
+
+    /// <inheritdoc cref="GetDocumentRowParts(IPanelComponentRootElement, out string, out string, bool)"/>
+    internal static void GetDocumentRowParts(VisualTreeAsset vta, out string name, out string suffix,
+        bool includeUnsavedMarker = true)
+    {
         if (!vta)
         {
             name = "<none>";
@@ -1118,7 +1164,12 @@ internal partial class VisualElementNodeHandler :
         }
 
         var path = AssetDatabase.GetAssetPath(vta);
-        if (!string.IsNullOrEmpty(path))
+        if (URIHelpers.IsBuiltinResourcePath(path))
+        {
+            name = BuiltInDocumentName;
+            suffix = string.Empty;
+        }
+        else if (!string.IsNullOrEmpty(path))
         {
             name = Path.GetFileNameWithoutExtension(path);
             suffix = Path.GetExtension(path);
@@ -1134,12 +1185,30 @@ internal partial class VisualElementNodeHandler :
     }
 
     /// <summary>
+    /// Whether <paramref name="element"/> is the row of a document rather than of an element: a scene document's
+    /// root, or the node the stage shows its document as.
+    /// </summary>
+    bool TryGetDocumentRowAsset(VisualElement element, out VisualTreeAsset document)
+    {
+        if (element is IPanelComponentRootElement rootElement)
+        {
+            var panelComponent = rootElement.panelComponent;
+            document = panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null;
+            return true;
+        }
+
+        document = StageStrategy.GetDocumentNodeAsset(element);
+        return document != null;
+    }
+
+    /// <summary>
     /// Called when a hierarchy view item is unbound from a hierarchy view, allowing cleanup of the view item.
     /// </summary>
     /// <param name="item">The hierarchy view item.</param>
     /// <param name="element">The <see cref="VisualElement"/> to unbind.</param>
     protected virtual void Unbind(HierarchyViewItem item, VisualElement element)
     {
+        item.RowContainer.RemoveFromClassList(HierarchyItemDocumentNodeClassName);
         var nameElement = item.Q(className: "hierarchy-item__name");
         nameElement.RemoveFromClassList(HierarchyItemElementNameClassName);
         nameElement.EnableInClassList("unity-disabled", false);
@@ -1320,7 +1389,9 @@ internal partial class VisualElementNodeHandler :
     /// <param name="element">The <see cref="VisualElement"/>.</param>
     /// <returns>The icon.</returns>
     protected virtual Background GetIcon(VisualElement element)
-        => UIResources.GetIconForElement(element, UIResources.RequestSize.Px16);
+        => StageStrategy.GetDocumentNodeAsset(element) != null
+            ? Background.FromTexture2D(EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D)
+            : UIResources.GetIconForElement(element, UIResources.RequestSize.Px16);
 
     /// <summary>
     /// Queries the handler to figure out if a node should be created for the request <see cref="VisualElement"/>.
@@ -1519,6 +1590,9 @@ internal partial class VisualElementNodeHandler :
 
         for (var i = 0; i < assets.Count; ++i)
             m_NodesToSelect.Add(new SelectionRequest(assets[i]));
+
+        // A request for elements that already exist has no edit to bring the update it resolves on.
+        MarkHierarchyDirty();
     }
 
     /// <summary>

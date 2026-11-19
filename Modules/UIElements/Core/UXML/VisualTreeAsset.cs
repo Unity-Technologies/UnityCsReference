@@ -28,7 +28,6 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         internal delegate void AuthoringIdConflictResolvedHandler(UxmlAsset asset, int oldId, int newId);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal const string NoRegisteredUxmlElementErrorMessage = "Element '{0}' is missing a UxmlElementAttribute. Please ensure that you have the correct namespace imported.";
         internal const string NoRegisteredUxmlElementErrorMessageLabel = "Unknown type: '{0}'";
         internal const string TemplateAliasExistsError = $"{nameof(VisualTreeAsset)}: could not register a template alias for asset `{{0}}`, alias is already defined for asset '{{1}}'";
@@ -96,10 +95,9 @@ namespace UnityEngine.UIElements
         private static readonly HashSet<VisualTreeAsset> s_CloningAssets = new HashSet<VisualTreeAsset>();
 
         [Serializable]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal partial struct UsingEntry : IEquatable<UsingEntry>
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             [NoAutoStaticsCleanup]
             internal static readonly IComparer<UsingEntry> comparer = new UsingEntryComparer();
 
@@ -153,7 +151,6 @@ namespace UnityEngine.UIElements
         }
 
         [Serializable]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal struct SlotUsageEntry
         {
             [SerializeField] public string slotName;
@@ -205,7 +202,7 @@ namespace UnityEngine.UIElements
 
         internal List<UsingEntry> usings
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_Usings;
         }
 
@@ -242,10 +239,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [SerializeField] internal StyleSheet inlineSheet;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal StyleSheet GetOrCreateInlineStyleSheet()
         {
             if (inlineSheet == null)
@@ -274,7 +271,7 @@ namespace UnityEngine.UIElements
 
         internal VisualElementAsset visualTreeNoAlloc
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 return m_VisualTree;
@@ -297,7 +294,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SetRootAsset(VisualElementAsset root)
         {
             if (null != m_VisualTree)
@@ -351,7 +347,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
         {
             if (string.IsNullOrEmpty(fieldUxmlName))
@@ -376,7 +372,7 @@ namespace UnityEngine.UIElements
             SetupReferences();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetupReferences()
         {
             m_UsedIds = null;
@@ -393,7 +389,6 @@ namespace UnityEngine.UIElements
         [SerializeField]
         List<AssetEntry> m_AssetEntries = new List<AssetEntry>();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool AssetEntryExists(string path, Type type)
         {
             foreach (var entry in m_AssetEntries)
@@ -405,13 +400,11 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void RegisterAssetEntry(string path, Type type, Object asset)
         {
             m_AssetEntries.Add(new AssetEntry(path, type, asset));
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void TransferAssetEntries(VisualTreeAsset otherVta)
         {
             m_AssetEntries.Clear();
@@ -420,7 +413,6 @@ namespace UnityEngine.UIElements
 
         internal T GetAsset<T>(string path) where T : Object => GetAsset(path, typeof(T)) as T;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Object GetAsset(string path, Type type)
         {
             foreach (var entry in m_AssetEntries)
@@ -452,7 +444,6 @@ namespace UnityEngine.UIElements
 
         internal int contentContainerId
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get { return m_ContentContainerId; }
             set { m_ContentContainerId = value; }
         }
@@ -883,7 +874,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool TryGetSlotInsertionPoint(int insertionPointId, out string slotName)
         {
             for (var index = 0; index < m_Slots.Count; index++)
@@ -919,7 +909,6 @@ namespace UnityEngine.UIElements
             m_Usings.Remove(entry);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal VisualTreeAsset ResolveTemplate(string templateName)
         {
             if (!TryGetUsingEntry(templateName, out UsingEntry entry))
@@ -935,7 +924,7 @@ namespace UnityEngine.UIElements
             return Panel.LoadResource(path, typeof(VisualTreeAsset),1) as VisualTreeAsset;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool TemplateExists(string templateName)
         {
             if (m_Usings.Count == 0)
@@ -944,19 +933,18 @@ namespace UnityEngine.UIElements
             return index >= 0;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void RegisterTemplate(string templateName, string path)
         {
             InsertUsingEntry(new UsingEntry(templateName, path));
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void RegisterTemplate(string templateName, VisualTreeAsset asset)
         {
             InsertUsingEntry(new UsingEntry(templateName, asset));
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void RegisterTemplate(string templateName, string path, VisualTreeAsset asset)
         {
             InsertUsingEntry(new UsingEntry(templateName, path, asset));
@@ -1019,7 +1007,6 @@ namespace UnityEngine.UIElements
             m_Usings.Insert(i, entry);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static VisualElement Create(VisualElementAsset asset, CreationContext ctx, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode = null)
         {
             if (asset.serializedData == null)
@@ -1080,7 +1067,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal IEnumerable<UxmlAsset> DepthFirstTraversal()
         {
             if (null == m_VisualTree)
@@ -1115,7 +1102,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int DepthFirstTraversalIndexOf(UxmlAsset uxmlAsset)
         {
             var index = 0;
@@ -1131,7 +1117,6 @@ namespace UnityEngine.UIElements
             return -1;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int GenerateNewId(UxmlAsset vea)
         {
             return GenerateNewId(vea, vea.SiblingIndex(), UsedIds);
@@ -1256,7 +1241,7 @@ namespace UnityEngine.UIElements
             uxmlAsset.RemoveAttribute(UxmlAsset.AuthoringIdAttribute);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElementAsset ReparentElementInDocument(VisualElementAsset vea, VisualElementAsset newParent, int index = -1)
         {
             var actualParent = newParent ?? visualTree;
@@ -1277,7 +1262,7 @@ namespace UnityEngine.UIElements
             return vea;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void Swallow(VisualElementAsset parent, VisualTreeAsset other)
         {
             using var _ = ListPool<UxmlAsset>.Get(out var list);
@@ -1329,7 +1314,7 @@ namespace UnityEngine.UIElements
             toStyleSheet.RequestRebuild();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElementAsset AddElementOfType(VisualElementAsset parent, string fullTypeName)
         {
             var xmlns = VisualTreeAssetUtilities.FindUxmlNamespaceDefinitionForTypeName(this, parent, fullTypeName);
@@ -1401,7 +1386,6 @@ namespace UnityEngine.UIElements
     /// </summary>
     public partial struct CreationContext : IEquatable<CreationContext>
     {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal struct AttributeOverrideRange
         {
             internal readonly VisualTreeAsset sourceAsset;
@@ -1414,7 +1398,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal struct SerializedDataOverrideRange
         {
             internal readonly VisualTreeAsset sourceAsset;
@@ -1441,10 +1424,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public VisualElement target { get; private set; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal List<int> veaIdsPath
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get;
             private set;
         }
@@ -1468,7 +1449,7 @@ namespace UnityEngine.UIElements
 
         internal bool hasOverrides => attributeOverrides?.Count > 0 || serializedDataOverrides?.Count > 0;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal CreationContext(VisualTreeAsset vta)
             : this((Dictionary<string, VisualElement>) null, vta, null)
         { }
@@ -1477,7 +1458,6 @@ namespace UnityEngine.UIElements
             : this(slotInsertionPoints, null, null, null)
         { }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal CreationContext(
             Dictionary<string, VisualElement> slotInsertionPoints,
             List<AttributeOverrideRange> attributeOverrides)
@@ -1490,7 +1470,6 @@ namespace UnityEngine.UIElements
             : this(slotInsertionPoints, null, vta, target)
         { }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal CreationContext(
             Dictionary<string, VisualElement> slotInsertionPoints,
             List<AttributeOverrideRange> attributeOverrides,
@@ -1498,7 +1477,6 @@ namespace UnityEngine.UIElements
             : this(slotInsertionPoints, attributeOverrides, null, vta, target, null, null, null)
         { }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal CreationContext(
             Dictionary<string, VisualElement> slotInsertionPoints,
             List<AttributeOverrideRange> attributeOverrides,

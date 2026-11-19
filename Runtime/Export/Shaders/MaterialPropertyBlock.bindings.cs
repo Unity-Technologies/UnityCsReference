@@ -15,7 +15,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/ShaderPropertySheet.h")]
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
-    [NativeHeader("Runtime/Math/SphericalHarmonicsL2.h")]
+    [NativeHeader("Runtime/Camera/LightProbePropertySheet.h")]
     public sealed partial class MaterialPropertyBlock
     {
         // TODO: get buffer is missing

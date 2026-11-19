@@ -877,6 +877,15 @@ namespace UnityEditor
                 i.m_Parent = this;
         }
 
+        private protected override void RestoreWindowLinks()
+        {
+            foreach (EditorWindow i in m_Panes)
+            {
+                if (i)
+                    i.m_Parent = this;
+            }
+        }
+
         private static void CheckDragWindowExists()
         {
             if (s_IsDragging && !PaneDragTab.get.m_Window)

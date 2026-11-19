@@ -1723,7 +1723,7 @@ namespace Unity.Collections
         /// <returns>A reference to the byte at the index.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown if the index is out of bounds.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref byte ElementAt(int index)
+        public readonly ref byte ElementAt(int index)
         {
             unsafe
             {
@@ -1781,7 +1781,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -1820,20 +1820,20 @@ namespace Unity.Collections
             /// In an enumerator's initial state, <see cref="Current"/> is not valid to read.
             /// </remarks>
             /// <value>The current character.</value>
-            public Unicode.Rune Current
+            public readonly Unicode.Rune Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => current;
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
         /// Returns an enumerator for iterating over the characters of this string.
         /// </summary>
         /// <returns>An enumerator for iterating over the characters of the FixedString32Bytes.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             return new Enumerator(this);
         }
@@ -1860,7 +1860,7 @@ namespace Unity.Collections
         /// <param name="other">A string to compare for equality.</param>
         /// <returns>True if this string and the other have the same length and all the same characters.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public bool Equals(String other)
+        public readonly bool Equals(String other)
         {
             unsafe {
                 int alen = utf8LengthInBytes;
@@ -2052,7 +2052,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString32Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString32Bytes other)
+        public readonly bool Equals(FixedString32Bytes other)
         {
             return this == other;
         }
@@ -2132,7 +2132,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString64Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString64Bytes other)
+        public readonly bool Equals(FixedString64Bytes other)
         {
             return this == other;
         }
@@ -2220,7 +2220,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString128Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString128Bytes other)
+        public readonly bool Equals(FixedString128Bytes other)
         {
             return this == other;
         }
@@ -2308,7 +2308,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString512Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString512Bytes other)
+        public readonly bool Equals(FixedString512Bytes other)
         {
             return this == other;
         }
@@ -2396,7 +2396,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString4096Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString4096Bytes other)
+        public readonly bool Equals(FixedString4096Bytes other)
         {
             return this == other;
         }
@@ -2491,9 +2491,9 @@ namespace Unity.Collections
         /// </summary>
         /// <remarks>Only the character bytes are included in the hash: any bytes beyond <see cref="Length"/> are not part of the hash.</remarks>
         /// <returns>The hash code of this string.</returns>
-        public override int GetHashCode()
+        public override readonly unsafe int GetHashCode()
         {
-            return this.ComputeHashCode();
+            return (int)CollectionHelper.Hash(GetUnsafePtr(), Length);
         }
 
         /// <summary>
@@ -2506,7 +2506,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare for equality.</param>
         /// <returns>True if this string and the object are equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if(ReferenceEquals(null, obj)) return false;
             if(obj is String aString) return Equals(aString);
@@ -2529,7 +2529,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckLengthInRange(int length)
+        readonly void CheckLengthInRange(int length)
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException($"Length {length} must be positive.");
@@ -2538,7 +2538,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckCapacityInRange(int capacity)
+        readonly void CheckCapacityInRange(int capacity)
         {
             if (capacity > utf8MaxLengthInBytes)
                 throw new ArgumentOutOfRangeException($"Capacity {capacity} must be lower than {utf8MaxLengthInBytes}.");
@@ -2862,7 +2862,7 @@ namespace Unity.Collections
         /// <returns>A reference to the byte at the index.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown if the index is out of bounds.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref byte ElementAt(int index)
+        public readonly ref byte ElementAt(int index)
         {
             unsafe
             {
@@ -2920,7 +2920,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -2959,20 +2959,20 @@ namespace Unity.Collections
             /// In an enumerator's initial state, <see cref="Current"/> is not valid to read.
             /// </remarks>
             /// <value>The current character.</value>
-            public Unicode.Rune Current
+            public readonly Unicode.Rune Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => current;
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
         /// Returns an enumerator for iterating over the characters of this string.
         /// </summary>
         /// <returns>An enumerator for iterating over the characters of the FixedString64Bytes.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             return new Enumerator(this);
         }
@@ -2999,7 +2999,7 @@ namespace Unity.Collections
         /// <param name="other">A string to compare for equality.</param>
         /// <returns>True if this string and the other have the same length and all the same characters.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public bool Equals(String other)
+        public readonly bool Equals(String other)
         {
             unsafe {
                 int alen = utf8LengthInBytes;
@@ -3191,7 +3191,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString32Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString32Bytes other)
+        public readonly bool Equals(FixedString32Bytes other)
         {
             return this == other;
         }
@@ -3271,7 +3271,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString64Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString64Bytes other)
+        public readonly bool Equals(FixedString64Bytes other)
         {
             return this == other;
         }
@@ -3351,7 +3351,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString128Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString128Bytes other)
+        public readonly bool Equals(FixedString128Bytes other)
         {
             return this == other;
         }
@@ -3439,7 +3439,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString512Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString512Bytes other)
+        public readonly bool Equals(FixedString512Bytes other)
         {
             return this == other;
         }
@@ -3527,7 +3527,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString4096Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString4096Bytes other)
+        public readonly bool Equals(FixedString4096Bytes other)
         {
             return this == other;
         }
@@ -3622,9 +3622,9 @@ namespace Unity.Collections
         /// </summary>
         /// <remarks>Only the character bytes are included in the hash: any bytes beyond <see cref="Length"/> are not part of the hash.</remarks>
         /// <returns>The hash code of this string.</returns>
-        public override int GetHashCode()
+        public override readonly unsafe int GetHashCode()
         {
-            return this.ComputeHashCode();
+            return (int)CollectionHelper.Hash(GetUnsafePtr(), Length);
         }
 
         /// <summary>
@@ -3637,7 +3637,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare for equality.</param>
         /// <returns>True if this string and the object are equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if(ReferenceEquals(null, obj)) return false;
             if(obj is String aString) return Equals(aString);
@@ -3660,7 +3660,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckLengthInRange(int length)
+        readonly void CheckLengthInRange(int length)
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException($"Length {length} must be positive.");
@@ -3669,7 +3669,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckCapacityInRange(int capacity)
+        readonly void CheckCapacityInRange(int capacity)
         {
             if (capacity > utf8MaxLengthInBytes)
                 throw new ArgumentOutOfRangeException($"Capacity {capacity} must be lower than {utf8MaxLengthInBytes}.");
@@ -4013,7 +4013,7 @@ namespace Unity.Collections
         /// <returns>A reference to the byte at the index.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown if the index is out of bounds.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref byte ElementAt(int index)
+        public readonly ref byte ElementAt(int index)
         {
             unsafe
             {
@@ -4071,7 +4071,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -4110,20 +4110,20 @@ namespace Unity.Collections
             /// In an enumerator's initial state, <see cref="Current"/> is not valid to read.
             /// </remarks>
             /// <value>The current character.</value>
-            public Unicode.Rune Current
+            public readonly Unicode.Rune Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => current;
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
         /// Returns an enumerator for iterating over the characters of this string.
         /// </summary>
         /// <returns>An enumerator for iterating over the characters of the FixedString128Bytes.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             return new Enumerator(this);
         }
@@ -4150,7 +4150,7 @@ namespace Unity.Collections
         /// <param name="other">A string to compare for equality.</param>
         /// <returns>True if this string and the other have the same length and all the same characters.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public bool Equals(String other)
+        public readonly bool Equals(String other)
         {
             unsafe {
                 int alen = utf8LengthInBytes;
@@ -4342,7 +4342,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString32Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString32Bytes other)
+        public readonly bool Equals(FixedString32Bytes other)
         {
             return this == other;
         }
@@ -4422,7 +4422,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString64Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString64Bytes other)
+        public readonly bool Equals(FixedString64Bytes other)
         {
             return this == other;
         }
@@ -4502,7 +4502,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString128Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString128Bytes other)
+        public readonly bool Equals(FixedString128Bytes other)
         {
             return this == other;
         }
@@ -4582,7 +4582,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString512Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString512Bytes other)
+        public readonly bool Equals(FixedString512Bytes other)
         {
             return this == other;
         }
@@ -4670,7 +4670,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString4096Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString4096Bytes other)
+        public readonly bool Equals(FixedString4096Bytes other)
         {
             return this == other;
         }
@@ -4765,9 +4765,9 @@ namespace Unity.Collections
         /// </summary>
         /// <remarks>Only the character bytes are included in the hash: any bytes beyond <see cref="Length"/> are not part of the hash.</remarks>
         /// <returns>The hash code of this string.</returns>
-        public override int GetHashCode()
+        public override readonly unsafe int GetHashCode()
         {
-            return this.ComputeHashCode();
+            return (int)CollectionHelper.Hash(GetUnsafePtr(), Length);
         }
 
         /// <summary>
@@ -4780,7 +4780,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare for equality.</param>
         /// <returns>True if this string and the object are equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if(ReferenceEquals(null, obj)) return false;
             if(obj is String aString) return Equals(aString);
@@ -4803,7 +4803,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckLengthInRange(int length)
+        readonly void CheckLengthInRange(int length)
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException($"Length {length} must be positive.");
@@ -4812,7 +4812,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckCapacityInRange(int capacity)
+        readonly void CheckCapacityInRange(int capacity)
         {
             if (capacity > utf8MaxLengthInBytes)
                 throw new ArgumentOutOfRangeException($"Capacity {capacity} must be lower than {utf8MaxLengthInBytes}.");
@@ -5276,7 +5276,7 @@ namespace Unity.Collections
         /// <returns>A reference to the byte at the index.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown if the index is out of bounds.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref byte ElementAt(int index)
+        public readonly ref byte ElementAt(int index)
         {
             unsafe
             {
@@ -5334,7 +5334,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -5373,20 +5373,20 @@ namespace Unity.Collections
             /// In an enumerator's initial state, <see cref="Current"/> is not valid to read.
             /// </remarks>
             /// <value>The current character.</value>
-            public Unicode.Rune Current
+            public readonly Unicode.Rune Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => current;
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
         /// Returns an enumerator for iterating over the characters of this string.
         /// </summary>
         /// <returns>An enumerator for iterating over the characters of the FixedString512Bytes.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             return new Enumerator(this);
         }
@@ -5413,7 +5413,7 @@ namespace Unity.Collections
         /// <param name="other">A string to compare for equality.</param>
         /// <returns>True if this string and the other have the same length and all the same characters.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public bool Equals(String other)
+        public readonly bool Equals(String other)
         {
             unsafe {
                 int alen = utf8LengthInBytes;
@@ -5605,7 +5605,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString32Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString32Bytes other)
+        public readonly bool Equals(FixedString32Bytes other)
         {
             return this == other;
         }
@@ -5685,7 +5685,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString64Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString64Bytes other)
+        public readonly bool Equals(FixedString64Bytes other)
         {
             return this == other;
         }
@@ -5765,7 +5765,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString128Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString128Bytes other)
+        public readonly bool Equals(FixedString128Bytes other)
         {
             return this == other;
         }
@@ -5845,7 +5845,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString512Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString512Bytes other)
+        public readonly bool Equals(FixedString512Bytes other)
         {
             return this == other;
         }
@@ -5925,7 +5925,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString4096Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString4096Bytes other)
+        public readonly bool Equals(FixedString4096Bytes other)
         {
             return this == other;
         }
@@ -6020,9 +6020,9 @@ namespace Unity.Collections
         /// </summary>
         /// <remarks>Only the character bytes are included in the hash: any bytes beyond <see cref="Length"/> are not part of the hash.</remarks>
         /// <returns>The hash code of this string.</returns>
-        public override int GetHashCode()
+        public override readonly unsafe int GetHashCode()
         {
-            return this.ComputeHashCode();
+            return (int)CollectionHelper.Hash(GetUnsafePtr(), Length);
         }
 
         /// <summary>
@@ -6035,7 +6035,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare for equality.</param>
         /// <returns>True if this string and the object are equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if(ReferenceEquals(null, obj)) return false;
             if(obj is String aString) return Equals(aString);
@@ -6058,7 +6058,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckLengthInRange(int length)
+        readonly void CheckLengthInRange(int length)
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException($"Length {length} must be positive.");
@@ -6067,7 +6067,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckCapacityInRange(int capacity)
+        readonly void CheckCapacityInRange(int capacity)
         {
             if (capacity > utf8MaxLengthInBytes)
                 throw new ArgumentOutOfRangeException($"Capacity {capacity} must be lower than {utf8MaxLengthInBytes}.");
@@ -7651,7 +7651,7 @@ namespace Unity.Collections
         /// <returns>A reference to the byte at the index.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown if the index is out of bounds.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref byte ElementAt(int index)
+        public readonly ref byte ElementAt(int index)
         {
             unsafe
             {
@@ -7709,7 +7709,7 @@ namespace Unity.Collections
             /// <summary>
             /// Does nothing.
             /// </summary>
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -7748,20 +7748,20 @@ namespace Unity.Collections
             /// In an enumerator's initial state, <see cref="Current"/> is not valid to read.
             /// </remarks>
             /// <value>The current character.</value>
-            public Unicode.Rune Current
+            public readonly Unicode.Rune Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => current;
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
         }
 
         /// <summary>
         /// Returns an enumerator for iterating over the characters of this string.
         /// </summary>
         /// <returns>An enumerator for iterating over the characters of the FixedString4096Bytes.</returns>
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             return new Enumerator(this);
         }
@@ -7788,7 +7788,7 @@ namespace Unity.Collections
         /// <param name="other">A string to compare for equality.</param>
         /// <returns>True if this string and the other have the same length and all the same characters.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed string")]
-        public bool Equals(String other)
+        public readonly bool Equals(String other)
         {
             unsafe {
                 int alen = utf8LengthInBytes;
@@ -7980,7 +7980,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString32Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString32Bytes other)
+        public readonly bool Equals(FixedString32Bytes other)
         {
             return this == other;
         }
@@ -8060,7 +8060,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString64Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString64Bytes other)
+        public readonly bool Equals(FixedString64Bytes other)
         {
             return this == other;
         }
@@ -8140,7 +8140,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString128Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString128Bytes other)
+        public readonly bool Equals(FixedString128Bytes other)
         {
             return this == other;
         }
@@ -8220,7 +8220,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString512Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString512Bytes other)
+        public readonly bool Equals(FixedString512Bytes other)
         {
             return this == other;
         }
@@ -8300,7 +8300,7 @@ namespace Unity.Collections
         /// <remarks>Two strings are equal if they have equal length and all their characters match.</remarks>
         /// <param name="other">A FixedString4096Bytes to compare for equality.</param>
         /// <returns>True if the two strings are equal.</returns>
-        public bool Equals(FixedString4096Bytes other)
+        public readonly bool Equals(FixedString4096Bytes other)
         {
             return this == other;
         }
@@ -8387,9 +8387,9 @@ namespace Unity.Collections
         /// </summary>
         /// <remarks>Only the character bytes are included in the hash: any bytes beyond <see cref="Length"/> are not part of the hash.</remarks>
         /// <returns>The hash code of this string.</returns>
-        public override int GetHashCode()
+        public override readonly unsafe int GetHashCode()
         {
-            return this.ComputeHashCode();
+            return (int)CollectionHelper.Hash(GetUnsafePtr(), Length);
         }
 
         /// <summary>
@@ -8402,7 +8402,7 @@ namespace Unity.Collections
         /// <param name="obj">An object to compare for equality.</param>
         /// <returns>True if this string and the object are equal.</returns>
         [ExcludeFromBurstCompatTesting("Takes managed object")]
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if(ReferenceEquals(null, obj)) return false;
             if(obj is String aString) return Equals(aString);
@@ -8425,7 +8425,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckLengthInRange(int length)
+        readonly void CheckLengthInRange(int length)
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException($"Length {length} must be positive.");
@@ -8434,7 +8434,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckCapacityInRange(int capacity)
+        readonly void CheckCapacityInRange(int capacity)
         {
             if (capacity > utf8MaxLengthInBytes)
                 throw new ArgumentOutOfRangeException($"Capacity {capacity} must be lower than {utf8MaxLengthInBytes}.");

@@ -81,6 +81,7 @@ namespace Unity.Multiplayer.Center.Editor
         {
             var cell = new VisualElement { dataSource = description };
             cell.AddToClassList(StyleClasses.ComparisonCell);
+            cell.EnableInClassList(StyleClasses.ComparisonCellFirst, genreIndex == 0);
             CardTemplate.CloneTree(cell);
 
             var architectureDescription = CreateDescription(description.Architecture);

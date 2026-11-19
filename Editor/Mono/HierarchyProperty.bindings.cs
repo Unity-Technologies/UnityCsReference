@@ -116,9 +116,9 @@ namespace UnityEditor
             GC.SuppressFinalize(this);
         }
 
-#pragma warning disable UA5000 // Releases the native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Releases the native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
         ~HierarchyProperty() { Dispose(false); }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         extern EntityId entityId { get; }
         public int instanceID => entityId;

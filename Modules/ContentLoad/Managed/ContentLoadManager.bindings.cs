@@ -241,6 +241,9 @@ namespace Unity.Loading
         [FreeFunction("ContentLoad::GetContentDirectories")]
         public static extern ContentDirectoryHandle[] GetContentDirectories();
 
+        [FreeFunction("ContentLoad::GetLoadState")]
+        internal static extern void GetLoadState(ContentDirectoryHandle directory, [Out] List<LoadedContentFileInfo> files, [Out] List<LoadedSceneInfo> scenes, [Out] List<int> dependencies, [Out] List<int> rootAssetReferences);
+
         // For test and internal usage
         // This method loads the BuildManifest, which describe the content available inside a Content Directory.
         [NativeMethod(IsThreadSafe = true)]

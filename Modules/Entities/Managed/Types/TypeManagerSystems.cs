@@ -15,6 +15,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 using Assert = UnityEngine.Assertions.AssertCore;
 using Debug = Unity.Scripting.LowLevel.Debug;
 
@@ -369,6 +370,7 @@ namespace Unity.Entities
             /// The SystemTypeIndex for the target system.
             /// </summary>
             public SystemTypeIndex TargetSystemTypeIndex;
+            [VisibleToOtherModules("UnityEngine.CoreModule")]
             internal int Flags;
 
             /// <summary>
@@ -514,7 +516,6 @@ namespace Unity.Entities
             AddSystemTypeToTables(null, "null", 0, 0, 0, 0);
             Assert.IsTrue(s_SystemCount == 1);
         }
-        [NoAutoStaticsCleanup]
         static readonly EntitiesProfilerMarker k_InitializeAllSystemTypesMarker = new EntitiesProfilerMarker(nameof(InitializeAllSystemTypes));
 
         internal static void InitializeAllSystemTypes()
@@ -1009,6 +1010,7 @@ namespace Unity.Entities
             return GetSystemTypeIndexNoThrow(type) != -1;
         }
 
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static bool IsSystemTypeIndex(SystemTypeIndex systemTypeIndex)
         {
             var systemTypeIndexNoFlags = systemTypeIndex & SystemTypeInfo.kClearSystemTypeFlagsMask;
@@ -1347,6 +1349,7 @@ namespace Unity.Entities
             return (lookupFlags.OptionalFlags & systemFlags) != 0 && (lookupFlags.RequiredFlags & systemFlags) == lookupFlags.RequiredFlags;
         }
 
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static IEnumerable<Type> GetTypesDerivedFrom(Type type)
         {
             return EditorLightShim.Hooks.GetTypesDerivedFrom(type);

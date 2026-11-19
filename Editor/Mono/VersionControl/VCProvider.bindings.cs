@@ -264,13 +264,26 @@ namespace UnityEditor.VersionControl
         [StaticAccessor("GetVCProvider()", StaticAccessorType.Dot)]
         internal static extern int GenerateID();
 
+        // Package version control systems clear this cache after their own status changes.
+        public static void ClearCache()
+        {
+            Internal_ClearCache();
+            VersionControlManager.IncrementStatusVersion();
+        }
+
+        internal static void InvalidateCache()
+        {
+            Internal_InvalidateCache();
+            VersionControlManager.IncrementStatusVersion();
+        }
+
         [StaticAccessor("GetVCCache()", StaticAccessorType.Dot)]
         [NativeMethod("Clear")]
-        public static extern void ClearCache();
+        static extern void Internal_ClearCache();
 
         [StaticAccessor("GetVCCache()", StaticAccessorType.Dot)]
         [NativeMethod("Invalidate")]
-        internal static extern void InvalidateCache();
+        static extern void Internal_InvalidateCache();
 
 
         [FreeFunction("VersionControlBindings::VCProvider::Internal_CreateWarningTask")]

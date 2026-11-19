@@ -759,13 +759,13 @@ namespace UnityEngine.Networking
         }
 
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Aborts and releases the native request and owned handlers; thread-safe, and requests are commonly not disposed.
         ~UnityWebRequest()
         {
             DisposeHandlers();
             InternalDestroy();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         ///<summary>Signals that this <see cref="UnityWebRequest" /> is no longer being used, and should clean up any resources it is using.</summary>
         ///<remarks>You must call Dispose once you have finished using a <see cref="UnityWebRequest" /> object, regardless of whether the request succeeded or failed.

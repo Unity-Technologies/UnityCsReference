@@ -12,7 +12,6 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface IStylePropertyAnimations
     {
         bool Start(StylePropertyId id, float from, float to, int durationMs, int delayMs, Func<float, float> easingCurve);
@@ -135,13 +134,11 @@ namespace UnityEngine.UIElements
 
         internal IStylePropertyAnimations styleAnimation => this;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool HasRunningAnimation(StylePropertyId id)
         {
             return GetStylePropertyAnimationSystem()?.HasRunningAnimation(this, id) ?? false;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void CancelAnimation(StylePropertyId id)
         {
             GetStylePropertyAnimationSystem()?.CancelAnimation(this, id);

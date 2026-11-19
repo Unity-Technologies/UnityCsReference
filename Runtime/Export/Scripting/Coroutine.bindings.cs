@@ -18,12 +18,12 @@ namespace UnityEngine
         internal IntPtr m_Ptr;
         Coroutine() {}
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Cleans up the native coroutine handle; CleanupCoroutineGC is thread-safe and the lifetime is tied to the GC.
         ~Coroutine()
         {
             ReleaseCoroutine(m_Ptr);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         [FreeFunction("Coroutine::CleanupCoroutineGC", true)]
         extern static void ReleaseCoroutine(IntPtr ptr);

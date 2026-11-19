@@ -19,7 +19,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class HostView : GUIView, IEditorWindowModel
     {
         static class Styles
@@ -68,6 +68,7 @@ namespace UnityEditor
                 // Use an empty style to avoid the hover effect of normal buttons
                 public static readonly GUIStyle switchStyle = new GUIStyle();
 
+                #pragma warning disable CS0618 // DataMode is obsolete
                 [NoAutoStaticsCleanup] // immutable lookup table of GUIContent (no user references), built once and safe to persist across code reload
                 public static readonly Dictionary<DataMode, GUIContent> dataModeNameLabels =
                     new Dictionary<DataMode, GUIContent>
@@ -77,6 +78,7 @@ namespace UnityEditor
                         { DataMode.Mixed,     EditorGUIUtility.TextContent(k_MixedString)     },
                         { DataMode.Runtime,   EditorGUIUtility.TextContent(k_RuntimeString)   }
                     };
+                #pragma warning restore CS0618
             }
 
             static Styles()
@@ -124,7 +126,7 @@ namespace UnityEditor
 
         internal EditorWindow actualView
         {
-            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get { return m_ActualView; }
             set { SetActualViewInternal(value, sendEvents: true); }
         }
@@ -618,6 +620,18 @@ namespace UnityEditor
             set { windowBackend = value; }
         }
 
+        internal override void RestoreLinks(ContainerWindow win)
+        {
+            base.RestoreLinks(win);
+            RestoreWindowLinks();
+        }
+
+        private protected virtual void RestoreWindowLinks()
+        {
+            if (m_ActualView)
+                m_ActualView.m_Parent = this;
+        }
+
         protected void RegisterSelectedPane(bool sendEvents)
         {
             if (!m_ActualView)
@@ -816,6 +830,7 @@ namespace UnityEditor
             if (dataModeControllerInternal.ShouldDrawDataModesSwitch())
             {
                 var isClientInAutomaticDataMode = dataModeControllerInternal.isAutomatic;
+                #pragma warning disable CS0618 // DataMode is obsolete
                 var switchContent = dataModeControllerInternal.dataMode switch
                 {
                     DataMode.Authoring => isClientInAutomaticDataMode? Styles.DataModes.authoringModeContent : Styles.DataModes.stickyAuthoringModeContent,
@@ -823,6 +838,7 @@ namespace UnityEditor
                     DataMode.Runtime => isClientInAutomaticDataMode? Styles.DataModes.runtimeModeContent : Styles.DataModes.stickyRuntimeModeContent,
                     _ => default
                 };
+                #pragma warning restore CS0618
 
                 // Last chance to bail in case something weird happened
                 if (switchContent != default)
@@ -972,7 +988,6 @@ namespace UnityEditor
             Selection.activeObject = (Object)userData;
         }
 
-        [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void Reload(object userData)
         {
             EditorWindow window = userData as EditorWindow;

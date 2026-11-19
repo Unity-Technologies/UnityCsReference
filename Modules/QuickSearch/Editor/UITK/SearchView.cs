@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEditor.Profiling;
 using UnityEngine.Pool;
 using UnityEngine.Search;
@@ -19,6 +20,7 @@ using UnityEditor.UIElements;
 
 namespace UnityEditor.Search
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class SearchView : VisualElement, ISearchView, ISearchElement
     {
         enum UpdateMode
@@ -43,6 +45,15 @@ namespace UnityEditor.Search
         private SearchViewState m_ViewState;
         private IResultView m_ResultView;
         internal IResultView resultView => m_ResultView;
+
+        /// <summary>
+        /// The item shown at <paramref name="worldPosition"/>, when the results are shown as a tree.
+        /// </summary>
+        public bool TryGetItemAtPosition(Vector2 worldPosition, out SearchItem item)
+        {
+            item = null;
+            return m_ResultView is SearchTreeView treeView && treeView.TryGetSearchItemAtPosition(worldPosition, out item);
+        }
         protected GroupedSearchList m_FilteredItems;
         private SearchSelection m_SearchItemSelection;
         private readonly List<int> m_Selection = new List<int>();
@@ -902,9 +913,12 @@ namespace UnityEditor.Search
                 Refresh(RefreshFlags.ItemsChanged);
         }
 
+        // A search field hosted next to the view restores its text on undo through this overload, as with SearchWindow.
         void ISearchView.SetSearchText(string searchText, TextCursorPlacement moveCursor, int cursorInsertPosition)
         {
-            throw new NotSupportedException("Cursor cannot be set for this control.");
+            var oldText = context.searchText;
+            SetSearchText(searchText, moveCursor);
+            Dispatcher.Emit(SearchEvent.SearchTextChanged, new SearchEventPayload(this, oldText, context.searchText, moveCursor, cursorInsertPosition));
         }
 
         public void AddSelection(params int[] selection)

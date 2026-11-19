@@ -148,7 +148,7 @@ namespace Unity.Entities
         public void AssertEntityBelongsToThisWorld(Entity entity)
         {
             var owner = GetEntityDataAccess(entity);
-            if (Hint.Unlikely(owner != null && owner->EntityComponentStore != (EntityComponentStore*)UnsafeUtility.AddressOf(ref this)))
+            if (Hint.Unlikely(owner != null && owner->EntityComponentStore != Self))
                 ThrowEntityBelongsToDifferentWorld(entity, owner);
         }
 
@@ -161,7 +161,7 @@ namespace Unity.Entities
 
         void ThrowEntityBelongsToDifferentWorld(Entity entity, EntityDataAccess* owner)
         {
-            var thisWorldName = EntityDataAccess.FromEntityComponentStore((EntityComponentStore*)UnsafeUtility.AddressOf(ref this))->m_WorldUnmanaged.Name;
+            var thisWorldName = EntityDataAccess.FromEntityComponentStore(Self)->m_WorldUnmanaged.Name;
             var entityWorldName = owner->m_WorldUnmanaged.Name;
             throw new ArgumentException($"{entity} belongs to world '{entityWorldName}', but is used from world '{thisWorldName}'. Use EntityManager.MoveEntitiesFrom or CopyEntitiesFrom to transfer entities between worlds.");
         }
@@ -447,7 +447,7 @@ namespace Unity.Entities
                 if (Hint.Unlikely((ulong)queryImpl->_Access->EntityComponentStore != (ulong)pThis))
                     throw new InvalidOperationException("Provided query belongs to a different World.");
             }
-            var archetypeList = queryImpl->_QueryData->MatchingArchetypes;
+            var archetypeList = queryImpl->GetRecords();
             int archetypeCount = archetypeList.Length;
             var ptrs = archetypeList.Ptr;
             for (int i = 0; i < archetypeCount; i++)

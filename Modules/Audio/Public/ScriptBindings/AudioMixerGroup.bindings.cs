@@ -72,7 +72,6 @@ namespace UnityEngine.Audio
     public class AudioMixerGroup : Object, ISubAssetNotDuplicatable
     {
         protected internal AudioMixerGroup(global::UnityEngine.EntityId id) : base(id) {}
-        // Make constructor internal
         internal AudioMixerGroup() {}
 
         ///<summary>Gain access to the <see cref="AudioMixer" /> that this AudioMixerGroup belongs to (RO).</summary>

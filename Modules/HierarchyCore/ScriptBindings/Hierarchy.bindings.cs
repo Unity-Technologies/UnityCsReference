@@ -76,9 +76,17 @@ namespace Unity.Hierarchy
         /// Whether the hierarchy requires an update.
         /// </summary>
         /// <remarks>
-        /// An update is required when changes in registered hierarchy node handlers are pending.
+        /// An update is required while an update cycle is running, while changes are queued, or after <see cref="SetDirty"/> until the next update cycle starts.
         /// </remarks>
         public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded", IsThreadSafe = true)] get; }
+
+        /// <summary>
+        /// The stage of the current update cycle.
+        /// </summary>
+        /// <remarks>
+        /// The stage is <see cref="HierarchyUpdateStage.Idle"/> when no update cycle is in progress.
+        /// </remarks>
+        internal extern HierarchyUpdateStage UpdateStage { [NativeMethod("UpdateStage", IsThreadSafe = true)] get; }
 
         /// <summary>
         /// The version of the hierarchy.
@@ -133,12 +141,12 @@ namespace Unity.Hierarchy
             m_IsOwner = false;
         }
 
-#pragma warning disable UA5000 // Releases the owned native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
+#pragma warning disable UAC0045 // Releases the owned native handle; destroy is thread-safe, so the finalizer is the safety net when Dispose is missed.
         ~Hierarchy()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         /// <summary>
         /// Dispose this object to release its memory.
@@ -603,7 +611,7 @@ namespace Unity.Hierarchy
         public extern int GetEntityIdsFromNodes(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds);
 
         /// <summary>
-        /// Force an update of the hierarchy, even if no changes are pending.
+        /// Requests an update of the hierarchy and a refresh of all its views, even if no changes are pending.
         /// </summary>
         [NativeMethod(IsThreadSafe = true)]
         public extern void SetDirty();
@@ -611,13 +619,19 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Updates the hierarchy, executing all pending changes in the command list.
         /// </summary>
+        /// <remarks>
+        /// Runs as many update cycles as needed. It also applies changes that are queued during an update cycle, including a cycle that <see cref="UpdateIncremental"/> started, before it returns.
+        /// </remarks>
         [NativeMethod(IsThreadSafe = true)]
         public extern void Update();
 
         /// <summary>
         /// Updates the hierarchy incrementally, executing one pending change in the command list.
         /// </summary>
-        /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the current update cycle needs more invocations to complete. Otherwise, <see langword="false"/>.</returns>
+        /// <remarks>
+        /// The next update cycle applies any changes that are queued while the current cycle runs. When this method returns <see langword="false"/>, use <see cref="UpdateNeeded"/> to determine whether changes are still pending.
+        /// </remarks>
         [NativeMethod(IsThreadSafe = true)]
         public extern bool UpdateIncremental();
 
@@ -625,7 +639,10 @@ namespace Unity.Hierarchy
         /// Updates the hierarchy incrementally, executing pending changes in the command list until a time limit is reached.
         /// </summary>
         /// <param name="milliseconds">The time period in milliseconds.</param>
-        /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
+        /// <returns><see langword="true"/> if the current update cycle needs more invocations to complete. Otherwise, <see langword="false"/>.</returns>
+        /// <remarks>
+        /// The next update cycle applies any changes that are queued while the current cycle runs. When this method returns <see langword="false"/>, use <see cref="UpdateNeeded"/> to determine whether changes are still pending.
+        /// </remarks>
         [NativeMethod(IsThreadSafe = true)]
         public extern bool UpdateIncrementalTimed(double milliseconds);
 

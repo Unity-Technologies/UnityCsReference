@@ -66,6 +66,7 @@ namespace UnityEngine.UIElements.Internal
             target.RegisterCallback<PointerDownEvent>(OnPointerDown);
             target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
             target.RegisterCallback<PointerUpEvent>(OnPointerUp);
+            target.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
             target.RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
@@ -78,6 +79,7 @@ namespace UnityEngine.UIElements.Internal
             target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+            target.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
         }
 
         void OnKeyDown(KeyDownEvent e)
@@ -133,13 +135,23 @@ namespace UnityEngine.UIElements.Internal
 
         void OnPointerUp(PointerUpEvent e)
         {
+            StopDrag(e, false);
+        }
+
+        void OnPointerCancel(PointerCancelEvent e)
+        {
+            StopDrag(e, true);
+        }
+
+        void StopDrag<T>(PointerEventBase<T> e, bool cancelled) where T : PointerEventBase<T>, new()
+        {
             if (!m_Active || !target.HasPointerCapture(e.pointerId) || !CanStopManipulation(e))
                 return;
 
             var ve = (e.currentTarget as VisualElement);
             var pos = ve.ChangeCoordinatesTo(m_Header, e.localPosition);
 
-            EndDragResize(pos.x, false);
+            EndDragResize(pos.x, cancelled);
             m_Active = false;
             target.ReleasePointer(e.pointerId);
             e.StopPropagation();

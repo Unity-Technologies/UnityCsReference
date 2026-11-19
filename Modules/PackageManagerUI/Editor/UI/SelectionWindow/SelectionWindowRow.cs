@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Experimental;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -13,7 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal;
 internal class SelectionWindowRow : VisualElement
 {
     // The internal modifier is used (instead of private) to give our test project access to these properties/methods
-    [NoAutoStaticsCleanup]
     internal static readonly Texture2D s_FolderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
 
     private static readonly string k_RemoveIconTooltip = L10n.Tr("Remove", null);
@@ -28,8 +25,12 @@ internal class SelectionWindowRow : VisualElement
     private readonly Toggle m_Toggle;
     public Toggle toggle => m_Toggle;
 
-    public SelectionWindowRow()
+    private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
+
+    public SelectionWindowRow(IInternalEditorUtilityProxy internalEditorUtilityProxy)
     {
+        m_InternalEditorUtilityProxy = internalEditorUtilityProxy;
+
         var rowContainer = new VisualElement().WithClassList("row-container");
         Add(rowContainer);
 
@@ -75,7 +76,7 @@ internal class SelectionWindowRow : VisualElement
     {
         var icon = node.isFolder
             ? s_FolderIcon
-            : InternalEditorUtility.GetIconForFile(!string.IsNullOrEmpty(node.path)
+            : m_InternalEditorUtilityProxy.GetIconForFile(!string.IsNullOrEmpty(node.path)
                 ? node.path
                 : "unknown.txt");
         m_FileIcon.style.backgroundImage = new StyleBackground(icon);

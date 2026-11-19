@@ -121,7 +121,7 @@ namespace UnityEngine.UIElements
         /// Returns all existing converter groups.
         /// </summary>
         /// <param name="result">The resulting list of converter groups.</param>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void GetAllConverterGroups(List<ConverterGroup> result)
         {
             foreach (var group in s_BindingConverterGroups.Values)

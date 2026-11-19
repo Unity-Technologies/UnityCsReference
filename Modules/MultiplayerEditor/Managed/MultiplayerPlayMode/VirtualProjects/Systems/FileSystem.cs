@@ -135,12 +135,30 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
         static byte[] ReadBytes(string path)
         {
-            return File.ReadAllBytes(path);
+            // Other editor processes write this file at any time, so reading must not lock them out
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var memoryStream = new MemoryStream();
+            stream.CopyTo(memoryStream);
+            return memoryStream.ToArray();
         }
 
         static void WriteBytes(string path, byte[] content)
         {
-            File.WriteAllBytes(path, content);
+            // Other editor processes read this file at any time, so they must never see it partially written
+            var temporaryPath = $"{path}.{Guid.NewGuid():N}.tmp";
+            try
+            {
+                File.WriteAllBytes(temporaryPath, content);
+                if (File.Exists(path))
+                    File.Replace(temporaryPath, path, null);
+                else
+                    File.Move(temporaryPath, path);
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath))
+                    File.Delete(temporaryPath);
+            }
         }
 
         static void CreateDirectory(string projectPath)

@@ -122,7 +122,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             KernelProfiler.EndSample(s_CreateProfilerMarkerPtr);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Intentional leak detector: only logs an error when a native collection was not disposed.
         ~DisposeSentinel()
         {
             if (m_IsCreated != 0)
@@ -156,7 +156,7 @@ namespace Unity.Collections.LowLevel.Unsafe
                 KernelProfiler.EndSample(s_LogErrorProfilerMarkerPtr);
             }
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         ///<summary>Clears the <c>DisposeSentinel</c>.</summary>
         ///<remarks>A <c>DisposeSentinel</c> is usually cleared when the related <c>NativeContainer</c> is disposed.</remarks>

@@ -11,7 +11,6 @@ namespace Unity.UIToolkit.Editor
 {
     [UxmlElement]
     [UsedImplicitly]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class BackgroundSizeStyleField : BaseField<BackgroundSize>
     {
         static readonly string s_FieldClassName = "unity-background-Size-style-field";

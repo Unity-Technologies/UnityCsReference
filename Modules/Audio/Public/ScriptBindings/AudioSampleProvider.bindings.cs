@@ -218,14 +218,14 @@ namespace UnityEngine.Experimental.Audio
             InternalSetScriptingPtr(providerId, this);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Detaches the native provider; the calls are thread-safe and the owner is already nulled.
         ~AudioSampleProvider()
         {
             // Nullify owner so Dispose() won't also destroy the native provider.
             owner = null;
             Dispose();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         ///<summary>Release internal resources. Inherited from IDisposable.</summary>
         public void Dispose()

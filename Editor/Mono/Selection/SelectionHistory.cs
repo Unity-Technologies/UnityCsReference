@@ -21,14 +21,11 @@ namespace UnityEditor
         [SerializeField] internal string m_CustomKey; // custom selection handler key (i.e. which handler to invoke)
         [SerializeField] internal string m_CustomData;
         [SerializeField] internal bool m_CustomUpdateObjectSelection;
-        [SerializeField] internal EntityId m_CustomActiveContextEid;
-        [SerializeField] internal DataMode m_CustomDataMode;
         [SerializeField] internal int m_UndoGroup; // "current undo group" at the time when entry was made, used to collapse entries added during the same undo group
         [SerializeField] internal string m_FocusedWindowClass;
         [SerializeField] internal EntityId m_FocusedWindowEid;
 
-        internal SelectionEntry(ReadOnlySpan<EntityId> selectedEids, string customKey, string customData, bool customUpdateObjectSelection,
-            EntityId customActiveContextEid = default, DataMode customDataMode = DataMode.Disabled)
+        internal SelectionEntry(ReadOnlySpan<EntityId> selectedEids, string customKey, string customData, bool customUpdateObjectSelection)
         {
             m_UndoGroup = Undo.GetCurrentGroup();
 
@@ -62,9 +59,6 @@ namespace UnityEditor
             m_CustomKey = customKey ?? string.Empty;
             m_CustomData = customData;
             m_CustomUpdateObjectSelection = customUpdateObjectSelection;
-
-            m_CustomActiveContextEid = customActiveContextEid;
-            m_CustomDataMode = customDataMode;
 
             GetFocusedWindow(out m_FocusedWindowClass, out m_FocusedWindowEid);
         }
@@ -126,13 +120,6 @@ namespace UnityEditor
             if (!Equals(m_CustomKey, o.m_CustomKey)) return false;
             if (!Equals(m_CustomData, o.m_CustomData)) return false;
 
-            if (!string.IsNullOrEmpty(m_CustomKey))
-            {
-                // Only check these for custom entries
-                if (!Equals(m_CustomActiveContextEid, o.m_CustomActiveContextEid)) return false;
-                if (!Equals(m_CustomDataMode, o.m_CustomDataMode)) return false;
-            }
-
             if (m_SelectedEids == null) return true; //We already check above if eids length is the same, so if null both will be null
             for (int i = 0; i < m_SelectedEids.Length; i++)
             {
@@ -156,12 +143,6 @@ namespace UnityEditor
             hash.Add(m_FocusedWindowEid);
             hash.Add(m_CustomKey);
             hash.Add(m_CustomData);
-
-            if (!string.IsNullOrEmpty(m_CustomKey))
-            {
-                hash.Add(m_CustomActiveContextEid);
-                hash.Add(m_CustomDataMode);
-            }
 
             if (m_SelectedEids != null)
             {
@@ -340,7 +321,7 @@ namespace UnityEditor
             if (changed) indexChanged?.Invoke();
         }
 
-        void SetSelection(ReadOnlySpan<EntityId> eids, EntityId activeContextEid, DataMode dataModeHint)
+        void SetSelection(ReadOnlySpan<EntityId> eids)
         {
             // Changes to selection done via Selection API are gathered on the native side,
             // and the rest of the editor is only notified of the changes in the "next editor frame".
@@ -350,17 +331,16 @@ namespace UnityEditor
             m_IgnoreNextSelectionChange = true;
 
             var activeEid = eids.Length > 0 ? eids[0] : EntityId.None;
-            Selection.SetFullSelectionByID(eids, activeEid, activeContextEid, dataModeHint, true);
+            Selection.SetFullSelectionByID(eids, activeEid, EntityId.None, true);
         }
 
-        internal void SetCustomSelection(string key, string data, ReadOnlySpan<EntityId> selectedEids, bool updateObjectSelection,
-            EntityId activeContextEid = default, DataMode dataMode = DataMode.Disabled)
+        internal void SetCustomSelection(string key, string data, ReadOnlySpan<EntityId> selectedEids, bool updateObjectSelection)
         {
             if (m_ApplyingCustomSelection || m_IgnoreNextSelectionChange) return;
 
-            if (updateObjectSelection) SetSelection(selectedEids, activeContextEid, dataMode);
+            if (updateObjectSelection) SetSelection(selectedEids);
 
-            AddEntry(new SelectionEntry(selectedEids, key, data, updateObjectSelection, activeContextEid, dataMode));
+            AddEntry(new SelectionEntry(selectedEids, key, data, updateObjectSelection));
         }
 
         void SelectAtIndex(int index)
@@ -389,7 +369,7 @@ namespace UnityEditor
                 updateObjectSelection = e.m_CustomUpdateObjectSelection;
             }
 
-            if (updateObjectSelection) SetSelection(FilterRestorableEids(e.m_SelectedEids), e.m_CustomActiveContextEid, e.m_CustomDataMode);
+            if (updateObjectSelection) SetSelection(FilterRestorableEids(e.m_SelectedEids));
 
             // After first going back in history, see if 0th object is a deselect and remove it from history to avoid button clicks that lead to nothing
             if (index == 1 && !m_History[0].IsSelectionEntryValid()) RemoveEntry(0);

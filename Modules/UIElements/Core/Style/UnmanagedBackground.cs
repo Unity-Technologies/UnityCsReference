@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     // Unmanaged Background: asset id inline, gradient metadata behind a refcounted
     // list-of-one so identical gradients share one heap allocation. Layout-compatible
     // with the C++ mirror in Modules/UIElements/Core/Native/Style/BackgroundTypes.h.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [StructLayout(LayoutKind.Sequential, Size = 16)]
     internal struct UnmanagedBackground : IEquatable<UnmanagedBackground>
     {

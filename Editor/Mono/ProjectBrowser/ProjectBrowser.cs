@@ -2173,6 +2173,7 @@ namespace UnityEditor
             if (m_ViewMode == ViewMode.OneColumn)
             {
                 m_AssetTree.EndPing();
+                m_ListArea.EndPing();
             }
             else
             {
@@ -2265,7 +2266,9 @@ namespace UnityEditor
                 m_ListArea.OnGUI(m_ListAreaRect, m_ListKeyboardControlID);
 
                 // Vertical splitter line between folders and content (drawn before listarea so listarea ping is drawn on top of line)
-                EditorGUIUtility.DrawHorizontalSplitter(new Rect(m_ListAreaRect.x + 1f, EditorGUI.kWindowToolbarHeight, 1, m_TreeViewRect.height));
+                var splitterDrawRect = new Rect(m_ListAreaRect.x + 1f, EditorGUI.kWindowToolbarHeight, 1, m_TreeViewRect.height);
+                var splitterHoverRect = new Rect(m_DirectoriesAreaWidth, EditorGUI.kWindowToolbarHeight, k_ResizerWidth, m_TreeViewRect.height);
+                EditorGUIUtility.DrawHorizontalSplitter(splitterDrawRect, splitterHoverRect);
 
                 if (m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing && m_ListArea.numItemsDisplayed == 0)
                 {
@@ -3132,9 +3135,10 @@ namespace UnityEditor
                 frame = false;
 
                 // If the item is visible then we can ping it however if it requires revealing then we can not and should indicate why(locked project view).
+                bool showsListArea = m_ViewMode == ViewMode.TwoColumns || m_SearchFilter.IsSearching();
                 if (canFrame &&
-                    ((m_ViewMode == ViewMode.TwoColumns && m_ListArea != null && !m_ListArea.IsShowing(entityId))
-                    || (m_ViewMode == ViewMode.OneColumn && m_AssetTree != null && m_AssetTree.data.GetRow(entityId) == -1)))
+                    ((showsListArea && m_ListArea != null && !m_ListArea.IsShowing(entityId))
+                    || (!showsListArea && m_AssetTree != null && m_AssetTree.data.GetRow(entityId) == -1)))
                 {
                     Repaint();
                     m_LockTracker.PingIcon();
@@ -3159,7 +3163,8 @@ namespace UnityEditor
                 EndPing();
             m_LastFramedID = entityId;
 
-            ClearSearch();
+            if (frame || !m_LockTracker.isLocked)
+                ClearSearch();
 
             if (m_ViewMode == ViewMode.TwoColumns)
             {
@@ -3167,8 +3172,11 @@ namespace UnityEditor
             }
             else if (m_ViewMode == ViewMode.OneColumn)
             {
-                // Clear search to switch back to tree view
-                m_AssetTree.Frame(entityId, frame, ping);
+                // Locked views keep their search, which one-column mode shows in the list area
+                if (m_SearchFilter.IsSearching())
+                    m_ListArea.Frame(entityId, frame, ping);
+                else
+                    m_AssetTree.Frame(entityId, frame, ping);
             }
         }
 

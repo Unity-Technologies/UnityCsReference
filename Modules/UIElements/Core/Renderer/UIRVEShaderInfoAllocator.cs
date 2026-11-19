@@ -118,6 +118,18 @@ namespace UnityEngine.UIElements.UIR
         public int entryHeight { get { return m_EntryHeight; } }
         public int pageCount { get { return m_Pages.Count; } }
 
+        // The first slot of the first page holds the default value and counts as used
+        public int GetUsedSlots()
+        {
+            if (m_Pages == null)
+                return 0;
+
+            var usedSlots = 0;
+            foreach (var page in m_Pages)
+                usedSlots += kPageWidth * m_PageHeight - page.freeSlots;
+            return usedSlots;
+        }
+
         internal void GetAllocPageAtlasLocation(int page, out UInt16 x, out UInt16 y) { var p = m_Pages[page]; x = p.x; y = p.y; }
 
         static byte CountTrailingZeroes(UInt32 val)
@@ -175,6 +187,10 @@ namespace UnityEngine.UIElements.UIR
         internal const int kPageTableFloat4Count = kMaxPages * 5 + kElementInfoPageCount;
         internal const int kPageTableStride = 16; // sizeof(Vector4)
         internal const int kPageTableSizeBytes = kPageTableFloat4Count * kPageTableStride;
+
+        internal const int kTexelBytes = 16; // RGBAFloat
+
+        internal static int entriesPerAllocator => kMaxPages * pageWidth * pageHeight;
 
         NativeArray<Vector4> m_PageTable;
         Vector4* m_XformPagePos;
@@ -318,6 +334,27 @@ namespace UnityEngine.UIElements.UIR
             }
         }
         public bool internalAtlasCreated { get { return m_StorageReallyCreated; } } // For diagnostics really
+
+        internal long GetReservedBytes()
+        {
+            if (!m_StorageReallyCreated)
+                return 0;
+
+            var texture = m_Storage.texture;
+            return (long)texture.width * texture.height * kTexelBytes;
+        }
+
+        internal long GetUsedBytes()
+        {
+            var texels = GetUsedTexels(ref m_TransformAllocator) + GetUsedTexels(ref m_ClipRectAllocator) + GetUsedTexels(ref m_OpacityAllocator)
+                + GetUsedTexels(ref m_ColorAllocator) + GetUsedTexels(ref m_TextSettingsAllocator);
+            return texels * kTexelBytes;
+        }
+
+        static long GetUsedTexels(ref BitmapAllocator32 allocator)
+        {
+            return (long)allocator.GetUsedSlots() * allocator.entryWidth * allocator.entryHeight;
+        }
 
         public ShaderInfoAllocator(ColorSpace colorSpace)
         {

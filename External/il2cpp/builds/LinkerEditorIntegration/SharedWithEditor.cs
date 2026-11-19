@@ -142,6 +142,10 @@ namespace UnityEditorInternal
         [UnityEngine.SerializeField]
         public ReportData report;
 
+        // Managed names (DeclaringType.FullName::Name) of the bindings that survived linking, sorted ordinally
+        [UnityEngine.SerializeField]
+        public string[] bindingsMethods;
+
         [System.Serializable]
         public class ReportData
         {

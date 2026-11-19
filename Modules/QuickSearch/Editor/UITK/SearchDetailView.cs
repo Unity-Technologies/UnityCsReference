@@ -421,7 +421,8 @@ namespace UnityEditor.Search
                 m_InteractivePreviewElement.style.height = 256;
                 m_InteractivePreviewElement.onGUIHandler = () =>
                 {
-                    if (Array.TrueForAll(editorWithPreview.targets, t => t))
+                    var targets = editorWithPreview.targets;
+                    if (targets.Length > 0 && Array.TrueForAll(targets, t => t))
                         editorWithPreview.DrawPreview(m_InteractivePreviewElement.contentRect);
                 };
                 ShowElements(m_InteractivePreviewElement);

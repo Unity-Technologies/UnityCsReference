@@ -9,7 +9,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using System.Linq;
-using Unity.Scripting.LifecycleManagement;
 
 using Object = UnityEngine.Object;
 
@@ -29,7 +28,6 @@ namespace UnityEditor
             }
         }
 
-        [NoAutoStaticsCleanup]
         private static readonly BipedBone[] s_BipedBones = new BipedBone[]
         {
             // body

@@ -54,6 +54,7 @@ namespace UnityEditor.UIElements
             {
                 var previous = m_ShowAlpha;
                 m_ShowAlpha = value;
+                UpdateColorWithAlphaClass();
                 if (m_AlphaElement != null)
                     m_AlphaElement.style.display = m_ShowAlpha ? DisplayStyle.Flex : DisplayStyle.None;
                 if (previous != m_ShowAlpha)
@@ -86,7 +87,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool setAlphaIfTransparentWhenPicked;
 
         bool m_ShowAlpha;
@@ -134,6 +135,11 @@ namespace UnityEditor.UIElements
         public static readonly string colorUssClassName = ussClassName + "__color";
 
         /// <summary>
+        /// USS class name of color elements in elements of this type when alpha is shown.
+        /// </summary>
+        public static readonly string colorWithAlphaUssClassName = colorUssClassName + "--with-alpha";
+
+        /// <summary>
         /// USS class name of color elements in elements of this type when showing mixed values.
         /// </summary>
         public static readonly string mixedValueColorUssClassName = colorUssClassName + "--mixed-value";
@@ -153,7 +159,6 @@ namespace UnityEditor.UIElements
         /// </summary>
         public static readonly string gradientContainerUssClassName = ussClassName + "__gradient-container";
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static readonly string internalColorFieldName = "unity-internal-color-field";
 
         /// <summary>
@@ -434,9 +439,15 @@ namespace UnityEditor.UIElements
             UpdateColorProperties(value);
         }
 
+        void UpdateColorWithAlphaClass()
+        {
+            m_ColorElement?.EnableInClassList(colorWithAlphaUssClassName, m_ShowAlpha && !showMixedValue);
+        }
+
         protected override void UpdateMixedValueContent()
         {
             m_ColorElement.EnableInClassList(mixedValueColorUssClassName, showMixedValue);
+            UpdateColorWithAlphaClass();
 
             mixedValueLabel.style.display          = DisplayStyle.None;
             m_GradientContainer.style.display      = DisplayStyle.None;

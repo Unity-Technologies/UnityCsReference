@@ -264,24 +264,6 @@ namespace UnityEditor
             m_HMD.AddBuiltinSizes(kFree, m_Remote);
         }
 
-        internal static bool DefaultLowResolutionSettingForStandalone()
-        {
-            return GUIUtility.pixelsPerPoint <= 1.0f;
-        }
-
-        internal static bool DefaultLowResolutionSettingForSizeGroupType(GameViewSizeGroupType sizeGroupType)
-        {
-            switch (sizeGroupType)
-            {
-                case GameViewSizeGroupType.Standalone:
-                    return DefaultLowResolutionSettingForStandalone();
-                case GameViewSizeGroupType.iOS:
-                case GameViewSizeGroupType.Android:
-                default:
-                    return false;
-            }
-        }
-
         private static void RefreshDerivedGameViewSize(GameViewSizeGroupType groupType, int gameViewSizeIndex, GameViewSize gameViewSize)
         {
             if (GameViewSizes.instance.IsRemoteScreenSize(groupType, gameViewSizeIndex))

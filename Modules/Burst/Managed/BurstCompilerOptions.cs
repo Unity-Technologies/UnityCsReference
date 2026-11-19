@@ -160,7 +160,6 @@ namespace Unity.Burst
         [VisibleToOtherModules("UnityEditor.BurstModule")]
         internal const string OptionEnableExceptionHandling = "enable-exception-handling";
         internal const string OptionDiscardAssemblies = "discard-assemblies=";
-        internal const string OptionSaveExtraContext = "save-extra-context";
         internal const string OptionEmitVersionSymbol = "emit-version-symbol=";
 
         internal const string CompilerCommandShutdown = "$shutdown";

@@ -362,7 +362,6 @@ internal partial class DictionaryDrawer
 
     internal readonly struct SortedIndexMap
     {
-        [NoAutoStaticsCleanup] // immutable empty sentinel backed by Array.Empty; safe to persist
         public static readonly SortedIndexMap Empty =
             new SortedIndexMap(Array.Empty<int>(), Array.Empty<int>());
 

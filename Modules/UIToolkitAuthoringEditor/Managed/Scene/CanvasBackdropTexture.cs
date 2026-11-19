@@ -17,6 +17,8 @@ sealed class CanvasBackdropTexture
         public float PixelsPerPoint;
         public Texture2D CheckerTexture; // borrowed from UICanvas's CheckerboardBackground element; never destroyed here
         public int CheckerCellSize; // in points
+        public bool UseEditorThemeBackground; // replaces the checkerboard while an editor theme is previewed
+        public Color EditorThemeBackground;
         public CanvasBackgroundType BackgroundType;
         public Color BackgroundColor;
         public float BackgroundColorOpacity;
@@ -24,6 +26,9 @@ sealed class CanvasBackdropTexture
         public Hash128 BackgroundImageContentsHash; // an in-place reimport keeps the instance but changes the pixels
         public float BackgroundImageOpacity;
         public ScaleMode BackgroundImageScaleMode;
+        public RenderTexture BackgroundCameraTexture; // owned by UICanvas; never destroyed here
+        public int BackgroundCameraFrame; // bumped on every camera render, since the texture instance stays the same
+        public float BackgroundCameraOpacity;
 
         public bool Equals(Settings other)
         {
@@ -33,13 +38,18 @@ sealed class CanvasBackdropTexture
                 PixelsPerPoint == other.PixelsPerPoint &&
                 ReferenceEquals(CheckerTexture, other.CheckerTexture) &&
                 CheckerCellSize == other.CheckerCellSize &&
+                UseEditorThemeBackground == other.UseEditorThemeBackground &&
+                EditorThemeBackground == other.EditorThemeBackground &&
                 BackgroundType == other.BackgroundType &&
                 BackgroundColor == other.BackgroundColor &&
                 BackgroundColorOpacity == other.BackgroundColorOpacity &&
                 ReferenceEquals(BackgroundImage, other.BackgroundImage) &&
                 BackgroundImageContentsHash == other.BackgroundImageContentsHash &&
                 BackgroundImageOpacity == other.BackgroundImageOpacity &&
-                BackgroundImageScaleMode == other.BackgroundImageScaleMode;
+                BackgroundImageScaleMode == other.BackgroundImageScaleMode &&
+                ReferenceEquals(BackgroundCameraTexture, other.BackgroundCameraTexture) &&
+                BackgroundCameraFrame == other.BackgroundCameraFrame &&
+                BackgroundCameraOpacity == other.BackgroundCameraOpacity;
         }
     }
 
@@ -50,7 +60,7 @@ sealed class CanvasBackdropTexture
     Settings m_Settings;
     bool m_Dirty = true;
 
-    public Texture Update(int width, int height, in Settings settings)
+    public RenderTexture Update(int width, int height, in Settings settings)
     {
         if (width <= 0 || height <= 0)
         {
@@ -134,7 +144,10 @@ sealed class CanvasBackdropTexture
                 {
                     GL.LoadPixelMatrix(0, m_Texture.width, m_Texture.height, 0);
 
-                    DrawCheckerboard();
+                    if (m_Settings.UseEditorThemeBackground)
+                        DrawEditorThemeBackground();
+                    else
+                        DrawCheckerboard();
 
                     // The GUI blend accumulates alpha additively, so the overlays assume the checkerboard base is opaque.
                     switch (m_Settings.BackgroundType)
@@ -144,6 +157,9 @@ sealed class CanvasBackdropTexture
                             break;
                         case CanvasBackgroundType.Image when m_Settings.BackgroundImage:
                             DrawImageOverlay();
+                            break;
+                        case CanvasBackgroundType.Camera when m_Settings.BackgroundCameraTexture:
+                            DrawCameraOverlay();
                             break;
                     }
                 }
@@ -179,9 +195,26 @@ sealed class CanvasBackdropTexture
             new Color(k_DrawTextureNeutral, k_DrawTextureNeutral, k_DrawTextureNeutral, k_DrawTextureNeutral));
     }
 
+    // DrawTexture does not linearize its color, while the target encodes what is drawn in linear color space.
+    static Color ToDrawColor(Color color)
+    {
+        return QualitySettings.activeColorSpace == ColorSpace.Linear ? color.linear : color;
+    }
+
+    void DrawEditorThemeBackground()
+    {
+        var color = ToDrawColor(m_Settings.EditorThemeBackground);
+        var modulate = new Color(
+            color.r * k_DrawTextureNeutral,
+            color.g * k_DrawTextureNeutral,
+            color.b * k_DrawTextureNeutral,
+            k_DrawTextureNeutral);
+        Graphics.DrawTexture(m_Settings.CanvasRect, Texture2D.whiteTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, modulate);
+    }
+
     void DrawColorOverlay()
     {
-        var color = m_Settings.BackgroundColor;
+        var color = ToDrawColor(m_Settings.BackgroundColor);
         var modulate = new Color(
             color.r * k_DrawTextureNeutral,
             color.g * k_DrawTextureNeutral,
@@ -206,6 +239,14 @@ sealed class CanvasBackdropTexture
         var modulate = new Color(k_DrawTextureNeutral, k_DrawTextureNeutral, k_DrawTextureNeutral,
             m_Settings.BackgroundImageOpacity * k_DrawTextureNeutral);
         Graphics.DrawTexture(screenRect, image, sourceRect, 0, 0, 0, 0, modulate);
+    }
+
+    void DrawCameraOverlay()
+    {
+        var modulate = new Color(k_DrawTextureNeutral, k_DrawTextureNeutral, k_DrawTextureNeutral,
+            m_Settings.BackgroundCameraOpacity * k_DrawTextureNeutral);
+        Graphics.DrawTexture(m_Settings.CanvasRect, m_Settings.BackgroundCameraTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0,
+            modulate);
     }
 
     // Local copy of GUI.CalculateScaledTextureRects: a member-level internals grant on it does not

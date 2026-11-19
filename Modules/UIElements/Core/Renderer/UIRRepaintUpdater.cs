@@ -25,6 +25,7 @@ namespace UnityEngine.UIElements
         bool effectiveForceGammaRendering { get; }
         uint vertexBudget { get; set; }
         TextureSlotCount textureSlotCount { get; set; }
+        FilterTextureBudget filterTextureBudget { get; set; }
         ExtraVertexChannels extraVertexChannels { get; set; }
         // Whether the frame being repainted skips rendering, latched from the panel's skipRendering.
         bool isRenderingSkipped { get; }
@@ -87,6 +88,8 @@ namespace UnityEngine.UIElements
             get => m_TextureSlotCount;
             set => m_TextureSlotCount = value;
         }
+
+        public FilterTextureBudget filterTextureBudget { get; set; }
 
         ExtraVertexChannels m_ExtraVertexChannels;
 
@@ -193,6 +196,7 @@ namespace UnityEngine.UIElements
             if (renderTreeManager == null || renderTreeManager.device == null)
                 return;
 
+            renderTreeManager.filterTextureBudget = filterTextureBudget; // Before ProcessChanges, which schedules the filters
             renderTreeManager.ProcessChanges();
 
             // Apply these debug values every frame because the render chain may have been recreated.

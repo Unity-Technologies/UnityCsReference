@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.UIElements.Collections;
 
 namespace UnityEngine.UIElements.Internal
 {
@@ -227,7 +228,8 @@ namespace UnityEngine.UIElements.Internal
             return true;
         }
 
-        static Type GetElementType(Type type)
+        // Returns the type of the items of the collection types whose property bag supports indices.
+        internal static Type GetElementType(Type type)
         {
             Type elementType = null;
             if (type.IsArray && type.GetArrayRank() == 1)
@@ -235,6 +237,11 @@ namespace UnityEngine.UIElements.Internal
                 elementType = type.GetElementType();
             }
             else if (type.IsGenericType && (type.GetGenericTypeDefinition().IsAssignableFrom(typeof(List<>)) || type.GetGenericTypeDefinition().IsAssignableFrom(typeof(IList<>))))
+            {
+                elementType = type.GenericTypeArguments[0];
+            }
+            // An observable list registers its property bag when it's created, which can be after its type is validated.
+            else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ObservableList<>))
             {
                 elementType = type.GenericTypeArguments[0];
             }

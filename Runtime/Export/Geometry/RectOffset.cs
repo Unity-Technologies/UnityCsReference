@@ -37,13 +37,13 @@ namespace UnityEngine
             m_Ptr = source;
         }
 
-#pragma warning disable UA5000 // Frees the native rect offset; InternalDestroy is thread-safe and the public type has no Dispose API.
+#pragma warning disable UAC0045 // Frees the native rect offset; InternalDestroy is thread-safe and the public type has no Dispose API.
         ~RectOffset()
         {
             if (m_SourceStyle == null)
                 Destroy();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         // Creates a new rectangle with offsets.
         public RectOffset(int left, int right, int top, int bottom)

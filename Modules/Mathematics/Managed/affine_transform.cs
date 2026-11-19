@@ -117,22 +117,22 @@ namespace Unity.Mathematics
         /// <param name="rhs">Right hand side argument to compare equality with.</param>
         /// <returns>The result of the equality comparison.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(AffineTransform rhs) { return rs.Equals(rhs.rs) && t.Equals(rhs.t); }
+        public readonly bool Equals(AffineTransform rhs) { return rs.Equals(rhs.rs) && t.Equals(rhs.t); }
 
         /// <summary>Returns true if the AffineTransform is equal to a given AffineTransform, false otherwise.</summary>
         /// <param name="o">Right hand side argument to compare equality with.</param>
         /// <returns>The result of the equality comparison.</returns>
-        public override bool Equals(object o) { return o is AffineTransform converted && Equals(converted); }
+        public readonly override bool Equals(object o) { return o is AffineTransform converted && Equals(converted); }
 
         /// <summary>Returns a hash code for the AffineTransform.</summary>
         /// <returns>The computed hash code.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() { return (int)hash(this); }
+        public readonly override int GetHashCode() { return (int)hash(this); }
 
         /// <summary>Returns a string representation of the AffineTransform.</summary>
         /// <returns>String representation of the value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override string ToString()
+        public readonly override string ToString()
         {
             return string.Format("AffineTransform(({0}f, {1}f, {2}f,  {3}f, {4}f, {5}f,  {6}f, {7}f, {8}f), ({9}f, {10}f, {11}f))",
                 rs.c0.x, rs.c1.x, rs.c2.x, rs.c0.y, rs.c1.y, rs.c2.y, rs.c0.z, rs.c1.z, rs.c2.z, t.x, t.y, t.z
@@ -144,7 +144,7 @@ namespace Unity.Mathematics
         /// <param name="formatProvider">Format provider to use during string formatting.</param>
         /// <returns>String representation of the value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             return string.Format("AffineTransform(({0}f, {1}f, {2}f,  {3}f, {4}f, {5}f,  {6}f, {7}f, {8}f), ({9}f, {10}f, {11}f))",
                 rs.c0.x.ToString(format, formatProvider), rs.c1.x.ToString(format, formatProvider), rs.c2.x.ToString(format, formatProvider),
@@ -242,7 +242,7 @@ namespace Unity.Mathematics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static AffineTransform mul(AffineTransform a, float3x3 b)
         {
-            return new AffineTransform(a.t, mul(b, a.rs));
+            return new AffineTransform(a.t, mul(a.rs, b));
         }
 
         /// <summary>Returns the result of transforming a float4 homogeneous coordinate by an AffineTransform.</summary>

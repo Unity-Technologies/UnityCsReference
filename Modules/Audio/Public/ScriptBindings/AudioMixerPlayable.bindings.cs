@@ -79,22 +79,6 @@ namespace UnityEngine.Audio
         }
 
 
-        //public bool GetAutoNormalizeVolumes()
-        //{
-        //    return GetAutoNormalizeInternal(ref m_Handle);
-        //}
-
-        //public void SetAutoNormalizeVolumes(bool value)
-        //{
-        //    SetAutoNormalizeInternal(ref m_Handle, value);
-        //}
-
-        //[NativeMethod(ThrowsException = true)]
-        //extern private static bool GetAutoNormalizeInternal(ref PlayableHandle hdl);
-
-        //[NativeMethod(ThrowsException = true)]
-        //extern private static void SetAutoNormalizeInternal(ref PlayableHandle hdl, bool normalise);
-
         [NativeMethod(ThrowsException = true)]
         extern private static bool CreateAudioMixerPlayableInternal(ref PlayableGraph graph, bool normalizeInputVolumes, ref PlayableHandle handle);
 

@@ -165,6 +165,32 @@ namespace UnityEngine.VFX
             return added;
         }
 
+        ///<summary>Adds to the collection the compute shader variants that the visual effect assets dispatch.</summary>
+        ///<remarks>For each compute shader task in each <see cref="VisualEffectAsset" />, this method adds the variant for kernel 0 with the compute shader's enabled local keywords and the global shader keywords that are currently enabled in the active context.
+        ///                For update tasks that can compute ray tracing bounding boxes, it adds the variants both with and without the <c>VFX_COMPUTE_AABBS</c> keyword.
+        ///                The method doesn't add compute shaders that the Visual Effect Graph runtime shares between all effects, such as sorting and indirect argument shaders. To record them, trace the collection at runtime.
+        ///                The method doesn't add a variant that the collection already contains.</remarks>
+        ///<param name="graphicsStateCollection">The GraphicsStateCollection in which to add the compute shader variants.</param>
+        ///<param name="visualEffectAssets">An array of <see cref="VisualEffectAsset" /> files to scan for compute shaders.</param>
+        ///<returns>True if at least one new compute shader variant was successfully added, false otherwise.</returns>
+        ///<seealso cref="Rendering.GraphicsStateCollection.AddComputeVariant" />
+        public static bool AddComputeVariants(this GraphicsStateCollection graphicsStateCollection, VisualEffectAsset[] visualEffectAssets)
+        {
+            return AddComputeVariants_Internal(graphicsStateCollection, visualEffectAssets, Shader.enabledGlobalKeywords);
+        }
+
+        ///<summary>Adds to the collection the compute shader variants that the visual effect assets dispatch.</summary>
+        ///<remarks>This method operates like <see cref="AddComputeVariants(GraphicsStateCollection, VisualEffectAsset[])" />, but uses the provided global keywords instead of the global shader keywords that are currently enabled.</remarks>
+        ///<param name="graphicsStateCollection">The GraphicsStateCollection in which to add the compute shader variants.</param>
+        ///<param name="visualEffectAssets">An array of <see cref="VisualEffectAsset" /> files to scan for compute shaders.</param>
+        ///<param name="globalKeywords">An array of <see cref="GlobalKeyword" /> objects to use with each compute shader's enabled local keywords when the method generates compute shader variants.</param>
+        ///<returns>True if at least one new compute shader variant was successfully added, false otherwise.</returns>
+        ///<seealso cref="Rendering.GraphicsStateCollection.AddComputeVariant" />
+        public static bool AddComputeVariants(this GraphicsStateCollection graphicsStateCollection, VisualEffectAsset[] visualEffectAssets, GlobalKeyword[] globalKeywords)
+        {
+            return AddComputeVariants_Internal(graphicsStateCollection, visualEffectAssets, globalKeywords);
+        }
+
         private static GlobalKeyword[] GetInstancingPatchedGlobalKeywords(GlobalKeyword[] globalKeywords)
         {
             GlobalKeyword instancingKeyword = new GlobalKeyword("INSTANCING_ON");
@@ -204,5 +230,8 @@ namespace UnityEngine.VFX
         [FreeFunction(Name = "VFXGraphicsStateCollectionBindings::AddGraphicsStatesFromReference", HasExplicitThis = false)]
         private static extern bool AddGraphicsStatesFromReference_Internal(this GraphicsStateCollection graphicsStateCollection, GraphicsStateCollection.GraphicsState refState, VisualEffectAsset[] visualEffectAssets, GlobalKeyword[] globalKeywords, int samples, ReadOnlySpan<AttachmentDescriptor> attachments,
             ReadOnlySpan<SubPassDescriptor> subPasses, int subPassIndex, int depthAttachmentIndex, int shadingRateIndex);
+
+        [FreeFunction(Name = "VFXGraphicsStateCollectionBindings::AddComputeVariants", HasExplicitThis = false)]
+        private static extern bool AddComputeVariants_Internal(this GraphicsStateCollection graphicsStateCollection, VisualEffectAsset[] visualEffectAssets, GlobalKeyword[] globalKeywords);
     }
 }

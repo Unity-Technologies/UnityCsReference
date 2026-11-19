@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 
 namespace Unity.Profiling.Editor.UI
 {
@@ -10,7 +11,7 @@ namespace Unity.Profiling.Editor.UI
     {
         public static string FormatTimeNsToMs(UInt64 timeNs)
         {
-            return string.Format($"{timeNs * 1.0e-6f:F3}ms");
+            return string.Format(CultureInfo.InvariantCulture, "{0:F3}ms", timeNs * 1.0e-6f);
         }
     }
 }

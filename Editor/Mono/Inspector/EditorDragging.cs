@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
@@ -199,7 +200,7 @@ namespace UnityEditor
                                 // Validate dragging components
                                 var valid = false;
                                 var objects = editors[m_TargetIndex].targets;
-                                if (Array.TrueForAll(objects, t => t is Component))
+                                if (objects.Length > 0 && Array.TrueForAll(objects, t => t is Component))
                                 {
                                     var ids = new ReadOnlySpan<EntityId>(DragAndDrop.entityIds);
 #pragma warning disable UAC2001 // Avoid Linq
@@ -272,11 +273,12 @@ namespace UnityEditor
                     return;
                 }
 
-                if (Array.Exists(editors[targetIndex].targets, t => t is not Component))
+                var targets = editors[targetIndex].targets;
+                if (targets.Length == 0 || Array.Exists(targets, t => t is not Component))
                     return;
 
 #pragma warning disable UAC2001 // Avoid Linq
-                var targetComponents = editors[targetIndex].targets.Cast<Component>().ToArray();
+                var targetComponents = targets.Cast<Component>().ToArray();
 #pragma warning restore UAC2001
 
                 if (draggingMode.Value == DraggingMode.Script)
@@ -303,30 +305,31 @@ namespace UnityEditor
                         Undo.IncrementCurrentGroup();
                         var undoGroup = Undo.GetCurrentGroup();
 
-                        // Add script components
-                        var index = 0;
-                        var addedComponents = new Component[targetComponents.Length * scripts.Length];
+                        var gameObjects = new GameObject[targetComponents.Length];
                         for (int i = 0; i < targetComponents.Length; i++)
-                        {
-                            var targetComponent = targetComponents[i];
-                            var gameObject = targetComponent.gameObject;
-                            bool targetIsTransform = targetComponent is Transform;
-                            foreach (var script in scripts)
-                                addedComponents[index++] = ObjectFactory.AddComponent(gameObject, script.GetClass());
+                            gameObjects[i] = targetComponents[i].gameObject;
 
-                            // If the target is a Transform, the AddComponent might have replaced it with a RectTransform.
-                            // Handle this possibility by updating the target component.
-                            if (targetIsTransform)
-                                targetComponents[i] = gameObject.transform;
+                        var addedComponents = new List<Component>();
+                        var added = ComponentUtility.AddScriptComponents(gameObjects, scripts, addedComponents);
+
+                        // If the target is a Transform, the AddComponent might have replaced it with a RectTransform.
+                        // Handle this possibility by updating the target component.
+                        if (added)
+                        {
+                            for (int i = 0; i < targetComponents.Length; i++)
+                            {
+                                if (targetComponents[i] is Transform)
+                                    targetComponents[i] = gameObjects[i].transform;
+                            }
                         }
 
                         // Move added components relative to target components
-                        if (!ComponentUtility.MoveComponentsRelativeToComponents(addedComponents, targetComponents, m_TargetAbove))
+                        if (!added || (addedComponents.Count > 0 && !ComponentUtility.MoveComponentsRelativeToComponents(addedComponents.ToArray(), targetComponents, m_TargetAbove)))
                         {
                             // Ensure we have the same selection after calling RevertAllDownToGroup below (MoveComponentsRelativeToComponents can have opened a Prefab in Prefab Mode and changed selection to that root)
                             var wantedSelectedGameObject = Selection.activeGameObject;
 
-                            // Revert added components if move operation fails (e.g. user has been shown the dialog with 'prefab instance restructuring is not posssible' or object is not editable)
+                            // Revert added components if an add or the move operation fails (e.g. user has been shown the dialog with 'prefab instance restructuring is not possible' or object is not editable)
                             Undo.RevertAllDownToGroup(undoGroup);
 
                             if (wantedSelectedGameObject != Selection.activeGameObject)

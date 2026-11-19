@@ -13,7 +13,7 @@ using UnityEngine.UIElements.Unmanaged;
 namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class StyleProperty
     {
         [SerializeField]
@@ -75,7 +75,6 @@ namespace UnityEngine.UIElements
             {
                 return m_Values;
             }
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set
             {
                 m_Values = value;
@@ -84,24 +83,22 @@ namespace UnityEngine.UIElements
 
         internal int handleCount
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get => m_Values?.Length ?? 0;
         }
 
         internal bool isCustomProperty
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => id == StylePropertyId.Custom;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [NonSerialized]
         internal bool requireVariableResolve;
 
         // Cached UniqueStyleString id for m_CustomName. -1 = not custom / not yet computed.
         // Populated eagerly: by CacheId when a custom name is set, and by StyleSheet.SetupReferences
         // for properties deserialized from a stylesheet. Reset to -1 wherever m_CustomName clears.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [NonSerialized]
         internal int customNameId = -1;
 
@@ -148,7 +145,7 @@ namespace UnityEngine.UIElements
             m_Values = Array.Empty<StyleValueHandle>();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetName(StyleSheet styleSheet, string value)
         {
             name = value;
@@ -160,7 +157,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The value to store.</param>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetKeyword(StyleSheet styleSheet, StyleValueKeyword value)
         {
             SetSize(ref m_Values, 1);
@@ -215,7 +212,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The value to store.</param>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetDimension(StyleSheet styleSheet, Dimension value)
         {
             SetSize(ref m_Values, 1);
@@ -309,7 +306,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="enumStr">The value to store.</param>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void SetEnumAsString(StyleSheet styleSheet, string enumStr)
         {
             SetSize(ref m_Values, 1);
@@ -462,7 +459,7 @@ namespace UnityEngine.UIElements
             readonly StyleValueHandle[][] m_SlotHandles;
             readonly bool m_HasAny;
 
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             internal GradientVarBindings(string[] slotNames)
                 : this(slotNames, null)
             {
@@ -516,12 +513,12 @@ namespace UnityEngine.UIElements
 
             // Drops the raw handles captured at read time. Needed when bindings decoded from
             // one sheet are re-emitted into another, where handle indices would be meaningless.
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             internal GradientVarBindings WithoutHandles() => new GradientVarBindings(m_SlotNames);
 
             // Restores the raw handles captured at read time for slots still bound to the same
             // variable name; matched by name so bindings survive slot shifts.
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             internal GradientVarBindings WithHandlesFrom(in GradientVarBindings source)
             {
                 if (m_SlotNames == null || source.m_SlotHandles == null)
@@ -880,7 +877,7 @@ namespace UnityEngine.UIElements
                 var stop = stops[i];
                 if (!TryAddVar(stopSlotBase + 2 * i))
                     plan.Add(HandleWriteOp.Color(stop.color));
-                if (!omitPositions && !TryAddVar(stopSlotBase + 2 * i + 1))
+                if (!omitPositions && !TryAddVar(stopSlotBase + 2 * i + 1) && !stop.positionIsAuto)
                 {
                     plan.Add(stop.positionIsPercent
                         ? HandleWriteOp.Dimension(new Dimension(RoundUnitConversion(stop.position * 100.0), Dimension.Unit.Percent))
@@ -1274,7 +1271,6 @@ namespace UnityEngine.UIElements
         /// <param name="value">The read value.</param>
         /// <param name="axis">The axis to use if the value has not provided it.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool TryGetBackgroundPosition(StyleSheet styleSheet, out BackgroundPosition value, BackgroundPosition.Axis axis)
         {
             if (handleCount is <= 0 or > 2)
@@ -2628,14 +2624,44 @@ namespace UnityEngine.UIElements
                     styleSheet.WriteAssetReference(ref values[index++], ff.customDefinition);
 
                 for (int i = 0; i < ff.parameterCount; ++i)
-                {
-                    var p = ff.GetParameter(i);
-                    if (p.type == FilterParameterType.Float)
-                        styleSheet.WriteFloat(ref values[index++], p.floatValue);
-                    else if (p.type == FilterParameterType.Color)
-                        styleSheet.WriteColor(ref values[index++], p.colorValue);
-                }
+                    WriteFilterParameter(styleSheet, ref values[index++], ff.GetParameter(i));
             }
+        }
+
+        static void WriteFilterParameter(StyleSheet styleSheet, ref StyleValueHandle handle, FilterParameter parameter)
+        {
+            switch (parameter.type)
+            {
+                case FilterParameterType.Float when parameter.unit != Dimension.Unit.Unitless:
+                    styleSheet.WriteDimension(ref handle, ConvertFilterFloatToDimension(parameter.floatValue, parameter.unit));
+                    break;
+                case FilterParameterType.Float:
+                    styleSheet.WriteFloat(ref handle, parameter.floatValue);
+                    break;
+                case FilterParameterType.Color:
+                    styleSheet.WriteColor(ref handle, parameter.colorValue);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(parameter));
+            }
+        }
+
+        static bool TryReadFilterParameter(StyleSheet styleSheet, StyleValueHandle handle, out FilterParameter parameter)
+        {
+            if (styleSheet.TryReadDimension(handle, out var dim))
+            {
+                parameter = new FilterParameter(ConvertDimensionToFilterFloat(dim), dim.unit);
+                return true;
+            }
+
+            if (styleSheet.TryReadColor(handle, out var color))
+            {
+                parameter = new FilterParameter(color);
+                return true;
+            }
+
+            parameter = default;
+            return false;
         }
 
         /// <summary>
@@ -2710,21 +2736,7 @@ namespace UnityEngine.UIElements
                 var args = new FixedBuffer4<FilterParameter>();
                 for (int p = 0; p < argCount; ++p)
                 {
-                    var paramHandle = m_Values[i++];
-                    FilterParameter param;
-                    if (styleSheet.TryReadDimension(paramHandle, out Dimension dim))
-                    {
-                        param = new FilterParameter(ConvertDimensionToFilterFloat(dim));
-                    }
-                    else if (styleSheet.TryReadFloat(paramHandle, out float f))
-                    {
-                        param = new FilterParameter(f);
-                    }
-                    else if (styleSheet.TryReadColor(paramHandle, out Color color))
-                    {
-                        param = new FilterParameter(color);
-                    }
-                    else
+                    if (!TryReadFilterParameter(styleSheet, m_Values[i++], out var param))
                     {
                         value.Clear();
                         return false;
@@ -2743,7 +2755,6 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         static internal int GetNumberOfValuesForFilterFunction(FilterFunction ff)
         {
             int valueCount = 0;
@@ -2758,7 +2769,6 @@ namespace UnityEngine.UIElements
             return valueCount;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         static internal FilterFunctionType ToFilterFunctionType(StyleValueFunction function)
         {
             switch (function)
@@ -2778,7 +2788,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         static internal StyleValueFunction ToStyleValueFunction(FilterFunctionType type)
         {
             switch (type)
@@ -2798,7 +2807,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         static internal float ConvertDimensionToFilterFloat(Dimension dim)
         {
             // Convert percentages to 0-1 range.
@@ -2816,21 +2824,43 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         static internal Dimension ConvertFilterFloatToDimension(float value, Dimension.Unit unit)
         {
             // Counterpart to ConvertDimensionToFilterFloat
+            double converted;
             switch (unit)
             {
-                case Dimension.Unit.Percent:     value *= 100.0f; break;
-                case Dimension.Unit.Degree:      value *= Mathf.Rad2Deg; break;
-                case Dimension.Unit.Turn:        value /= (Mathf.PI * 2.0f); break;
-                case Dimension.Unit.Gradian:     value /= (Mathf.PI / 200.0f); break;
-                case Dimension.Unit.Millisecond: value *= 1000.0f; break;
+                case Dimension.Unit.Percent:     converted = value * 100.0; break;
+                case Dimension.Unit.Degree:      converted = value * (180.0 / Math.PI); break;
+                case Dimension.Unit.Turn:        converted = value / (Math.PI * 2.0); break;
+                case Dimension.Unit.Gradian:     converted = value * (200.0 / Math.PI); break;
+                case Dimension.Unit.Millisecond: converted = value * 1000.0; break;
                 default:
-                    break;
+                    return new Dimension(value, unit);
             }
-            return new Dimension(value, unit);
+
+            // The forward conversion is done in float, so 30deg comes back as 30.000002deg without rounding.
+            // Use the shortest rounding that still reads back as the same value, so large angles keep their precision.
+            for (int digits = k_MinFilterUnitSignificantDigits; digits <= k_MaxFilterUnitSignificantDigits; ++digits)
+            {
+                var rounded = new Dimension(RoundToSignificantDigits(converted, digits), unit);
+                if (ConvertDimensionToFilterFloat(rounded) == value)
+                    return rounded;
+            }
+
+            return new Dimension((float)converted, unit);
+        }
+
+        const int k_MinFilterUnitSignificantDigits = 6;
+        const int k_MaxFilterUnitSignificantDigits = 9;
+
+        static float RoundToSignificantDigits(double value, int digits)
+        {
+            if (value == 0.0 || double.IsNaN(value) || double.IsInfinity(value))
+                return (float)value;
+
+            var scale = Math.Pow(10.0, digits - 1 - Math.Floor(Math.Log10(Math.Abs(value))));
+            return (float)(Math.Round(value * scale) / scale);
         }
 
         private static void SetSize(ref StyleValueHandle[] store, int size)

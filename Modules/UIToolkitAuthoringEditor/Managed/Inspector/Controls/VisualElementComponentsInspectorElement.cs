@@ -25,7 +25,6 @@ namespace Unity.UIToolkit.Editor;
 /// element attribute edits.
 /// </summary>
 [UxmlElement]
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 sealed partial class VisualElementComponentsInspectorElement : VisualElement
 {
     public static readonly BindingId TargetProperty = nameof(Target);
@@ -33,7 +32,6 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
 
     // Raised after a component is added or removed. A host (for example UI Builder) subscribes to refresh
     // its own views and mark its document changed; the standalone inspector leaves it unset.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal event Action changed;
 
     const string k_UssClassName = "unity-visual-element-components-inspector";

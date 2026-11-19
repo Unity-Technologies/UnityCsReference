@@ -274,8 +274,8 @@ namespace UnityEngine.InputForUI
             }
         }
 
-        private TOutputType Map<TOutputType, TMapType>() where TMapType : IMapFn<TOutputType>, new() =>
-            Map<TOutputType, TMapType>(new TMapType());
+        private TOutputType Map<TOutputType, TMapType>() where TMapType : struct, IMapFn<TOutputType> =>
+            Map<TOutputType, TMapType>(default);
 
         private interface IMapFn<TOutputType>
         {

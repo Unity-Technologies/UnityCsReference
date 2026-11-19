@@ -202,7 +202,7 @@ namespace UnityEditor.Search
         [NonSerialized] private Task m_CurrentUpdateTask;
         [NonSerialized] private Task m_CurrentIncrementalLoadTask;
         [NonSerialized] private int m_UpdateTasks = 0;
-        [NonSerialized] private string m_IndexSettingsPath;
+        [SerializeField] private string m_IndexSettingsPath;
         [NonSerialized] private ConcurrentBag<AssetIndexChangeSet> m_UpdateQueue = new ConcurrentBag<AssetIndexChangeSet>();
 
         // True while we are cancelling/disposing pending tasks. Disposing a task invokes its resolver, which can
@@ -224,7 +224,7 @@ namespace UnityEditor.Search
         {
             get
             {
-                if (m_IndexSettingsPath != null)
+                if (!string.IsNullOrEmpty(m_IndexSettingsPath))
                     return m_IndexSettingsPath;
                 var adbPath = AssetDatabase.GetAssetPath(this);
                 if (!string.IsNullOrEmpty(adbPath))

@@ -1287,6 +1287,7 @@ namespace UnityEngine.Rendering
     }
 
     // Keep in sync with RenderCameraEventType in Runtime/Graphics/CommandBuffer/RenderingEvents.h
+    [Obsolete("CameraEvent is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
     public enum CameraEvent
     {
         BeforeDepthTexture = 0,
@@ -1316,6 +1317,7 @@ namespace UnityEngine.Rendering
         AfterHaloAndLensFlares
     }
 
+#pragma warning disable CS0618 // CameraEvent is obsolete
     internal static class CameraEventUtils
     {
         const CameraEvent k_MinimumValue = CameraEvent.BeforeDepthTexture;
@@ -1326,8 +1328,10 @@ namespace UnityEngine.Rendering
             return value >= k_MinimumValue && value <= k_MaximumValue;
         }
     }
+#pragma warning restore CS0618
 
     // Keep in sync with RenderLightEventType in Runtime/Graphics/CommandBuffer/RenderingEvents.h
+    [Obsolete("LightEvent is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
     public enum LightEvent
     {
         BeforeShadowMap = 0,
@@ -1340,6 +1344,7 @@ namespace UnityEngine.Rendering
 
     // Keep in sync with RenderShadowMapPassType in Runtime/Graphics/CommandBuffer/RenderingEvents.h
     [Flags]
+    [Obsolete("ShadowMapPass is deprecated and will be removed in a future release. It has no effect because the Built-In Render Pipeline is removed. To inject rendering commands, use a ScriptableRenderPass in the Universal Render Pipeline (URP) or a Custom Pass in the High Definition Render Pipeline (HDRP) instead. #from(7000.0)", false)]
     public enum ShadowMapPass
     {
         PointlightPositiveX     = 1 << 0,
@@ -2157,6 +2162,15 @@ namespace UnityEngine.Rendering
         NativeGraphicsJobsWithoutRenderThread = 5,
         NativeGraphicsJobsSplitThreading = 6,
     }
+
+    public enum SwapchainPreTransform
+    {
+        Identity = 0,
+        Rotate90 = 1,
+        Rotate180 = 2,
+        Rotate270 = 3,
+    }
+
     public enum CameraLateLatchMatrixType
     {
         View = 0,

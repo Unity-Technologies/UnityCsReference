@@ -189,21 +189,12 @@ namespace Unity.Entities
             DeallocateCompanionGameObjects(chunk, indexInChunk, batchCount);
 
             var entities = (Entity*)chunk.Buffer + indexInChunk;
+            RemoveComponentObjectStates(entities, batchCount, archetype, null);
 
-            // A GameObject entity's id is owned by the engine (released when the GameObject is
-            // destroyed), so destroying the entity only detaches it from its chunk.
             if (archetype->HasGameObjectEntities)
-            {
-                for (int i = 0; i < batchCount; i++)
-                {
-                    if (s_entityStore.Data.Exists(entities[i]))
-                        SetEntityInChunk(entities[i], EntityInChunk.Null);
-                }
-            }
+                s_entityStore.Data.DeallocateOrDetachEntities(entities, batchCount);
             else
-            {
                 s_entityStore.Data.DeallocateEntities(entities, batchCount);
-            }
 
             EntityNameStorage.RemoveEntitiesFromNameMap(entities, batchCount);
             m_NameStoreAccess.RemoveEntitiesFromEntitiesWithNames(entities, batchCount);

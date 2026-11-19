@@ -13,7 +13,6 @@ namespace UnityEngine.UIElements
 {
     internal partial class StyleProperty
     {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal readonly struct Manipulator
         {
             private readonly ref struct ValueSpan
@@ -767,18 +766,7 @@ namespace UnityEngine.UIElements
 
                 for (var i = 0; i < value.parameterCount; ++i, ++nextIndex)
                 {
-                    var p = value.GetParameter(i);
-                    switch (p.type)
-                    {
-                        case FilterParameterType.Float:
-                            m_StyleSheet.WriteFloat(ref m_Property.values[nextIndex], p.floatValue);
-                            break;
-                        case FilterParameterType.Color:
-                            m_StyleSheet.WriteColor(ref m_Property.values[nextIndex], p.colorValue);
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                    WriteFilterParameter(m_StyleSheet, ref m_Property.values[nextIndex], value.GetParameter(i));
                 }
             }
 
@@ -803,18 +791,7 @@ namespace UnityEngine.UIElements
 
                 for (var i = 0; i < value.parameterCount; ++i, ++nextIndex)
                 {
-                    var p = value.GetParameter(i);
-                    switch (p.type)
-                    {
-                        case FilterParameterType.Float:
-                            m_StyleSheet.WriteFloat(ref m_Property.values[nextIndex], p.floatValue);
-                            break;
-                        case FilterParameterType.Color:
-                            m_StyleSheet.WriteColor(ref m_Property.values[nextIndex], p.colorValue);
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                    WriteFilterParameter(m_StyleSheet, ref m_Property.values[nextIndex], value.GetParameter(i));
                 }
             }
 
@@ -839,18 +816,7 @@ namespace UnityEngine.UIElements
 
                 for (var i = 0; i < value.parameterCount; ++i, ++nextIndex)
                 {
-                    var p = value.GetParameter(i);
-                    switch (p.type)
-                    {
-                        case FilterParameterType.Float:
-                            m_StyleSheet.WriteFloat(ref m_Property.values[nextIndex], p.floatValue);
-                            break;
-                        case FilterParameterType.Color:
-                            m_StyleSheet.WriteColor(ref m_Property.values[nextIndex], p.colorValue);
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                    WriteFilterParameter(m_StyleSheet, ref m_Property.values[nextIndex], value.GetParameter(i));
                 }
             }
 
@@ -896,31 +862,11 @@ namespace UnityEngine.UIElements
 
                 for (var i = 0; i < parameterCount; ++i, ++currentIndex)
                 {
-                    FilterParameter parameter;
-                    if (m_StyleSheet.TryReadColor(m_Property.values[currentIndex], out var color))
+                    if (!TryReadFilterParameter(m_StyleSheet, m_Property.values[currentIndex], out var parameter))
                     {
-                        parameter = new FilterParameter
-                        {
-                            type = FilterParameterType.Color,
-                            colorValue = color
-                        };
-                    }
-                    else if (m_StyleSheet.TryReadFloat(m_Property.values[currentIndex], out var dimValue))
-                    {
-                        parameter = new FilterParameter()
-                        {
-                            type = FilterParameterType.Float,
-                            floatValue = dimValue
-                        };
-                    }
-                    else if (m_Property.values[currentIndex].valueType == StyleValueType.CommaSeparator)
-                    {
-                        // Not technically a valid syntax, but we'll allow it
-                        continue;
-                    }
-                    else
-                    {
-                        Debug.LogError($"Unexpected value type {m_Property.values[currentIndex].valueType} in filter function argument");
+                        // A comma separator is not technically valid syntax, but we'll allow it
+                        if (m_Property.values[currentIndex].valueType != StyleValueType.CommaSeparator)
+                            Debug.LogError($"Unexpected value type {m_Property.values[currentIndex].valueType} in filter function argument");
                         continue;
                     }
 
@@ -1179,7 +1125,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Manipulator GetManipulator(StyleSheet styleSheet)
         {
             return new Manipulator(styleSheet, this);

@@ -25,6 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageLinkFactory m_PackageLinkFactory;
         private readonly IDelayedSelectionHandler m_DelayedSelectionHandler;
         private readonly ISampleImporter m_SampleImporter;
+        private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
 
         public PackageDetailsBody() : this(
             ServicesContainer.instance.Resolve<IResourceLoader>(),
@@ -39,7 +40,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
             ServicesContainer.instance.Resolve<IPackageLinkFactory>(),
             ServicesContainer.instance.Resolve<IDelayedSelectionHandler>(),
-            ServicesContainer.instance.Resolve<ISampleImporter>())
+            ServicesContainer.instance.Resolve<ISampleImporter>(),
+            ServicesContainer.instance.Resolve<IInternalEditorUtilityProxy>())
         {
         }
 
@@ -56,7 +58,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IUnityConnectProxy unityConnect,
             IPackageLinkFactory packageLinkFactory,
             IDelayedSelectionHandler delayedSelectionHandler,
-            ISampleImporter sampleImporter)
+            ISampleImporter sampleImporter,
+            IInternalEditorUtilityProxy internalEditorUtilityProxy)
         {
             m_ResourceLoader = resourceLoader;
             m_PackageDatabase = packageDatabase;
@@ -71,6 +74,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageLinkFactory = packageLinkFactory;
             m_DelayedSelectionHandler = delayedSelectionHandler;
             m_SampleImporter = sampleImporter;
+            m_InternalEditorUtilityProxy = internalEditorUtilityProxy;
 
             m_TabView = new PackageDetailsTabView { name = "packageDetailsTabView" };
             m_TabView.onTabSwitched += OnTabSwitched;
@@ -100,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_TabView.AddTab(new PackageDetailsDetailsTab(m_UnityConnect, m_ResourceLoader, m_Application, m_UpmCache));
             m_TabView.AddTab(new PackageDetailsOverviewTab(m_UnityConnect, m_ResourceLoader, m_UpmCache));
             m_TabView.AddTab(new PackageDetailsReleasesTab(m_UnityConnect));
-            m_TabView.AddTab(new PackageDetailsImportedAssetsTab(m_UnityConnect, m_PackageManagerPrefs));
+            m_TabView.AddTab(new PackageDetailsImportedAssetsTab(m_UnityConnect, m_PackageManagerPrefs, m_InternalEditorUtilityProxy));
             m_TabView.AddTab(new PackageDetailsVersionsTab(m_UnityConnect, m_ResourceLoader, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_UpmCache, m_PackageLinkFactory));
             m_TabView.AddTab(new PackageDetailsDependenciesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase));
             m_TabView.AddTab(new FeatureDependenciesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase, m_PackageManagerPrefs, m_Application));

@@ -26,7 +26,7 @@ namespace UnityEngine.UIElements.StyleSheets
         Visual = 9
     }
 
-    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal enum StyleEnumType
     {
         Align,
@@ -61,7 +61,7 @@ namespace UnityEngine.UIElements.StyleSheets
         Wrap
     }
 
-    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal enum StylePropertyId
     {
         Unknown = 0,

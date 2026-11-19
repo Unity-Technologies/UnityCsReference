@@ -489,6 +489,7 @@ namespace UnityEngine
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, ReadOnlySpan<Vector3> positions, ReadOnlySpan<Quaternion> rotations, InstantiateParameters parameters, CancellationToken cancellationToken = default) where T : UnityEngine.Object
         {
             CheckNullArgument(original, objectIsNullMessage);
+            CheckGameObjectCreationAllowed(original);
 
             if (count <= 0)
             {
@@ -509,10 +510,17 @@ namespace UnityEngine
         }
 
         // Clones the object /original/ and returns the clone.
+        static void CheckGameObjectCreationAllowed(Object original)
+        {
+            if (original is GameObject || original is Component)
+                Unity.Entities.GameObjectComponentStoreBridge.CheckGameObjectCreationAllowed();
+        }
+
         [TypeInferenceRule(TypeInferenceRules.TypeOfFirstArgument)]
         public static Object Instantiate(Object original, Vector3 position, Quaternion rotation)
         {
             CheckNullArgument(original, objectIsNullMessage);
+            CheckGameObjectCreationAllowed(original);
 
             if (original is ScriptableObject)
                 throw new ArgumentException("Cannot instantiate a ScriptableObject with a position and rotation");
@@ -533,6 +541,7 @@ namespace UnityEngine
                 return Instantiate(original, position, rotation);
 
             CheckNullArgument(original, objectIsNullMessage);
+            CheckGameObjectCreationAllowed(original);
             if (parent.gameObject.IsDestroying())
                 ThrowArgumentExceptionForParentBeingDestroyed(original.name, parent.name, nameof(parent));
 
@@ -549,6 +558,7 @@ namespace UnityEngine
         public static Object Instantiate(Object original)
         {
             CheckNullArgument(original, objectIsNullMessage);
+            CheckGameObjectCreationAllowed(original);
             var obj = Internal_CloneSingle(original);
 
             if (obj == null)
@@ -562,6 +572,7 @@ namespace UnityEngine
         public static Object Instantiate(Object original, Scene scene)
         {
             CheckNullArgument(original, objectIsNullMessage);
+            CheckGameObjectCreationAllowed(original);
             var obj = Internal_CloneSingleWithScene(original, scene);
 
             if (obj == null)
@@ -573,6 +584,7 @@ namespace UnityEngine
         public static T Instantiate<T>(T original, InstantiateParameters parameters) where T : UnityEngine.Object
         {
             CheckNullArgument(original, objectIsNullMessage);
+            CheckGameObjectCreationAllowed(original);
 
             if (parameters.parent != null && parameters.parent.gameObject.IsDestroying())
                 ThrowArgumentExceptionForParentBeingDestroyed(original.name, parameters.parent.name, nameof(parameters.parent));
@@ -588,6 +600,7 @@ namespace UnityEngine
         public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation, InstantiateParameters parameters) where T : UnityEngine.Object
         {
             CheckNullArgument(original, objectIsNullMessage);
+            CheckGameObjectCreationAllowed(original);
 
             if (parameters.parent != null && parameters.parent.gameObject.IsDestroying())
                 ThrowArgumentExceptionForParentBeingDestroyed(original.name, parameters.parent.name, nameof(parameters.parent));
@@ -614,6 +627,7 @@ namespace UnityEngine
                 return Instantiate(original);
 
             CheckNullArgument(original, objectIsNullMessage);
+            CheckGameObjectCreationAllowed(original);
             if (parent.gameObject.IsDestroying())
                 ThrowArgumentExceptionForParentBeingDestroyed(original.name, parent.name, nameof(parent));
 
@@ -628,6 +642,7 @@ namespace UnityEngine
         public static T Instantiate<T>(T original) where T : UnityEngine.Object
         {
             CheckNullArgument(original, objectIsNullMessage);
+            CheckGameObjectCreationAllowed(original);
             var obj = (T)Internal_CloneSingle(original);
 
             if (obj == null)
@@ -1109,7 +1124,7 @@ namespace UnityEngine
 
                 // Walks the native RTTI base chain to the nearest registered wrapper factory; native-only
                 // types resolve to their nearest managed ancestor. The ctor stores the EntityId.
-                var wrapper = TypeManagerV2.CreateProxyObject(runtimeTypeIndex, id) as UnityEngine.Object;
+                var wrapper = uei.TypeManagerV2.CreateProxyObject(runtimeTypeIndex, id) as UnityEngine.Object;
                 if (wrapper == null)
                 {
                     // Scripted object (MonoBehaviour/ScriptableObject subclass) not yet created by the

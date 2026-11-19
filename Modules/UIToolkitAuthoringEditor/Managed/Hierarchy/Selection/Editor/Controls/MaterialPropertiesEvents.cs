@@ -8,13 +8,11 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class MaterialSelectedEvent : EventBase<MaterialSelectedEvent>
     {
         public Material material;
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class MaterialDefinitionChangedEvent : EventBase<MaterialDefinitionChangedEvent>
     {
         public MaterialDefinition newMaterialDefinition;

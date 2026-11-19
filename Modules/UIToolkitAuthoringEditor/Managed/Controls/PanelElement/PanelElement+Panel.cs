@@ -9,10 +9,12 @@ using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 
 namespace Unity.UIToolkit.Editor;
 
-sealed partial class PanelElement : VisualElement
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+sealed partial class PanelElement : VisualElement, IEditorAuthoringPanelHost
 {
     internal class PanelElementRootVisualElement : TemplateContainer;
 
@@ -20,20 +22,33 @@ sealed partial class PanelElement : VisualElement
 
     public delegate void OnAfterRepaintHandler(PanelElement panel);
 
-
-    internal class RuntimePanel : BaseRuntimePanel, IAuthoringPanel
+    // Implemented by both sub-panel types so PanelElement can drive them without knowing the context type.
+    internal interface IPanelElementSubPanel
     {
-        public RenderTexture TargetTexture => targetTexture;
-        public PanelElement Owner;
-        public readonly PanelElementRootVisualElement Root;
+        PanelElement Owner { get; set; }
+        PanelElementRootVisualElement Root { get; }
+        RenderTexture TargetTexture { get; set; }
+    }
+
+    internal class RuntimePanel : BaseRuntimePanel, IAuthoringPanel, IPanelElementSubPanel
+    {
+        readonly Action m_BaseRender;
+
+        public RenderTexture TargetTexture
+        {
+            get => targetTexture;
+            set => targetTexture = value;
+        }
+
+        public PanelElement Owner { get; set; }
+        public PanelElementRootVisualElement Root { get; }
 
         public RuntimePanel(ScriptableObject ownerObject) : base(ownerObject, EventDispatcher.CreateDefault())
         {
+            m_BaseRender = base.Render;
             CreateMenuFunctor = () => new GenericDropdownMenu();
             focusController = new FocusController(new NavigateFocusRing(visualTree));
-            visualTree.Add(Root = new PanelElementRootVisualElement());
-            Root.pseudoStates |= PseudoStates.Root;
-            Root.style.zIndex = 0;
+            Root = AddRoot(visualTree);
             resetPanelRenderingOnAssetChange = true;
         }
 
@@ -50,57 +65,108 @@ sealed partial class PanelElement : VisualElement
             base.TickSchedulingUpdaters();
         }
 
-        bool m_LoggedOnBeforeRenderException;
+        public override void Render() => Owner.RenderSubPanelContent(this, m_BaseRender);
+    }
 
-        public override void Render()
+    internal class EditorSubPanel : EditorAuthoringPanel, IPanelElementSubPanel
+    {
+        readonly Action m_BaseRender;
+
+        public RenderTexture TargetTexture
         {
-            Owner.m_TargetPrefilled = false;
+            get => targetTexture;
+            set => targetTexture = value;
+        }
 
-            // Do not render if any dimension is 0, since this would lead to exception with the RenderTexture.
-            if (Owner.SubPanelSize.x == 0 || Owner.SubPanelSize.y == 0)
-                return;
+        public PanelElement Owner { get; set; }
+        public PanelElementRootVisualElement Root { get; }
 
-            try
+        public EditorSubPanel(ScriptableObject ownerObject) : base(ownerObject)
+        {
+            m_BaseRender = base.Render;
+            Root = AddRoot(visualTree);
+        }
+
+        public override void TickSchedulingUpdaters()
+        {
+            Owner.ApplyPanelSettings(Owner.PanelSettings);
+            base.TickSchedulingUpdaters();
+        }
+
+        public override void Render() => Owner.RenderSubPanelContent(this, m_BaseRender);
+    }
+
+    static PanelElementRootVisualElement AddRoot(VisualElement visualTree)
+    {
+        var root = new PanelElementRootVisualElement();
+        visualTree.Add(root);
+        root.pseudoStates |= PseudoStates.Root;
+        root.style.zIndex = 0;
+        return root;
+    }
+
+    bool m_LoggedOnBeforeRenderException;
+
+    void RenderSubPanelContent(Panel subPanel, Action baseRender)
+    {
+        m_TargetPrefilled = false;
+
+        // Do not render if any dimension is 0, since this would lead to exception with the RenderTexture.
+        if (SubPanelSize.x == 0 || SubPanelSize.y == 0)
+            return;
+
+        try
+        {
+            OnBeforeRender?.Invoke();
+            m_LoggedOnBeforeRenderException = false;
+        }
+        catch (Exception e)
+        {
+            // A partial prefill must not skip the clear, and a deterministic throw would log once per repaint.
+            m_TargetPrefilled = false;
+            if (!m_LoggedOnBeforeRenderException)
             {
-                Owner.OnBeforeRender?.Invoke();
-                m_LoggedOnBeforeRenderException = false;
+                m_LoggedOnBeforeRenderException = true;
+                Debug.LogException(e);
             }
-            catch (Exception e)
-            {
-                // A partial prefill must not skip the clear, and a deterministic throw would log once per repaint.
-                Owner.m_TargetPrefilled = false;
-                if (!m_LoggedOnBeforeRenderException)
-                {
-                    m_LoggedOnBeforeRenderException = true;
-                    Debug.LogException(e);
-                }
-            }
+        }
 
-            if (!Owner.m_TargetPrefilled)
-            {
-                base.Render();
-                return;
-            }
-
+        if (!m_TargetPrefilled)
+        {
+            baseRender();
+        }
+        else
+        {
             // Restored in the finally: render paths outside the tick (the engine panel sweeps) never re-apply
             // the panel settings, so a one-shot skip left in clearSettings would leak into their next render.
-            var restoreClearSettings = clearSettings;
-            var settings = clearSettings;
+            var restoreClearSettings = subPanel.clearSettings;
+            var settings = subPanel.clearSettings;
             settings.clearColor = false;
-            clearSettings = settings;
+            subPanel.clearSettings = settings;
             try
             {
-                base.Render();
+                baseRender();
             }
             finally
             {
-                clearSettings = restoreClearSettings;
+                subPanel.clearSettings = restoreClearSettings;
             }
         }
+
+        CopyToDisplayTexture();
     }
 
     // PanelElement itself is often never attached to a panel; set to whichever VisualElement is.
     internal VisualElement CursorHost { get; set; }
+
+    // Event positions forwarded to the sub-panel are local to the host, so mapping back is the inverse scaling.
+    VisualElement IEditorAuthoringPanelHost.hostElement => CursorHost ?? this;
+
+    Rect IEditorAuthoringPanelHost.PanelToHost(Rect panelRect)
+    {
+        var pixelsPerPoint = SubPanel?.pixelsPerPoint ?? 1.0f;
+        return new Rect(panelRect.position / pixelsPerPoint, panelRect.size / pixelsPerPoint);
+    }
 
     // Keeps previewed-content cursor requests inside the host window's own GUIView cursor reconciliation.
     sealed class ForwardingCursorManager : ICursorManager
@@ -132,8 +198,17 @@ sealed partial class PanelElement : VisualElement
 
     public event OnAfterRepaintHandler OnAfterRepaint;
 
+    // Raised before a ContextType change releases a created sub-panel, while it can still be detached from registries.
+    public event Action<PanelElement> SubPanelReleasing;
+
+    // Raised after a ContextType change replaced a created sub-panel. The new sub-root is empty.
+    public event Action<PanelElement> SubPanelRecreated;
+
     // Raised inside Render itself, so it wraps every render path, including the engine's panel sweeps.
     public event Action OnBeforeRender;
+
+    // Raised after the theme the sub-panel uses changed, whether it comes from Theme or from the panel settings.
+    public event Action<PanelElement> ThemeChanged;
 
     bool m_TargetPrefilled;
 
@@ -152,31 +227,29 @@ sealed partial class PanelElement : VisualElement
             var wasCreated = IsCreated;
 
             if (wasCreated)
+            {
+                SubPanelReleasing?.Invoke(this);
                 ReleaseSubPanel();
+            }
 
             m_ContextType = value;
 
             if (wasCreated)
+            {
                 AcquireSubPanel();
+
+                // Listeners rebind to the new render texture, so it must exist before they are told.
+                ApplyPanelSettings(m_PanelSettings);
+                SubPanelRecreated?.Invoke(this);
+            }
         }
     }
 
     public Panel SubPanel { get; private set; }
 
-    public VisualElement subRootVisualElement
-    {
-        get
-        {
-            switch (SubPanel)
-            {
-                case RuntimePanel runtimePanel:
-                    return runtimePanel.Root;
-                // case EditorPanel editorPanel:
-                //     return editorPanel.visualTree;
-            }
-            return null;
-        }
-    }
+    internal IPanelElementSubPanel SubPanelContent => SubPanel as IPanelElementSubPanel;
+
+    public VisualElement subRootVisualElement => SubPanelContent?.Root;
 
     public void SetPanelSize(Vector2 size)
     {
@@ -209,6 +282,7 @@ sealed partial class PanelElement : VisualElement
     {
         if (IsCreated)
         {
+            DetachContentBeforeDispose();
             UIElementsRuntimeUtility.DisposeAuthoringPanel(m_PanelOwner);
         }
 
@@ -232,9 +306,6 @@ sealed partial class PanelElement : VisualElement
     private void AcquireSubPanel()
     {
         Assert.IsNull(m_PanelOwner);
-        // We currently only support runtime panels, so let's make sure we error out early when an editor panel is
-        // queried.
-        Assert.IsTrue(m_ContextType == ContextType.Player, $"{nameof(PanelElement)} does not support editor panels.");
 
         // Try to retrieve existing owner from registry if we have a valid key
         if (m_PanelOwnerKey.IsValid() &&
@@ -249,7 +320,7 @@ sealed partial class PanelElement : VisualElement
                     UIElementsEditorRuntimeUtility.CreateRuntimePanelDebug(SubPanel);
                     break;
                 case ContextType.Editor:
-                    SubPanel = EditorPanel.FindOrCreate(m_PanelOwner);
+                    SubPanel = UIElementsRuntimeUtility.FindOrCreateAuthoringPanel(m_PanelOwner, CreateEditorPanelFunc);
                     UIElementsEditorRuntimeUtility.CreateRuntimePanelDebug(SubPanel);
                     break;
                 default:
@@ -276,12 +347,11 @@ sealed partial class PanelElement : VisualElement
             PanelOwnerRegistry.instance.Register(m_PanelOwnerKey, m_PanelOwner);
         }
 
-        // [TODO] use interface
-        switch (SubPanel)
+        SubPanelContent.Owner = this;
+        if (SubPanel is EditorAuthoringPanel editorPanel)
         {
-            case PanelElement.RuntimePanel runtimePanel:
-                runtimePanel.Owner = this;
-                break;
+            editorPanel.host = this;
+            editorPanel.hostRepainting += OnHostRepainting;
         }
 
         SubPanel.cursorManager = new ForwardingCursorManager(this);
@@ -306,9 +376,11 @@ sealed partial class PanelElement : VisualElement
     void CreateEditorPanel()
     {
         m_PanelOwner = CreateOwnerObject(ContextType.Editor);
-        SubPanel = EditorPanel.FindOrCreate(m_PanelOwner);
+        SubPanel = UIElementsRuntimeUtility.FindOrCreateAuthoringPanel(m_PanelOwner, CreateEditorPanelFunc);
         UIElementsEditorRuntimeUtility.CreateRuntimePanelDebug(SubPanel);
     }
+
+    static Panel CreateEditorPanelFunc(ScriptableObject owner) => new EditorSubPanel(owner);
 
     void ReleaseSubPanel()
     {
@@ -320,6 +392,7 @@ sealed partial class PanelElement : VisualElement
 
         Panel.afterRepaint -= InvokeAfterRepaint;
 
+        DetachContentBeforeDispose();
         UIElementsRuntimeUtility.DisposeAuthoringPanel(m_PanelOwner);
 
         // Keep the owner registered so it survives domain reload and playmode transitions
@@ -328,6 +401,16 @@ sealed partial class PanelElement : VisualElement
         DisposeRenderTexture();
         m_PanelOwner = null;
         SubPanel = null;
+
+        // The theme lived on the released sub-panel; the next one must receive it again.
+        m_AppliedTheme = null;
+    }
+
+    // An open GenericDropdownMenu hides itself when its target detaches, which breaks the visual tree clear in
+    // Panel.Dispose; detaching the content first lets it close normally.
+    void DetachContentBeforeDispose()
+    {
+        subRootVisualElement?.Clear();
     }
 
     void InvokeAfterRepaint(Panel p)

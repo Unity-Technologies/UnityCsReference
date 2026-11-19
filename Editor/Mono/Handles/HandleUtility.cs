@@ -185,6 +185,49 @@ namespace UnityEditor
             return worldPoint + camTransform.right * alongRight + camTransform.up * alongUp;
         }
 
+        // Applies the same offset as WorldPointWithScreenOffset to many points, reading the camera once.
+        // Assumes the camera's view follows its transform and its projection has no skew, which holds for the Scene view camera.
+        internal readonly struct ScreenOffsetProjection
+        {
+            readonly Vector3 m_Position;
+            readonly Vector3 m_Forward;
+            readonly Vector3 m_Right;
+            readonly Vector3 m_Up;
+            readonly bool m_Orthographic;
+            readonly float m_RightPixelsPerUnit;
+            readonly float m_UpPixelsPerUnit;
+            readonly Vector2 m_ScreenOffset;
+
+            public ScreenOffsetProjection(Camera cam, Vector2 screenOffset)
+            {
+                Transform camTransform = cam.transform;
+                m_Position = camTransform.position;
+                m_Forward = camTransform.forward;
+                m_Right = camTransform.right;
+                m_Up = camTransform.up;
+                m_Orthographic = cam.orthographic;
+
+                // Pixels per world unit along the camera's right and up, at a depth of one for a perspective camera.
+                Matrix4x4 projection = cam.projectionMatrix;
+                m_RightPixelsPerUnit = Mathf.Abs(projection.m00) * 0.5f * cam.pixelWidth;
+                m_UpPixelsPerUnit = Mathf.Abs(projection.m11) * 0.5f * cam.pixelHeight;
+                m_ScreenOffset = screenOffset;
+            }
+
+            // Moving a point along the camera's right or up keeps its depth, so its pixels per world unit only depend on that depth.
+            public Vector3 Apply(Vector3 worldPoint)
+            {
+                float depth = m_Orthographic ? 1f : Mathf.Abs(Vector3.Dot(worldPoint - m_Position, m_Forward));
+                float rightPixels = m_RightPixelsPerUnit / depth;
+                float upPixels = m_UpPixelsPerUnit / depth;
+
+                float alongRight = rightPixels * rightPixels > Mathf.Epsilon ? m_ScreenOffset.x / rightPixels : 0f;
+                float alongUp = upPixels * upPixels > Mathf.Epsilon ? m_ScreenOffset.y / upPixels : 0f;
+
+                return worldPoint + m_Right * alongRight + m_Up * alongUp;
+            }
+        }
+
         // This limits the "shoot off into infinity" factor when the cursor ray and constraint are near parallel.
         // Increase this value to more conservatively restrict movement, lower to allow more extreme values.
         // Ex, with a camera roughly 30 degrees to the handle a value of .1 restricts translation to ~1500m, whereas a
@@ -1792,7 +1835,6 @@ namespace UnityEditor
         }
 
         [ExcludeFromDocs]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void ApplyWireMaterial()
         {
             CompareFunction zTest = CompareFunction.Always;
@@ -2141,7 +2183,7 @@ namespace UnityEditor
 #pragma warning restore UAC2001
         }
 
-        internal static void FilterEntityIds(GameObject[] gameObjects, out EntityId[] parentEntityIds, out EntityId[] childEntityIds, out HashSet<EntityId> childEntityIdsHashSet)
+        internal static void FilterEntityIds(ReadOnlySpan<GameObject> gameObjects, out EntityId[] parentEntityIds, out EntityId[] childEntityIds, out HashSet<EntityId> childEntityIdsHashSet)
         {
             if (gameObjects.Length == 0)
             {

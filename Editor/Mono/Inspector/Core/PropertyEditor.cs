@@ -127,10 +127,13 @@ namespace UnityEditor
         protected Dictionary<int, List<Component>> m_RemovedComponentDict;
         // List of removed components at the end of the editor list that needs to have visual elements append to the editor list
         protected List<Component> m_AdditionalRemovedComponents;
+        // A data component has no Component to put in m_RemovedComponents, so a removed one is held by its asset EntityId.
+        protected List<EntityId> m_RemovedDataComponents;
         protected bool m_ResetKeyboardControl;
         internal bool m_OpenAddComponentMenu = false;
         protected ActiveEditorTracker m_Tracker;
         protected AssetBundleNameGUI m_AssetBundleNameGUI = new AssetBundleNameGUI();
+        InspectedAssets m_InspectedAssets;
         protected TypeSelectionList m_TypeSelectionList = null;
         protected double m_lastRenderedTime;
         protected List<IPreviewable> m_Previews;
@@ -146,6 +149,8 @@ namespace UnityEditor
         protected VisualElement versionControlElement => m_VersionControlElement ?? (m_VersionControlElement = FindVisualElementInTreeByClassName(s_HeaderInfoClassName));
         [AutoStaticsCleanupOnCodeReload]
         protected static Dictionary<Editor, VersionControlBarState> m_VersionControlBarState = new Dictionary<Editor, VersionControlBarState>();
+        [AutoStaticsCleanupOnCodeReload]
+        static int s_VersionControlBarStateStatusVersion;
         protected VisualElement m_MultiEditLabel;
         protected ScrollView m_ScrollView;
         protected bool m_TrackerResetInserted;
@@ -159,10 +164,6 @@ namespace UnityEditor
         VisualElement m_DebugInfoPanel;
         Label m_DebugInfoLabel;
         Button m_ExitDebugModeButton;
-
-        List<DataMode> m_SupportedDataModes = new(4);
-        [NoAutoStaticsCleanup] // fixed singleton list of disabled modes, safe to persist
-        static readonly List<DataMode> k_DisabledDataModes = new() {DataMode.Disabled};
 
         public GUIView parent => m_Parent;
         public HashSet<int> editorsWithImportedObjectLabel { get; } = new HashSet<int>();
@@ -250,7 +251,6 @@ namespace UnityEditor
             public static readonly GUIContent vcsSubmit = L10n.TextContent("Submit", null, null, null);
             public static readonly GUIContent vcsRevert = L10n.TextContent("Revert", null, null, null);
             public static readonly GUIContent vcsRevertUnchanged = L10n.TextContent("Revert Unchanged", null, null, null);
-            [NoAutoStaticsCleanup] // array of auto-exempt GUIContent refs, safe to persist
             public static readonly GUIContent[] vcsRevertMenuNames = {vcsRevertUnchanged};
             [NoAutoStaticsCleanup] // ok the static method assigned here is stateless
             public static readonly GenericMenu.MenuFunction2[] vcsRevertMenuActions = {DoRevertUnchanged};
@@ -367,9 +367,8 @@ namespace UnityEditor
         protected virtual void OnFocusChanged(bool focus)
         {
             // focusing away from the editor flushes VCS state cache and might get
-            // updated states from external clients; make sure to recalculate which VCS
-            // buttons should be visible
-            ClearVersionControlBarState();
+            // updated states from external clients
+            VersionControlManager.IncrementStatusVersion();
         }
 
         [UsedImplicitly]
@@ -380,7 +379,7 @@ namespace UnityEditor
             m_PreviewResizer.Init("InspectorPreview");
             m_LabelGUI.OnEnable();
             m_FirstInitialize = true;
-            var shouldUpdateSupportedDataModes = m_SerializedDataModeController == null;
+            m_SerializedDataModeController = null;
             CreateTracker();
 
             EditorApplication.focusChanged += OnFocusChanged;
@@ -394,12 +393,6 @@ namespace UnityEditor
             rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
             rootVisualElement.RegisterCallback<FocusInEvent>(OnFocusIn);
             rootVisualElement.RegisterCallback<FocusOutEvent>(OnFocusOut);
-
-            dataModeController.dataModeChanged += OnDataModeChanged;
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-
-            if (shouldUpdateSupportedDataModes)
-                EditorApplication.CallDelayed(UpdateSupportedDataModesList);
 
             if (!m_AllPropertyEditors.Contains(this))
                 m_AllPropertyEditors.Add(this);
@@ -434,6 +427,8 @@ namespace UnityEditor
         [UsedImplicitly]
         protected virtual void OnDisable()
         {
+            m_InspectedAssets = null;
+
             if (m_HasPreviewPeriodicCheckDelayer != null)
             {
                 m_HasPreviewPeriodicCheckDelayer.Dispose();
@@ -457,9 +452,6 @@ namespace UnityEditor
             rootVisualElement.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
             rootVisualElement.UnregisterCallback<FocusInEvent>(OnFocusIn);
             rootVisualElement.UnregisterCallback<FocusOutEvent>(OnFocusOut);
-
-            dataModeController.dataModeChanged -= OnDataModeChanged;
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
             m_AllPropertyEditors.Remove(this);
         }
@@ -955,10 +947,12 @@ namespace UnityEditor
             var prevRemovedComponents = new HashSet<Component>(m_RemovedComponents ?? new HashSet<Component>());
             var prevSuppressedComponents = new HashSet<Component>(m_SuppressedComponents ?? new HashSet<Component>());
             var prevComponentsInPrefabSource = new HashSet<Component>(m_ComponentsInPrefabSource ?? Array.Empty<Component>());
+            var prevRemovedDataComponents = new HashSet<EntityId>(m_RemovedDataComponents ?? new List<EntityId>());
             ExtractPrefabComponents();
             if (!prevRemovedComponents.SetEquals(m_RemovedComponents ?? new HashSet<Component>())  ||
                 !prevSuppressedComponents.SetEquals(m_SuppressedComponents ?? new HashSet<Component>()) ||
-                !prevComponentsInPrefabSource.SetEquals(m_ComponentsInPrefabSource ?? Array.Empty<Component>()))
+                !prevComponentsInPrefabSource.SetEquals(m_ComponentsInPrefabSource ?? Array.Empty<Component>()) ||
+                !prevRemovedDataComponents.SetEquals(m_RemovedDataComponents))
             {
                 RebuildContentsContainers();
             }
@@ -991,6 +985,13 @@ namespace UnityEditor
                 // Move forwards through the list of editors to find one that matches the asset component
                 while (editorCounter < editors.Length)
                 {
+                    // A data component editor has no Object target, and data components come after every Component
+                    if (!editors[editorCounter].hasUnityObjectTargets)
+                    {
+                        ++editorCounter;
+                        continue;
+                    }
+
                     Object editorTarget = editors[editorCounter].target;
 
                     // Skip added Components
@@ -1052,6 +1053,9 @@ namespace UnityEditor
             }
             m_RemovedComponents.Clear();
             m_SuppressedComponents.Clear();
+            if (m_RemovedDataComponents == null)
+                m_RemovedDataComponents = new List<EntityId>();
+            m_RemovedDataComponents.Clear();
 
             if (m_Tracker.activeEditors.Length == 0)
                 return;
@@ -1078,6 +1082,7 @@ namespace UnityEditor
                 else
                     m_SuppressedComponents.Add(removedComponentsList[i].assetComponent);
             }
+            m_RemovedDataComponents.AddRange(PrefabUtility.GetRemovedDataComponents(go));
         }
 
         protected void CreatePreviewables()
@@ -1106,7 +1111,17 @@ namespace UnityEditor
             if (m_Previews == null)
                 return;
             for (int i = 0, c = m_Previews.Count; i < c; i++)
-                m_Previews[i]?.Cleanup();
+            {
+                // Custom previews are user code; one that throws must not skip the others or the caller's cleanup.
+                try
+                {
+                    m_Previews[i]?.Cleanup();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
             m_Previews = null;
         }
 
@@ -1749,6 +1764,9 @@ namespace UnityEditor
             if (editors.Count == 0)
                 return null;
 
+            if (m_SelectedPreview != null && m_SelectedPreview.target == null)
+                m_SelectedPreview = null;
+
             if (m_SelectedPreview != null)
                 return m_SelectedPreview;
 
@@ -1861,7 +1879,7 @@ namespace UnityEditor
             }
         }
 
-        private static bool IsOpenForEdit(Object target)
+        internal static bool IsOpenForEdit(Object target)
         {
             if (EditorUtility.IsPersistent(target))
             {
@@ -2094,17 +2112,20 @@ namespace UnityEditor
                 GUILayout.EndVertical();
             }
 
+            if (m_InspectedAssets == null || !m_InspectedAssets.IsFor(assets))
+                m_InspectedAssets = new InspectedAssets(assets);
+
             GUILayout.BeginVertical(Styles.footer);
-            using (new EditorGUI.DisabledScope(Array.Exists(assets, a => !IsOpenForEdit(a) || !Editor.IsAppropriateFileOpenForEdit(a))))
+            using (new EditorGUI.DisabledScope(m_InspectedAssets.labelsDisabled))
             {
                 m_LabelGUI.OnLabelGUI(assets);
             }
 
             if (hasBundleName)
             {
-                using (new EditorGUI.DisabledScope(Array.Exists(assets, a => !IsOpenForEdit(a))))
+                using (new EditorGUI.DisabledScope(m_InspectedAssets.assetBundleNameDisabled))
                 {
-                    m_AssetBundleNameGUI.OnAssetBundleNameGUI(assets);
+                    m_AssetBundleNameGUI.OnAssetBundleNameGUI(m_InspectedAssets);
                 }
             }
             GUILayout.EndVertical();
@@ -2175,6 +2196,12 @@ namespace UnityEditor
 
             // Cache AssetList for current selection and
             // figure out which buttons we'll need to show for them.
+            if (s_VersionControlBarStateStatusVersion != VersionControlManager.statusVersion)
+            {
+                s_VersionControlBarStateStatusVersion = VersionControlManager.statusVersion;
+                ClearVersionControlBarState();
+            }
+
             VersionControlBarState state;
             if (!m_VersionControlBarState.TryGetValue(assetEditor, out state))
             {
@@ -2460,7 +2487,6 @@ namespace UnityEditor
                 try
                 {
                     var editor = editors[editorIndex];
-                    Object editorTarget = editor.targets[0];
 
                     if (ShouldCullEditor(editors, editorIndex))
                     {
@@ -2513,11 +2539,21 @@ namespace UnityEditor
             }
 
             // Make sure to display any remaining removed components that come after the last component on the GameObject.
-            if (m_AdditionalRemovedComponents != null && m_AdditionalRemovedComponents.Count > 0)
+            // Removed data components go last, as data components come after the Components.
+            bool hasRemovedDataComponents = targetGameObject != null && m_RemovedDataComponents != null && m_RemovedDataComponents.Count > 0;
+            if ((m_AdditionalRemovedComponents != null && m_AdditionalRemovedComponents.Count > 0) || hasRemovedDataComponents)
             {
                 VisualElement prefabsComponentElement = new VisualElement() { name = "RemainingPrefabComponentElement" };
-                foreach(var sourceComponent in m_AdditionalRemovedComponents)
-                    AddRemovedPrefabComponentElement(targetGameObject, sourceComponent, prefabsComponentElement);
+                if (m_AdditionalRemovedComponents != null)
+                {
+                    foreach (var sourceComponent in m_AdditionalRemovedComponents)
+                        AddRemovedPrefabComponentElement(targetGameObject, sourceComponent, prefabsComponentElement);
+                }
+                if (hasRemovedDataComponents)
+                {
+                    foreach (var assetDataComponent in m_RemovedDataComponents)
+                        AddRemovedDataComponentElement(targetGameObject, assetDataComponent, prefabsComponentElement);
+                }
 
                 if (prefabsComponentElement.childCount > 0)
                 {
@@ -2536,8 +2572,9 @@ namespace UnityEditor
             // if RebuildContentsContainers if actually needed to clear any "Component Name (Removed)" title headers.
             // This prevents performance issues when unpacking a large multiselection.
             var prevRemovedComponents = new HashSet<Component>(m_RemovedComponents);
+            var prevRemovedDataComponents = new HashSet<EntityId>(m_RemovedDataComponents ?? new List<EntityId>());
             ExtractPrefabComponents();
-            if (!prevRemovedComponents.SetEquals(m_RemovedComponents))
+            if (!prevRemovedComponents.SetEquals(m_RemovedComponents) || !prevRemovedDataComponents.SetEquals(m_RemovedDataComponents))
             {
                 RebuildContentsContainers();
             }
@@ -2554,6 +2591,21 @@ namespace UnityEditor
 
                 element.Add(removedComponentElement);
             }
+        }
+
+        private void AddRemovedDataComponentElement(GameObject targetGameObject, EntityId assetDataComponent, VisualElement element)
+        {
+            var removedDataComponentElement =
+                CreateIMGUIContainer(() => DisplayRemovedDataComponent(targetGameObject, assetDataComponent), "RemovedDataComponent");
+            removedDataComponentElement.style.paddingBottom = kEditorElementPaddingBottom;
+
+            element.Add(removedDataComponentElement);
+        }
+
+        private static void DisplayRemovedDataComponent(GameObject go, EntityId assetDataComponent)
+        {
+            Rect rect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar);
+            EditorGUI.RemovedDataComponentTitlebar(rect, go, assetDataComponent);
         }
 
         private bool ShouldDisplayRemovedComponent(GameObject go, Component comp)
@@ -3018,59 +3070,6 @@ namespace UnityEditor
                 if (pso.hoveredObject)
                     OpenPropertyEditor(pso.hoveredObject);
             }
-        }
-
-        internal static DataMode GetPreferredDataMode()
-            => EditorApplication.isPlaying
-                ? DataMode.Mixed
-                : DataMode.Authoring;
-
-        List<DataMode> GetSupportedDataModes() => m_SupportedDataModes;
-
-        bool m_IsEnteringPlaymode;
-
-        void OnPlayModeStateChanged(PlayModeStateChange stateChange)
-        {
-            if (stateChange is not (PlayModeStateChange.EnteredEditMode or PlayModeStateChange.EnteredPlayMode))
-                return;
-
-            m_IsEnteringPlaymode = true;
-            UpdateSupportedDataModesList();
-        }
-
-        void OnDataModeChanged(DataModeChangeEventArgs evt)
-        {
-            tracker.dataMode = evt.nextDataMode;
-            tracker.ForceRebuild();
-        }
-
-        protected void UpdateSupportedDataModesList()
-        {
-            m_SupportedDataModes.Clear();
-            OnUpdateSupportedDataModes(m_SupportedDataModes);
-            m_SupportedDataModes.Sort();
-
-            if (m_InspectorMode != InspectorMode.Normal || m_SupportedDataModes.Count == 0)
-                m_SupportedDataModes = k_DisabledDataModes;
-
-            var dataMode = Selection.dataModeHint == DataMode.Disabled ? GetPreferredDataMode() : Selection.dataModeHint;
-
-            // When entering playmode, Inspector relies on getting selection hint
-            // from Hierarchy window to switch to the proper data mode.
-            // However when inspector is locked, selection is locked too.
-            // Here we force the preferred data mode to inspector for this special case.
-            if (m_IsEnteringPlaymode && m_Tracker.isLocked)
-            {
-                dataMode = GetPreferredDataMode();
-                m_IsEnteringPlaymode = false;
-            }
-
-            dataModeController.UpdateSupportedDataModes(m_SupportedDataModes, dataMode);
-        }
-
-        protected virtual void OnUpdateSupportedDataModes(List<DataMode> supportedModes)
-        {
-            // Override me
         }
     }
 }

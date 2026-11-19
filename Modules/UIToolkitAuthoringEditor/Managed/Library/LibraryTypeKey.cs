@@ -9,7 +9,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class LibraryTypeKey : IEquatable<LibraryTypeKey>
     {
         /// <summary>

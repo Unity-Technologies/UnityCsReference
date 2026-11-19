@@ -29,9 +29,10 @@ namespace UnityEditor
             if (lhs.Length != rhs.Length)
                 return false;
 
+            var comparer = EqualityComparer<T>.Default;
             for (int i = 0; i < lhs.Length; i++)
             {
-                if (!lhs[i].Equals(rhs[i]))
+                if (!comparer.Equals(lhs[i], rhs[i]))
                     return false;
             }
             return true;

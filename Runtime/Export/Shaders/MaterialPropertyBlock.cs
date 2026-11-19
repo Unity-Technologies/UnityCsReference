@@ -83,9 +83,9 @@ namespace UnityEngine
         internal IntPtr m_Ptr;
 
         public MaterialPropertyBlock()    { m_Ptr = CreateImpl(); }
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Frees the native block; DestroyImpl is thread-safe and the type is not IDisposable.
         ~MaterialPropertyBlock()          { Dispose(); }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         // should we make it IDisposable?
         private void Dispose()

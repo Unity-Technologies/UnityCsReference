@@ -20,7 +20,7 @@ namespace UnityEditor.UIElements
     /// which decides only whether the component can be authored in UXML. A hidden component that is
     /// exposed to UXML still imports, exports, and appears in the schema; it is only absent from the UI.
     /// </remarks>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class VisualElementComponentVisibility
     {
         // Answered per type on the first query for it, so the map only ever holds the component types the

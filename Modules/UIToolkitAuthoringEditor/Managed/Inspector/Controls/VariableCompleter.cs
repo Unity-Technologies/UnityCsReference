@@ -7,7 +7,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal class VariableCompleter : FieldSearchCompleter<VariableInfo>
 {
     public static readonly string ItemUssClassName = "unity-field-search-completer-popup__item";

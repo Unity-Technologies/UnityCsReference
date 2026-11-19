@@ -82,7 +82,11 @@ namespace UnityEngine.Tilemaps
         }
 
         ///<summary>Callback when Tiles on a Tilemap have changed, without allocating.</summary>
-        ///<remarks>This returns the cells which have been updated and why. The cells are only valid for the duration of the callback.</remarks>
+        ///<remarks>This returns the cells which have been updated and why. The cells are only valid for the duration of the callback.
+        ///The Tilemap reports animation frames only for tiles whose animation has <see cref="TileAnimationFlags.UpdatePhysics" />.
+        ///It reports them once each time it updates its animations, and once for each call to <see cref="SetAnimationFrame" />
+        ///or <see cref="SetAnimationTime" />.
+        ///When <see cref="ClearAllTiles" /> clears every tile, the Tilemap reports it with <see cref="tilemapChanged" /> instead.</remarks>
         ///<example>
         ///  <code><![CDATA[
         /// // Log the cells which have changed, ignoring changes which cannot affect collision

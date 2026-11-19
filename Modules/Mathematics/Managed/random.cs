@@ -690,7 +690,7 @@ namespace Unity.Mathematics
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void CheckInitState()
+        private readonly void CheckInitState()
         {
             if (state == 0)
                 throw new System.ArgumentException("Seed must be non-zero");
@@ -704,28 +704,28 @@ namespace Unity.Mathematics
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void CheckState()
+        private readonly void CheckState()
         {
             if(state == 0)
                 throw new System.ArgumentException("Invalid state 0. Random object has not been properly initialized");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void CheckNextIntMax(int max)
+        private readonly void CheckNextIntMax(int max)
         {
             if (max < 0)
                 throw new System.ArgumentException("max must be positive");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void CheckNextIntMinMax(int min, int max)
+        private readonly void CheckNextIntMinMax(int min, int max)
         {
             if (min > max)
                 throw new System.ArgumentException("min must be less than or equal to max");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void CheckNextUIntMinMax(uint min, uint max)
+        private readonly void CheckNextUIntMinMax(uint min, uint max)
         {
             if (min > max)
                 throw new System.ArgumentException("min must be less than or equal to max");

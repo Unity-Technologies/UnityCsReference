@@ -201,7 +201,6 @@ namespace UnityEditor.Audio
             exposedParameters = parameters.ToArray();
             OnChangedExposedParameter();
 
-            //Cache the path!
             exposedParamCache[path.parameter] = path;
 
             AudioMixerUtility.RepaintAudioMixerAndInspectors();
@@ -221,7 +220,6 @@ namespace UnityEditor.Audio
 #pragma warning restore UAC2001
             OnChangedExposedParameter();
 
-            //Tidy up the cache..
             if (exposedParamCache.ContainsKey(parameterGuid))
                 exposedParamCache.Remove(parameterGuid);
 
@@ -1097,8 +1095,6 @@ namespace UnityEditor.Audio
                 }
             }
 
-            //ListTemporaryGraph(graph);
-
             return DoesTheTemporaryGraphHaveAnyCycles(allGroups, identifiedLoop, graph);
         }
 
@@ -1117,8 +1113,6 @@ namespace UnityEditor.Audio
                         graph[tailOfChildGroup].targets.Add(parentGroup);
                 }
             }
-
-            //ListTemporaryGraph(graph);
 
             return DoesTheTemporaryGraphHaveAnyCycles(allGroups, identifiedLoop, graph);
         }
@@ -1159,8 +1153,6 @@ namespace UnityEditor.Audio
                         graph[tailOfChildGroup].targets.Add(group);
                 }
             }
-
-            //ListTemporaryGraph(graph);
 
             return DoesTheTemporaryGraphHaveAnyCycles(allGroups, identifiedLoop, graph);
         }

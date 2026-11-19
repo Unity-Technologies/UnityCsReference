@@ -67,10 +67,8 @@ namespace UnityEngine.UIElements.UIR
         // Null until first SetTints; freed in FreeExtraData.
         public Dictionary<TextCoreSettings, BMPAlloc> textCoreSettingsAllocs;
 
-        // One pooled block per pass in flat chain order; populated in the update phase so user
-        // callbacks never run while a render target is bound. The lists persist (empty) across pooled reuse.
-        public List<MaterialPropertyBlock> filterCallbackPropertyBlocks;
-        public List<MaterialPropertyBlock> backdropFilterCallbackPropertyBlocks;
+        public FilterChainParameters filterParameters;
+        public FilterChainParameters backdropFilterParameters;
 
         // Backdrop-filter render state; live only while RenderData.hasBackdropFilterAllocated.
         // The TextureId is a persistent handle, the RT is created during render and released next frame.

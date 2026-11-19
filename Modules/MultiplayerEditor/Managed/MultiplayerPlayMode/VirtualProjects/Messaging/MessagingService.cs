@@ -24,20 +24,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal DispatchMessages DispatchMessagesFunc;
     }
 
-    struct MessagingServiceDelegates
-    {
-        internal delegate void DispatchMessages();
-        internal delegate void Send(object message, VirtualProjectIdentifier identifier, Action onAck = null, Action<string> onErrorOrTimeout = null);
-
-        internal DispatchMessages DispatchMessagesFunc;
-        internal Send SendFunc;
-    }
-
     class MessagingService
     {
         public const string k_DefaultChannelName = "vp-channel";
         const int k_MessageTimeoutSeconds = 60;
-        const string k_HasEditorTickedSessionStateKey = "MPPM_" + nameof(HasEditorTicked);
 
         // Message types carry their payload in public fields (e.g. CloneState, LogCounts), which
         // System.Text.Json skips by default (Newtonsoft included them).
@@ -50,11 +40,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         readonly VirtualProjectIdentifier m_TargetIdentifier;
         readonly MessagingConnectorDelegates m_Delegates;
 
-        static bool HasEditorTicked
-        {
-            get => SessionState.GetBool(k_HasEditorTickedSessionStateKey, false);
-            set => SessionState.SetBool(k_HasEditorTickedSessionStateKey, value);
-        }
+        [NoAutoStaticsCleanup] // Modules are never unloaded, so this survives code reloads; it holds no user code.
+        static bool HasEditorTicked;
 
         public static MessagingService GetMain(string channelName)
         {
@@ -63,15 +50,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public static MessagingService GetClone(string channelName)
         {
             return new MessagingService(channelName, true, VirtualProjectsEditor.CloneIdentifier);
-        }
-
-        public static MessagingServiceDelegates GetDelegates(MessagingService messagingService)
-        {
-            return new MessagingServiceDelegates
-            {
-                SendFunc = messagingService.Send,
-                DispatchMessagesFunc = messagingService.DispatchMessages,
-            };
         }
 
         static MessagingConnectorDelegates GetFromChannelClient(ChannelClient channelClient) => new MessagingConnectorDelegates

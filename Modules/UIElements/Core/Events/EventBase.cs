@@ -223,7 +223,7 @@ namespace UnityEngine.UIElements
 
         internal bool bubblesOrTricklesDown => (propagation & EventPropagation.BubblesOrTricklesDown) != 0;
 
-        [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [Bindings.VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement elementTarget
         {
             get;

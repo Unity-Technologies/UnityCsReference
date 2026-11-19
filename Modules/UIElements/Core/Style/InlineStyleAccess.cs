@@ -410,12 +410,24 @@ namespace UnityEngine.UIElements
 
         private StyleList<T> GetStyleList<T>(StylePropertyId id)
         {
+            return CopyStoredValue(GetStoredStyleList<T>(id));
+        }
+
+        internal StyleList<T> GetStoredStyleList<T>(StylePropertyId id)
+        {
             var inline = new StyleValueManaged();
             if (TryGetStyleValueManaged(id, ref inline))
             {
                 return new StyleList<T>(inline.value as List<T>, inline.keyword);
             }
             return StyleKeyword.Null;
+        }
+
+        internal static StyleList<T> CopyStoredValue<T>(StyleList<T> stored)
+        {
+            if (stored.keyword != StyleKeyword.Undefined || stored.value == null)
+                return stored;
+            return new StyleList<T>(new List<T>(stored.value), stored.keyword);
         }
 
         private void SetStyleValueManaged(StyleValueManaged value)

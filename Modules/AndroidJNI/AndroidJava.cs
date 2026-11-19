@@ -37,12 +37,12 @@ namespace UnityEngine
             m_jobject = (jobject == IntPtr.Zero) ? IntPtr.Zero : AndroidJNI.NewGlobalRef(jobject);
         }
 
-#pragma warning disable UA5000 // Releases the JNI global ref through a deferred queue made for the finalizer thread; the finalizer is the safety net.
+#pragma warning disable UAC0045 // Releases the JNI global ref through a deferred queue made for the finalizer thread; the finalizer is the safety net.
         ~GlobalJavaObjectRef()
         {
             Dispose();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         public static implicit operator IntPtr(GlobalJavaObjectRef obj)
         {
@@ -142,12 +142,12 @@ namespace UnityEngine
             this.javaInterface = javaInterface;
         }
 
-#pragma warning disable UA5000 // Releases the JNI weak global ref; the public type has no Dispose, so the finalizer is the only release.
+#pragma warning disable UAC0045 // Releases the JNI weak global ref; the public type has no Dispose, so the finalizer is the only release.
         ~AndroidJavaProxy()
         {
             AndroidJNISafe.DeleteWeakGlobalRef(proxyObject);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         ///<summary>Called by the java vm whenever a method is invoked on the java proxy interface. You can override this to run special code on method invocation, or you can leave the implementation as is, and leave the default behavior which is to look for c# methods matching the signature of the java method.</summary>
         ///<param name="methodName">Name of the invoked java method.</param>
@@ -867,12 +867,12 @@ namespace UnityEngine
         {
         }
 
-#pragma warning disable UA5000 // Public protected virtual Dispose(bool) is API; the finalizer routes JNI ref release through Dispose(false).
+#pragma warning disable UAC0045 // Public protected virtual Dispose(bool) is API; the finalizer routes JNI ref release through Dispose(false).
         ~AndroidJavaObject()
         {
             Dispose(false);
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         protected virtual void Dispose(bool disposing)
         {

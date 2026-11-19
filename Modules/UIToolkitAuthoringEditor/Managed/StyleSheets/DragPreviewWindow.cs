@@ -13,14 +13,13 @@ internal class DragPreviewWindow : EditorWindow
     Vector2 m_LastPosition;
     const float k_WindowOffset = 10f;
 
-    public static DragPreviewWindow Show(VisualElement element, Rect layout)
+    public static DragPreviewWindow Show(VisualElement element, Vector2 size)
     {
         var window = CreateInstance<DragPreviewWindow>();
         window.rootVisualElement.Add(element);
 
-        var screenPos = GUIUtility.GUIToScreenPoint(layout.position);
-        var rect = new Rect(screenPos, layout.size);
-        window.ShowAsDropDown(rect, layout.size);
+        var screenPos = UnityEditor.Editor.GetCurrentMousePosition() + new Vector2(k_WindowOffset, k_WindowOffset);
+        window.ShowAsDropDown(new Rect(screenPos, Vector2.zero), size);
 
         return window;
     }

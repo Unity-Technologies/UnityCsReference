@@ -30,8 +30,8 @@ namespace UnityEditor.Connect
             var parts = token.Split(k_JwtSeparator);
             if (parts.Length != 3)
             {
-                throw new ArgumentException($"The authentication token is malformed or invalid. " +
-                                              $"JWT has an invalid number of sections. Token: '{token}'");
+                throw new ArgumentException("The authentication token is malformed or invalid. " +
+                                              $"JWT has {parts.Length} sections instead of 3.");
             }
 
             var payload = parts[1];

@@ -22,6 +22,7 @@ namespace UnityEngine.Scripting
         }
 
         public string Name { get; set; }
+        public bool GenerateNativeLookup { get; set; } = true;
     }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Struct | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Interface | AttributeTargets.Enum, Inherited = false)]
@@ -51,6 +52,7 @@ namespace UnityEngine.Scripting
         public string Name { get; set; }
         public bool Optional { get; set; }
         public bool GenerateProxy { get; set; }
+        public bool GenerateNativeLookup { get; set; } = true;
     }
 
     // Marks a module to be included if the attached type or method is used.

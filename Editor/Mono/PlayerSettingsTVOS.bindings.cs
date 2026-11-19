@@ -55,6 +55,7 @@ namespace UnityEditor
                 [NativeMethod("SettvOSSimulatorArchitecture")]
                 set;
             }
+            [Obsolete("The tvOS Simulator architecture is always ARM64. This property has no effect.", false)]
             public static AppleMobileArchitectureSimulator simulatorSdkArchitecture
             {
                 get { return (AppleMobileArchitectureSimulator)simulatorSdkArchitectureInternal; }

@@ -46,18 +46,16 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal void ResetValueAndText();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SaveValueAndText();
 
         internal void RestoreValueAndText();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal Func<char, bool> AcceptCharacter { get; set; }
         internal Action<bool> UpdateScrollOffset { get; set; }
         internal Action UpdateValueFromText { get; set; }
         internal Action UpdateTextFromValue { get; set; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Action MoveFocusToCompositeRoot { get; set; }
         internal Func<string> GetDefaultValueType { get; set; }
 
@@ -162,7 +160,26 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal ITextEdition edition => this;
 
-        internal TextEditingManipulator editingManipulator { get; private set; }
+        TextEditingManipulator m_EditingManipulator;
+
+        // Created on first use or when attached to a panel, since a detached element receives no input.
+        internal TextEditingManipulator editingManipulator
+        {
+            get
+            {
+                EnsureEditingManipulator();
+                return m_EditingManipulator;
+            }
+        }
+
+        void EnsureEditingManipulator()
+        {
+            if (m_IsReadOnly || m_EditingManipulator != null)
+                return;
+            m_EditingManipulator = new TextEditingManipulator(this);
+            m_EditingManipulator.editingUtilities.multiline = m_Multiline;
+        }
+
         internal bool isInputField = false;
 
         bool m_Multiline;
@@ -174,8 +191,8 @@ namespace UnityEngine.UIElements
             {
                 if (value != m_Multiline)
                 {
-                    if (!edition.isReadOnly)
-                        editingManipulator.editingUtilities.multiline = value;
+                    if (!edition.isReadOnly && m_EditingManipulator != null)
+                        m_EditingManipulator.editingUtilities.multiline = value;
                     m_Multiline = value;
                 }
             }
@@ -274,9 +291,11 @@ namespace UnityEngine.UIElements
                 if (value == m_IsReadOnly)
                     return;
 
-                editingManipulator?.Reset();
-                editingManipulator = value ? null : new TextEditingManipulator(this);
+                m_EditingManipulator?.Reset();
+                m_EditingManipulator = null;
                 m_IsReadOnly = value;
+                if (panel != null)
+                    EnsureEditingManipulator();
                 onIsReadOnlyChanged?.Invoke(value);
                 NotifyPropertyChanged(isReadOnlyProperty);
             }

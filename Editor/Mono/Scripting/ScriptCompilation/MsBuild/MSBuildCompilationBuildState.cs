@@ -52,13 +52,16 @@ class MSBuildCompilationBuildState
         System.Console.WriteLine($@"Building with configuration: {configuration}
                                         Generating Binlogs: {generateBinLog}");
 
+        // Resolved on the calling thread, before the build starts, because a player build registers this file for merging into its own trace
+        var profilerOutputFile = GetProfilerOutputFile();
+
         ActiveBuildTask = Task.Run(async () =>
         {
             BuildResultMessage? result = null;
             using (new ProgressScope(ProgressId)){
                 _elapsed.Restart();
 
-                await using var asyncStream = _compilerClient.BuildStream(GetBuildParameters(configuration, useNugetRestore, generateBinLog), CancellationTokenSource.Token);
+                await using var asyncStream = _compilerClient.BuildStream(GetBuildParameters(configuration, useNugetRestore, generateBinLog, profilerOutputFile), CancellationTokenSource.Token);
 
                 await foreach (var response in asyncStream.ReadAllAsync())
                 {
@@ -103,7 +106,7 @@ class MSBuildCompilationBuildState
         return Task.Run(async () => await _compilerClient.GetLastBuildResultAsync(GetBuildParameters(configuration, useNugetRestore)), CancellationTokenSource.Token);
     }
 
-    private BuildParameters GetBuildParameters(string configuration, bool useNugetRestore, bool generateBinLog = false)
+    private static BuildParameters GetBuildParameters(string configuration, bool useNugetRestore, bool generateBinLog = false, string? profilerOutputFile = null)
     {
         var dotnetSdk = Path.Combine(EditorApplication.applicationContentsPath, "DotNetSdk") + Path.DirectorySeparatorChar;
         var rootProject = Path.GetFullPath("Main.EntryPoint.csproj");
@@ -114,7 +117,17 @@ class MSBuildCompilationBuildState
             Configuration = configuration,
             RootProject = rootProject,
             GenerateBinLog = generateBinLog,
-            UseNugetRestore = useNugetRestore
+            UseNugetRestore = useNugetRestore,
+            ProfilerOutputFile = profilerOutputFile
         };
+    }
+
+    // Same outputs as UnityBeeDriver.BuildRequestFor: merged into the player build trace during a player build, Library/Bee/fullprofile.json otherwise
+    private static string GetProfilerOutputFile()
+    {
+        if (UnityBeeDriverProfilerSession.PerformingPlayerBuild)
+            return UnityBeeDriverProfilerSession.GetTraceEventsOutputForPlayerBuild().ToString();
+
+        return Path.GetFullPath("Library/Bee/fullprofile.json");
     }
 }

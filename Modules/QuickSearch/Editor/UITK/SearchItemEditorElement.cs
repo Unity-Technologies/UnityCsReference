@@ -60,7 +60,7 @@ namespace UnityEditor.Search
 
         void Init()
         {
-            m_EditorTarget = editor.targets[0];
+            m_EditorTarget = editor.target;
             var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
 
             m_Header = BuildHeaderElement(editorTitle);
@@ -78,7 +78,7 @@ namespace UnityEditor.Search
                 return;
 
             // If the editor targets contain many targets and multi editing is not supported, we should not add this inspector.
-            if (null != editor && (editor.targets.Length <= 1 || PropertyEditor.IsMultiEditingSupported(editor, editor.target, InspectorMode.Normal)))
+            if (null != editor && (editor.targetCount <= 1 || PropertyEditor.IsMultiEditingSupported(editor, editor.target, InspectorMode.Normal)))
             {
                 m_InspectorElement = BuildInspectorElement();
                 Insert(IndexOf(m_Header) + 1, m_InspectorElement);

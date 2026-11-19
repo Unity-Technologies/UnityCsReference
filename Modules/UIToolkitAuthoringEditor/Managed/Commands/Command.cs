@@ -19,6 +19,7 @@ namespace Unity.UIToolkit.Editor;
 abstract class Command : IDisposable
 {
     int m_ReferenceCount;
+    AuthoringContext m_RequestingContext;
 
     /// <summary>
     /// Gets or sets the source object that originated the command.
@@ -28,6 +29,17 @@ abstract class Command : IDisposable
     /// Note: Value types will be boxed. Use reference types for source tracking to avoid allocations.
     /// </remarks>
     public object Source { get; set; }
+
+    /// <summary>
+    /// The authoring context the command is executed for, <see cref="AuthoringContext.Global"/> unless set. What the
+    /// command asks of the views once it has run, such as selecting what it created or keeping what it cut on the
+    /// clipboard, goes to this context.
+    /// </summary>
+    public AuthoringContext RequestingContext
+    {
+        get => m_RequestingContext ?? AuthoringContext.Global;
+        set => m_RequestingContext = value;
+    }
 
     /// <summary>
     /// Gets the optional category flags for this command. When set, handlers registered for matching
@@ -49,6 +61,7 @@ abstract class Command : IDisposable
     protected virtual void Init()
     {
         Source = null;
+        m_RequestingContext = null;
     }
 
     /// <summary>
@@ -130,7 +143,6 @@ abstract class Command : IDisposable
 /// The CRTP pattern ensures each command type gets its own static pool while maintaining type safety.
 /// The constraint 'where T : Command&lt;T&gt;, new()' enforces that T must be the same type as the inheriting class.
 /// </remarks>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal abstract class Command<T> : Command where T : Command<T>, new()
 {
     [NoAutoStaticsCleanup] // command object pool, safe to persist

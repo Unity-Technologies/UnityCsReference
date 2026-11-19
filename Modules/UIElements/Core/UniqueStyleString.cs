@@ -81,7 +81,7 @@ public readonly partial struct UniqueStyleString : IEquatable<UniqueStyleString>
     /// </summary>
     internal string value
     {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule")]
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
         get => k_IndexToString[m_Id];
     }
 

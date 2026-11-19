@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Build;
 using UnityEditor.Modules;
 using UnityEngine;
@@ -17,11 +16,8 @@ namespace UnityEditor.DeploymentTargets
         // Meta-targets, to be able to select targets that does not depend on the current connection state.
         //  For example: selecting "all" should launch on all connected targets, even if the number of connected targets
         //  changes between launches.
-        [NoAutoStaticsCleanup] // Immutable meta-target id wrapping a constant string; safe to persist across code reload.
         internal static readonly DeploymentTargetId kDefault = new DeploymentTargetId("__builtin__target_default");
-        [NoAutoStaticsCleanup] // Immutable meta-target id wrapping a constant string; safe to persist across code reload.
         internal static readonly DeploymentTargetId kAll = new DeploymentTargetId("__builtin__target_all");
-        [NoAutoStaticsCleanup] // Immutable meta-target id wrapping a constant string; safe to persist across code reload.
         internal static readonly DeploymentTargetId kEnterIP = new DeploymentTargetId("__builtin__enter_ip");
 
         public string id;

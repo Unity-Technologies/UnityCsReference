@@ -104,7 +104,6 @@ namespace UnityEditor
 
             // Map all builtin DrawCameraMode entries
             // This defines the order in which the entries appear in the dropdown menu!
-            [NoAutoStaticsCleanup] // safe: immutable readonly table of builtin camera modes
             public static readonly SceneView.CameraMode[] sBuiltinCameraModes =
             {
                 new SceneView.CameraMode(DrawCameraMode.Textured, "Shaded", kShadingMode, false),

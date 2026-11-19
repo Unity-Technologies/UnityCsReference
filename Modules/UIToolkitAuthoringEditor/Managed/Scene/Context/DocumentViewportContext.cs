@@ -120,6 +120,8 @@ sealed class DocumentViewportContext : IUIViewportContext
         // Selection-tracked so the clone's elements carry selection objects. A click still prefers the live
         // element they stand in for; these are what answers when there is none, or none corresponds.
         VisualElementSelectionRegistry.Instance?.TrackPreviewPanel(m_PanelElement.SubPanel);
+        m_PanelElement.SubPanelReleasing += OnSubPanelReleasing;
+        m_PanelElement.SubPanelRecreated += OnSubPanelRecreated;
 
         UICommandQueue.RegisterHandlerForCategory(k_NeedsReclone, OnAuthoringCommandExecuted);
         UIAssetRegistry.instance.AssetReloaded += OnAssetReloaded;
@@ -146,6 +148,9 @@ sealed class DocumentViewportContext : IUIViewportContext
         if (m_PanelElement == null)
             return;
 
+        m_PanelElement.SubPanelReleasing -= OnSubPanelReleasing;
+        m_PanelElement.SubPanelRecreated -= OnSubPanelRecreated;
+
         if (registry != null)
             registry.DetachPanel(m_PanelElement.SubPanel);
 
@@ -155,6 +160,20 @@ sealed class DocumentViewportContext : IUIViewportContext
         m_PanelElement.subRootVisualElement?.Clear();
         m_PanelElement.DestroyPanelPermanently();
         m_PanelElement = null;
+    }
+
+    void OnSubPanelReleasing(PanelElement panelElement)
+    {
+        UIAssetRegistry.LiveInstance?.DetachPanel(panelElement.SubPanel);
+        VisualElementSelectionRegistry.Instance?.UntrackPreviewPanel(panelElement.SubPanel);
+    }
+
+    void OnSubPanelRecreated(PanelElement panelElement)
+    {
+        Binding.SetPanelLogLevel(panelElement.SubPanel, BindingLogLevel.None);
+        UIAssetRegistry.instance.AttachPanel(panelElement.SubPanel, this, CollectRoots);
+        VisualElementSelectionRegistry.Instance?.TrackPreviewPanel(panelElement.SubPanel);
+        CloneTree();
     }
 
     public void RequestRefresh()

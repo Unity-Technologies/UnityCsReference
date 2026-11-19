@@ -49,6 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IIOProxy m_IOProxy;
         private readonly ISampleImporter m_SampleImporter;
+        private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
         public MultiSelectDetails(IResourceLoader resourceLoader,
             IApplicationProxy application,
             IPackageDatabase packageDatabase,
@@ -61,7 +62,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IBackgroundFetchHandler backgroundFetchHandler,
             IUnityConnectProxy unityConnect,
             IIOProxy ioProxy,
-            ISampleImporter sampleImporter)
+            ISampleImporter sampleImporter,
+            IInternalEditorUtilityProxy internalEditorUtilityProxy)
         {
             m_Application = application;
             m_PackageDatabase = packageDatabase;
@@ -75,6 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnect = unityConnect;
             m_IOProxy = ioProxy;
             m_SampleImporter = sampleImporter;
+            m_InternalEditorUtilityProxy = internalEditorUtilityProxy;
 
             var root = resourceLoader.GetTemplate("MultiSelectDetails.uxml");
             Add(root);
@@ -109,7 +112,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DownloadFoldoutGroup = new DownloadFoldoutGroup(m_AssetStoreDownloadManager, m_OperationDispatcher, m_UnityConnect, m_Application);
             m_DownloadUpdateFoldoutGroup = new DownloadUpdateFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnect, m_Application);
             m_RemoveImportedFoldoutGroup = new RemoveImportedFoldoutGroup(m_Application, m_OperationDispatcher);
-            m_OpenManifestExternallyFoldoutGroup = new OpenManifestExternallyFoldoutGroup();
+            m_OpenManifestExternallyFoldoutGroup = new OpenManifestExternallyFoldoutGroup(m_InternalEditorUtilityProxy);
 
             m_PackageFoldoutGroups = new PackageMultiSelectFoldoutGroup[]
             {

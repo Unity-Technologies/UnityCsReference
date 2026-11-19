@@ -16,7 +16,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void Refresh(IPackageVersion version)
         {
-            var isVisible = version?.package.isDeprecated == true;
+            // Showing two deprecation message boxes with similar text just introduces noise to the UI
+            // and we decided to only show the more severe one (version deprecation error)
+            var isVisible = version?.package.isDeprecated == true && !DeprecatedVersionHelpBox.IsVisibleFor(version);
             UIUtils.SetElementDisplay(this, isVisible);
 
             if (!isVisible)

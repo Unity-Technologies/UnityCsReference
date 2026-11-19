@@ -18,10 +18,11 @@ using Unity.Multiplayer;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
-    class MultiplayerWindow : EditorWindow
+    class MultiplayerWindow : EditorWindow, IHasCustomMenu
     {
         public MainView MainView { get; private set; }
         private HelpBox m_DisabledHelpBox;
+        private ConvertMPPMToScenarioHelpBox m_ScenarioRecommendation;
         private bool m_IsNarrowWindow;
         private const float k_WindowMinWidth = 380f;
         private const float k_WindowMinHeight = 400f;
@@ -83,6 +84,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Set minimum window size to prevent UI overlapping issues for non-docked mppm window
             minSize = new Vector2(k_WindowMinWidth, k_WindowMinHeight);
 
+            m_ScenarioRecommendation = new ConvertMPPMToScenarioHelpBox(this);
+            rootVisualElement.Add(m_ScenarioRecommendation);
+
             m_DisabledHelpBox = new HelpBox("Play Mode is currently managed by Play Mode Scenarios. Please use the dropdown next to the play button to change scenarios, " +
                                           "and use the configuration window to modify the scenario settings." + "\n" + "\n" +
                                           "To use the original Multiplayer Play Mode, select 'Default' from the scenario dropdown. When there is an active scenario selected all currently active players will be deactivated", HelpBoxMessageType.Info);
@@ -118,6 +122,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var newConfig = PlayModeScenarioManager.ActiveScenario;
             MainView.SetEnabled(newConfig.name == "Default");
             m_DisabledHelpBox.style.display = newConfig.name == "Default" ? DisplayStyle.None : DisplayStyle.Flex;
+            m_ScenarioRecommendation?.UpdateVisibility();
             foreach (var player in MultiplayerPlaymode.Players)
             {
                 if (player.PlayerState is PlayerState.Launched or PlayerState.Launching && newConfig.name != "Default")
@@ -125,6 +130,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     player.Deactivate(out _);
                 }
             }
+        }
+
+        public void AddItemsToMenu(GenericMenu menu)
+        {
+            var tryScenariosContent = new GUIContent(ConvertMPPMToScenarioHelpBox.k_TryScenariosLabel);
+            if (ConvertMPPMToScenarioHelpBox.CanConvert)
+                menu.AddItem(tryScenariosContent, false, () => ConvertMPPMToScenarioHelpBox.ConvertAndSwap(this));
+            else
+                menu.AddDisabledItem(tryScenariosContent);
         }
 
         void OnWindowSizeChanged(GeometryChangedEvent evt)

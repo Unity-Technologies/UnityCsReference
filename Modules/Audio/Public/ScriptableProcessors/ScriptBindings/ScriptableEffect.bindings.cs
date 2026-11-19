@@ -281,7 +281,6 @@ namespace UnityEngine.Audio
             internal ProcessorHeader Processor;
             // Must be kept in sync with audio::EffectHeader in EffectHandle.h
             unsafe void* m_DSP;
-            //internal Configuration Configuration;
         }
 
         /// <summary>
@@ -499,8 +498,7 @@ namespace UnityEngine.Audio
                     {
                         var args = (ConfigureArguments*)additionalPtr;
 
-                        // Setup is currently discarded on the native side; the field exists so the
-                        // interface can grow (e.g. sidechain layout) without breaking implementers.
+                        // Setup is currently discarded; it exists so the interface can grow (e.g. sidechain layout) without breaking implementers.
                         storage.UserControl.Configure(new ControlContext(args->ControlContext), ref storage.HeaderAndProcessor.UserProcessor, args->Now, out _);
                         break;
                     }

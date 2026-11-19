@@ -611,17 +611,45 @@ namespace UnityEditorInternal.Profiling
             return ApplyRawTextureDataOrDestroy(texture, () => texture.LoadRawTextureData(bytes));
         }
 
-        static Texture2D ApplyRawTextureDataOrDestroy(Texture2D texture, Action loadRawData)
+        // Reuses the texture the caller already has on screen rather than building a new one, so a
+        // view that rebuilds on every selection change does not create and destroy a native texture
+        // per step. Same pattern as ScreenshotsManager's temporary texture.
+        //
+        // Reinitialize refuses a non-readable texture (Texture2D::ReinitializeWithFormat), so this
+        // path has to keep the CPU-side copy that CreateScreenshotTexture discards. That is one
+        // retained copy, bounded by the thumbnail pixel budget, for one texture.
+        public static Texture2D ReuseOrCreateScreenshotTexture(Texture2D existing, NativeArray<byte> bytes, int width, int height, TextureFormat format)
+        {
+            // A null here is also a destroyed texture, via Unity's operator!=. Reinitialize logs its
+            // own error if it refuses, and falling through costs only the allocation this call was
+            // trying to avoid.
+            if (existing != null
+                && ((existing.width == width && existing.height == height && existing.format == format)
+                    || existing.Reinitialize(width, height, format, hasMipMap: false)))
+            {
+                // The texture belongs to the caller and is still on screen, so a failed load must
+                // not destroy it out from under them.
+                return ApplyRawTextureDataOrDestroy(existing, () => existing.LoadRawTextureData(bytes),
+                    makeNoLongerReadable: false, destroyOnFailure: false);
+            }
+
+            var texture = new Texture2D(width, height, format, mipChain: false);
+            return ApplyRawTextureDataOrDestroy(texture, () => texture.LoadRawTextureData(bytes),
+                makeNoLongerReadable: false, destroyOnFailure: true);
+        }
+
+        static Texture2D ApplyRawTextureDataOrDestroy(Texture2D texture, Action loadRawData, bool makeNoLongerReadable = true, bool destroyOnFailure = true)
         {
             try
             {
                 loadRawData();
-                texture.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+                texture.Apply(updateMipmaps: false, makeNoLongerReadable);
             }
             catch
             {
                 // Native Texture2D memory survives GC, so a partly initialised one leaks.
-                UnityEngine.Object.DestroyImmediate(texture);
+                if (destroyOnFailure)
+                    UnityEngine.Object.DestroyImmediate(texture);
                 throw;
             }
             return texture;

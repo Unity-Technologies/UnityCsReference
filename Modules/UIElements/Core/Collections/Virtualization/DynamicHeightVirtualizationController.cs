@@ -33,6 +33,7 @@ namespace UnityEngine.UIElements
 
         int m_ForcedFirstVisibleItem = -1;
         int m_ForcedLastVisibleItem = -1;
+        bool m_ForcedLastVisibleItemKeepsOffset;
         bool m_StickToBottom;
         bool m_ScrollOffsetOverrunsLayout;
         VirtualizationChange m_LastChange;
@@ -133,7 +134,7 @@ namespace UnityEngine.UIElements
         IVisualElementScheduledItem m_ScheduledItem;
         IVisualElementScheduledItem m_ScrollResetScheduledItem;
         IVisualElementScheduledItem m_RefreshScrollOffsetScheduledItem;
-        Predicate<int> m_IndexOutOfBoundsPredicate;
+        Predicate<int> m_IndexNotActivePredicate;
 
         bool m_FillExecuted;
         long m_TimeSinceFillScheduledMs;
@@ -148,7 +149,7 @@ namespace UnityEngine.UIElements
         {
             m_FillCallback = Fill;
             m_GeometryChangedCallback = OnRecycledItemGeometryChanged;
-            m_IndexOutOfBoundsPredicate = IsIndexOutOfBounds;
+            m_IndexNotActivePredicate = IsIndexNotActive;
             m_ScrollResetCallback = ResetScroll;
 
             collectionView.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanelEvent);
@@ -177,12 +178,16 @@ namespace UnityEngine.UIElements
             {
                 m_WaitingCache.Clear();
             }
-            else
-            {
-                needsApply |= m_WaitingCache.RemoveWhere(m_IndexOutOfBoundsPredicate) > 0;
-            }
 
             base.Refresh(rebuild);
+
+            if (m_ForcedLastVisibleItem >= itemsCount)
+                m_ForcedLastVisibleItem = -1;
+
+            if (!rebuild)
+            {
+                needsApply |= m_WaitingCache.RemoveWhere(m_IndexNotActivePredicate) > 0;
+            }
 
             m_ScrollDirection = ScrollDirection.Idle;
             m_LastChange = VirtualizationChange.None;
@@ -233,6 +238,7 @@ namespace UnityEngine.UIElements
             {
                 // Scroll to last item
                 m_ForcedLastVisibleItem = itemsCount - 1;
+                m_ForcedLastVisibleItemKeepsOffset = false;
                 m_ForcedFirstVisibleItem = ReusableCollectionItem.UndefinedIndex;
                 m_StickToBottom = true;
                 m_ScrollView.scrollOffset = new Vector2(m_ScrollView.scrollOffset.x, viewportHeight >= currentContentHeight ? 0 : currentContentHeight);
@@ -251,10 +257,16 @@ namespace UnityEngine.UIElements
             else // index > first
             {
                 var itemOffset = GetContentHeightForIndex(index);
-                if (float.IsNaN(viewportHeight) || itemOffset < contentPadding + viewportHeight)
+                if (float.IsNaN(viewportHeight))
+                    return;
+
+                if (itemOffset < contentPadding + viewportHeight && IsIndexActive(index) && !m_WaitingCache.Contains(index))
                     return;
 
                 var yScrollOffset = itemOffset - viewportHeight + BaseVerticalCollectionView.s_DefaultItemHeight;
+                m_ForcedLastVisibleItemKeepsOffset = itemOffset < contentPadding + viewportHeight;
+                if (m_ForcedLastVisibleItemKeepsOffset)
+                    yScrollOffset = Mathf.Max(yScrollOffset, previousScrollOffset.y);
                 m_ForcedLastVisibleItem = index;
                 m_ForcedFirstVisibleItem = ReusableCollectionItem.UndefinedIndex;
                 m_ScrollView.scrollOffset = new Vector2(m_ScrollView.scrollOffset.x, yScrollOffset);
@@ -679,7 +691,8 @@ namespace UnityEngine.UIElements
             if (m_ForcedLastVisibleItem >= 0)
             {
                 var lastItemHeight = GetContentHeightForIndex(m_ForcedLastVisibleItem);
-                m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, lastItemHeight + BaseVerticalCollectionView.s_DefaultItemHeight - m_ScrollView.contentViewport.layout.height));
+                var lastItemViewportOffset = lastItemHeight + BaseVerticalCollectionView.s_DefaultItemHeight - m_ScrollView.contentViewport.layout.height;
+                m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, m_ForcedLastVisibleItemKeepsOffset ? Mathf.Max(lastItemViewportOffset, m_ScrollView.scrollOffset.y) : lastItemViewportOffset));
             }
             else
             {
@@ -716,6 +729,7 @@ namespace UnityEngine.UIElements
             // RoundToPixelGrid to avoid imprecision (UUM-69616)
             var scrollableHeight = Mathf.Max(0, m_ScrollView.RoundToPanelPixelSize(expectedContentHeight - m_ScrollView.contentViewport.layout.height));
             var scrollOffset = Mathf.Min(contentPadding + itemOffset, scrollableHeight);
+            var anchoredScrollOffset = scrollOffset;
 
             // Stick to the end of the viewport.
             if (m_StickToBottom && scrollableHeight > 0)
@@ -726,8 +740,9 @@ namespace UnityEngine.UIElements
             {
                 var lastItemHeight = GetContentHeightForIndex(m_ForcedLastVisibleItem);
                 var lastItemViewportOffset = lastItemHeight + BaseVerticalCollectionView.s_DefaultItemHeight - m_ScrollView.contentViewport.layout.height;
-                scrollOffset = Mathf.Clamp(lastItemViewportOffset, 0, scrollableHeight);
-                m_ForcedLastVisibleItem = -1;
+                scrollOffset = Mathf.Clamp(m_ForcedLastVisibleItemKeepsOffset ? Mathf.Max(lastItemViewportOffset, anchoredScrollOffset) : lastItemViewportOffset, 0, scrollableHeight);
+                if (m_ForcedLastVisibleItem < firstVisibleIndex || (IsIndexActive(m_ForcedLastVisibleItem) && !m_WaitingCache.Contains(m_ForcedLastVisibleItem)))
+                    m_ForcedLastVisibleItem = -1;
             }
 
             // Don't notify to avoid coming back in the scroll update for no reason.
@@ -1187,6 +1202,19 @@ namespace UnityEngine.UIElements
             // so we need to make sure it is going to be called when we track it.
             item.rootElement.lastLayout = Rect.zero;
             item.rootElement.MarkDirtyRepaint();
+        }
+
+        bool IsIndexNotActive(int index) => IsIndexOutOfBounds(index) || !IsIndexActive(index);
+
+        bool IsIndexActive(int index)
+        {
+            foreach (var item in m_ActiveItems)
+            {
+                if (item.index == index && item.rootElement.style.display != DisplayStyle.None)
+                    return true;
+            }
+
+            return false;
         }
 
         bool IsIndexOutOfBounds(int i)

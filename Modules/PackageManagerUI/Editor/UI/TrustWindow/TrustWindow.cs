@@ -40,7 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // not a user action. Skip the gate so nothing gets logged. Even Debug.Log would break tests
             // like PackageImportExport.BatchModeExportAndImport, since Log.Expect ignores severity.
             var settingsProxy = ServicesContainer.instance.Resolve<IProjectSettingsProxy>();
-            if ((productId <= 0 && Application.isBatchMode) || settingsProxy.isSignatureValidationDisabled)
+            if ((productId <= 0 && Application.isBatchMode) || settingsProxy.isSignatureDisabled)
                 return TrustCheckResult.Proceed;
 
             var assetPackageInfo = PackageImport.GetAssetPackageInfo(nativeAssetPackageInfo);

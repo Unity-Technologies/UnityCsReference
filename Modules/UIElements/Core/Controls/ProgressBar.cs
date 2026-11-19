@@ -251,7 +251,10 @@ namespace UnityEngine.UIElements
             // An empty range counts as complete, as it does in Slider.SliderNormalizeValue.
             var normalizedProgress = Mathf.Approximately(range, 0f) ? 1f : Mathf.Clamp01((width - lowValue) / range);
 
-            var maxWidth = Mathf.Floor(m_Background.layout.width - 2);
+            var backgroundStyle = m_Background.resolvedStyle;
+            var progressStyle = m_Progress.resolvedStyle;
+            var maxWidth = Mathf.Max(0f, m_Background.layout.width - backgroundStyle.borderLeftWidth - backgroundStyle.borderRightWidth
+                - progressStyle.marginLeft - progressStyle.marginRight);
             var progressWidth = Mathf.Max(maxWidth * normalizedProgress, k_MinVisibleProgress);
             var oppositeProgressWidth = maxWidth - progressWidth;
 

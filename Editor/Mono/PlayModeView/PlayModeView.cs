@@ -270,12 +270,10 @@ namespace UnityEditor
 
                 Vector2 oldOffset = GUIUtility.s_EditorScreenPointOffset;
                 GUIUtility.s_EditorScreenPointOffset = Vector2.zero;
-                SavedGUIState oldState = SavedGUIState.Create();
 
                 if (m_TargetTexture.IsCreated())
                     EditorGUIUtility.RenderPlayModeViewCamerasInternal(m_TargetTexture, currentTargetDisplay, mousePosition, showGizmos, renderIMGUI);
 
-                oldState.ApplyAndForget();
                 GUIUtility.s_EditorScreenPointOffset = oldOffset;
 
                 return m_TargetTexture;

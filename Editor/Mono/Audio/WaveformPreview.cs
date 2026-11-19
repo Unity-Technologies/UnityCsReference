@@ -226,7 +226,6 @@ namespace UnityEditor
                 return false;
             }
 
-            // resample texture here
             updateTexture(m_ClearTexture);
 
             m_Samples = width;

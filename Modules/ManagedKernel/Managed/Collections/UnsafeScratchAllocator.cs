@@ -32,7 +32,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-        void CheckAllocationDoesNotExceedCapacity(ulong requestedSize)
+        readonly void CheckAllocationDoesNotExceedCapacity(ulong requestedSize)
         {
             if (requestedSize > (ulong)m_CapacityInBytes)
                 throw new ArgumentException($"Cannot allocate more than provided size in UnsafeScratchAllocator. Requested: {requestedSize} Size: {m_LengthInBytes} Capacity: {m_CapacityInBytes}");

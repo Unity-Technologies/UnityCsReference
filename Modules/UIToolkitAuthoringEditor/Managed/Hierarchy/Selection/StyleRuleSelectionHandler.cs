@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -36,15 +35,32 @@ internal sealed partial class StyleRuleSelectionHandler : IStyleRuleSelectionHan
             => new(SelectionObject, Count, false);
     }
 
-    [AutoStaticsCleanupOnCodeReload]
-    private static readonly Dictionary<(StyleRule rule, bool isReadOnly), RefCountedSelection> s_SelectionMappings = new();
+    readonly Dictionary<(StyleRule rule, bool isReadOnly), RefCountedSelection> m_SelectionMappings = new();
+    AuthoringContext m_Context = AuthoringContext.Global;
+
+    /// <summary>
+    /// The context the selection objects created here belong to.
+    /// </summary>
+    public AuthoringContext Context
+    {
+        get => m_Context;
+        set
+        {
+            m_Context = value ?? AuthoringContext.Global;
+            foreach (var kvp in m_SelectionMappings)
+            {
+                if (kvp.Value.Alive)
+                    kvp.Value.SelectionObject.OwnerContext = m_Context;
+            }
+        }
+    }
 
     private StyleRuleSelection Acquire(StyleRule rule, bool isReadOnly)
     {
         var key = (rule, isReadOnly);
-        if (s_SelectionMappings.TryGetValue(key, out var refCounted))
+        if (m_SelectionMappings.TryGetValue(key, out var refCounted))
         {
-            s_SelectionMappings[key] = refCounted.Acquire();
+            m_SelectionMappings[key] = refCounted.Acquire();
             var existing = (StyleRuleSelection)refCounted.SelectionObject;
             existing.IsReadOnly = isReadOnly;
             return existing;
@@ -54,7 +70,8 @@ internal sealed partial class StyleRuleSelectionHandler : IStyleRuleSelectionHan
         selectionObject.hideFlags |= HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
         selectionObject.StyleRule = rule;
         selectionObject.IsReadOnly = isReadOnly;
-        s_SelectionMappings[key] = new RefCountedSelection(selectionObject, 1);
+        selectionObject.OwnerContext = m_Context;
+        m_SelectionMappings[key] = new RefCountedSelection(selectionObject, 1);
         return selectionObject;
     }
 
@@ -62,7 +79,7 @@ internal sealed partial class StyleRuleSelectionHandler : IStyleRuleSelectionHan
     {
         // Remapping only applies to editable selections as inherited (read-only) style rules are never remapped.
         var key = (rule, false);
-        if (s_SelectionMappings.TryGetValue(key, out var refCounted))
+        if (m_SelectionMappings.TryGetValue(key, out var refCounted))
         {
             if (refCounted.Count > 0 || !refCounted.Alive)
                 Debug.LogError("Trying to remap something that is already mapped");
@@ -74,13 +91,13 @@ internal sealed partial class StyleRuleSelectionHandler : IStyleRuleSelectionHan
             styleRuleSelection.StyleRule = rule;
         }
 
-        s_SelectionMappings[key] = new RefCountedSelection(instance, 1);
+        m_SelectionMappings[key] = new RefCountedSelection(instance, 1);
     }
 
     private bool Release(StyleRule rule, bool isReadOnly)
     {
         var key = (rule, isReadOnly);
-        if (s_SelectionMappings.TryGetValue(key, out var refCounted))
+        if (m_SelectionMappings.TryGetValue(key, out var refCounted))
         {
             if (refCounted.Count == 1 || !refCounted.Alive)
             {
@@ -89,11 +106,11 @@ internal sealed partial class StyleRuleSelectionHandler : IStyleRuleSelectionHan
                     Undo.ClearUndo(refCounted.SelectionObject);
                     Object.DestroyImmediate(refCounted.SelectionObject);
                 }
-                s_SelectionMappings.Remove(key);
+                m_SelectionMappings.Remove(key);
                 return true;
             }
 
-            s_SelectionMappings[key] = refCounted.Release();
+            m_SelectionMappings[key] = refCounted.Release();
         }
 
         return false;
@@ -115,11 +132,11 @@ internal sealed partial class StyleRuleSelectionHandler : IStyleRuleSelectionHan
         foreach (var remap in remappings)
         {
             var key = (remap.Previous, false);
-            if (s_SelectionMappings.TryGetValue(key, out var selection))
+            if (m_SelectionMappings.TryGetValue(key, out var selection))
             {
                 if (!ReferenceEquals(remap.Previous, remap.Remapped))
                 {
-                    s_SelectionMappings[key] = selection.Kill();
+                    m_SelectionMappings[key] = selection.Kill();
                     Remap(remap.Remapped, selection.SelectionObject);
                     Release(remap.Previous, false);
                 }
@@ -136,7 +153,7 @@ internal sealed partial class StyleRuleSelectionHandler : IStyleRuleSelectionHan
 
     public void Clear()
     {
-        foreach (var kvp in s_SelectionMappings)
+        foreach (var kvp in m_SelectionMappings)
         {
             if (kvp.Value.Alive)
             {
@@ -144,6 +161,6 @@ internal sealed partial class StyleRuleSelectionHandler : IStyleRuleSelectionHan
                 Object.DestroyImmediate(kvp.Value.SelectionObject);
             }
         }
-        s_SelectionMappings.Clear();
+        m_SelectionMappings.Clear();
     }
 }

@@ -148,7 +148,7 @@ namespace UnityEditor
 
             if (m_Controller != null)
             {
-                // Ensure gui is in-sync with backend (TargetSnapShotIndex can be changed anytime from the backend)
+                // Ensure gui is in-sync with backend (TargetSnapshot can be changed anytime from the backend)
                 int targetIndex = GetSnapshotIndex(m_Controller.TargetSnapshot);
                 if (targetIndex != m_ReorderableListWithRenameAndScrollView.list.index)
                 {

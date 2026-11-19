@@ -94,13 +94,13 @@ namespace UnityEngine
             m_RequiresNativeCleanup = false;
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Frees the native gradient; Cleanup is thread-safe and the public type has no Dispose API.
         ~Gradient()
         {
             if (m_RequiresNativeCleanup)
                 Cleanup();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         // Calculate color at a given time
         [FreeFunction(Name = "Gradient_Bindings::Evaluate", IsThreadSafe = true, HasExplicitThis = true)]

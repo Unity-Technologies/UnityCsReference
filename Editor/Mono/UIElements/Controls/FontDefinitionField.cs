@@ -19,7 +19,7 @@ namespace UnityEditor.UIElements
     /// Makes a field for entering FontDefinition.
     /// </summary>
     [UxmlElement]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class FontDefinitionField : BaseField<FontDefinition>
     {
         /// <summary>

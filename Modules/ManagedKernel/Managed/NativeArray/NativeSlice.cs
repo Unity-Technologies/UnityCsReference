@@ -164,7 +164,7 @@ namespace Unity.Collections
         // Keeps stride, changes length
         ///<summary>Reinterprets a NativeSlice with a different data type (type punning).</summary>
         ///<returns>A new <see cref="Unity.Collections.NativeSlice{T}" /> that views the same memory, but is reinterpreted as the target type.</returns>
-        public NativeSlice<U> SliceConvert<U>() where U : struct
+        public readonly NativeSlice<U> SliceConvert<U>() where U : struct
         {
             var sizeofU = UnsafeUtility.SizeOf<U>();
             var byteLength = (long)m_Length * m_Stride;
@@ -193,7 +193,7 @@ namespace Unity.Collections
         ///<summary>SliceWithStride.</summary>
         ///<param name="offset">Stride offset.</param>
         ///<returns>NativeSlice.</returns>
-        public NativeSlice<U> SliceWithStride<U>(int offset) where U : struct
+        public readonly NativeSlice<U> SliceWithStride<U>(int offset) where U : struct
         {
             NativeSlice<U> outputSlice;
             outputSlice.m_Buffer = m_Buffer + offset;
@@ -213,7 +213,7 @@ namespace Unity.Collections
 
         ///<summary>SliceWithStride.</summary>
         ///<returns>NativeSlice.</returns>
-        public NativeSlice<U> SliceWithStride<U>() where U : struct
+        public readonly NativeSlice<U> SliceWithStride<U>() where U : struct
         {
             return SliceWithStride<U>(0);
         }
@@ -260,7 +260,7 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private void FailOutOfRangeError(int index)
+        private readonly void FailOutOfRangeError(int index)
         {
             if (index < Length && (m_MinIndex != 0 || m_MaxIndex != Length - 1))
                 throw new IndexOutOfRangeException(
@@ -276,7 +276,7 @@ namespace Unity.Collections
         ///<summary>Copies all the elements from a <see cref="Unity.Collections.NativeSlice{T}" /> or managed array of the same length.</summary>
         ///<param name="slice">The <see cref="Unity.Collections.NativeSlice{T}" /> to copy the elements from.</param>
         [WriteAccessRequired]
-        public void CopyFrom(NativeSlice<T> slice)
+        public readonly void CopyFrom(NativeSlice<T> slice)
         {
             if (Length != slice.Length)
                 throw new ArgumentException($"slice.Length ({slice.Length}) does not match the Length of this instance ({Length}).", nameof(slice));
@@ -287,7 +287,7 @@ namespace Unity.Collections
         ///<summary>Copies all the elements from a <see cref="Unity.Collections.NativeSlice{T}" /> or managed array of the same length.</summary>
         ///<param name="array">The array to copy elements from.</param>
         [WriteAccessRequired]
-        public void CopyFrom(T[] array)
+        public readonly void CopyFrom(T[] array)
         {
             if (Length != array.Length)
                 throw new ArgumentException($"array.Length ({array.Length}) does not match the Length of this instance ({Length}).", nameof(array));
@@ -305,7 +305,7 @@ namespace Unity.Collections
 
         ///<summary>Copies all the elements of a <see cref="Unity.Collections.NativeSlice{T}" /> to a <see cref="Unity.Collections.NativeArray{T}" /> or managed array of the same length.</summary>
         ///<param name="array">The array to copy elements to.</param>
-        public void CopyTo(NativeArray<T> array)
+        public readonly void CopyTo(NativeArray<T> array)
         {
             if (Length != array.Length)
                 throw new ArgumentException($"array.Length ({array.Length}) does not match the Length of this instance ({Length}).", nameof(array));
@@ -316,7 +316,7 @@ namespace Unity.Collections
 
         ///<summary>Copies all the elements of a <see cref="Unity.Collections.NativeSlice{T}" /> to a <see cref="Unity.Collections.NativeArray{T}" /> or managed array of the same length.</summary>
         ///<param name="array">The array to copy elements to.</param>
-        public void CopyTo(T[] array)
+        public readonly void CopyTo(T[] array)
         {
             if (Length != array.Length)
                 throw new ArgumentException($"array.Length ({array.Length}) does not match the Length of this instance ({Length}).", nameof(array));
@@ -334,7 +334,7 @@ namespace Unity.Collections
 
         ///<summary>Converts a <see cref="Unity.Collections.NativeSlice{T}" /> to managed array.</summary>
         ///<returns>A managed array with a copy of the contents of the NativeSlice.</returns>
-        public T[] ToArray()
+        public readonly T[] ToArray()
         {
             var array = new T[Length];
             CopyTo(array);
@@ -343,9 +343,9 @@ namespace Unity.Collections
 
         ///<summary>Gets the stride value for the <see cref="Unity.Collections.NativeSlice{T}" /> instance.</summary>
         ///<remarks>The stride value allows a NativeSlice to represent non-contiguous memory ranges.</remarks>
-        public int      Stride => m_Stride;
+        public readonly int      Stride => m_Stride;
         ///<summary>Represents the number of elements in a <see cref="Unity.Collections.NativeSlice{T}" />.</summary>
-        public int      Length
+        public readonly int      Length
         {
             get
             {
@@ -382,7 +382,7 @@ namespace Unity.Collections
                 m_Index = -1;
             }
 
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -404,20 +404,20 @@ namespace Unity.Collections
         }
 
         ///<exclude />
-        public bool Equals(NativeSlice<T> other)
+        public readonly bool Equals(NativeSlice<T> other)
         {
             return m_Buffer == other.m_Buffer && m_Stride == other.m_Stride && m_Length == other.m_Length;
         }
 
         ///<exclude />
-        public override bool Equals(object obj)
+        public readonly override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             return obj is NativeSlice<T> && Equals((NativeSlice<T>)obj);
         }
 
         ///<exclude />
-        public override int GetHashCode()
+        public readonly override int GetHashCode()
         {
             unchecked
             {

@@ -124,9 +124,9 @@ namespace Unity.U2D.Physics
                 var transformWriteTweens = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray(transformWriteTweensBuffer.ToSpan<PhysicsBody.TransformWriteTween>(), Allocator.None);
                 var transformWriteTweensSafety = AtomicSafetyHandle.Create();
                 NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref transformWriteTweens, transformWriteTweensSafety);
-                // Fetch the callback target.
+                // Fetch the callback target, which is not called when it is a destroyed Unity object, the same as no target.
                 var callbackTarget = transformWriteCallbackTarget as PhysicsCallbacks.ITransformWriteCallback;
-                if (callbackTarget != null)
+                if (callbackTarget != null && !PhysicsEvents.IsDestroyedCallbackTarget(transformWriteCallbackTarget))
                 {
                     using (s_WriteTransformTweensCustomMarker.Auto())
                     {

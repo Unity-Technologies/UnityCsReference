@@ -21,6 +21,10 @@ namespace UnityEditor.ShaderApiReflection
 
         public Shader BaseShader => GetBaseShader();
         /// <summary>
+        /// Indicates whether the shader interface has any unimplemented pure virtual functions or not.
+        /// </summary>
+        public bool IsAbstract => GetIsAbstractFromNative();
+        /// <summary>
         /// Every virtual function defined in this shader or its ancestors.
         /// </summary>
         public ReadOnlyCollection<VirtualFunction> VirtualFunctions => GetOrLoadVirtualFunctions().AsReadOnly();
@@ -31,6 +35,8 @@ namespace UnityEditor.ShaderApiReflection
         private List<VirtualFunction> m_AllVirtualFunctions = null;
         private List<PartialStruct> m_PartialStructs = null;
 
+        [NativeName("IsAbstract")]
+        extern bool GetIsAbstractFromNative();
         [NativeName("GetVirtualFunctions")]
         private extern VirtualFunction.MarshalledType[] GetVirtualFunctionsFromNative();
         [NativeName("GetPartialStructs")]

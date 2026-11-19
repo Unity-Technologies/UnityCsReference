@@ -33,6 +33,18 @@ namespace UnityEditor.Build.Profile
     /// callbacks and after <see cref="Build.IPostprocessBuildWithContext"/> callbacks with a lower order.
     /// The order relative to <see cref="Build.IPostprocessBuildWithContext"/> callbacks that also use
     /// <c>int.MaxValue</c> isn't defined.
+    ///
+    /// If a callback throws an exception, Unity logs the exception and a message that names the callback and the
+    /// build profile. What happens next depends on whether the build uses strict mode
+    /// (<see cref="BuildOptions.StrictMode"/> or <see cref="BuildAssetBundleOptions.StrictMode"/>):
+    ///
+    /// - Outside strict mode, Unity runs the remaining callbacks attached to the profile, and the exception
+    ///   doesn't fail the build.
+    /// - In strict mode, Unity doesn't run the remaining callbacks attached to the profile or any
+    ///   <see cref="Build.IPostprocessBuildWithContext"/> callbacks ordered after them, and the build fails.
+    ///
+    /// To fail the build whether or not it uses strict mode, throw a <see cref="Build.BuildFailedException"/>.
+    /// Outside strict mode, the remaining callbacks still run after a <see cref="Build.BuildFailedException"/>.
     /// </remarks>
     /// <example>
     ///  <code><![CDATA[

@@ -3132,7 +3132,7 @@ namespace UnityEngine
             return defaultPhysicsScene.Raycast(origin, direction, distance);
         }
 
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(GenerateProxy = false)]
         [ExcludeFromDocs]
         public static RaycastHit2D Raycast(Vector2 origin, Vector2 direction, float distance, int layerMask)
         {
@@ -4003,7 +4003,7 @@ namespace UnityEngine
         ///<param name="distance">The maximum distance over which to cast the ray.</param>
         ///<param name="layerMask">The LayerMask filter used to select which layers to detect Colliders for.</param>
         ///<returns>The ray intersection results.</returns>
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(GenerateProxy = false)]
         public static RaycastHit2D[] GetRayIntersectionAll(Ray ray, float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             return GetRayIntersectionAll_Internal(defaultPhysicsScene, ray.origin, ray.direction, distance, layerMask);
@@ -4016,7 +4016,7 @@ namespace UnityEngine
         // Needs the [RequiredByNativeCode] attribute as it is called by reflection
         // from GraphicsRaycaster.cs, to avoid a hard dependency to this module.
         [ExcludeFromDocs]
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(GenerateProxy = false)]
         public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results, float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             return defaultPhysicsScene.GetRayIntersection(ray, distance, results, layerMask);

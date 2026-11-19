@@ -184,6 +184,15 @@ namespace UnityEngine.UIElements
             // Prevent text from changing when the value change
             // This allow expression (2+2) or string like 00123 to remain as typed in the TextField until enter is pressed
             UpdatePlaceholderClassList();
+
+            if (showMixedValue && string.IsNullOrEmpty(text))
+                return;
+
+            AssignValueFromText();
+        }
+
+        void AssignValueFromText()
+        {
             m_UpdateTextFromValue = false;
             try
             {
@@ -195,7 +204,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal override void UpdateTextFromValue()
         {
             if (m_UpdateTextFromValue)
@@ -255,7 +263,8 @@ namespace UnityEngine.UIElements
         public void ClearValue()
         {
             text = string.Empty;
-            UpdateValueFromText();
+            UpdatePlaceholderClassList();
+            AssignValueFromText();
         }
 
         [EventInterest(typeof(BlurEvent), typeof(FocusEvent), typeof(FocusOutEvent))]

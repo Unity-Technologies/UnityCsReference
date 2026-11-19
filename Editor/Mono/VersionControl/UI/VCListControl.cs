@@ -242,13 +242,6 @@ namespace UnityEditorInternal.VersionControl
             Clear();
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
-        ~ListControl()
-        {
-            s_uniqueIDList.Remove(uniqueID);
-        }
-#pragma warning restore UA5000
-
         public ListItem FindItemWithIdentifier(int identifier)
         {
             ListItem result = root.FindWithIdentifierRecurse(identifier);

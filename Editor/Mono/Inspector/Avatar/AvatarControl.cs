@@ -168,7 +168,6 @@ namespace UnityEditor
             }
         }
 
-        [NoAutoStaticsCleanup]
         static readonly Vector2[,] s_BonePositions = new Vector2[4, HumanTrait.BoneCount];
 
         public static List<int> GetViewsThatContainBone(int bone)

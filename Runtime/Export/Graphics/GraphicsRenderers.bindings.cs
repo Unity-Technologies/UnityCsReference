@@ -480,6 +480,7 @@ namespace UnityEngine
         extern public float scaleInLightmap { get; set; }
         extern public ReceiveGI receiveGI { get; set; }
         extern public bool stitchLightmapSeams { get; set; }
+
         extern public UInt16 globalIlluminationMeshLod { get; set; }
     }
 

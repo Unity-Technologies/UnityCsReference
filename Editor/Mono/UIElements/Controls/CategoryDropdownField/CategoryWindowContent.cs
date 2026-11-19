@@ -14,7 +14,6 @@ namespace UnityEditor.UIElements
     using Item = CategoryDropdownContent.Item;
     using ItemType = CategoryDropdownContent.ItemType;
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal partial class CategoryWindowContent : PopupWindowContent
     {
         const string k_SelectionContextKey = "CategoryDropdownField.SelectionContext";

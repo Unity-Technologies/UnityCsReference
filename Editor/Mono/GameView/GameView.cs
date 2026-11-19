@@ -38,7 +38,6 @@ These states should be tested when changing the behavior when entering playmode.
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Game", useTypeNameAsIconName = true)]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class GameView : PlayModeView, IHasCustomMenu, IGameViewSizeMenuUser
     {
         const int kScaleSliderMinWidth = 30;
@@ -46,28 +45,19 @@ namespace UnityEditor
         const int kScaleSliderSnapThreshold = 4;
         const int kScaleLabelWidth = 40;
         readonly Color kClearBlack = new Color(0, 0 , 0, 0);
-        const float kMinScale = 1f;
-        const float kMaxScale = 5f;
+        const float kMinSliderScale = 1f;
+        internal const float kMaxSliderScale = 10f;
+        internal const int kMaxPixelSize = 3;
         const float kScrollZoomSnapDelay = 0.2f;
         // This will save the previous state which will be useful in case of platform switch
         int prevSizeGroupType;
 
         //Take the backing scale from the window if it is available as this values is valid outside of OnGUI methods
         float backingScale => m_Parent?.GetBackingScaleFactor() ?? EditorGUIUtility.pixelsPerPoint;
-        float minScale
-        {
-            get
-            {
-                var clampedMinScale = Mathf.Min(kMinScale, ScaleThatFitsTargetInView(targetRenderSize, viewInWindow.size));
-                if (m_LowResolutionForAspectRatios[(int)currentSizeGroupType] && currentGameViewSize.sizeType == GameViewSizeType.AspectRatio)
-                    clampedMinScale = Mathf.Max(clampedMinScale, backingScale);
-                return clampedMinScale;
-            }
-        }
-        float maxScale
-        {
-            get { return Mathf.Max(kMaxScale * backingScale, ScaleThatFitsTargetInView(targetRenderSize, viewInWindow.size)); }
-        }
+
+        // Zoom scales are effective magnifications (device pixels per render target pixel): pixel size times slider scale.
+        internal float minScale => Mathf.Min(pixelSize * kMinSliderScale, ScaleThatFitsTargetInView(targetRenderSize, viewInWindow.size));
+        internal float maxScale => Mathf.Max(pixelSize * kMaxSliderScale, ScaleThatFitsTargetInView(targetRenderSize, viewInWindow.size));
 
         [SerializeField] bool m_VSyncEnabled;
         [SerializeField] bool m_Gizmos;
@@ -77,12 +67,14 @@ namespace UnityEditor
         [SerializeField] ZoomableArea m_ZoomArea;
         [SerializeField] float m_defaultScale = -1f;
         bool m_TargetClamped;
+        bool m_TargetClampWarningLogged;
 
         [SerializeField] Vector2 m_LastWindowPixelSize;
 
         [SerializeField] bool m_ClearInEditMode = true;
         [SerializeField] bool m_NoCameraWarning = true;
-        [SerializeField] bool[] m_LowResolutionForAspectRatios = Array.Empty<bool>();
+        [SerializeField] int[] m_PixelSize = Array.Empty<int>(); // Per size group, Free/aspect sizes; 0 is Auto, resolved by ResolvePixelSize
+        [SerializeField] int[] m_FixedResolutionPixelSize = Array.Empty<int>(); // Per size group, fixed resolutions
         [SerializeField] int m_XRRenderMode = 0;
         [SerializeField] RenderTexture m_RenderTexture;
         [SerializeField] bool m_showToolbar = true;
@@ -96,6 +88,7 @@ namespace UnityEditor
 
         // Added for tests
         internal Vector2 zoomAreaScale => m_ZoomArea?.scale ?? Vector2.zero;
+        internal float defaultScale => m_defaultScale;
 
         internal static class Styles
         {
@@ -109,13 +102,14 @@ namespace UnityEditor
             public static readonly GUIContent frameDebuggerOnContent = L10n.TextContent("Frame Debugger On", null, null, null);
             public static readonly GUIContent noCameraWarningContextMenuContent = L10n.TextContent("Warn if No Cameras Rendering", null, null, null);
             public static readonly GUIContent clearEveryFrameContextMenuContent = L10n.TextContent("Clear Every Frame in Edit Mode", null, null, null);
-            public static readonly GUIContent lowResAspectRatiosContextMenuContent = L10n.TextContent("Low Resolution Aspect Ratios", null, null, null);
+            public static readonly GUIContent pixelSizeContent = L10n.TextContent("Pixel Size", "Number of screen pixels per Game view pixel, before Scale is applied. Whole numbers keep pixel art sharp.", null, null);
             public static readonly GUIContent metalFrameCaptureContent = L10n.IconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger", null);
             public static readonly GUIContent frameDebuggerContent = L10n.IconContent("Debug", "Opens the Frame Debugger", null);
 
             public const string k_StatsShortcutID = "Game View/Toggle Stats";
             public const string k_StatsTooltip = "View general rendering information";
-            public const string k_AspectRatioTooltip = "Change aspect ratios, emulate low pixel density, allow VSync";
+            public const string k_AspectRatioTooltip = "Change aspect ratios, set pixel size, allow VSync";
+            public const string k_EffectiveScaleTooltipFormat = "Size of the game view on the screen. On-screen magnification: {0}x (Pixel Size {1}x × Scale).";
 
             public static readonly GUIContent renderdocContent;
             public static readonly GUIStyle gameViewBackgroundStyle;
@@ -157,28 +151,65 @@ namespace UnityEditor
             textureHideFlags = HideFlags.HideAndDontSave;
         }
 
-        public bool lowResolutionForAspectRatios
+        internal static int ResolvePixelSize(int storedPixelSize, GameViewSizeType sizeType, float backingScale)
+        {
+            if (storedPixelSize > 0)
+                return Mathf.Min(storedPixelSize, kMaxPixelSize);
+            if (sizeType == GameViewSizeType.FixedResolution)
+                return 1;
+            // Round half up: Mathf.RoundToInt would send 2.5 to 2.
+            return Mathf.Clamp(Mathf.FloorToInt(backingScale + 0.5f), 1, kMaxPixelSize);
+        }
+
+        public int pixelSize
         {
             get
             {
                 EnsureSelectedSizeAreValid();
-                return m_LowResolutionForAspectRatios[(int)currentSizeGroupType];
+                return ResolvePixelSize(CurrentPixelSizeSlot()[(int)currentSizeGroupType], currentGameViewSize.sizeType, backingScale);
             }
-            set
-            {
-                EnsureSelectedSizeAreValid();
-                if (value != m_LowResolutionForAspectRatios[(int)currentSizeGroupType])
-                {
-                    m_LowResolutionForAspectRatios[(int)currentSizeGroupType] = value;
-                    UpdateZoomAreaAndParent();
-
-                    if (currentGameViewSize.sizeType == GameViewSizeType.AspectRatio)
-                        SnapZoom(minScale);
-                }
-            }
+            set { SetStoredPixelSize(Mathf.Clamp(value, 1, kMaxPixelSize)); }
         }
 
-        public bool forceLowResolutionAspectRatios => backingScale == 1f;
+        int[] CurrentPixelSizeSlot() => currentGameViewSize.sizeType == GameViewSizeType.FixedResolution ? m_FixedResolutionPixelSize : m_PixelSize;
+
+        internal void ResetPixelSizeToAuto() => RestoreStoredPixelSizes(0, 0);
+
+        internal (int freeOrAspect, int fixedResolution) GetStoredPixelSizes(GameViewSizeGroupType groupType)
+        {
+            EnsureSelectedSizeAreValid();
+            return (m_PixelSize[(int)groupType], m_FixedResolutionPixelSize[(int)groupType]);
+        }
+
+        internal void RestoreStoredPixelSizes(int freeOrAspect, int fixedResolution)
+        {
+            EnsureSelectedSizeAreValid();
+            var groupIndex = (int)currentSizeGroupType;
+            var isFixed = currentGameViewSize.sizeType == GameViewSizeType.FixedResolution;
+            if (isFixed)
+                m_PixelSize[groupIndex] = freeOrAspect;
+            else
+                m_FixedResolutionPixelSize[groupIndex] = fixedResolution;
+            SetStoredPixelSize(isFixed ? fixedResolution : freeOrAspect);
+        }
+
+        void SetStoredPixelSize(int storedPixelSize)
+        {
+            EnsureSelectedSizeAreValid();
+            var groupIndex = (int)currentSizeGroupType;
+            var slot = CurrentPixelSizeSlot();
+            if (storedPixelSize == slot[groupIndex])
+                return;
+
+            var wasDefaultScale = Mathf.Approximately(m_ZoomArea.scale.y, m_defaultScale);
+            var sliderScale = m_ZoomArea.scale.y / pixelSize;
+            slot[groupIndex] = storedPixelSize;
+            UpdateZoomAreaAndParent();
+            if (!wasDefaultScale && sliderScale > 0f)
+                SetZoomFocused(Mathf.Clamp(sliderScale * pixelSize, minScale, maxScale));
+            targetSize = targetRenderSize;
+            Repaint();
+        }
 
         public bool vSyncEnabled
         {
@@ -204,6 +235,7 @@ namespace UnityEditor
             {
                 EnsureSelectedSizeAreValid();
                 m_SelectedSizes[(int)currentSizeGroupType] = value;
+                m_TargetClampWarningLogged = false;
             }
         }
 
@@ -228,29 +260,33 @@ namespace UnityEditor
             return new Rect(0, 0, pos.width, pos.height);
         }
 
-        // Device pixels the view rect converts to per editor point.
-        float viewPixelsPerPoint => lowResolutionForAspectRatios ? 1f : backingScale;
-
-        float renderTargetPixelsPerPoint
+        int devicePixelsPerRenderPixel
         {
             get
             {
                 var size = currentGameViewSize;
                 var followsViewRect = size.isFreeAspectRatio || size.sizeType == GameViewSizeType.AspectRatio;
-                return followsViewRect ? viewPixelsPerPoint : backingScale;
+                return followsViewRect ? pixelSize : 1;
             }
         }
 
-        Rect GetViewPixelRect(Rect viewRectInWindow)
+        float renderTargetPixelsPerPoint => backingScale / devicePixelsPerRenderPixel;
+
+        internal Rect GetViewPixelRect(Rect viewRectInWindow)
         {
-            var scale = viewPixelsPerPoint;
+            var scale = renderTargetPixelsPerPoint;
             return new Rect(viewRectInWindow.x * scale, viewRectInWindow.y * scale,
-                viewRectInWindow.width * scale, viewRectInWindow.height * scale);
+                ToWholeRenderPixels(viewRectInWindow.width), ToWholeRenderPixels(viewRectInWindow.height));
+        }
+
+        // Whole device pixels first, so float error at fractional DPI cannot floor 1000 down to 999.
+        float ToWholeRenderPixels(float points)
+        {
+            return Mathf.Floor(Mathf.Round(points * backingScale) / devicePixelsPerRenderPixel);
         }
 
         protected override float GetGameViewDpiForPhysicalSize()
         {
-            // Low resolution allocates the target in points, so a render pixel covers backingScale device pixels.
             return base.GetGameViewDpiForPhysicalSize() * renderTargetPixelsPerPoint / backingScale;
         }
 
@@ -410,7 +446,6 @@ namespace UnityEditor
         }
 
         [UsedImplicitly] // This is here because NGUI uses it via reflection (noted in https://confluence.hq.unity3d.com/display/DEV/Game+View+Bucket)
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Vector2 GetSizeOfMainGameView()
         {
             return GetMainPlayModeViewTargetSize();
@@ -510,12 +545,10 @@ namespace UnityEditor
                 m_SelectedSizes[index] = Mathf.Clamp(m_SelectedSizes[index], 0, gvsg.GetTotalCount() - 1);
             }
 
-            // Resize low resolution array as necessary, and fill in new indices with defaults
-            var lowResolutionSettingsLength = m_LowResolutionForAspectRatios.Length;
-            if (m_LowResolutionForAspectRatios.Length != sizeGroupTypes.Length)
-                System.Array.Resize(ref m_LowResolutionForAspectRatios, sizeGroupTypes.Length);
-            for (var groupIndex = lowResolutionSettingsLength; groupIndex < sizeGroupTypes.Length; ++groupIndex)
-                m_LowResolutionForAspectRatios[groupIndex] = GameViewSizes.DefaultLowResolutionSettingForSizeGroupType((GameViewSizeGroupType)sizeGroupTypes.GetValue(groupIndex));
+            if (m_PixelSize.Length != sizeGroupTypes.Length)
+                System.Array.Resize(ref m_PixelSize, sizeGroupTypes.Length);
+            if (m_FixedResolutionPixelSize.Length != sizeGroupTypes.Length)
+                System.Array.Resize(ref m_FixedResolutionPixelSize, sizeGroupTypes.Length);
         }
 
         private void OnSelectionChange()
@@ -567,26 +600,37 @@ namespace UnityEditor
             }
         }
 
-        void SnapZoom(float newZoom)
+        // Snaps in slider units, so the snapped magnification is always a whole multiple of the pixel size.
+        internal void SnapZoom(float newZoom)
         {
-            var logScale = Mathf.Log10(newZoom);
-            var logMin = Mathf.Log10(minScale);
-            var logMax = Mathf.Log10(maxScale);
-            var shortestSliderDistance = System.Single.MaxValue;
+            var currentPixelSize = pixelSize;
+            var sliderScale = newZoom / currentPixelSize;
+            var sliderMin = minScale / currentPixelSize;
+            var sliderMax = maxScale / currentPixelSize;
+            var logScale = Mathf.Log10(sliderScale);
+            var logMin = Mathf.Log10(sliderMin);
+            var logMax = Mathf.Log10(sliderMax);
+            var shortestSliderDistance = float.MaxValue;
             if (logScale > logMin && logScale < logMax)
             {
-                for (var i = 1; i <= maxScale; ++i)
+                var lastSnap = Mathf.FloorToInt(sliderMax);
+                for (var i = Mathf.Max(1, Mathf.CeilToInt(sliderMin)); i <= lastSnap; ++i)
                 {
                     // Snap distance is defined in points, so convert difference back to UI space
                     var sliderDistanceToI = kScaleSliderMaxWidth * Mathf.Abs(logScale - Mathf.Log10(i)) / (logMax - logMin);
                     if (sliderDistanceToI < kScaleSliderSnapThreshold && sliderDistanceToI < shortestSliderDistance)
                     {
-                        newZoom = i;
+                        sliderScale = i;
                         shortestSliderDistance = sliderDistanceToI;
                     }
                 }
             }
 
+            SetZoomFocused(sliderScale * currentPixelSize);
+        }
+
+        void SetZoomFocused(float newZoom)
+        {
             var areaInMargins = m_ZoomArea.shownAreaInsideMargins;
             var focalPoint = areaInMargins.position + areaInMargins.size * 0.5f;
             m_ZoomArea.SetScaleFocused(focalPoint, Vector2.one * newZoom);
@@ -597,22 +641,26 @@ namespace UnityEditor
             GUILayout.BeginHorizontal(Styles.zoomSliderContainerStyle);
             {
                 GUILayout.Label(Styles.zoomSliderContent);
+                var currentPixelSize = pixelSize;
+                var sliderScale = m_ZoomArea.scale.y / currentPixelSize;
                 EditorGUI.BeginChangeCheck();
                 // Zooming feels more natural on a log scale
-                var logScale = Mathf.Log10(m_ZoomArea.scale.y);
-                var logMin = Mathf.Log10(minScale);
-                var logMax = Mathf.Log10(maxScale);
+                var logScale = Mathf.Log10(sliderScale);
+                var logMin = Mathf.Log10(minScale / currentPixelSize);
+                var logMax = Mathf.Log10(maxScale / currentPixelSize);
                 logScale = GUILayout.HorizontalSlider(logScale, logMin, logMax,
                     Styles.zoomSliderStyle, GUI.skin.horizontalSliderThumb,
                     GUILayout.MaxWidth(kScaleSliderMaxWidth), GUILayout.MinWidth(kScaleSliderMinWidth));
                 if (EditorGUI.EndChangeCheck())
                 {
-                    var newZoom = Mathf.Pow(10f, logScale);
-                    SnapZoom(newZoom);
+                    var newSliderScale = Mathf.Pow(10f, logScale);
+                    SnapZoom(newSliderScale * currentPixelSize);
                 }
 
-                var scaleContent = EditorGUIUtility.TempContent($"{(m_ZoomArea.scale.y).ToString("G2", CultureInfo.InvariantCulture.NumberFormat)}x");
-                scaleContent.tooltip = Styles.zoomSliderContent.tooltip;
+                var numberFormat = CultureInfo.InvariantCulture.NumberFormat;
+                var scaleContent = EditorGUIUtility.TempContent($"{sliderScale.ToString("G2", numberFormat)}x");
+                scaleContent.tooltip = string.Format(L10n.Tr(Styles.k_EffectiveScaleTooltipFormat, null),
+                    m_ZoomArea.scale.y.ToString("G3", numberFormat), currentPixelSize);
                 GUILayout.Label(scaleContent, GUILayout.Width(kScaleLabelWidth));
                 scaleContent.tooltip = string.Empty;
 
@@ -865,12 +913,11 @@ namespace UnityEditor
 
         private float DefaultScaleForTargetInView(Vector2 targetToFit, Vector2 viewSize)
         {
-            var scale = ScaleThatFitsTargetInView(targetToFit, viewSize);
-            if (scale > 1f)
-            {
-                scale = Mathf.Min(maxScale * backingScale, Mathf.FloorToInt(scale));
-            }
-            return scale;
+            var currentPixelSize = pixelSize;
+            var sliderScale = ScaleThatFitsTargetInView(targetToFit, viewSize) / currentPixelSize;
+            if (sliderScale > 1f)
+                sliderScale = Mathf.FloorToInt(sliderScale);
+            return currentPixelSize * sliderScale;
         }
 
         private void ConfigureZoomArea()
@@ -1082,10 +1129,6 @@ namespace UnityEditor
                 // Tonemapping for HDR targets
                 EditorGUIUtility.PerformTonemappingForGameView();
 
-                Vector2 oldOffset = GUIUtility.s_EditorScreenPointOffset;
-                GUIUtility.s_EditorScreenPointOffset = Vector2.zero;
-                SavedGUIState oldState = SavedGUIState.Create();
-
                 var clearTexture = m_ClearInEditMode && !EditorApplication.isPlaying;
 
                 var currentTargetDisplay = 0;
@@ -1106,15 +1149,18 @@ namespace UnityEditor
                 if (renderViewCallNeededInOnGUI)
                     m_RenderTexture = RenderView(gameMousePosition, clearTexture);
 
-                if (m_TargetClamped)
+                // OnGUI runs for every repaint, so only warn when the size first gets clamped.
+                if (!m_TargetClamped)
+                    m_TargetClampWarningLogged = false;
+                else if (!m_TargetClampWarningLogged)
+                {
                     Debug.LogWarningFormat("GameView reduced to a reasonable size for this system ({0}x{1})", targetSize.x, targetSize.y);
+                    m_TargetClampWarningLogged = true;
+                }
                 EditorGUIUtility.SetupWindowSpaceAndVSyncInternal(GUIClip.Unclip(viewInWindow));
 
                 if (m_RenderTexture != null && m_RenderTexture.IsCreated())
                 {
-                    oldState.ApplyAndForget();
-                    GUIUtility.s_EditorScreenPointOffset = oldOffset;
-
                     GUI.BeginGroup(m_ZoomArea.drawRect);
                     // Actually draw the game view to the screen, without alpha blending
                     Rect drawRect = deviceFlippedTargetInView;

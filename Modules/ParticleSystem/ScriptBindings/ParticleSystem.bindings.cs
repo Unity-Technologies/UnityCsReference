@@ -1426,7 +1426,7 @@ namespace UnityEngine
         // Emission
         ///<summary>Emit <c>count</c> particles immediately.</summary>
         ///<param name="count">Number of particles to emit.</param>
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(GenerateProxy = false)]
         public void Emit(int count)
         {
             Emit_Internal(count);

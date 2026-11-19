@@ -9,7 +9,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class PositionAnchorPoint : VisualElement, INotifyValueChanged<bool>
     {
         private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/Controls/PositionAnchorPoint.uxml";

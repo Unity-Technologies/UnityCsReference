@@ -452,7 +452,6 @@ namespace UnityEditor
                 if (Event.current.type == EventType.Repaint)
                 {
                     m_RepaintCounter--;
-                    //Debug.Log ("Repainting (left: " + m_RepaintCounter + ")");
                 }
                 Repaint();
             }

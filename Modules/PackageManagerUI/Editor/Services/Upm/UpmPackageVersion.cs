@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using NiceIO;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
 
@@ -16,9 +15,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class UpmPackageVersion : BasePackageVersion
     {
         private const string k_UnityPrefix = "com.unity.";
-
-        private const string k_NoSubscriptionUpmErrorMessage = "You do not have a subscription for this package";
-        private const string k_NotAcquiredUpmErrorMessage = "Your account does not grant permission to use the package";
 
         [SerializeField]
         private string m_Category;
@@ -59,14 +55,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private EntitlementsInfo m_Entitlements;
         public override EntitlementsInfo entitlements => m_Entitlements;
 
-        [SerializeField]
-        private bool m_HasErrorWithEntitlementMessage;
-
         public override bool hasEntitlementsError => entitlements is
         {
             licensingModel: EntitlementLicensingModel.AssetStore or EntitlementLicensingModel.Enterprise,
             isAllowed: false
-        } || m_HasErrorWithEntitlementMessage;
+        };
 
         public string sourcePath
         {
@@ -140,7 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return packageVersion;
         }
 
-        public static UpmPackageVersion CreateWithCompleteInfo(IUpmPackageData packageData, PackageInfo packageInfo, bool isInstalled, IIOProxy ioProxy, IApplicationProxy applicationProxy, bool processLoadingError, TrustPolicyLevel trustPolicyLevel, bool isSignatureValidationDisabled)
+        public static UpmPackageVersion CreateWithCompleteInfo(IUpmPackageData packageData, PackageInfo packageInfo, bool isInstalled, IIOProxy ioProxy, IApplicationProxy applicationProxy, IInternalEditorUtilityProxy internalEditorUtilityProxy, bool processLoadingError, TrustPolicyLevel trustPolicyLevel, bool isSignatureValidationDisabled)
         {
             var trustAndSignature = TrustAndSignatureHelper.GetTrustAndSignature(packageInfo, isInstalled, isSignatureValidationDisabled);
             var packageVersion = new UpmPackageVersion(packageInfo.name, packageInfo.version, packageData.availableRegistryType)
@@ -157,7 +150,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ResolvedPath = packageInfo.resolvedPath,
                 m_DeprecationMessage = packageInfo.deprecationMessage,
                 m_Description = packageInfo.ExtractBuiltinDescription(out var result) ? result : packageInfo.description,
-                m_PublishedDateTicks = GetPublishDateTicks(packageInfo),
+                m_PublishedDateTicks = GetPublishDateTicks(packageInfo, internalEditorUtilityProxy),
                 m_MinimumUnityVersion = packageInfo.editorCompatibility?.minimumUnityVersion,
                 m_Author = packageInfo.author,
                 m_TrustAndSignature = trustAndSignature,
@@ -223,12 +216,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return isFirstLetterCapitalized ? L10n.Tr("Package", null) : L10n.Tr("package", null);
         }
 
-        private static long GetPublishDateTicks(PackageInfo info)
+        private static long GetPublishDateTicks(PackageInfo info, IInternalEditorUtilityProxy internalEditorUtilityProxy)
         {
             // For core packages, or packages that are bundled with Unity without being published, use Unity's build date
             var result = info.datePublished?.Ticks ?? 0;
             if (result == 0 && info.source == PackageSource.BuiltIn)
-                result = new DateTime(1970, 1, 1).Ticks + InternalEditorUtility.GetUnityVersionDate() * TimeSpan.TicksPerSecond;
+                result = new DateTime(1970, 1, 1).Ticks + internalEditorUtilityProxy.GetUnityVersionDate() * TimeSpan.TicksPerSecond;
             return result;
         }
 
@@ -248,10 +241,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ProcessErrors(PackageInfo info, IIOProxy ioProxy, IApplicationProxy applicationProxy, bool processLoadingError)
         {
-            m_HasErrorWithEntitlementMessage = Array.Exists(info.errors, error
-                => error.errorCode == ErrorCode.Forbidden
-                && error.message.IndexOf(k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
-
             m_Errors.Clear();
             if (hasEntitlementsError)
             {
@@ -277,11 +266,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             foreach (var error in info.errors ?? Array.Empty<Error>())
-            {
-                m_Errors.Add(error.message.Contains(k_NotAcquiredUpmErrorMessage)
-                    ? new UIError(UIErrorCode.UpmError_NotAcquired, error.message)
-                    : new UIError(error));
-            }
+                m_Errors.Add(new UIError(error));
 
             if (Unsupported.IsDeveloperBuild() && isInstalled && info.signature.status == SignatureStatus.Error)
                 m_Errors.Add(UIError.k_CantValidateSignatureError);

@@ -11,7 +11,7 @@ namespace UnityEditorInternal.Profiling
     [StructLayout(LayoutKind.Sequential)]
     internal struct ScreenshotTextureInfo
     {
-        public int Format; // TextureFormat of the captured image; currently always RGBA32
+        public int Format; // TextureFormat of the captured image: RGB24 since ScreenshotVersionV4, RGBA32 before that
         public int Width;
         public int Height;
     }

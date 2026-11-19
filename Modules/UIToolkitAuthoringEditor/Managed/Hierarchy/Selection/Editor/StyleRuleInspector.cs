@@ -40,7 +40,12 @@ internal sealed partial class StyleRuleInspector : UIInspector
     private PanelElement m_PanelElement;
     private __SelectorElement m_Element;
     private bool m_IsUpdating;
-    private ThemeStyleSheet m_ThemeStyleSheet;
+    StyleSheet m_ThemeStyleSheet;
+
+    /// <summary>
+    /// The context of the inspected rule, which supplies the canvas theme and the document's panel settings.
+    /// </summary>
+    internal AuthoringContext Context { get; set; } = AuthoringContext.Global;
 
     [CreateProperty]
     public StyleRule StyleRule
@@ -162,10 +167,13 @@ internal sealed partial class StyleRuleInspector : UIInspector
                     return;
                 m_PanelElement = new PanelElement();
                 m_PanelElement.CreateSubPanel();
+                // The preview element resolves to the rule's context, like the elements of the document it styles.
+                if (!Context.IsGlobal && !Context.IsDisposed)
+                    Context.Claim(m_PanelElement);
                 m_Element ??= new __SelectorElement();
                 m_PanelElement.SubPanel.visualTree.Add(m_Element);
 
-                m_ThemeStyleSheet = GetCanvasThemeQuery.Get();
+                m_ThemeStyleSheet = GetCanvasThemeQuery.Get(Context);
                 SetSelectorElementInlineStyles();
 
                 m_StyleInspector.contentContainer.Add(m_StyleInspectorDefaultContent = StyleInspectorDefaultContent.Get());
@@ -176,7 +184,7 @@ internal sealed partial class StyleRuleInspector : UIInspector
 
                 Panel.beforeTickingAnyScheduledPanel += OnBeforeTickingAnyScheduledPanel;
                 Undo.undoRedoPerformed += OnUndoRedoPerformed;
-                UICommandQueue.RegisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
+                Context.Messages.RegisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
                 UICommandQueue.RegisterHandlerForCategory(CommandCategory.Variables, OnVariableChange);
                 break;
             }
@@ -199,13 +207,14 @@ internal sealed partial class StyleRuleInspector : UIInspector
                 m_StyleInspector.Target = default;
 
                 Panel.beforeTickingAnyScheduledPanel -= OnBeforeTickingAnyScheduledPanel;
+                Context.Release(m_PanelElement);
                 m_PanelElement.DestroySubPanel();
                 m_Element = null;
                 m_PanelElement = null;
                 m_ThemeStyleSheet = null;
 
                 Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-                UICommandQueue.UnregisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
+                Context.Messages.UnregisterHandler<SetPreviewThemeCommand>(OnPreviewThemeChanged);
                 UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Variables, OnVariableChange);
                 break;
             }
@@ -295,7 +304,7 @@ internal sealed partial class StyleRuleInspector : UIInspector
 
         // Inject theme so theme variables appear in variableContext.
         var effectiveTheme = m_ThemeStyleSheet
-            ?? (StageUtility.GetCurrentStage() as VisualElementEditingStage)?.Context.PanelSettings?.themeStyleSheet;
+            ?? Context.PanelSettings?.themeStyleSheet;
         if (effectiveTheme != null)
             m_Element.styleSheets.Add(effectiveTheme);
 

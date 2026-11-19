@@ -180,7 +180,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     return c >= 1 ? GridLine.Span(c) : GridLine.Auto;
                 }
                 if (hasNumber)
-                    return number >= 1 ? GridLine.AtLine(number) : GridLine.Auto;
+                    return number != 0 ? GridLine.AtLine(number) : GridLine.Auto;
                 return GridLine.Auto; // auto / empty
             }
 

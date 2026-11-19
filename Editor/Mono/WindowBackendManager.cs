@@ -26,7 +26,7 @@ namespace UnityEditor
 
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IEditorWindowModel : IWindowModel
     {
         EditorWindow window { get; }

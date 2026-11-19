@@ -94,7 +94,7 @@ namespace Unity.Mathematics.Geometry
         /// <remarks>
         /// Extents is the componentwise distance between min and max.
         /// </remarks>
-        public float3 Extents => Max - Min;
+        public readonly float3 Extents => Max - Min;
 
         /// <summary>
         /// Computes the half extents of the AABB.
@@ -103,12 +103,12 @@ namespace Unity.Mathematics.Geometry
         /// HalfExtents is half of the componentwise distance between min and max. Subtracting HalfExtents from Center
         /// gives Min and adding HalfExtents to Center gives Max.
         /// </remarks>
-        public float3 HalfExtents => (Max - Min) * 0.5f;
+        public readonly float3 HalfExtents => (Max - Min) * 0.5f;
 
         /// <summary>
         /// Computes the center of the AABB.
         /// </summary>
-        public float3 Center => (Max + Min) * 0.5f;
+        public readonly float3 Center => (Max + Min) * 0.5f;
 
         /// <summary>
         /// Check if the AABB is valid.
@@ -117,12 +117,12 @@ namespace Unity.Mathematics.Geometry
         /// An AABB is considered valid if <see cref="Min"/> is componentwise less than or equal to <see cref="Max"/>.
         /// </remarks>
         /// <returns>True if <see cref="Min"/> is componentwise less than or equal to <see cref="Max"/>.</returns>
-        public bool IsValid => math.all(Min <= Max);
+        public readonly bool IsValid => math.all(Min <= Max);
 
         /// <summary>
         /// Computes the surface area for this axis aligned bounding box.
         /// </summary>
-        public float SurfaceArea
+        public readonly float SurfaceArea
         {
             get
             {
@@ -137,7 +137,7 @@ namespace Unity.Mathematics.Geometry
         /// <param name="point">Point to test.</param>
         /// <returns>True if AABB contains the input point.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Contains(float3 point) => math.all(point >= Min & point <= Max);
+        public readonly bool Contains(float3 point) => math.all(point >= Min & point <= Max);
 
         /// <summary>
         /// Tests if the input AABB is contained entirely by this AABB.
@@ -145,7 +145,7 @@ namespace Unity.Mathematics.Geometry
         /// <param name="aabb">AABB to test.</param>
         /// <returns>True if input AABB is contained entirely by this AABB.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Contains(MinMaxAABB aabb) => math.all((Min <= aabb.Min) & (Max >= aabb.Max));
+        public readonly bool Contains(MinMaxAABB aabb) => math.all((Min <= aabb.Min) & (Max >= aabb.Max));
 
         /// <summary>
         /// Tests if the input AABB overlaps this AABB.
@@ -153,7 +153,7 @@ namespace Unity.Mathematics.Geometry
         /// <param name="aabb">AABB to test.</param>
         /// <returns>True if input AABB overlaps with this AABB.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Overlaps(MinMaxAABB aabb)
+        public readonly bool Overlaps(MinMaxAABB aabb)
         {
             return math.all(Max >= aabb.Min & Min <= aabb.Max);
         }
@@ -209,13 +209,13 @@ namespace Unity.Mathematics.Geometry
         /// <param name="other">The other AABB to compare this one with.</param>
         /// <returns>True if the specified other AABB is equal to this AABB; otherwise, false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(MinMaxAABB other)
+        public readonly bool Equals(MinMaxAABB other)
         {
             return Min.Equals(other.Min) && Max.Equals(other.Max);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override string ToString()
+        public readonly override string ToString()
         {
             return string.Format("MinMaxAABB({0}, {1})", Min, Max);
         }

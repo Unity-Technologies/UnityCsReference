@@ -49,7 +49,7 @@ namespace UnityEngine
             return newState;
         }
 
-#pragma warning disable UA5000 // Releases the native state when not owned by a GUIStyle; destroy is thread-safe, so the finalizer is the safety net.
+#pragma warning disable UAC0045 // Releases the native state when not owned by a GUIStyle; destroy is thread-safe, so the finalizer is the safety net.
         ~GUIStyleState()
         {
             if (m_SourceStyle == null)
@@ -58,7 +58,7 @@ namespace UnityEngine
                 m_Ptr = IntPtr.Zero;
             }
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
     }
 
     ///<summary>How image and text is placed inside <see cref="GUIStyle" />.</summary>
@@ -97,7 +97,7 @@ namespace UnityEngine
             m_Ptr = Internal_Copy(this, other);
         }
 
-#pragma warning disable UA5000 // Releases the native style; Internal_Destroy is thread-safe and there is no Dispose, so the finalizer is the only cleanup.
+#pragma warning disable UAC0045 // Releases the native style; Internal_Destroy is thread-safe and there is no Dispose, so the finalizer is the only cleanup.
         ~GUIStyle()
         {
             if (m_Ptr != IntPtr.Zero)
@@ -106,7 +106,7 @@ namespace UnityEngine
                 m_Ptr = IntPtr.Zero;
             }
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         //Called during Deserialization from cpp
         internal void InternalOnAfterDeserialize()

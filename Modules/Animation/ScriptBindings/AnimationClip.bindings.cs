@@ -69,6 +69,7 @@ namespace UnityEngine
     ///<seealso cref="T:UnityEditor.ObjectReferenceKeyframe" />
     ///<seealso cref="AnimationEvent" />
     [NativeHeader("Modules/Animation/ScriptBindings/AnimationClip.bindings.h")]
+    [NativeHeader("Modules/Animation/ScriptBindings/GenericBinding.bindings.h")]
     [global::UnityEngine.NativeClass("AnimationClip", PersistentTypeId = 74)]
     [NativeHeader("Modules/Animation/AnimationClip.h")]
     public sealed class AnimationClip : Motion
@@ -85,6 +86,27 @@ namespace UnityEngine
         // (AnimationUtility.onCurveWasModified) hands the clip to managed code.
         [FreeFunction("AnimationClipBindings::Internal_CreateAnimationClip")]
         extern private static void Internal_CreateAnimationClip([Writable] AnimationClip self);
+
+        // The muscle clip blob, which is empty until the muscle clip is built
+        [NativeMethod(IsThreadSafe = false)]
+        extern unsafe void*                 GetBlobData(out ulong typeHash, out uint size);
+
+        [NativeMethod(IsThreadSafe = false)]
+        extern int                          GetBlobVersion();
+
+        [NativeMethod(IsThreadSafe = false)]
+        extern BlobObjectReference          AcquireReference();
+
+        // Same checks as BlobObject.AcquireReference<T>
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        internal unsafe BlobObjectReference<T> AcquireReference<T>(int version = 0) where T : unmanaged
+        {
+            var blobData = GetBlobData(out var typeHash, out var size);
+            if (!BlobObject.IsBlobCompatible<T>(this, blobData, typeHash, size, GetBlobVersion(), version, true))
+                return default;
+
+            return new BlobObjectReference<T>(AcquireReference());
+        }
 
         // This method was moved here to prevent GameObject or the Core from depending on Animation.
         // Helps in modularizing managed code.
@@ -361,6 +383,33 @@ namespace UnityEngine
         extern private void SetEventsInternal(AnimationEvent[] events);
         [FreeFunction(Name = "AnimationClipBindings::GetEventsInternal", HasExplicitThis = true)]
         extern private AnimationEvent[] GetEventsInternal();
+
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        [FreeFunction(Name = "AnimationClipBindings::GetGenericBindingCount", HasExplicitThis = true)]
+        extern internal int GetGenericBindingCount();
+
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        [FreeFunction(Name = "AnimationClipBindings::GetGenericBinding", HasExplicitThis = true)]
+        extern internal UnityEngine.Animations.GenericBinding GetGenericBinding(int index);
+
+        [FreeFunction(Name = "AnimationClipBindings::GetPPtrCurveMappingCount", HasExplicitThis = true)]
+        extern internal uint GetPPtrCurveMappingCount();
+
+        [FreeFunction(Name = "AnimationClipBindings::GetPPtrCurveMappingEntityIds", HasExplicitThis = true)]
+        extern unsafe internal void GetPPtrCurveMappingEntityIdsInternal(void* outEntityIds);
+
+        // Returns the flat table of EntityIds that discrete PPtr curves index into.
+        // The referenced Objects are NOT loaded; only their EntityIds are read.
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        internal unsafe NativeArray<EntityId> GetPPtrCurveMappingEntityIds(Allocator allocator)
+        {
+            int count = (int)GetPPtrCurveMappingCount();
+            var result = new NativeArray<EntityId>(count, allocator, NativeArrayOptions.UninitializedMemory);
+            if (count > 0)
+                GetPPtrCurveMappingEntityIdsInternal(NativeArrayUnsafeUtility.GetUnsafePtr(result));
+            return result;
+        }
+
     }
 
     unsafe class GCHandlePool

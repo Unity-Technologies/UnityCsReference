@@ -784,7 +784,7 @@ namespace UnityEngine
         // This is not actually called by native code, but needs the [RequiredByNativeCode]
         // attribute as it is called by reflection from GraphicsRaycaster.cs, to avoid a hard
         // dependency to this module.
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(GenerateProxy = false)]
         [ExcludeFromDocs]
         static public bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask)
         {
@@ -1460,12 +1460,8 @@ namespace UnityEngine
         ///
         ///            if (rend)
         ///            {
-        ///                // Change the material of all hit colliders
-        ///                // to use a transparent shader.
-        ///                rend.material.shader = Shader.Find("Transparent/Diffuse");
-        ///                Color tempColor = rend.material.color;
-        ///                tempColor.a = 0.3F;
-        ///                rend.material.color = tempColor;
+        ///                // Change the color of each hit object to red
+        ///                rend.material.color = Color.red;
         ///            }
         ///        }
         ///    }
@@ -1481,7 +1477,7 @@ namespace UnityEngine
         // This is not actually called by native code, but needs the [RequiredByNativeCode]
         // attribute as it is called by reflection from GraphicsRaycaster.cs, to avoid a hard
         // dependency to this module.
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(GenerateProxy = false)]
         [ExcludeFromDocs]
         static public RaycastHit[] RaycastAll(Ray ray, float maxDistance, int layerMask)
         {
@@ -1518,7 +1514,7 @@ namespace UnityEngine
         // This is not actually called by native code, but needs the [RequiredByNativeCode]
         // attribute as it is called by reflection from GraphicsRaycaster.cs, to avoid a hard
         // dependency to this module.
-        [RequiredByNativeCode]
+        [RequiredByNativeCode(GenerateProxy = false)]
         [ExcludeFromDocs]
         static public int RaycastNonAlloc(Ray ray, RaycastHit[] results, float maxDistance, int layerMask)
         {
@@ -1654,8 +1650,7 @@ namespace UnityEngine
         ///        // Cast character controller shape 10 meters forward, to see if it is about to hit anything
         ///        hits = Physics.CapsuleCastAll(p1, p2, charCtrl.radius, transform.forward, 10);
         ///
-        ///        // Change the material of all hit colliders
-        ///        // to use a transparent Shader
+        ///        // Change the color of each hit object to red
         ///        for (int i = 0; i < hits.Length; i++)
         ///        {
         ///            RaycastHit hit = hits[i];
@@ -1663,10 +1658,7 @@ namespace UnityEngine
         ///
         ///            if (rend)
         ///            {
-        ///                rend.material.shader = Shader.Find("Transparent/Diffuse");
-        ///                Color tempColor = rend.material.color;
-        ///                tempColor.a = 0.3F;
-        ///                rend.material.color = tempColor;
+        ///                rend.material.color = Color.red;
         ///            }
         ///        }
         ///    }

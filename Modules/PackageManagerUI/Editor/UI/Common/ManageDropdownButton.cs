@@ -19,12 +19,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly IPackageOperationDispatcher m_OperationDispatcher;
         private readonly IPageManager m_PageManager;
+        private readonly IInternalEditorUtilityProxy m_InternalEditorUtility;
         public ManageDropdownButton(IApplicationProxy application,
                                     IUpmCache upmCache,
                                     IPackageManagerPrefs packageManagePrefs,
                                     IPackageDatabase packageDatabase,
                                     IPackageOperationDispatcher operationDispatcher,
-                                    IPageManager pageManager)
+                                    IPageManager pageManager,
+                                    IInternalEditorUtilityProxy internalEditorUtility)
         {
             m_Application = application;
             m_UpmCache = upmCache;
@@ -32,12 +34,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = packageDatabase;
             m_OperationDispatcher = operationDispatcher;
             m_PageManager = pageManager;
+            m_InternalEditorUtility = internalEditorUtility;
 
             m_Actions = new List<PackageAction>
             {
 				new CustomizeAction(m_OperationDispatcher, m_Application),
                 new OpenManifestAction(m_OperationDispatcher),
-                new OpenManifestExternallyAction(),
+                new OpenManifestExternallyAction(m_InternalEditorUtility),
                 new RemoveAction(m_OperationDispatcher, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager),
                 new RemoveCustomAction(m_OperationDispatcher, m_Application),
                 new ResetAction(m_OperationDispatcher, m_Application, m_PackageDatabase, m_PageManager),

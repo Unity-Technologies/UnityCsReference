@@ -19,7 +19,6 @@ namespace Unity.UIToolkit.Editor;
 /// <summary>
 /// Result of synchronizing a serialized property path with UXML assets.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal struct SynchronizePathResult
 {
     public bool success { get; set; }
@@ -43,7 +42,6 @@ internal readonly struct AncestorOverrideScope
     public AncestorOverrideScope(TemplateAsset instanceAsset) => this.instanceAsset = instanceAsset;
 }
 
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static class UxmlAssetUtilities
 {
     const string k_ArraySizePart = "size";

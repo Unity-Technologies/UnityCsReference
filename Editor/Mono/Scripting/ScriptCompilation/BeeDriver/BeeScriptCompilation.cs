@@ -41,6 +41,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         });
         private static string RoslynPath => _RoslynPath.Value;
 
+        internal static string GetCompilerMessagesCulture()
+        {
+            if (LocalizationDatabase.currentEditorLanguage != SystemLanguage.English && EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false))
+                return LocalizationDatabase.GetCulture(LocalizationDatabase.currentEditorLanguage);
+            return "en-US";
+        }
+
         public static ScriptCompilationData ScriptCompilationDataFor(
             EditorCompilation editorCompilation,
             ScriptAssembly[] assemblies,
@@ -65,9 +72,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var movedFromExtractorPath = $"{EditorApplication.applicationBuildPipelinePath}/Compilation/ApiUpdater/ApiUpdater.MovedFromExtractor.dll";
 
-            var localization = "en-US";
-            if (LocalizationDatabase.currentEditorLanguage != SystemLanguage.English && EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false))
-                localization = LocalizationDatabase.GetCulture(LocalizationDatabase.currentEditorLanguage);
+            var localization = GetCompilerMessagesCulture();
 
             var assembliesToScanForTypeDB = new HashSet<string>();
             var searchPaths = new HashSet<string>(BuildPlayerDataGenerator.GetStaticSearchPaths(buildTarget));

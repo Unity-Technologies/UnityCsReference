@@ -189,10 +189,7 @@ namespace UnityEditor.Connect
 
         public static bool IsUnityWebRequestReadyForJsonExtract(UnityWebRequest unityWebRequest)
         {
-            return (unityWebRequest != null &&
-                unityWebRequest.result != UnityWebRequest.Result.ConnectionError &&
-                unityWebRequest.result != UnityWebRequest.Result.ProtocolError &&
-                !string.IsNullOrEmpty(unityWebRequest.downloadHandler.text));
+            return UnityConnectWebRequestUtils.IsUnityWebRequestReadyForJsonExtract(unityWebRequest);
         }
 
 

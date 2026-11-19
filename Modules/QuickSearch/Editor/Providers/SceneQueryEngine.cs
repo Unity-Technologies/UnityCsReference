@@ -181,6 +181,7 @@ namespace UnityEditor.Search.Providers
                     {
                         stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
                         InvalidateGameObjectAndRefs(e.entityId);
+                        m_PropertyPrositions = null;
                         break;
                     }
 
@@ -188,6 +189,7 @@ namespace UnityEditor.Search.Providers
                     {
                         stream.GetChangeGameObjectStructureEvent(i, out var e);
                         InvalidateGameObjectAndRefs(e.entityId);
+                        m_PropertyPrositions = null;
                         break;
                     }
 
@@ -212,6 +214,16 @@ namespace UnityEditor.Search.Providers
                         {
                             InvalidateGameObject(e.entityIds[idIndex]);
                         }
+                        m_PropertyPrositions = null;
+                        break;
+                    }
+
+                    case ObjectChangeKind.ChangeAssetObjectProperties:
+                    {
+                        stream.GetChangeAssetObjectPropertiesEvent(i, out var e);
+                        if (UnityEngine.Object.FindObjectFromInstanceID(e.entityId) is Material)
+                            // Cached scene references can include a material's shader, so invalidate them, without triggering an auto-refresh on inspector property edits.
+                            InvalidateObjectAndRefs(e.entityId);
                         break;
                     }
                 }
@@ -482,7 +494,7 @@ namespace UnityEditor.Search.Providers
             for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
             {
                 var c = gocs[componentIndex];
-                if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                if (SearchProviderUtils.IsSkippedObject(c, SearchProviderUtils.sceneSkippedComponentFlags))
                     continue;
 
                 yield return c;
@@ -501,7 +513,7 @@ namespace UnityEditor.Search.Providers
                 for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
                 {
                     var c = gocs[componentIndex];
-                    if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                    if (SearchProviderUtils.IsSkippedObject(c, SearchProviderUtils.sceneSkippedComponentFlags))
                         continue;
 
                     #pragma warning disable UAC2001 // Avoid Linq
@@ -547,18 +559,18 @@ namespace UnityEditor.Search.Providers
             if (string.Equals(value, "child", StringComparison.Ordinal))
             {
                 if (!god.isChild.HasValue)
-                    god.isChild = go != null && go.transform.root != go.transform;
+                    god.isChild = go != null && !SearchProviderUtils.IsRootGameObject(go);
                 return god.isChild.Value;
             }
             else if (string.Equals(value, "leaf", StringComparison.Ordinal))
             {
                 if (!god.isLeaf.HasValue)
-                    god.isLeaf = go != null && go.transform.childCount == 0;
+                    god.isLeaf = go != null && SearchProviderUtils.IsLeafGameObject(go);
                 return god.isLeaf.Value;
             }
             else if (string.Equals(value, "root", StringComparison.Ordinal))
             {
-                return go != null && go.transform.root == go.transform;
+                return go != null && SearchProviderUtils.IsRootGameObject(go);
             }
             else if (go && string.Equals(value, "visible", StringComparison.Ordinal))
             {
@@ -605,7 +617,7 @@ namespace UnityEditor.Search.Providers
                 for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
                 {
                     var c = gocs[componentIndex];
-                    if (!c || (c.hideFlags & HideFlags.HideInInspector) == HideFlags.HideInInspector)
+                    if (SearchProviderUtils.IsSkippedObject(c, SearchProviderUtils.sceneSkippedComponentFlags))
                         continue;
 
                     var cTypeName = c.GetType().Name;

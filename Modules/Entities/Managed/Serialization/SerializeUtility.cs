@@ -1027,7 +1027,6 @@ namespace Unity.Entities.Serialization
             }
 
             companionStore.Playback(ref ecs->CompanionChangesTracker);
-            ecs->InvalidateChunkListCacheForChangedArchetypes();
 
             if (totalBlobAssetSize != 0)
             {

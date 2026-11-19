@@ -107,24 +107,11 @@ namespace UnityEngine.UIElements.UIR
         // Builds the conform chain for `ve` into `chain` (innermost first) and returns, via out params, the map
         // from the outermost root's space back to element-local plus the per-axis segment counts for `ve`'s own
         // arc extent. `chain.Length` must equal CountChain(ve). This mirrors the setup UIRCurvatureMeshModifier.
-        // Modify performs before bending: it excludes the element's OWN out-of-plane translate (translate.z) from
-        // the conform so the surface carries only the arc + sag (the render GPU transform re-applies translate.z
-        // via m23; the pick ray already carries it through worldTransformInverse).
+        // Modify performs before bending.
         public static void BuildConformChain(VisualElement ve, Span<RootBend> chain,
             out Matrix4x4 toElement, out int segX, out int segY)
         {
-            Matrix4x4 wFlat = ve.worldTransform, wFlatInv = ve.worldTransformInverse;
-            float ownTz = ve.computedStyle.translate.z;
-            if (ownTz != 0f && ve.hierarchy.parent != null)
-            {
-                VisualElement parent = ve.hierarchy.parent;
-                Matrix4x4 local = parent.worldTransformInverse * ve.worldTransform; // element relative to its parent
-                local.m23 -= ownTz;                                                 // drop ONLY the out-of-plane translate
-                wFlat = parent.worldTransform * local;
-                wFlatInv = wFlat.inverse;
-            }
-
-            toElement = BuildChain(ve, wFlat, wFlatInv, chain, out _, out _, out float elemArcX, out float elemArcY);
+            toElement = BuildChain(ve, chain, out _, out _, out float elemArcX, out float elemArcY);
             segX = SegmentsFor(elemArcX);
             segY = SegmentsFor(elemArcY);
         }
@@ -133,7 +120,7 @@ namespace UnityEngine.UIElements.UIR
         // the absolute angle per axis (for tessellation density), and returns the map from the OUTERMOST root's
         // space back to `ve`-local. `chain.Length` must equal CountChain(ve). Each `toSpace` is built from
         // worldTransform (affine, pre-curvature), so it folds in every transform between the two spaces.
-        static Matrix4x4 BuildChain(VisualElement ve, in Matrix4x4 veFrom, in Matrix4x4 veFromInverse, Span<RootBend> chain,
+        static Matrix4x4 BuildChain(VisualElement ve, Span<RootBend> chain,
             out float sumThetaX, out float sumThetaY, out float elemArcX, out float elemArcY)
         {
             sumThetaX = 0f;
@@ -146,7 +133,7 @@ namespace UnityEngine.UIElements.UIR
             elemArcY = 0f;
             float elemW = ve.layout.width, elemH = ve.layout.height;
             Matrix4x4 elemToRoot = Matrix4x4.identity; // element-local -> current root's flat space (composed)
-            Matrix4x4 prevWorld = veFrom; // space we map FROM (the element, with its own out-of-plane translate excluded)
+            Matrix4x4 prevWorld = ve.worldTransform; // space we map FROM
             VisualElement e = ve;
             for (int i = 0; i < chain.Length; i++)
             {
@@ -179,7 +166,7 @@ namespace UnityEngine.UIElements.UIR
                 prevWorld = e.worldTransform;
                 e = e.hierarchy.parent;
             }
-            return veFromInverse * prevWorld; // outermost root space -> element-local
+            return ve.worldTransformInverse * prevWorld; // outermost root space -> element-local
         }
 
         // 1 segment per k_DegreesPerSegment of bend (clamped). A non-bending axis stays at 1 segment.
@@ -193,23 +180,26 @@ namespace UnityEngine.UIElements.UIR
 
         // Composes the curved-ancestor CHAIN onto a flat element-local vertex. Each root i maps the running point
         // into its own flat space (`toSpace`, which folds in every transform between the previous space and this
-        // root), bends it there, and accumulates the sag into Z so nested surfaces STACK: the leaf conforms to the
+        // root), bends it there, and accumulates the sag so nested surfaces STACK: the leaf conforms to the
         // innermost curve, that curved result conforms to the next, and so on out to the outermost root. `toElement`
         // returns the final point to element-local; the caller re-applies this element's worldTransform, landing it
         // on the composed surface.
         public static Vector3 Bend(Vector3 pos, ReadOnlySpan<RootBend> chain, in Matrix4x4 toElement, float zScale)
         {
             Vector3 p = pos;
+            float depth = 0f;
             for (int i = 0; i < chain.Length; i++)
             {
-                p = chain[i].toSpace.MultiplyPoint3x4(p); // into this root's flat space (carries accumulated sag Z)
-                p = BendInSpace(p, in chain[i], zScale);
+                p = chain[i].toSpace.MultiplyPoint3x4(p); // into this root's flat space
+                p = BendInSpace(p, in chain[i], zScale, out float sag);
+                depth -= sag;
             }
 
-            // Back-project X/Y to element-local; keep the composed surface depth (p.z = accumulated sag, already
-            // pre-scaled by zScale) as the local Z.
+            // The local Z is the accumulated sag only (pre-scaled by zScale). p.z also holds any Z offset the toSpace
+            // maps add, such as the translate.z of ve or of an element between ve and a root; the GPU transform
+            // already applies those, unscaled by zScale, so writing them here would apply them twice.
             Vector3 outLocal = toElement.MultiplyPoint3x4(p);
-            outLocal.z = p.z;
+            outLocal.z = depth;
             return outLocal;
         }
 
@@ -218,7 +208,7 @@ namespace UnityEngine.UIElements.UIR
         // plane and edges recede in Z; the sign selects concave vs. convex. The sag is SUBTRACTED from the incoming
         // Z, so a chain of roots stacks its recessions. The two axes combine via CombineSag (quadrature for a
         // dome/bowl so corners round like a cap; sum for a saddle; a single axis reduces to that cylinder).
-        static Vector3 BendInSpace(Vector3 p, in RootBend r, float zScale)
+        static Vector3 BendInSpace(Vector3 p, in RootBend r, float zScale, out float sag)
         {
             float x = p.x, y = p.y, z = p.z;
             float sagX = 0f, sagY = 0f; // signed Z recession per axis (sign follows the bend direction)
@@ -243,7 +233,8 @@ namespace UnityEngine.UIElements.UIR
                 sagY = radius * (1f - co);
             }
 
-            z -= CombineSag(sagX, sagY) * zScale;
+            sag = CombineSag(sagX, sagY) * zScale;
+            z -= sag;
 
             return new Vector3(x, y, z);
         }

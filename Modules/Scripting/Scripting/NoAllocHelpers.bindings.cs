@@ -34,9 +34,8 @@ namespace UnityEngine
 
             if (count != list.Count)
             {
-                ListPrivateFieldAccess<T> tListAccess = Unsafe.As<List<T>, ListPrivateFieldAccess<T>>(ref list);
-                tListAccess._size = count;
-                tListAccess._version++;
+                ListPrivateFieldAccess<T>.Size(list) = count;
+                ListPrivateFieldAccess<T>.Version(list)++;
             }
         }
 
@@ -50,8 +49,7 @@ namespace UnityEngine
             if (list == null)
                 return null;
 
-            var tListAccess = Unsafe.As<ListPrivateFieldAccess<T>>(list);
-            return tListAccess._items;
+            return ListPrivateFieldAccess<T>.Items(list);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -60,8 +58,7 @@ namespace UnityEngine
             if (list == null)
                 return default;
 
-            var tListAccess = Unsafe.As<ListPrivateFieldAccess<T>>(list);
-            return new Span<T>(tListAccess._items, 0, tListAccess._size);
+            return new Span<T>(ListPrivateFieldAccess<T>.Items(list), 0, ListPrivateFieldAccess<T>.Size(list));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -70,72 +67,40 @@ namespace UnityEngine
             if (list == null)
                 return default;
 
-            var tListAccess = Unsafe.As<ListPrivateFieldAccess<T>>(list);
-            return new ReadOnlySpan<T>(tListAccess._items, 0, tListAccess._size);
+            return new ReadOnlySpan<T>(ListPrivateFieldAccess<T>.Items(list), 0, ListPrivateFieldAccess<T>.Size(list));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ResizeListContents(object list, Type elementType, int newSize)
-        {
-            var listPrivateFieldAccess = Unsafe.As<ListPrivateFieldAccess<byte>>(list);
-            ref byte[] array = ref listPrivateFieldAccess._items;
-            int capacity = array.Length;
-            int previousCount = listPrivateFieldAccess._size;
-
-            // If there is less capacity than is required, create a new array of the required count.
-            if (capacity < newSize)
-            {
-                array = Unsafe.As<byte[]>(Array.CreateInstance(elementType, newSize));
-            }
-            else if (previousCount > newSize)
-            {
-                // Otherwise it means that there is enough capacity. Then, if the previous count
-                // is greater than the current count, it means that elements in between them must be cleared.
-                Array.Clear(array as Array, newSize, previousCount - newSize); // Forcing the call to pass array as Array type. If an overload is introduced in the future, we want to avoid it as the element type is unknown
-            }
-
-            listPrivateFieldAccess._size = newSize;
-            listPrivateFieldAccess._version++;
-        }
-
-        // The unsafe cast of List<T> to ListPrivateFieldAccess<T> is invalid, as the JIT assumes reference
-        // class fields are never aliased. With aggressive inlining stale list fields may be used.
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ResetListSize<T>(List<T> list, int size)
         {
             if (list.Capacity < size) throw new ArgumentException($"Resetting to {size} which is bigger than capacity {list.Capacity} is not allowed!");
 
-            var tListAccess = Unsafe.As<ListPrivateFieldAccess<T>>(list);
+            ref int listSize = ref ListPrivateFieldAccess<T>.Size(list);
 
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>() && tListAccess._size > size)
-                Array.Clear(tListAccess._items, size, tListAccess._size - size);
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>() && listSize > size)
+                Array.Clear(ListPrivateFieldAccess<T>.Items(list), size, listSize - size);
 
-            tListAccess._size = size;
-            tListAccess._version++;
+            listSize = size;
+            ListPrivateFieldAccess<T>.Version(list)++;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InvalidateListEnumerators<T>(List<T> list)
         {
-            if (list.Count == 0)
-                return;
-
-            // Reversing no elements only increments the version. Writing an element would also invalidate enumerators,
-            // but pays an array covariance check and a GC write barrier.
-            list.Reverse(0, 0);
+            ListPrivateFieldAccess<T>.Version(list)++;
         }
 
-        // This is a helper class to allow the binding code to manipulate the internal fields of
-        // System.Collections.Generic.List.  The field order below must not be changed.
-        private class ListPrivateFieldAccess<T>
+        // Accessors for the internal fields of System.Collections.Generic.List
+        private static class ListPrivateFieldAccess<T>
         {
-#pragma warning disable CS0649
-#pragma warning disable CS8618
-            internal T[] _items; // Do not rename (binary serialization)
-#pragma warning restore CS8618
-            internal int _size; // Do not rename (binary serialization)
-            internal int _version; // Do not rename (binary serialization)
-#pragma warning restore CS0649
+            [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_items")]
+            public static extern ref T[] Items(List<T> list);
+
+            [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_size")]
+            public static extern ref int Size(List<T> list);
+
+            [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_version")]
+            public static extern ref int Version(List<T> list);
         }
     }
 }

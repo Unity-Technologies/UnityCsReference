@@ -72,14 +72,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IReadOnlyCollection<AssetStoreImportedPackage> importedPackages => m_ImportedPackages.Values;
         public IReadOnlyCollection<Asset> importedAssets => m_ImportedAssets.Values;
 
-        private readonly IApplicationProxy m_Application;
+        private readonly IInternalEditorUtilityProxy m_InternalEditorUtilityProxy;
         private readonly IHttpClientFactory m_HttpClientFactory;
         private readonly IIOProxy m_IOProxy;
-        public AssetStoreCache(IApplicationProxy application,
+        public AssetStoreCache(IInternalEditorUtilityProxy internalEditorUtilityProxy,
             IHttpClientFactory httpClientFactory,
             IIOProxy iOProxy)
         {
-            m_Application = RegisterDependency(application);
+            m_InternalEditorUtilityProxy = RegisterDependency(internalEditorUtilityProxy);
             m_HttpClientFactory = RegisterDependency(httpClientFactory);
             m_IOProxy = RegisterDependency(iOProxy);
         }
@@ -114,7 +114,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var hash = Hash128.Compute(url);
             try
             {
-                var path = IOUtils.PathsCombine(m_Application.userAppDataPath, "Asset Store", "Cache", "Images", productId.ToString(), hash.ToString());
+                var path = IOUtils.PathsCombine(m_InternalEditorUtilityProxy.userAppDataFolder, "Asset Store", "Cache", "Images", productId.ToString(), hash.ToString());
                 if (m_IOProxy.FileExists(path))
                 {
                     var texture = new Texture2D(2, 2);
@@ -137,7 +137,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             try
             {
-                var path = IOUtils.PathsCombine(m_Application.userAppDataPath, "Asset Store", "Cache", "Images", productId.ToString());
+                var path = IOUtils.PathsCombine(m_InternalEditorUtilityProxy.userAppDataFolder, "Asset Store", "Cache", "Images", productId.ToString());
                 if (!m_IOProxy.DirectoryExists(path))
                     m_IOProxy.CreateDirectory(path);
 

@@ -14,13 +14,13 @@ using Unity.Scripting.LifecycleManagement;
 namespace UnityEditor.Rendering
 {
     [HelpURL("https://docs.unity3d.com/ScriptReference/Experimental.Rendering.GraphicsStateCollection.html")]
-    [ScriptedImporter(version: 2, ext: k_FileExtension, AllowCaching = true)]
+    [ScriptedImporter(version: 3, ext: k_FileExtension, AllowCaching = true)]
     [ExcludeFromPreset]
     class GraphicsStateCollectionImporter : ScriptedImporter
     {
         private const string k_FileExtension = "graphicsstate";
         private const string k_DefaultFileName = "New Graphics State Collection." + k_FileExtension;
-        static readonly Regex k_ShaderAssetGuid = new Regex(@"""shaderAssetGUID""\s*:\s*""([0-9a-fA-F]{32})""", RegexOptions.Compiled);
+        static readonly Regex k_AssetGuid = new Regex(@"""(?:shader|computeShader)AssetGUID""\s*:\s*""([0-9a-fA-F]{32})""", RegexOptions.Compiled);
 
         public RuntimePlatform runtimePlatform;
         public GraphicsDeviceType graphicsDeviceType;
@@ -28,6 +28,7 @@ namespace UnityEditor.Rendering
         public string qualityLevelName;
         public int shaderVariantCount;
         public int graphicsStateCount;
+        public int computeVariantCount;
 
         [MenuItem("Assets/Create/Shader/Graphics State Collection", false, 309)]
         internal static void CreateGraphicsStateCollectionAsset()
@@ -48,7 +49,7 @@ namespace UnityEditor.Rendering
         {
             var dependencies = new HashSet<string>();
             // A package asset path is virtual; the file of a registry package lives in Library/PackageCache
-            foreach (Match match in k_ShaderAssetGuid.Matches(File.ReadAllText(FileUtil.PathToAbsolutePathForFileIO(path))))
+            foreach (Match match in k_AssetGuid.Matches(File.ReadAllText(FileUtil.PathToAbsolutePathForFileIO(path))))
             {
                 var shaderPath = AssetDatabase.GUIDToAssetPath(match.Groups[1].Value);
                 // Built-in shaders live in resource files, not assets
@@ -76,6 +77,7 @@ namespace UnityEditor.Rendering
             qualityLevelName = asset.qualityLevelName;
             shaderVariantCount = asset.variantCount;
             graphicsStateCount = asset.totalGraphicsStateCount;
+            computeVariantCount = asset.computeVariantCount;
         }
     }
 
@@ -102,13 +104,16 @@ namespace UnityEditor.Rendering
     class GraphicsStateCollectionImporterEditor : ScriptedImporterEditor
     {
         Dictionary<Shader, List<GraphicsStateCollection.ShaderVariant>> m_GroupedByShader = new Dictionary<Shader, List<GraphicsStateCollection.ShaderVariant>>();
+        Dictionary<ComputeShader, List<GraphicsStateCollection.ComputeShaderVariant>> m_ComputeGroupedByShader = new Dictionary<ComputeShader, List<GraphicsStateCollection.ComputeShaderVariant>>();
         List<GraphicsStateCollection.GraphicsState> m_GraphicsStatesList = new List<GraphicsStateCollection.GraphicsState>();
         HashSet<EntityId> m_ExpandedShaderKeys = new HashSet<EntityId>();
         Dictionary<string, bool> m_ExpandedVariantKeys = new Dictionary<string, bool>();
         Dictionary<string, (bool vertexAttributes, bool renderState)> m_ExpandedPsoKeys = new Dictionary<string, (bool, bool)>();
         bool m_ShaderVariantsExpanded = true;
+        bool m_ComputeVariantsExpanded = true;
         GraphicsStateCollection m_LastCollection;
         int m_LastVariantCount = -1;
+        int m_LastComputeVariantCount = -1;
 
         const float k_GraphicsStateDetailsLabelWidth = 240f;
 
@@ -118,10 +123,12 @@ namespace UnityEditor.Rendering
         SerializedProperty m_QualityLevelName;
         SerializedProperty m_ShaderVariantCount;
         SerializedProperty m_GraphicsStateCount;
+        SerializedProperty m_ComputeVariantCount;
 
         static class Styles
         {
-            public static readonly GUIContent shaderVariantsHeader = new GUIContent("Shader Variants", "Tree view of variants in this collection. Double-click shader asset to open it.");
+            public static readonly GUIContent shaderVariantsHeader = new GUIContent("Shader Variants", "Tree view of variants in this collection. Double-click a shader asset to open it.");
+            public static readonly GUIContent computeVariantsHeader = new GUIContent("Compute Variants", "Compute shader kernel variants in this collection. Double-click a compute shader asset to open it.");
             [NoAutoStaticsCleanup] // lazy GUIStyle cache; no embedded Texture2D, re-initialises itself on null check
             static GUIStyle s_GreyMiniLabel;
             public static GUIStyle greyMiniLabel
@@ -189,6 +196,7 @@ namespace UnityEditor.Rendering
             m_QualityLevelName = serializedObject.FindProperty("qualityLevelName");
             m_ShaderVariantCount = serializedObject.FindProperty("shaderVariantCount");
             m_GraphicsStateCount = serializedObject.FindProperty("graphicsStateCount");
+            m_ComputeVariantCount = serializedObject.FindProperty("computeVariantCount");
         }
 
         static string VariantKey(Shader shader, GraphicsStateCollection.ShaderVariant v)
@@ -200,6 +208,16 @@ namespace UnityEditor.Rendering
                 kw = string.Join(" ", System.Array.ConvertAll(v.keywords, k => k.name ?? ""));
             }
             return $"{shaderEntityId}/{v.passId.SubshaderIndex}/{v.passId.PassIndex}/{kw}";
+        }
+
+        static string ComputeVariantKey(ComputeShader shader, GraphicsStateCollection.ComputeShaderVariant v)
+        {
+            string kw = "";
+            if (v.keywords != null && v.keywords.Length > 0)
+            {
+                kw = string.Join(" ", System.Array.ConvertAll(v.keywords, k => k.name ?? ""));
+            }
+            return $"{shader.GetEntityId()}/{v.kernelIndex}/{kw}";
         }
 
         static string VariantLabelShort(GraphicsStateCollection.ShaderVariant v, GraphicsStateCollection collection)
@@ -303,10 +321,12 @@ namespace UnityEditor.Rendering
         void RefreshVariantData(GraphicsStateCollection collection)
         {
             int count = collection.variantCount;
-            if (collection == m_LastCollection && count == m_LastVariantCount)
+            int computeCount = collection.computeVariantCount;
+            if (collection == m_LastCollection && count == m_LastVariantCount && computeCount == m_LastComputeVariantCount)
                 return;
             m_LastCollection = collection;
             m_LastVariantCount = count;
+            m_LastComputeVariantCount = computeCount;
 
             m_GroupedByShader.Clear();
             var variants = new List<GraphicsStateCollection.ShaderVariant>();
@@ -323,23 +343,87 @@ namespace UnityEditor.Rendering
                 }
                 list.Add(v);
             }
+
+            m_ComputeGroupedByShader.Clear();
+            var computeVariants = new List<GraphicsStateCollection.ComputeShaderVariant>();
+            collection.GetComputeVariants(computeVariants);
+            foreach (var v in computeVariants)
+            {
+                ComputeShader key = v.shader;
+                if (key == null)
+                    continue;
+                if (!m_ComputeGroupedByShader.TryGetValue(key, out var list))
+                {
+                    list = new List<GraphicsStateCollection.ComputeShaderVariant>();
+                    m_ComputeGroupedByShader[key] = list;
+                }
+                list.Add(v);
+            }
+        }
+
+        bool DrawComputeShaderFoldout(ComputeShader shader)
+        {
+            EntityId shaderEntityId = shader.GetEntityId();
+            bool expanded = m_ExpandedShaderKeys.Contains(shaderEntityId);
+
+            EditorGUI.indentLevel++;
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.ObjectField(shader, typeof(ComputeShader), false, GUILayout.MaxWidth(1000));
+            EditorGUI.EndDisabledGroup();
+            EditorGUI.indentLevel--;
+
+            Rect foldoutRect = GUILayoutUtility.GetLastRect();
+            foldoutRect = new Rect(foldoutRect.x + 5, foldoutRect.y, 35, 15);
+            expanded = EditorGUI.Foldout(foldoutRect, expanded, "", true);
+            if (expanded)
+                m_ExpandedShaderKeys.Add(shaderEntityId);
+            else
+                m_ExpandedShaderKeys.Remove(shaderEntityId);
+            GUILayout.FlexibleSpace();
+            return expanded;
+        }
+
+        void DrawComputeKeywords(string variantKey, LocalKeyword[] keywords)
+        {
+            int keywordCount = keywords?.Length ?? 0;
+            if (keywordCount > 0)
+            {
+                string keywordKey = variantKey + "_kw";
+                bool keywordsExpanded = m_ExpandedVariantKeys.TryGetValue(keywordKey, out bool ke) && ke;
+                keywordsExpanded = EditorGUILayout.Foldout(keywordsExpanded, $"Keywords ({keywordCount}):", true, Styles.greyFoldoutStyle);
+                if (keywordsExpanded)
+                {
+                    m_ExpandedVariantKeys[keywordKey] = true;
+                    EditorGUI.indentLevel++;
+                    GUIStyle wrapLabel = new GUIStyle(Styles.greyMiniLabel);
+                    wrapLabel.wordWrap = true;
+                    string fullKeywords = string.Join("  ", System.Array.ConvertAll(keywords, k => k.name ?? ""));
+                    EditorGUILayout.LabelField(fullKeywords, wrapLabel);
+                    EditorGUI.indentLevel--;
+                }
+                else
+                    m_ExpandedVariantKeys[keywordKey] = false;
+            }
+            else
+                EditorGUILayout.LabelField("Keywords: <no keywords>", Styles.greyMiniLabel);
         }
 
         void DrawVariantTree(GraphicsStateCollection collection)
         {
             RefreshVariantData(collection);
 
+            if (m_GroupedByShader.Count == 0)
+            {
+                if (m_ComputeGroupedByShader.Count == 0)
+                    EditorGUILayout.LabelField("No variants in this collection.", Styles.greyMiniLabel);
+                return;
+            }
+
             m_ShaderVariantsExpanded = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShaderVariantsExpanded, Styles.shaderVariantsHeader);
             EditorGUILayout.EndFoldoutHeaderGroup();
 
             if (!m_ShaderVariantsExpanded)
                 return;
-
-            if (m_GroupedByShader.Count == 0)
-            {
-                EditorGUILayout.LabelField("No shader variants in this collection.", Styles.greyMiniLabel);
-                return;
-            }
 
             EditorGUILayout.Space();
             foreach (var (shader, variants) in m_GroupedByShader)
@@ -456,14 +540,53 @@ namespace UnityEditor.Rendering
             }
         }
 
+        void DrawComputeVariantList()
+        {
+            if (m_ComputeGroupedByShader.Count == 0)
+                return;
+
+            m_ComputeVariantsExpanded = EditorGUILayout.BeginFoldoutHeaderGroup(m_ComputeVariantsExpanded, Styles.computeVariantsHeader);
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
+            if (!m_ComputeVariantsExpanded)
+                return;
+
+            EditorGUILayout.Space();
+            foreach (var (shader, variants) in m_ComputeGroupedByShader)
+            {
+                bool expanded = DrawComputeShaderFoldout(shader);
+
+                if (expanded)
+                {
+                    const int k_ListPaddingTopBottom = 4;
+                    GUILayout.Space(k_ListPaddingTopBottom);
+
+                    EditorGUILayout.BeginVertical(Styles.variantBoxStyle);
+                    EditorGUI.indentLevel++;
+
+                    foreach (var v in variants)
+                    {
+                        EditorGUILayout.LabelField($"Kernel {v.kernelIndex}", Styles.greyMiniLabel);
+                        EditorGUI.indentLevel++;
+                        DrawComputeKeywords(ComputeVariantKey(shader, v), v.keywords);
+                        EditorGUI.indentLevel--;
+                    }
+                    EditorGUI.indentLevel--;
+                    EditorGUILayout.EndVertical();
+                    GUILayout.Space(k_ListPaddingTopBottom);
+                }
+            }
+        }
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
             using (new EditorGUI.DisabledScope(true))
             {
-                EditorGUILayout.PropertyField(m_ShaderVariantCount, new GUIContent("Total Variant Count"));
+                EditorGUILayout.PropertyField(m_ShaderVariantCount, new GUIContent("Shader Variant Count"));
                 EditorGUILayout.PropertyField(m_GraphicsStateCount, new GUIContent("Total GraphicsState Count"));
+                EditorGUILayout.PropertyField(m_ComputeVariantCount, new GUIContent("Compute Variant Count"));
                 EditorGUILayout.PropertyField(m_GraphicsDeviceType, new GUIContent("Runtime API"));
             }
 
@@ -487,6 +610,7 @@ namespace UnityEditor.Rendering
 
                 EditorGUILayout.Space();
                 DrawVariantTree(collection);
+                DrawComputeVariantList();
             }
         }
     }

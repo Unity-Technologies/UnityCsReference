@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using Unity.Scripting.LifecycleManagement;
 using Unity.Properties;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
@@ -42,7 +41,6 @@ namespace UnityEngine.UIElements
         internal bool m_ScaleModeIsInline;
         internal bool m_TintColorIsInline;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [ImageFieldValueDecorator(displayName = "Source")]
         [CreateProperty]
         [UxmlAttribute]
@@ -303,15 +301,10 @@ namespace UnityEngine.UIElements
             mgc.meshGenerator.DrawRectangle(rectParams);
         }
 
-        [NoAutoStaticsCleanup]
         internal static readonly CustomStyleProperty<Texture2D> s_ImageProperty = new("--unity-image");
-        [NoAutoStaticsCleanup]
         internal static readonly CustomStyleProperty<Sprite> s_SpriteProperty = new("--unity-image");
-        [NoAutoStaticsCleanup]
         internal static readonly CustomStyleProperty<VectorImage> s_VectorImageProperty = new("--unity-image");
-        [NoAutoStaticsCleanup]
         static readonly CustomStyleProperty<string> s_ScaleModeProperty = new("--unity-image-size");
-        [NoAutoStaticsCleanup]
         static readonly CustomStyleProperty<Color> s_TintColorProperty = new("--unity-image-tint-color");
 
         private void OnCustomStyleResolved(CustomStyleResolvedEvent e)

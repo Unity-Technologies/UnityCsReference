@@ -44,17 +44,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         // Mapping of LayoutFlags to their corresponding Qualified View Class names.
         [NoAutoStaticsCleanup] // constant mapping of layout flags to class names; never changes between reloads
-        private static readonly Dictionary<LayoutFlags, string> k_SupportedFlagsClassName =
-            new Dictionary<LayoutFlags, string>()
+        private static readonly Dictionary<LayoutFlags, string[]> k_SupportedFlagsClassName =
+            new Dictionary<LayoutFlags, string[]>()
             {
-                { LayoutFlags.InspectorWindow, "UnityEditor.InspectorWindow" },
-                { LayoutFlags.GameView, "UnityEditor.GameView" },
-                { LayoutFlags.SceneHierarchyWindow, "UnityEditor.SceneHierarchyWindow" },
-                { LayoutFlags.ConsoleWindow, "UnityEditor.ConsoleWindow" },
-                { LayoutFlags.SceneView, "UnityEditor.SceneView" },
-                { LayoutFlags.EntitiesPlayModeToolsWindow, "Unity.Netcode.Editor.MultiplayerPlayModeWindow" },
-                { LayoutFlags.EntitiesHierarchyWindow, "Unity.Entities.Editor.HierarchyWindow"},
-                { LayoutFlags.ProfilerWindow, "UnityEditor.ProfilerWindow"},
+                { LayoutFlags.InspectorWindow, new[] { "UnityEditor.InspectorWindow" } },
+                { LayoutFlags.GameView, new[] { "UnityEditor.GameView" } },
+                { LayoutFlags.SceneHierarchyWindow, new[] { "UnityEditor.SceneHierarchyWindow" } },
+                { LayoutFlags.ConsoleWindow, new[] { "UnityEditor.ConsoleWindow" } },
+                { LayoutFlags.SceneView, new[] { "UnityEditor.SceneView" } },
+                // Netcode for Entities versions before 7.0.0 use the Unity.NetCode namespace.
+                { LayoutFlags.EntitiesPlayModeToolsWindow, new[] { "Unity.Netcode.Editor.MultiplayerPlayModeWindow", "Unity.NetCode.Editor.MultiplayerPlayModeWindow" } },
+                { LayoutFlags.EntitiesHierarchyWindow, new[] { "Unity.Entities.Editor.HierarchyWindow" } },
+                { LayoutFlags.ProfilerWindow, new[] { "UnityEditor.ProfilerWindow" } },
             };
 
         [NoAutoStaticsCleanup] // constant set of auxiliary view class names; never changes between reloads
@@ -80,18 +81,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
         // Ex: Netcode Entites packages may have not been included.
         public static bool IsLayoutSupported(LayoutFlags layout)
         {
-            if (!k_SupportedFlagsClassName.TryGetValue(layout, out string qualifiedName))
+            if (!k_SupportedFlagsClassName.TryGetValue(layout, out string[] qualifiedNames))
             {
                 MppmLog.Error($"Unknown layout: {layout}");
                 return false;
             }
 
-            // Construct the fully qualified class name for this layout and check if
+            // Construct the fully qualified class name for each known name of this layout and check if
             // this Unity project contains the package / components to support it.
-            var classNameIndex = qualifiedName.LastIndexOf(".", StringComparison.Ordinal);
-            string packageAssembly = qualifiedName.Substring(0, classNameIndex);
-            Type layoutView = Type.GetType($"{qualifiedName}, {packageAssembly}");
-            return layoutView != null;
+            foreach (var qualifiedName in qualifiedNames)
+            {
+                var classNameIndex = qualifiedName.LastIndexOf(".", StringComparison.Ordinal);
+                string packageAssembly = qualifiedName.Substring(0, classNameIndex);
+                if (Type.GetType($"{qualifiedName}, {packageAssembly}") != null)
+                    return true;
+            }
+
+            return false;
         }
 
         // Determines if for a given window is one of the layout view types supported by MPPM
@@ -100,8 +106,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Compare against all supported layouts.
             foreach (var supportedWindow in k_SupportedFlagsClassName)
             {
-                if (string.Equals(windowType, supportedWindow.Value, StringComparison.OrdinalIgnoreCase))
-                    return true;
+                foreach (var qualifiedName in supportedWindow.Value)
+                {
+                    if (string.Equals(windowType, qualifiedName, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
             }
 
             // Compare against all Secondary view controls (Top bar views).
@@ -114,11 +123,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return false;
         }
 
+        internal static bool IsWindowTypeForLayout(LayoutFlags layout, string windowType)
+        {
+            return k_SupportedFlagsClassName.TryGetValue(layout, out string[] qualifiedNames) && Array.IndexOf(qualifiedNames, windowType) >= 0;
+        }
+
         public static LayoutFlags GetFlagForQualifiedName(string qualifiedClassName)
         {
-            foreach (KeyValuePair<LayoutFlags, string> flagToClassPair in k_SupportedFlagsClassName)
+            foreach (KeyValuePair<LayoutFlags, string[]> flagToClassPair in k_SupportedFlagsClassName)
             {
-                if (flagToClassPair.Value.Equals(qualifiedClassName))
+                if (Array.IndexOf(flagToClassPair.Value, qualifiedClassName) >= 0)
                 {
                     return flagToClassPair.Key;
                 }

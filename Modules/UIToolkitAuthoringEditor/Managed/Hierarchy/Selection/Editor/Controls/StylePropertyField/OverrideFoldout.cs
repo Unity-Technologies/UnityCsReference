@@ -73,12 +73,17 @@ namespace Unity.UIToolkit.Editor
             }
             set
             {
-                m_Toggle.value = value;
+                // The toggle sends no ChangeEvent while detached from a panel.
+                if (panel == null)
+                    SetValueWithoutNotify(value);
+                else
+                    m_Toggle.value = value;
             }
         }
 
         public void SetValueWithoutNotify(bool newValue)
         {
+            m_Value = newValue;
             m_Toggle.SetValueWithoutNotify(newValue);
             contentContainer.style.display = newValue ? DisplayStyle.Flex : DisplayStyle.None;
             SetCheckedPseudoState(newValue);
@@ -133,7 +138,6 @@ namespace Unity.UIToolkit.Editor
                     SendEvent(e);
                     SaveViewData();
                     NotifyPropertyChanged(valueProperty);
-                    m_Value = evt.newValue;
                 }
             });
 

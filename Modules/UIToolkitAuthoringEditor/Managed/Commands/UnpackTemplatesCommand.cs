@@ -49,9 +49,10 @@ sealed class UnpackTemplatesCommand : Command<UnpackTemplatesCommand>
         return true;
     }
 
-    public static CommandExecutionStatus Execute(object source, TemplateAsset[] templates, bool unpackCompletely)
+    public static CommandExecutionStatus Execute(object source, TemplateAsset[] templates, bool unpackCompletely, AuthoringContext requestingContext = null)
     {
         using var cmd = GetPooled(source, templates, unpackCompletely);
+        cmd.RequestingContext = requestingContext;
         return UICommandQueue.Execute(cmd).Status;
     }
 
@@ -94,7 +95,7 @@ sealed class UnpackTemplatesCommand : Command<UnpackTemplatesCommand>
                 toSelect.Add(unpacked);
         }
 
-        UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelect);
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(RequestingContext, toSelect);
         return CommandExecutionStatus.Success;
     }
 

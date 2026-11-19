@@ -41,6 +41,15 @@ sealed class UICanvasResizeManipulator : PointerManipulator
     {
         if (CanStartManipulation(evt))
         {
+            if (m_Canvas.MatchesGameView)
+            {
+                using var message = CanvasManipulatorMessageEvent.GetPooled(UICanvas.MatchGameViewResizeMessage);
+                message.target = m_CanvasResizer;
+                m_CanvasResizer.SendEvent(message);
+                evt.StopImmediatePropagation();
+                return;
+            }
+
             m_Resizing = true;
             m_ActivatingButton = evt.button;
             target.CaptureMouse();

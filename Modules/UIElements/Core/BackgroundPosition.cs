@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     [Serializable]
     public partial struct BackgroundPosition : IEquatable<BackgroundPosition>
     {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal enum Axis
         {
             Horizontal,

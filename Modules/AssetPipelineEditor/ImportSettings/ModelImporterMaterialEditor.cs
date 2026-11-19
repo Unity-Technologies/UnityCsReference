@@ -569,7 +569,7 @@ namespace UnityEditor
                         using (var prop = new EditorGUI.PropertyScope(horizontal.rect, Styles.MaterialLocation, m_MaterialLocation))
                         {
                             EditorGUI.BeginChangeCheck();
-                            var newValue = (int)(ModelImporterMaterialLocation)EditorGUILayout.EnumPopup(prop.content, (ModelImporterMaterialLocation)m_MaterialLocation.intValue);
+                            var newValue = (int)(ModelImporterMaterialLocation)EditorGUILayout.EnumPopup(prop.content, (ModelImporterMaterialLocation)m_MaterialLocation.intValue, null, true);
                             if (EditorGUI.EndChangeCheck())
                             {
                                 m_MaterialLocation.intValue = newValue;

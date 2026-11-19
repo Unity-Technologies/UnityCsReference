@@ -60,7 +60,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Rect newRect { get; private set; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int layoutPass {get; set; }
 
         /// <summary>

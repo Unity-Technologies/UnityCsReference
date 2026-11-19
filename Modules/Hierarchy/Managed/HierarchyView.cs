@@ -1229,7 +1229,7 @@ namespace Unity.Hierarchy
         public void SetState(HierarchyViewState viewState)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).SetState(state=...)");
-            if ((viewState.ValidContent & (HierarchyViewState.Content.SearchText | HierarchyViewState.Content.Columns | HierarchyViewState.Content.ViewModelState)) != 0)
+            if ((viewState.ValidContent & (HierarchyViewState.Content.SearchText | HierarchyViewState.Content.Columns | HierarchyViewState.Content.ViewModelState | HierarchyViewState.Content.ScrollPosition)) != 0)
             {
                 EnqueuePostUpdateAction(() =>
                 {
@@ -1241,13 +1241,14 @@ namespace Unity.Hierarchy
 
                     if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.ViewModelState))
                         m_HierarchyViewModel.SetState(viewState.ViewModelState);
-                });
-            }
 
-            if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.ScrollPosition))
-            {
-                m_CollectionView.scrollView.verticalScroller.value = viewState.ScrollPositionY;
-                m_CollectionView.scrollView.horizontalScroller.value = viewState.ScrollPositionX;
+                    // Restored after the list view refresh, since the scrollers clamp to the range of the rows it knows about.
+                    if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.ScrollPosition))
+                    {
+                        m_CollectionView.scrollView.verticalScroller.value = viewState.ScrollPositionY;
+                        m_CollectionView.scrollView.horizontalScroller.value = viewState.ScrollPositionX;
+                    }
+                });
             }
         }
 
@@ -1401,7 +1402,7 @@ namespace Unity.Hierarchy
             Add(m_StyleContainer);
         }
 
-        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void EnqueuePostUpdateAction(Action action)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).EnqueuePostUpdateAction(action=...)");
@@ -1788,7 +1789,7 @@ namespace Unity.Hierarchy
                 if (evt.target is not Toggle)
                 {
                     ref readonly var node = ref m_HierarchyViewModel[itemIndex];
-                    if (m_HierarchyViewModel.GetNodeTypeHandler(in node) is IHierarchyEditorNodeTypeHandler editorHandler)
+                    if (m_HierarchyViewModel.GetNodeTypeHandler(in node) is IHierarchyEditorNodeTypeHandler editorHandler && editorHandler.CanDoubleClick(this, in node))
                         editorHandler.OnDoubleClick(this, in node);
                 }
             }
@@ -2422,6 +2423,10 @@ namespace Unity.Hierarchy
                         return UpdateListView();
 
                     case UpdateStage.ExecutePostUpdateActions:
+                        // Actions queued after this update's data stages expect the view model to know their nodes
+                        if (ExecutePostUpdateActionsNeeded && DataUpdateNeeded)
+                            UpdateData();
+
                         ExecuteActions(m_PostUpdateActionQueue);
                         return false;
 

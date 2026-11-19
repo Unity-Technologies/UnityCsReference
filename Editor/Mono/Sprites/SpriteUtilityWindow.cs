@@ -10,7 +10,7 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.VectorGraphicsModule")]
+    [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
     internal partial class SpriteUtilityWindow
     {
         protected class Styles
@@ -64,7 +64,7 @@ namespace UnityEditor
                 applySpriteEditorWindow = () => {};
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.VectorGraphicsModule")]
+        [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
         internal static bool ShowSpriteEditorWindow(UnityEngine.Object obj = null)
         {
             if (showSpriteEditorWindow == null)

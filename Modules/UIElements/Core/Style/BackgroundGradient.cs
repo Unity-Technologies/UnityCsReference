@@ -51,6 +51,18 @@ namespace UnityEngine.UIElements
         /// <summary>True when <see cref="position"/> is a percentage (fraction of the gradient extent).</summary>
         public bool positionIsPercent;
 
+        [SerializeField] bool m_PositionIsAuto;
+        // Set by the USS parser on a stop without a position between a pixel and a percentage stop. position
+        // then holds the previous stop's; the baker spreads the stop once the element's size is known.
+        // Not serialized: a serialized copy keeps the previous stop's position instead.
+        internal bool positionIsAuto
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            get => m_PositionIsAuto;
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+            set => m_PositionIsAuto = value;
+        }
+
         /// <summary>Construct a stop expressed as a percentage of the gradient extent.</summary>
         public static BackgroundGradientStop Percent(Color color, float fraction)
         {
@@ -68,7 +80,8 @@ namespace UnityEngine.UIElements
         {
             return color == other.color
                 && position.Equals(other.position)
-                && positionIsPercent == other.positionIsPercent;
+                && positionIsPercent == other.positionIsPercent
+                && m_PositionIsAuto == other.m_PositionIsAuto;
         }
 
         /// <undoc/>
@@ -83,6 +96,7 @@ namespace UnityEngine.UIElements
             var h = color.GetHashCode();
             h = (h * -1521134295) + position.GetHashCode();
             h = (h * -1521134295) + positionIsPercent.GetHashCode();
+            h = (h * -1521134295) + m_PositionIsAuto.GetHashCode();
             return h;
         }
 
@@ -136,9 +150,9 @@ namespace UnityEngine.UIElements
         // The unit the angle was authored in, so the USS writer and the editors keep it.
         internal AngleUnit angleUnit
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_AngleUnit;
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             set => m_AngleUnit = value;
         }
 
@@ -198,6 +212,13 @@ namespace UnityEngine.UIElements
                 m_Shape = BackgroundGradientShape.Ellipse,
                 m_Size = BackgroundGradientSize.FarthestCorner,
             };
+        }
+
+        internal BackgroundGradient CopyWithOwnStops()
+        {
+            var copy = this;
+            copy.m_Stops = (BackgroundGradientStop[])m_Stops?.Clone();
+            return copy;
         }
 
         /// <undoc/>

@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.UIElements
 {
     [UxmlElement]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class UIAnimationClipField : BaseField<UIAnimationClip>
     {
         public static readonly string objectFieldUssClassName = "unity-multi-type-field__object-field";

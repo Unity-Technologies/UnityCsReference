@@ -130,7 +130,7 @@ namespace Unity.Collections
         /// <returns>A NativeText string that begins at `startIndex` and has an allocator of type `allocator`.</returns>
         public static NativeText Substring(ref this NativeText str, int startIndex, AllocatorManager.AllocatorHandle allocator)
         {
-            return str.Substring(startIndex, str.Length - startIndex);
+            return str.Substring(startIndex, str.Length - startIndex, allocator);
         }
 
         /// <summary>
@@ -1112,7 +1112,7 @@ namespace Unity.Collections
                 return new UnsafeText(0, allocator);
             }
 
-            var end = fs.TrimEndIndex();
+            var end = fs.TrimEndIndex(trimRunes);
             var lengthInBytes = end - start;
             var result = new UnsafeText(lengthInBytes, allocator);
             result.Append(fs.GetUnsafePtr() + start, lengthInBytes);
@@ -1135,7 +1135,7 @@ namespace Unity.Collections
                 return new NativeText(0, allocator);
             }
 
-            var end = fs.TrimEndIndex();
+            var end = fs.TrimEndIndex(trimRunes);
             var lengthInBytes = end - start;
             var result = new NativeText(lengthInBytes, allocator);
             result.Append(fs.GetUnsafePtr() + start, lengthInBytes);

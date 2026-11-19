@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace UnityEngine
 {
-    [Conditional("UNITY_EDITOR"), AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    [Conditional("UNITY_EDITOR"), AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
     public class IconAttribute : Attribute
     {
         string m_IconPath;

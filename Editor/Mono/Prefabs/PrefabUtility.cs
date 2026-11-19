@@ -265,10 +265,34 @@ namespace UnityEditor
             throw new ArgumentException("Cannot apply or revert on any of the objects. Attempt with individual objects for details.", nameof(prefabInstanceObjects));
         }
 
+        // Data components have no Object, so they are checked by EntityId.
+        static void ThrowExceptionIfAllPrefabInstanceDataComponentsAreInvalid(EntityId[] dataComponents)
+        {
+            foreach (var dataComponent in dataComponents)
+            {
+                if (IsEntityIdPartOfPrefabInstance(dataComponent))
+                    return;
+            }
+
+            throw new ArgumentException("Cannot apply or revert on any of the objects. Attempt with individual objects for details.", nameof(dataComponents));
+        }
+
         static void ThrowExceptionIfInstanceIsPersistent(Object prefabInstanceObject)
         {
             if (EditorUtility.IsPersistent(prefabInstanceObject))
                 throw new ArgumentException("Calling apply methods on an instance which is part of a Prefab Asset is not supported.", nameof(prefabInstanceObject));
+        }
+
+        static void ThrowExceptionIfApplyTargetIsImmutable(GameObject instanceGameObject, string assetPath)
+        {
+            var applyTarget = GetCorrespondingObjectFromSourceAtPath(instanceGameObject, assetPath);
+            if (IsPartOfImmutablePrefab(applyTarget))
+                throw new ArgumentException($"Cannot apply to immutable prefab: {assetPath}");
+        }
+
+        static GameObject GetDataComponentOwner(EntityId dataComponent)
+        {
+            return EditorUtility.EntityIdToObject(DataComponentEntityId.GetOwner(dataComponent)) as GameObject;
         }
 
         public static GameObject[] FindAllInstancesOfPrefab(GameObject prefabRoot)
@@ -656,6 +680,12 @@ namespace UnityEditor
 
         public static void ApplyPropertyOverride(SerializedProperty instanceProperty, string assetPath, InteractionMode action)
         {
+            if (instanceProperty.serializedObject.isTargetDataComponent)
+            {
+                ApplyDataComponentPropertyOverride(instanceProperty, assetPath, action);
+                return;
+            }
+
             DateTime startTime = DateTime.UtcNow;
 
             Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
@@ -669,7 +699,7 @@ namespace UnityEditor
                 return;
 
             // Check for array size mismatches (handles user dialogs)
-            SerializedObject prefabSourceSerializedObject = new SerializedObject(prefabSourceObject);
+            using var prefabSourceSerializedObject = new SerializedObject(prefabSourceObject);
             bool cancel;
             SerializedProperty property = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(
                 instanceProperty,
@@ -740,6 +770,38 @@ namespace UnityEditor
                     IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty)
                 );
             }
+        }
+
+        // A data component has no Object, so the checks that ApplyPropertyOverride makes through one are skipped.
+        static void ApplyDataComponentPropertyOverride(SerializedProperty instanceProperty, string assetPath, InteractionMode action)
+        {
+            EntityId dataComponent = instanceProperty.serializedObject.targetEntityId;
+            if (!IsInstanceIDPartOfNonAssetPrefabInstance(dataComponent))
+                throw new ArgumentException("Calling apply or revert methods on a data component which is not part of a Prefab instance is not supported.", nameof(instanceProperty));
+
+            if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
+                return;
+
+            EntityId sourceDataComponent = GetCorrespondingDataComponentFromSourceAtPath(dataComponent, assetPath);
+            if (sourceDataComponent == EntityId.None)
+                return;
+
+            string propertyPath = instanceProperty.propertyPath;
+            using (var sourceSerializedObject = new SerializedObject(sourceDataComponent))
+            {
+                SerializedProperty arrayProperty = GetArrayPropertyIfGivenPropertyIsPartOfArrayElementInInstanceWhichDoesNotExistInAsset(
+                    instanceProperty,
+                    sourceSerializedObject,
+                    action,
+                    out bool cancel);
+                if (cancel)
+                    return;
+
+                if (arrayProperty != null)
+                    propertyPath = arrayProperty.propertyPath;
+            }
+
+            ApplyDataComponentPropertyOverride(dataComponent, propertyPath, assetPath, action == InteractionMode.UserAction);
         }
 
         internal static PropertyValueOriginInfo GetPropertyValueOriginInfo(SerializedProperty property)
@@ -926,7 +988,10 @@ namespace UnityEditor
             if (WarnIfInAnimationMode(OverrideOperation.Revert, action))
                 return;
 
-            ThrowExceptionIfAllPrefabInstanceObjectsAreInvalid(instanceProperty.serializedObject.targetObjects, false);
+            if (instanceProperty.serializedObject.isTargetDataComponent)
+                ThrowExceptionIfAllPrefabInstanceDataComponentsAreInvalid(instanceProperty.serializedObject.targetEntityIds);
+            else
+                ThrowExceptionIfAllPrefabInstanceObjectsAreInvalid(instanceProperty.serializedObject.targetObjects, false);
 
             if (WarnIfRevertingManagedReferenceIsNotPossible(instanceProperty, action))
                 return;
@@ -1096,7 +1161,7 @@ namespace UnityEditor
 
             var instanceObject = instanceProperty.serializedObject.targetObject;
             var prefabSourceObject = GetCorrespondingObjectFromSource(instanceObject);
-            SerializedObject prefabSourceSerializedObject = new SerializedObject(prefabSourceObject);
+            using var prefabSourceSerializedObject = new SerializedObject(prefabSourceObject);
             SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
 
             string errorMsg = "";
@@ -1200,6 +1265,91 @@ namespace UnityEditor
             }
         }
 
+        // A data component has no Object, so the checks that ApplyObjectOverride makes go through its owner GameObject.
+        internal static void ApplyDataComponentOverride(EntityId dataComponent, string assetPath, InteractionMode action)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            if (!IsInstanceIDPartOfNonAssetPrefabInstance(dataComponent))
+                throw new ArgumentException("Calling apply or revert methods on a data component which is not part of a Prefab instance is not supported.", nameof(dataComponent));
+
+            var owner = GetDataComponentOwner(dataComponent);
+            ThrowExceptionIfApplyTargetIsImmutable(owner, assetPath);
+
+            if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
+                return;
+
+            ApplyDataComponentOverride(dataComponent, assetPath, action == InteractionMode.UserAction);
+
+            Analytics.SendApplyEvent(Analytics.ApplyScope.ObjectOverride, owner, assetPath, action, startTime, false);
+        }
+
+        internal static void RevertDataComponentOverride(EntityId dataComponent, InteractionMode action)
+        {
+            if (!IsEntityIdPartOfPrefabInstance(dataComponent))
+                throw new ArgumentException("Calling apply or revert methods on a data component which is not part of a Prefab instance is not supported.", nameof(dataComponent));
+
+            if (WarnIfInAnimationMode(OverrideOperation.Revert, action))
+                return;
+
+            RevertDataComponentOverride(dataComponent, action == InteractionMode.UserAction);
+        }
+
+        internal static void ApplyAddedDataComponent(EntityId dataComponent, string assetPath, InteractionMode action)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            if (!IsAddedDataComponentOverride(dataComponent))
+                throw new ArgumentException("Cannot apply added component. Data component is not an added component override on a Prefab instance.", nameof(dataComponent));
+
+            var owner = GetDataComponentOwner(dataComponent);
+            ThrowExceptionIfInstanceIsPersistent(owner);
+            ThrowExceptionIfApplyTargetIsImmutable(owner, assetPath);
+
+            if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
+                return;
+
+            ApplyAddedDataComponent(dataComponent, assetPath, action == InteractionMode.UserAction);
+
+            Analytics.SendApplyEvent(Analytics.ApplyScope.AddedComponent, owner, assetPath, action, startTime, false);
+        }
+
+        internal static void RevertAddedDataComponent(EntityId dataComponent, InteractionMode action)
+        {
+            if (!IsAddedDataComponentOverride(dataComponent))
+                throw new ArgumentException("Cannot revert added component. Data component is not an added component override on a Prefab instance.", nameof(dataComponent));
+
+            if (WarnIfInAnimationMode(OverrideOperation.Revert, action))
+                return;
+
+            RevertAddedDataComponent(dataComponent, action == InteractionMode.UserAction);
+        }
+
+        internal static void ApplyRemovedDataComponent(GameObject instanceGameObject, EntityId assetDataComponent, string assetPath, InteractionMode action)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            ThrowExceptionIfNotValidPrefabInstanceObject(instanceGameObject, true);
+            ThrowExceptionIfApplyTargetIsImmutable(instanceGameObject, assetPath);
+
+            if (WarnIfInAnimationMode(OverrideOperation.Apply, action))
+                return;
+
+            ApplyRemovedDataComponent(instanceGameObject, assetDataComponent, assetPath, action == InteractionMode.UserAction);
+
+            Analytics.SendApplyEvent(Analytics.ApplyScope.RemovedComponent, instanceGameObject, assetPath, action, startTime, false);
+        }
+
+        internal static void RevertRemovedDataComponent(GameObject instanceGameObject, EntityId assetDataComponent, InteractionMode action)
+        {
+            ThrowExceptionIfNotValidPrefabInstanceObject(instanceGameObject, false);
+
+            if (WarnIfInAnimationMode(OverrideOperation.Revert, action))
+                return;
+
+            RevertRemovedDataComponent(instanceGameObject, assetDataComponent, action == InteractionMode.UserAction);
+        }
+
         static bool DidComponentOrderChange(Component[] originalComponentOrder, Component[] newComponentOrder)
         {
             if (originalComponentOrder.Length != newComponentOrder.Length)
@@ -1275,9 +1425,7 @@ namespace UnityEditor
                     var postApplyComponentOrder = component.gameObject.GetComponents<Component>();
                     bool orderChanged = DidComponentOrderChange(originalComponentOrder, postApplyComponentOrder);
                     if (orderChanged)
-                    {
-                        EditorUtility.DisplayDialog(L10n.Tr("Notice!", null), L10n.Tr("Some component(s) changed position because of other added components in the variant/nesting chain.", null), L10n.Tr("OK", null));
-                    }
+                        ShowComponentOrderChangedNotice();
                 }
 
                 Internal_CallPrefabInstanceApplied(instanceRoot);
@@ -1378,6 +1526,8 @@ namespace UnityEditor
 
         internal static void RemoveRemovedComponentOverridesWhichAreInvalid(Object prefabInstanceObject)
         {
+            RemoveUnusedRemovedDataComponents(prefabInstanceObject);
+
             var removedComponents = GetRemovedComponents(prefabInstanceObject);
             if (removedComponents.Length == 0)
                 return;
@@ -1478,10 +1628,11 @@ namespace UnityEditor
 
                 if (DeleteCorrespondingComponent(assetComponent))
                 {
-                    RemoveRemovedComponentOverride(instanceGameObject, assetComponent);
-
+                    // Coupled overrides must be removed together: merging the instance in between would recreate one component without the other.
                     if (DeleteCorrespondingComponent(coupledAssetComponent))
-                        RemoveRemovedComponentOverride(instanceGameObject, coupledAssetComponent);
+                        RemoveRemovedComponentOverride(instanceGameObject, assetComponent, coupledAssetComponent);
+                    else
+                        RemoveRemovedComponentOverride(instanceGameObject, assetComponent);
                 }
             }
 
@@ -1512,25 +1663,46 @@ namespace UnityEditor
             );
         }
 
-        private static void RemoveRemovedComponentOverride(Object instanceObject, Component assetComponent)
+        private static void RemoveRemovedComponentOverride(GameObject instanceGameObject, params Component[] assetComponents)
         {
-            var removedComponents = PrefabUtility.GetRemovedComponents(instanceObject);
-            int index = -1;
-            for (int i = 0; i < removedComponents.Length; i++)
+            var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
+            var instanceSourceGameObject = GetCorrespondingObjectFromSource(instanceGameObject);
+            var removedComponents = PrefabUtility.GetRemovedComponents(prefabInstanceObject);
+
+            var overridesToRemove = new List<Component>(assetComponents.Length);
+            foreach (var assetComponent in assetComponents)
             {
-                if (IsPrefabInstanceObjectOf(removedComponents[i], assetComponent))
+                Component firstMatch = null;
+                Component ownMatch = null;
+                foreach (var removedComponent in removedComponents)
                 {
-                    index = i;
-                    break;
+                    if (!IsPrefabInstanceObjectOf(removedComponent, assetComponent))
+                        continue;
+
+                    if (firstMatch == null)
+                        firstMatch = removedComponent;
+                    if (removedComponent.gameObject == instanceSourceGameObject)
+                    {
+                        ownMatch = removedComponent;
+                        break;
+                    }
                 }
+
+                var match = ownMatch != null ? ownMatch : firstMatch;
+                if (match != null)
+                    overridesToRemove.Add(match);
             }
-            if (index != -1)
+
+            if (overridesToRemove.Count == 0)
+                return;
+
+            var filteredRemovedComponents = new List<Component>(removedComponents.Length);
+            foreach (var removedComponent in removedComponents)
             {
-#pragma warning disable UAC2001 // Avoid Linq
-                var filteredRemovedComponents = (from c in removedComponents where c != removedComponents[index] select c).ToArray();
-#pragma warning restore UAC2001
-                PrefabUtility.SetRemovedComponents(instanceObject, filteredRemovedComponents);
+                if (!overridesToRemove.Contains(removedComponent))
+                    filteredRemovedComponents.Add(removedComponent);
             }
+            PrefabUtility.SetRemovedComponents(prefabInstanceObject, filteredRemovedComponents.ToArray());
         }
 
         public static void RevertRemovedComponent(GameObject instanceGameObject, Component assetComponent, InteractionMode action)
@@ -1563,14 +1735,17 @@ namespace UnityEditor
             PrefabUtility.Internal_CallPrefabInstanceReverting(instanceGameObject);
 
             var actionName = "Revert Prefab removed component";
-            var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
 
             if (action == InteractionMode.UserAction)
             {
                 Undo.RegisterCompleteObjectUndo(instanceGameObject, actionName);
             }
 
-            RemoveRemovedComponentOverride(prefabInstanceObject, assetComponent);
+            var coupledAssetComponent = action == InteractionMode.UserAction ? assetComponent.GetCoupledComponent() : null;
+            if (coupledAssetComponent != null)
+                RemoveRemovedComponentOverride(instanceGameObject, assetComponent, coupledAssetComponent);
+            else
+                RemoveRemovedComponentOverride(instanceGameObject, assetComponent);
 
             if (action == InteractionMode.UserAction)
             {
@@ -1583,10 +1758,8 @@ namespace UnityEditor
                     }
                 }
 
-                var coupledAssetComponent = assetComponent.GetCoupledComponent();
                 if (coupledAssetComponent != null)
                 {
-                    RemoveRemovedComponentOverride(prefabInstanceObject, coupledAssetComponent);
                     foreach (var component in instanceGameObject.GetComponents<Component>())
                     {
                         if (IsPrefabInstanceObjectOf(component, coupledAssetComponent))
@@ -3039,7 +3212,11 @@ namespace UnityEditor
             if (referenceRootInScene == null)
                 return false;
 
-            var targetReference = FindNearestInstanceOfAsset(property.serializedObject.targetObject, applyTarget);
+            // A data component has no Object, and its owner GameObject has the same nearest instance.
+            Object target = property.serializedObject.isTargetDataComponent
+                ? EditorUtility.EntityIdToObject(DataComponentEntityId.GetOwner(property.serializedObject.targetEntityId))
+                : property.serializedObject.targetObject;
+            var targetReference = FindNearestInstanceOfAsset(target, applyTarget);
             if (targetReference == null)
                 return false;
 
@@ -3050,6 +3227,16 @@ namespace UnityEditor
         {
             var applyTarget = GetCorrespondingObjectFromSource(componentOrGameObjectInInstance);
             return HasApplicableObjectOverridesForTarget(componentOrGameObjectInInstance, applyTarget, includeDefaultOverrides);
+        }
+
+        // A data component is in the same Prefab assets as its owner GameObject, so the owner's source serves as the apply target.
+        internal static bool HasApplicableDataComponentOverrides(EntityId dataComponent, bool includeDefaultOverrides)
+        {
+            var owner = EditorUtility.EntityIdToObject(DataComponentEntityId.GetOwner(dataComponent)) as GameObject;
+            var applyTarget = owner != null ? GetCorrespondingObjectFromSource(owner) : null;
+            if (applyTarget == null)
+                return false;
+            return HasApplicableDataComponentOverridesForTarget(dataComponent, applyTarget, includeDefaultOverrides);
         }
 
         // Since an override can be applied to multiple different apply targets, what is not a default override
@@ -3335,7 +3522,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    if (singleOverride is RemovedComponent)
+                    if (IsRemovedComponentOverride(singleOverride))
                         acceptedRemovedComponentOverrides.Add(singleOverride);
                     else
                         acceptedOverrides.Add(singleOverride);
@@ -3365,7 +3552,7 @@ namespace UnityEditor
                     }
                     if (allDependenciesSatisfied)
                     {
-                        if (o is RemovedComponent)
+                        if (IsRemovedComponentOverride(o))
                             acceptedRemovedComponentOverrides.Add(o);
                         else
                             acceptedOverrides.Add(o);
@@ -3431,12 +3618,16 @@ namespace UnityEditor
                         return false;
                 }
 
-                // Apply overrides *in the order* they were added, but all removed components first, so removed
-                // and added component of same type can't cause GameObject to temporarily have two at once.
-                for (int i = 0; i < acceptedRemovedComponentOverrides.Count; i++)
-                    acceptedRemovedComponentOverrides[i].Apply(mode);
-                for (int i = 0; i < acceptedOverrides.Count; i++)
-                    acceptedOverrides[i].Apply(mode);
+                if (acceptedRemovedComponentOverrides.Count + acceptedOverrides.Count == 0)
+                    return true;
+
+                if (!CanApplySelectedOverridesInBatch())
+                {
+                    ApplyOverridesOneAtATime(acceptedRemovedComponentOverrides, acceptedOverrides, mode);
+                    return true;
+                }
+
+                return ApplySelectedOverridesInBatch(prefabInstanceRoot, acceptedRemovedComponentOverrides, acceptedOverrides, mode);
             }
             else
             {
@@ -3447,6 +3638,227 @@ namespace UnityEditor
                 for (int i = 0; i < acceptedRemovedComponentOverrides.Count; i++)
                     acceptedRemovedComponentOverrides[i].Revert(mode);
             }
+
+            return true;
+        }
+
+        static bool IsRemovedComponentOverride(PrefabOverride prefabOverride)
+        {
+            return prefabOverride is RemovedComponent || prefabOverride is RemovedDataComponent;
+        }
+
+        // Asset editing started by the caller blocks the import the batch needs.
+        static void ApplyOverridesOneAtATime(List<PrefabOverride> removedComponentOverrides, List<PrefabOverride> otherOverrides, InteractionMode mode)
+        {
+            // Removed components first, so a removed and an added component of one type never coexist
+            for (int i = 0; i < removedComponentOverrides.Count; i++)
+                removedComponentOverrides[i].Apply(mode);
+            for (int i = 0; i < otherOverrides.Count; i++)
+                otherOverrides[i].Apply(mode);
+        }
+
+        static bool ReportSelectedOverridesNotApplied(string message, InteractionMode mode)
+        {
+            if (mode != InteractionMode.UserAction)
+                throw new ArgumentException(message);
+
+            EditorUtility.DisplayDialog(L10n.Tr("Can't apply selected overrides", null), message, L10n.Tr("OK", null));
+            return false;
+        }
+
+        static void ShowComponentOrderChangedNotice()
+        {
+            EditorUtility.DisplayDialog(L10n.Tr("Notice!", null), L10n.Tr("Some component(s) changed position because of other added components in the variant/nesting chain.", null), L10n.Tr("OK", null));
+        }
+
+        // Inputs that don't resolve in the Prefab Asset are reported by the native apply, which writes nothing then.
+        static bool ApplySelectedOverridesInBatch(
+            GameObject prefabInstanceRoot,
+            List<PrefabOverride> removedComponentOverrides,
+            List<PrefabOverride> otherOverrides,
+            InteractionMode mode)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            ThrowExceptionIfNotValidPrefabInstanceObject(prefabInstanceRoot, true);
+
+            if (!IsOutermostPrefabInstanceRoot(prefabInstanceRoot))
+            {
+                return ReportSelectedOverridesNotApplied(
+                    string.Format(L10n.Tr("The GameObject {0} is not the outermost Prefab instance root.", null), prefabInstanceRoot.name), mode);
+            }
+
+            // Needed up front to record the file content for undo.
+            string assetPath = GetPrefabAssetPathOfNearestInstanceRoot(prefabInstanceRoot);
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                return ReportSelectedOverridesNotApplied(
+                    string.Format(L10n.Tr("The Prefab instance {0} has no Prefab Asset.", null), prefabInstanceRoot.name), mode);
+            }
+
+            var assetComponents = new List<Component>();
+            var removedAssetDataComponents = new List<EntityId>();
+            for (int i = 0; i < removedComponentOverrides.Count; i++)
+            {
+                if (removedComponentOverrides[i] is RemovedDataComponent removedDataComponent)
+                    removedAssetDataComponents.Add(removedDataComponent.assetDataComponent);
+                else
+                    assetComponents.Add(((RemovedComponent)removedComponentOverrides[i]).assetComponent);
+            }
+
+            var objectOverrideInstanceObjects = new List<Object>();
+            var addedInstanceComponents = new List<Component>();
+            var addedInstanceGameObjects = new List<GameObject>();
+            var assetGameObjects = new List<GameObject>();
+            var overriddenInstanceDataComponents = new List<EntityId>();
+            var addedInstanceDataComponents = new List<EntityId>();
+            for (int i = 0; i < otherOverrides.Count; i++)
+            {
+                switch (otherOverrides[i])
+                {
+                    case DataComponentOverride dataComponentOverride:
+                        overriddenInstanceDataComponents.Add(dataComponentOverride.instanceDataComponent);
+                        break;
+                    case AddedDataComponent addedDataComponent:
+                        addedInstanceDataComponents.Add(addedDataComponent.instanceDataComponent);
+                        break;
+                    case ObjectOverride objectOverride:
+                        objectOverrideInstanceObjects.Add(objectOverride.instanceObject);
+                        break;
+                    case AddedComponent addedComponent:
+                        addedInstanceComponents.Add(addedComponent.instanceComponent);
+                        break;
+                    case AddedGameObject addedGameObject:
+                        addedInstanceGameObjects.Add(addedGameObject.instanceGameObject);
+                        break;
+                    case RemovedGameObject removedGameObject:
+                        assetGameObjects.Add(removedGameObject.assetGameObject);
+                        break;
+                    default:
+                        throw new ArgumentException("Unsupported override type " + otherOverrides[i].GetType().Name);
+                }
+            }
+
+            // Coupled components are applied and removed together with their partner for user actions.
+            var coupledAssetComponents = new List<Component>();
+            if (mode == InteractionMode.UserAction)
+            {
+                for (int i = 0; i < assetComponents.Count; i++)
+                {
+                    var coupled = assetComponents[i].GetCoupledComponent();
+                    if (coupled != null && !assetComponents.Contains(coupled))
+                        coupledAssetComponents.Add(coupled);
+                }
+
+                int selectedCount = objectOverrideInstanceObjects.Count;
+                for (int i = 0; i < selectedCount; i++)
+                {
+                    var instanceComponent = objectOverrideInstanceObjects[i] as Component;
+                    var coupled = instanceComponent != null ? instanceComponent.GetCoupledComponent() : null;
+                    if (coupled != null && GetCorrespondingObjectFromSourceAtPath(coupled, assetPath) != null)
+                        objectOverrideInstanceObjects.Add(coupled);
+                }
+
+                selectedCount = addedInstanceComponents.Count;
+                for (int i = 0; i < selectedCount; i++)
+                {
+                    var coupled = addedInstanceComponents[i].GetCoupledComponent();
+                    if (coupled != null && IsAddedComponentOverride(coupled))
+                        addedInstanceComponents.Add(coupled);
+                }
+            }
+
+            // Merging the new asset can reorder the instance components; the user is told, as when applying one component.
+            var componentOrders = new Dictionary<GameObject, Component[]>();
+            if (mode == InteractionMode.UserAction)
+            {
+                for (int i = 0; i < addedInstanceComponents.Count; i++)
+                {
+                    var gameObject = addedInstanceComponents[i].gameObject;
+                    if (!componentOrders.ContainsKey(gameObject))
+                        componentOrders.Add(gameObject, gameObject.GetComponents<Component>());
+                }
+            }
+
+            var actionName = "Apply Prefab selected overrides";
+            var prefabInstanceHandle = GetPrefabInstanceHandle(prefabInstanceRoot);
+
+            byte[] originalFileContent = null;
+            if (mode == InteractionMode.UserAction)
+            {
+                if (!FileUtil.ReadFileContentBinary(assetPath, out originalFileContent, out string errorMessage))
+                    Debug.LogError($"No undo was registered when applying overrides to {assetPath}. \nError: {errorMessage}", prefabInstanceRoot);
+                Undo.RegisterCompleteObjectUndo(prefabInstanceHandle, actionName);
+                Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
+            }
+
+            Internal_CallPrefabInstanceApplying(prefabInstanceRoot);
+            try
+            {
+                ApplySelectedOverridesInternal(
+                    prefabInstanceRoot,
+                    objectOverrideInstanceObjects.ToArray(),
+                    assetComponents.ToArray(),
+                    coupledAssetComponents.ToArray(),
+                    assetGameObjects.ToArray(),
+                    addedInstanceComponents.ToArray(),
+                    addedInstanceGameObjects.ToArray(),
+                    overriddenInstanceDataComponents.ToArray(),
+                    addedInstanceDataComponents.ToArray(),
+                    removedAssetDataComponents.ToArray());
+            }
+            catch (Exception exception) when (mode == InteractionMode.UserAction &&
+                                              (exception is ArgumentException || exception is InvalidOperationException))
+            {
+                ReportSelectedOverridesNotApplied(exception.Message, mode);
+                Undo.RevertAllInCurrentGroup();
+                return false;
+            }
+
+            if (mode == InteractionMode.UserAction && originalFileContent != null)
+            {
+                var guid = AssetDatabase.GUIDFromAssetPath(assetPath);
+                if (FileUtil.ReadFileContentBinary(assetPath, out byte[] newFileContent, out string errorMessage))
+                    Undo.RegisterFileChangeUndo(guid, originalFileContent, newFileContent);
+                else
+                    Debug.LogError($"No undo was registered when applying overrides to {assetPath}. \nError: {errorMessage}", prefabInstanceRoot);
+            }
+
+            Undo.SetCurrentGroupName(actionName);
+
+            RemoveRemovedComponentOverridesWhichAreInvalid(prefabInstanceHandle);
+            RemoveRemovedGameObjectOverridesWhichAreNull(prefabInstanceHandle);
+
+            Internal_CallPrefabInstanceApplied(prefabInstanceRoot);
+
+            // Otherwise the inspector of an applied GameObject still shows it as an added override.
+            if (addedInstanceGameObjects.Count > 0)
+                EditorUtility.ForceRebuildInspectors();
+
+            bool orderChanged = false;
+            foreach (var order in componentOrders)
+            {
+                orderChanged = order.Key != null && DidComponentOrderChange(order.Value, order.Key.GetComponents<Component>());
+                if (orderChanged)
+                    break;
+            }
+            if (orderChanged)
+                ShowComponentOrderChangedNotice();
+
+            bool defaultOverrideComparedToSomeSources = false;
+            for (int i = 0; i < objectOverrideInstanceObjects.Count && !defaultOverrideComparedToSomeSources; i++)
+            {
+                defaultOverrideComparedToSomeSources = IsObjectOverrideAllDefaultOverridesComparedToOriginalSource(objectOverrideInstanceObjects[i]);
+            }
+
+            Analytics.SendApplyEvent(
+                Analytics.ApplyScope.SelectedOverrides,
+                prefabInstanceRoot,
+                assetPath,
+                mode,
+                startTime,
+                defaultOverrideComparedToSomeSources: defaultOverrideComparedToSomeSources
+            );
 
             return true;
         }
@@ -3788,6 +4200,14 @@ namespace UnityEditor
             return removedAny;
         }
 
+        static bool ModificationTargetExists(PropertyModification mod)
+        {
+            EntityId target = mod.targetEntityId;
+            if (DataComponentEntityId.IsDataComponent(target))
+                return Array.IndexOf(GetDataComponents(DataComponentEntityId.GetOwner(target)), target) >= 0;
+            return mod.target != null;
+        }
+
         internal static bool LogRemovedPropertyOverrides(GameObject instance, PropertyModification[] mods)
         {
             if (mods.Length == 0)
@@ -3802,7 +4222,7 @@ namespace UnityEditor
 
             foreach (PropertyModification mod in mods)
             {
-                if (mod.target == null)
+                if (!ModificationTargetExists(mod))
                     info.AppendLine("   '" + mod.propertyPath + "' refers to a non-existent object.");
                 else
                     info.AppendLine("   '" + mod.propertyPath + "' refers to a non-existent property.");
@@ -3894,7 +4314,8 @@ namespace UnityEditor
                 RemovedComponent,
                 AddedGameObject,
                 RemovedGameObject,
-                EntirePrefab
+                EntirePrefab,
+                SelectedOverrides
             }
 
             public enum ApplyTarget

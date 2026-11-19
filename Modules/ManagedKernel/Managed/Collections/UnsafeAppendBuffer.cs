@@ -361,7 +361,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// Whether the offset has advanced past the last of the append buffer's content.
             /// </summary>
             /// <value>Whether the offset has advanced past the last of the append buffer's content.</value>
-            public bool EndOfBuffer => Offset == Size;
+            public readonly bool EndOfBuffer => Offset == Size;
 
             /// <summary>
             /// Reads an element from the append buffer.
@@ -460,7 +460,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
 
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_ENABLE_CHECKS")]
-            void CheckBounds(int structSize)
+            readonly void CheckBounds(int structSize)
             {
                 if (Offset + structSize > Size)
                 {

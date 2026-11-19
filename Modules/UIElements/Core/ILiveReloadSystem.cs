@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     [Flags]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal enum LiveReloadTrackers
     {
         None = 0,
@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
         All = Document | Text | StyleSheet
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface ILiveReloadSystem
     {
         bool enable { get; set; }

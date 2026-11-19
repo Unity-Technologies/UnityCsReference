@@ -10,7 +10,6 @@ namespace Unity.UIToolkit.Editor;
 /// <summary>
 /// Abstracts what the variable editing stack needs from its host inspector.
 /// </summary>
-[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal interface IVariableEditingContext
 {
     VisualElement CurrentVisualElement { get; }

@@ -45,7 +45,7 @@ namespace UnityEngine.UIElements
         // Needed by the UIBuilder for authoring in the viewport
         internal Label titleLabel
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_TitleLabel;
         }
 

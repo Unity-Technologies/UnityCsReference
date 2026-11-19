@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using UnityEditor.StyleSheets;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
@@ -29,7 +28,7 @@ namespace UnityEditor.UIElements
         public string ToString(object value, VisualTreeAsset visualTreeAsset);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal readonly struct UxmlAttributeConversionResult
     {
         public readonly bool success;
@@ -79,7 +78,7 @@ namespace UnityEditor.UIElements
             => new(false, error, context, exception);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class UxmlAttributeConverter
     {
         [AutoStaticsCleanupOnCodeReload]
@@ -92,9 +91,6 @@ namespace UnityEditor.UIElements
         // reload so a stale converter instance for a changed/removed type doesn't pin the old ALC.
         [IgnoreForUAL0015("Lazy converter cache, re-created on demand by GetOrCreateConverter after cleanup")]
         private static Dictionary<Type, IUxmlAttributeConverter> s_Converters = new();
-
-        // Using the lookahead assertion to split the string by commas that are not inside parentheses
-        static readonly Regex s_CommaOutsideParenthesesRegex = new Regex(@",(?![^(]*\))");
 
         // s_RegisteredConverterTypes is cleared on code reload, and the create-on-miss fallback in
         // TryGetConverterType only derives enum/List/array shapes from the entries registered here, so
@@ -129,7 +125,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         public static UxmlAttributeConversionResult TryConvertFromString(Type type, string value, CreationContext cc, out object result)
         {
             result = default;
@@ -186,9 +181,37 @@ namespace UnityEditor.UIElements
         internal static string[] SplitListItems<T>(string value)
         {
             if (typeof(T) == typeof(Color) && value.Contains("("))
-                return s_CommaOutsideParenthesesRegex.Split(value);
+                return SplitTokens(value, splitOnCommas: true).ToArray();
 
             return value.Split(',');
+        }
+
+        // Splits on spaces (and optionally commas), except inside parentheses so that rgba(...) stays a single token
+        internal static List<string> SplitTokens(string value, bool splitOnCommas = false)
+        {
+            var tokens = new List<string>();
+            var depth = 0;
+            var start = -1;
+            for (var i = 0; i <= value.Length; ++i)
+            {
+                var c = i < value.Length ? value[i] : ' ';
+                if (c == '(')
+                    depth++;
+                else if (c == ')')
+                    depth = Math.Max(0, depth - 1);
+
+                if ((char.IsWhiteSpace(c) || (splitOnCommas && c == ',')) && depth == 0)
+                {
+                    if (start >= 0)
+                        tokens.Add(value.Substring(start, i - start));
+                    start = -1;
+                }
+                else if (start < 0)
+                    start = i;
+            }
+            if (start >= 0)
+                tokens.Add(value.Substring(start));
+            return tokens;
         }
 
         public static bool TryGetConverterType(Type type, out Type converterType)
@@ -992,8 +1015,21 @@ namespace UnityEditor.UIElements
             if (!parsedMode)
                 throw new ArgumentOutOfRangeException(nameof(value), "Gradient mode cannot be parsed correctly.");
 
-            // Only alpha values can contain a '+' (exponent): times are normalized and colors are hex.
-            var alphaKeysSeparator = keys.IndexOf("+", StringComparison.Ordinal);
+            var alphaKeysSeparator = -1;
+            var depth = 0;
+            for (var i = 0; i < keys.Length; i++)
+            {
+                var c = keys[i];
+                if (c == '{')
+                    depth++;
+                else if (c == '}' && depth > 0)
+                    depth--;
+                else if (c == '+' && depth == 0)
+                {
+                    alphaKeysSeparator = i;
+                    break;
+                }
+            }
             if (alphaKeysSeparator < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), "Gradient's keys do not have the correct format.");
 
@@ -1005,12 +1041,20 @@ namespace UnityEditor.UIElements
                 if (item.Length < 2 || item[0] != '{' || item[^1] != '}')
                     throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key does not have the correct format.");
 
+                // HDR color keys append their exact RGB values after the clamped hex color.
                 var colorKeys = item[1..^1].Split(',');
-                if (colorKeys.Length != 2)
+                if (colorKeys.Length != 2 && colorKeys.Length != 5)
                     throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key does not have the expected number of values.");
 
                 var success = UxmlUtility.TryParseFloat(colorKeys[0], out var time);
                 success &= ColorUtility.TryParseHtmlString(colorKeys[1].Trim(), out var color);
+
+                if (colorKeys.Length == 5)
+                {
+                    success &= UxmlUtility.TryParseFloat(colorKeys[2], out color.r);
+                    success &= UxmlUtility.TryParseFloat(colorKeys[3], out color.g);
+                    success &= UxmlUtility.TryParseFloat(colorKeys[4], out color.b);
+                }
 
                 if (!success)
                     throw new ArgumentOutOfRangeException(nameof(value), "Gradient's color key could not be parsed correctly.");
@@ -1052,8 +1096,14 @@ namespace UnityEditor.UIElements
             for (var i = 0; i < value.colorKeys.Length; i++)
             {
                 var colorKey = value.colorKeys[i];
-                var s = $"{{{colorKey.time.ToString(CultureInfo.InvariantCulture)},#{ColorUtility.ToHtmlStringRGBA(colorKey.color)}}}";
-                sb.Append(s);
+                var color = colorKey.color;
+                sb.Append($"{{{colorKey.time.ToString(CultureInfo.InvariantCulture)},#{ColorUtility.ToHtmlStringRGBA(color)}");
+                if (color.maxColorComponent > 1f || color.r < 0f || color.g < 0f || color.b < 0f)
+                {
+                    sb.Append(',');
+                    sb.Append(UxmlUtility.ValueToString(new Vector3(color.r, color.g, color.b)));
+                }
+                sb.Append("}");
 
                 if (i + 1 != value.colorKeys.Length)
                     sb.Append(";");
@@ -1373,12 +1423,14 @@ namespace UnityEditor.UIElements
 
             var path = URIHelpers.MakeAssetUri(value.texture);
 
-            return value.hotspot != Vector2.one ? $"{path} {value.hotspot.x} {value.hotspot.y}" : path;
+            return value.hotspot != Vector2.zero ? FormattableString.Invariant($"{path} {value.hotspot.x} {value.hotspot.y}") : path;
         }
     }
 
     internal class FilterFunctionAttributeConverter : UxmlAttributeConverter<FilterFunction>
     {
+        const string k_CustomFilterName = StyleValueFunctionExtension.k_CustomFilter;
+
         public override FilterFunction FromString(string value)
         {
             if (string.IsNullOrEmpty(value))
@@ -1399,6 +1451,9 @@ namespace UnityEditor.UIElements
             var functionName = value.Substring(0, openParenIndex).Trim().ToLower();
             var argsString = value.Substring(openParenIndex + 1, closeParenIndex - openParenIndex - 1).Trim();
 
+            if (functionName == k_CustomFilterName)
+                return ParseCustomFilter(argsString);
+
             FilterFunctionType functionType = functionName switch
             {
                 "tint" => FilterFunctionType.Tint,
@@ -1409,6 +1464,7 @@ namespace UnityEditor.UIElements
                 "blur" => FilterFunctionType.Blur,
                 "contrast" => FilterFunctionType.Contrast,
                 "hue-rotate" => FilterFunctionType.HueRotate,
+                "drop-shadow" => FilterFunctionType.DropShadow,
                 _ => FilterFunctionType.None
             };
 
@@ -1420,34 +1476,97 @@ namespace UnityEditor.UIElements
             if (string.IsNullOrEmpty(argsString))
                 return filterFunction;
 
-            var args = argsString.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            var args = UxmlAttributeConverter.SplitTokens(argsString, splitOnCommas: true);
+            AddParameters(ref filterFunction, args, 0);
+            return filterFunction;
+        }
 
-            foreach (var arg in args)
+        static FilterFunction ParseCustomFilter(string argsString)
+        {
+            var args = UxmlAttributeConverter.SplitTokens(argsString, splitOnCommas: true);
+            if (args.Count == 0 || !TryResolveFilterDefinition(args[0], out var definition))
+                return new FilterFunction();
+
+            var filterFunction = new FilterFunction(definition);
+            AddParameters(ref filterFunction, args, 1);
+            return filterFunction;
+        }
+
+        static bool TryResolveFilterDefinition(string token, out FilterFunctionDefinition definition)
+        {
+            var uri = token.Trim();
+            if (uri.StartsWith("url(", StringComparison.OrdinalIgnoreCase) && uri.EndsWith(")"))
+                uri = uri[4..^1].Trim();
+            if (uri.Length >= 2 && (uri[0] == '\'' || uri[0] == '"') && uri[^1] == uri[0])
+                uri = uri[1..^1];
+
+            var response = URIHelpers.ValidateAssetURL(Path.GetFileNameWithoutExtension(uri), uri);
+            if (response.result != URIValidationResult.OK)
             {
-                var trimmedArg = arg.Trim();
+                definition = null;
+                return false;
+            }
+
+            definition = response.resolvedQueryAsset as FilterFunctionDefinition;
+            if (definition == null)
+                definition = AssetDatabase.LoadAssetAtPath<FilterFunctionDefinition>(response.resolvedProjectRelativePath);
+            return definition != null;
+        }
+
+        static void AddParameters(ref FilterFunction filterFunction, List<string> args, int startIndex)
+        {
+            for (var i = startIndex; i < args.Count; i++)
+            {
+                var trimmedArg = args[i].Trim();
                 if (string.IsNullOrEmpty(trimmedArg))
                     continue;
 
-                if (ColorUtility.TryParseHtmlString(trimmedArg, out var colorValue) ||
-                    trimmedArg.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
+                if (ColorAttributeConverter.TryFromString(trimmedArg, out var colorValue))
                 {
-                    var colorConverter = new ColorAttributeConverter();
-                    colorValue = colorConverter.FromString(trimmedArg);
                     filterFunction.AddParameter(new FilterParameter(colorValue));
                 }
-                else if (UxmlUtility.TryParseFloat(trimmedArg, out var floatValue))
+                else if (TryParseFloatParameter(trimmedArg, out var floatParameter))
                 {
-                    filterFunction.AddParameter(new FilterParameter(floatValue));
+                    filterFunction.AddParameter(floatParameter);
+                }
+            }
+        }
+
+        static bool TryParseFloatParameter(string value, out FilterParameter result)
+        {
+            result = default;
+            if (UxmlUtility.TryParseFloat(value, out var unitlessValue))
+            {
+                result = new FilterParameter(unitlessValue);
+                return true;
+            }
+
+            var unitStart = value.Length;
+            while (unitStart > 0 && (char.IsLetter(value[unitStart - 1]) || value[unitStart - 1] == '%'))
+                unitStart--;
+
+            if (unitStart == 0 || unitStart == value.Length || !UxmlUtility.TryParseFloat(value[..unitStart], out var number))
+                return false;
+
+            var unitString = value[unitStart..];
+            for (var unit = Dimension.Unit.Pixel; unit <= Dimension.Unit.Fraction; unit++)
+            {
+                if (string.Equals(StyleSheetUtility.GetDimensionUnitExportString(unit), unitString, StringComparison.OrdinalIgnoreCase))
+                {
+                    result = new FilterParameter(StyleProperty.ConvertDimensionToFilterFloat(new Dimension(number, unit)), unit);
+                    return true;
                 }
             }
 
-            return filterFunction;
+            return false;
         }
 
         public override string ToString(FilterFunction value)
         {
+            var customDefinition = value.customDefinition;
+            var isPersistentCustomFilter = customDefinition != null && AssetDatabase.Contains(customDefinition);
             var def = value.GetDefinition();
-            if (def == null || string.IsNullOrEmpty(def.filterName))
+            if (!isPersistentCustomFilter && (def == null || string.IsNullOrEmpty(def.filterName)))
             {
                 if (value.type == FilterFunctionType.None)
                     return "none";
@@ -1455,18 +1574,32 @@ namespace UnityEditor.UIElements
             }
 
             var sb = StringBuilderPool.Get();
-            sb.Append(def.filterName);
-            sb.Append("(");
+            if (isPersistentCustomFilter)
+            {
+                sb.Append(k_CustomFilterName);
+                sb.Append("(url('");
+                sb.Append(URIHelpers.MakeAssetUri(customDefinition));
+                sb.Append("')");
+            }
+            else
+            {
+                sb.Append(def.filterName);
+                sb.Append("(");
+            }
 
             for (int i = 0; i < value.parameterCount; i++)
             {
-                if (i > 0)
+                if (i > 0 || isPersistentCustomFilter)
                     sb.Append(" ");
 
                 var param = value.GetParameter(i);
                 if (param.type == FilterParameterType.Color)
                 {
                     sb.Append(StyleSheetToUss.ToUssString(param.colorValue));
+                }
+                else if (param.unit != Dimension.Unit.Unitless)
+                {
+                    sb.Append(StyleProperty.ConvertFilterFloatToDimension(param.floatValue, param.unit).ToString());
                 }
                 else
                 {
@@ -1913,7 +2046,7 @@ namespace UnityEditor.UIElements
                 return BoxShadow.None();
 
             var parser = new BoxShadow.Parser();
-            foreach (var token in SplitTokens(value))
+            foreach (var token in UxmlAttributeConverter.SplitTokens(value))
             {
                 if (token == k_Inset)
                     parser.AddInset();
@@ -1943,32 +2076,6 @@ namespace UnityEditor.UIElements
         {
             var number = token.EndsWith(k_Pixel, StringComparison.Ordinal) ? token.Substring(0, token.Length - k_Pixel.Length) : token;
             return float.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out length);
-        }
-
-        // Splits on spaces, except inside parentheses so that rgba(...) stays a single token
-        static List<string> SplitTokens(string value)
-        {
-            var tokens = new List<string>();
-            var depth = 0;
-            var start = -1;
-            for (var i = 0; i <= value.Length; ++i)
-            {
-                var c = i < value.Length ? value[i] : ' ';
-                if (c == '(')
-                    depth++;
-                else if (c == ')')
-                    depth = Math.Max(0, depth - 1);
-
-                if (char.IsWhiteSpace(c) && depth == 0)
-                {
-                    if (start >= 0)
-                        tokens.Add(value.Substring(start, i - start));
-                    start = -1;
-                }
-                else if (start < 0)
-                    start = i;
-            }
-            return tokens;
         }
     }
 
@@ -2185,7 +2292,7 @@ namespace UnityEditor.UIElements
                 return "none";
 
             // Check for uniform scale
-            if (Length.Approximately(value.x, value.y))
+            if (Length.Approximately(value.x, value.y) && Mathf.Approximately(value.z, 0))
             {
                 return value.x.ToString();
             }

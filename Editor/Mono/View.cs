@@ -13,12 +13,13 @@ using System.Runtime.CompilerServices;
 using IntPtr = System.IntPtr;
 using System;
 using UnityEngine.Bindings;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class View : ScriptableObject
     {
         internal virtual void Reflow()
@@ -69,6 +70,31 @@ namespace UnityEditor
             {
                 i.m_Parent = this;
                 i.Initialize(win);
+            }
+        }
+
+        // we need to restore hierarchy links on code reload
+        // otherwise several calls (e.g. GetWindow) from user code during post-reload callbacks won't behave correctly
+        [OnCodeInitializing]
+        static void RestoreLinksAfterCodeReload()
+        {
+            foreach (var window in Resources.FindObjectsOfTypeAll<ContainerWindow>())
+            {
+                if (window.rootView)
+                    window.rootView.RestoreLinks(window);
+            }
+        }
+
+        internal virtual void RestoreLinks(ContainerWindow win)
+        {
+            m_Window = win;
+            foreach (View i in m_Children)
+            {
+                if (!i)
+                    continue;
+
+                i.m_Parent = this;
+                i.RestoreLinks(win);
             }
         }
 

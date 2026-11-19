@@ -29,12 +29,12 @@ namespace UnityEngine.Networking
             m_Ptr = Create(this);
         }
 
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
+#pragma warning disable UAC0045 // Releases the native handler; ReleaseFromScripting is thread-safe and public handlers are often left undisposed.
         ~CertificateHandler()
         {
             Dispose();
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         ///<summary>Callback, invoked for each leaf certificate sent by the remote server.</summary>
         ///<remarks>Override this to implement a custom certificate validation scheme.</remarks>

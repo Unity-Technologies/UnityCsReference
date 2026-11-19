@@ -29,6 +29,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // We need to pass this through to mirror the same logic
             // NOTE: This does mean this event fires more times than before!
             OnPostprocessAllAssetsCallback?.Invoke(didDomainReload, totalCount);
+
+            if (importedAssets.Length > 0)
+                OnImportedAssetsCallback?.Invoke(importedAssets);
         }
 
         [AutoStaticsCleanupOnCodeReload] // static event; stale handlers after reload pin old ALC
@@ -36,5 +39,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
         // their [OnCodeLoaded] initializer, so the handler is re-registered on every code load.
         [IgnoreForUAL0015("Event re-subscribed by MainEditorSystems.Listen from the [OnCodeLoaded] context initializer")]
         public static event Action<bool, int> OnPostprocessAllAssetsCallback;
+
+        [AutoStaticsCleanupOnCodeReload] // static event; stale handlers after reload pin old ALC
+        // Re-registered on every code load for the same reason as OnPostprocessAllAssetsCallback.
+        [IgnoreForUAL0015("Event re-subscribed by MainEditorSystems.Listen from the [OnCodeLoaded] context initializer")]
+        public static event Action<string[]> OnImportedAssetsCallback;
     }
 }

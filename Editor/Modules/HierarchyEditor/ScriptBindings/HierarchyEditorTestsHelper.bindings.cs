@@ -1,0 +1,66 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Bindings;
+using UnityEngine.SceneManagement;
+
+namespace Unity.Hierarchy.Editor
+{
+    [NativeHeader("Editor/Modules/HierarchyEditor/HierarchyEditorTestsHelper.h")]
+    internal static class HierarchyEditorTestsHelper
+    {
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern HierarchyNodeType GetNodeType_HierarchyGameObjectHandler();
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern HierarchyNodeType GetNodeType_HierarchySceneHandler();
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern HierarchyNodeType GetNodeType_HierarchySubSceneAuthoringHandler();
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern void SearchBeginNative(HierarchyGameObjectHandler handler, HierarchySearchQueryDescriptor query, HierarchyViewModel viewModel);
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool SearchMatchNative(HierarchyGameObjectHandler handler, HierarchyNode node, HierarchyViewModel viewModel);
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern void SearchEndNative(HierarchyGameObjectHandler handler, HierarchyViewModel viewModel);
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool SearchMatchGameObjectNative(HierarchyGameObjectHandler handler, GameObject obj, HierarchyViewModel viewModel);
+
+        internal static bool IsScenePickingEnable(Scene scene) => SceneVisibilityManager.instance.GetScenePickingState(scene) == SceneVisibilityManager.ScenePickingState.PickingEnabledAll;
+
+        internal static string GetSearchableWindowQuery(SearchableEditorWindow window) => window.m_SearchFilter;
+
+        internal static void SetSearchableWindowQuery(SearchableEditorWindow window, string query,
+            SearchableEditorWindow.SearchMode mode = SearchableEditorWindow.SearchMode.All)
+            => window.SetSearchFilter(query, mode, true, false);
+
+        internal static string GetSceneViewSearchFilterQuery() => SceneViewSearchFilter.query;
+
+        internal static string BuildSceneViewSearchFilterQuery(string searchFilter, SearchableEditorWindow.SearchMode mode)
+            => SceneView.BuildSearchFilterQuery(searchFilter, mode);
+
+        internal static string[] GetNodeNames(Hierarchy hierarchy, HierarchyNode[] nodes)
+        {
+            if (nodes.Length == 0)
+                return Array.Empty<string>();
+
+            var names = new string[nodes.Length];
+            for (var i = 0; i < names.Length; ++i)
+            {
+                if (nodes[i] == HierarchyNode.Null)
+                    names[i] = "Null";
+                else
+                    names[i] = hierarchy.GetName(nodes[i]);
+            }
+            return names;
+        }
+    }
+}

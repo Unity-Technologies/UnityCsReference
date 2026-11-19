@@ -2820,6 +2820,12 @@ namespace UnityEngine
             get;
         }
 
+        extern internal uint bindingsVersion
+        {
+            [NativeMethod("GetAnimatorBindingsVersion")]
+            get;
+        }
+
         extern internal void ClearInternalControllerPlayable();
 
         ///<summary>Returns true if the state exists in this layer, false otherwise.</summary>

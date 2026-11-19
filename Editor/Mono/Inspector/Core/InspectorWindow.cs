@@ -30,8 +30,9 @@ namespace UnityEditor
         [SerializeField] EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
         [SerializeField] PreviewWindow m_PreviewWindow;
 
-        readonly HashSet<DataMode> m_UserSupportedDataModes = new(4);
         IMGUIContainer m_TrackerResetter;
+        // Open while this Inspector is registered and holds a tracker, shared or its own.
+        ActiveEditorTracker.DisplayScope m_TrackerDisplay;
 
 
         public bool isLocked
@@ -91,6 +92,8 @@ namespace UnityEditor
 
         protected override void OnDestroy()
         {
+            // OnDisable normally released it already; this keeps a window that is destroyed without it from leaking its view.
+            ReleaseTrackerDisplay();
             if (m_PreviewWindow is { IsFloatingWindow: true })
                 m_PreviewWindow.Close();
             if (m_Tracker != null && !m_Tracker.Equals(ActiveEditorTracker.sharedTracker))
@@ -130,7 +133,6 @@ namespace UnityEditor
 
             m_LockTracker.tracker = tracker;
             m_LockTracker.lockStateChanged.AddListener(LockStateChanged);
-            m_Tracker.dataMode = GetDataModeController_Internal().dataMode;
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
@@ -203,31 +205,32 @@ namespace UnityEditor
                 return;
 
             RebuildContentsContainers();
-            if (Selection.objects.Length == 0 && m_MultiEditLabel != null)
+            if (Selection.GetEntityIdsUnsafe().Length == 0 && m_MultiEditLabel != null)
             {
                 m_MultiEditLabel.RemoveFromHierarchy();
             }
 
             if (m_PreviewWindow != null)
                 m_PreviewWindow.SetParentInspector(this);
-
-            UpdateSupportedDataModesList();
         }
-
-        // Note: supportedModes is cleared before and sorted after this method is called
-        protected override void OnUpdateSupportedDataModes(List<DataMode> supportedModes) { }
 
         protected override void OnDisable()
         {
-            base.OnDisable();
+            // The view count lives in native code, so a throwing base class must not skip this window's teardown.
+            try
+            {
+                base.OnDisable();
+            }
+            finally
+            {
+                RemoveInspectorWindow(this);
+                m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
 
-            RemoveInspectorWindow(this);
-            m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
-
-            EditorApplication.projectWasLoaded -= OnProjectWasLoaded;
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            Selection.selectionChanged -= OnSelectionChanged;
-            AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
+                EditorApplication.projectWasLoaded -= OnProjectWasLoaded;
+                EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+                Selection.selectionChanged -= OnSelectionChanged;
+                AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
+            }
         }
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -348,17 +351,32 @@ namespace UnityEditor
                 return;
             }
 
-            m_Tracker = sharedTrackerInUse ? new ActiveEditorTracker() : ActiveEditorTracker.sharedTracker;
+            var sharedTracker = ActiveEditorTracker.sharedTracker;
+            m_Tracker = sharedTracker.isDisplayed ? new ActiveEditorTracker() : sharedTracker;
             m_Tracker.inspectorMode = m_InspectorMode;
+            DisplayTrackerIfRegistered();
             m_Tracker.RebuildIfNecessary();
         }
 
-        bool sharedTrackerInUse
+        [InitializeOnLoadMethod]
+        static void AssertNoViewsOutlivedThePreviousDomain()
         {
-            get
-            {
-                return m_AllInspectors.Exists(i => i.m_Tracker != null && i.m_Tracker.Equals(ActiveEditorTracker.sharedTracker));
-            }
+            ActiveEditorTracker.AssertNoSharedTrackerDisplays();
+        }
+
+        void ReleaseTrackerDisplay()
+        {
+            m_TrackerDisplay?.Dispose();
+            m_TrackerDisplay = null;
+        }
+
+        // False for a window that only borrows the tracker of another Inspector, whose own view already counts it.
+        protected virtual bool CountsViewOfTracker => true;
+
+        void DisplayTrackerIfRegistered()
+        {
+            if (m_TrackerDisplay == null && CountsViewOfTracker && m_AllInspectors.Contains(this) && m_Tracker != null)
+                m_TrackerDisplay = new ActiveEditorTracker.DisplayScope(m_Tracker);
         }
 
         protected virtual void ShowButton(Rect r)
@@ -624,12 +642,14 @@ namespace UnityEditor
             }
 
             m_AllInspectors.Add(window);
+            window.DisplayTrackerIfRegistered();
             return true;
         }
 
         internal static void RemoveInspectorWindow(InspectorWindow window)
         {
             m_AllInspectors.Remove(window);
+            window.ReleaseTrackerDisplay();
         }
 
         internal static void ApplyChanges()
@@ -687,7 +707,7 @@ namespace UnityEditor
 
         private static bool EditorForMultiEditingChanged(Editor editor, Object target)
         {
-            if (editor.targets.Length <= 1)
+            if (editor.targetCount <= 1)
                 return false;
 
             var currentEditorType = editor.GetType();

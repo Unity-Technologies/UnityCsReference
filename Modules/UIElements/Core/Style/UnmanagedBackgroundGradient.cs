@@ -11,13 +11,16 @@ using Unity.Scripting.LifecycleManagement;
 namespace UnityEngine.UIElements
 {
     // Unmanaged mirror of BackgroundGradientStop. C++ counterpart in BackgroundTypes.h.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [StructLayout(LayoutKind.Sequential, Size = 24)]
     internal struct UnmanagedBackgroundGradientStop : IEquatable<UnmanagedBackgroundGradientStop>
     {
         public Color color;             // 16 bytes
         public float position;          //  4
-        public int positionIsPercent;   //  4  (treat as bool; int for unmanaged + C++ parity)
+        public int positionFlags;       //  4  PercentFlag | AutoFlag (int for C++ parity)
+
+        public const int PercentFlag = 1;
+        public const int AutoFlag = 2;   // BackgroundGradientStop.positionIsAuto
 
         public static implicit operator UnmanagedBackgroundGradientStop(BackgroundGradientStop s)
         {
@@ -25,7 +28,7 @@ namespace UnityEngine.UIElements
             {
                 color = s.color,
                 position = s.position,
-                positionIsPercent = s.positionIsPercent ? 1 : 0,
+                positionFlags = (s.positionIsPercent ? PercentFlag : 0) | (s.positionIsAuto ? AutoFlag : 0),
             };
         }
 
@@ -35,7 +38,8 @@ namespace UnityEngine.UIElements
             {
                 color = color,
                 position = position,
-                positionIsPercent = positionIsPercent != 0,
+                positionIsPercent = (positionFlags & PercentFlag) != 0,
+                positionIsAuto = (positionFlags & AutoFlag) != 0,
             };
         }
 
@@ -43,7 +47,7 @@ namespace UnityEngine.UIElements
         {
             return color == other.color
                 && position.Equals(other.position)
-                && positionIsPercent == other.positionIsPercent;
+                && positionFlags == other.positionFlags;
         }
 
         public override bool Equals(object obj) => obj is UnmanagedBackgroundGradientStop o && Equals(o);
@@ -52,14 +56,14 @@ namespace UnityEngine.UIElements
         {
             var h = color.GetHashCode();
             h = (h * -1521134295) + position.GetHashCode();
-            h = (h * -1521134295) + positionIsPercent.GetHashCode();
+            h = (h * -1521134295) + positionFlags.GetHashCode();
             return h;
         }
     }
 
     // Unmanaged mirror of BackgroundGradient. POD with up to MaxStops inline stops; overflow
     // truncates with a warning. C++ counterpart in BackgroundTypes.h.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [StructLayout(LayoutKind.Sequential)]
     internal struct UnmanagedBackgroundGradient : IEquatable<UnmanagedBackgroundGradient>
     {

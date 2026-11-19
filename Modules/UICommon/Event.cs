@@ -33,7 +33,7 @@ namespace UnityEngine
             m_Ptr = Internal_Copy(other.m_Ptr);
         }
 
-#pragma warning disable UA5000 // Frees the native event; Internal_Destroy is thread-safe and users create Event with new, with no Dispose API.
+#pragma warning disable UAC0045 // Frees the native event; Internal_Destroy is thread-safe and users create Event with new, with no Dispose API.
         ~Event()
         {
             if (m_Ptr != IntPtr.Zero)
@@ -42,7 +42,7 @@ namespace UnityEngine
                 m_Ptr = IntPtr.Zero;
             }
         }
-#pragma warning restore UA5000
+#pragma warning restore UAC0045
 
         ///<exclude />
         [NonSerialized]

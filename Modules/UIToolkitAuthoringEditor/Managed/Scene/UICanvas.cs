@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -15,10 +17,12 @@ enum CanvasBackgroundType
 {
     Checkerboard,
     Color,
-    Image
+    Image,
+    Camera
 }
 
 [UxmlElement(visibility = LibraryVisibility.Hidden)]
+[VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 {
     public readonly struct CanvasManipulationScope : IDisposable
@@ -103,14 +107,23 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     const string k_StyleSheetLight = "UIToolkitAuthoring/UIViewportWindow/UICanvasLight.uss";
 
     public const string UssClass = "unity-ui-viewport__canvas";
-    const string SelectedCanvasUssClass = UssClass + "--selected";
+    public const string SelectedCanvasUssClass = UssClass + "--selected";
+    public const string MatchGameViewUssClass = UssClass + "--match-game-view";
     public const string HeaderUssClass = UssClass + "__header";
     public const string HeaderTitleUssClass = HeaderUssClass + "-title";
     public const string HeaderTagUssClass = HeaderUssClass + "-tag";
     public const string DocumentRootUssClass = UssClass + "-document-root";
     const string CanvasDocumentUssClass = UssClass + "-document";
+    const string BackgroundUssClass = UssClass + "-background";
     const string BackgroundColorOverlayUssClass = UssClass + "-background--color-overlay";
     const string BackgroundImageOverlayUssClass = UssClass + "-background--image-overlay";
+    const string BackgroundCameraOverlayUssClass = UssClass + "-background--camera-overlay";
+    const long k_BackgroundCameraRefreshIntervalMs = 100;
+    const long k_GameViewSyncIntervalMs = 100;
+    public static readonly string MatchGameViewResizeMessage = L10n.Tr("Cannot resize the canvas while Match Game View is enabled.", null);
+
+    static readonly Color k_DarkEditorThemeBackground = new Color32(56, 56, 56, 255);
+    static readonly Color k_LightEditorThemeBackground = new Color32(182, 182, 182, 255);
 
     readonly VisualElement m_Header;
     readonly Label m_TitleLabel;
@@ -118,10 +131,13 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     readonly VisualElement m_CanvasDocument;
     readonly UICanvasDocumentRoot m_DocumentRoot;
     readonly HighlightOverlayPainter2D m_HighlightOverlay;
+    readonly VisualElement m_Background;
     readonly CheckerboardBackground m_CheckerboardBackground;
     readonly VisualElement m_BackgroundColorOverlay;
     readonly VisualElement m_BackgroundImageOverlay;
+    readonly VisualElement m_BackgroundCameraOverlay;
 
+    AuthoringContext m_Context = AuthoringContext.Global;
     CanvasSettings m_Settings;
     EntityId m_SettingsKey;
     bool m_PreviewMode;
@@ -129,6 +145,11 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     int m_ScopeLevel = 0;
     uint m_LastSeenSubPanelVersion = uint.MaxValue;
     readonly CanvasBackdropTexture m_BackdropTexture = new();
+    Camera m_BackgroundCamera;
+    RenderTexture m_BackgroundCameraTexture;
+    IVisualElementScheduledItem m_BackgroundCameraRefresh;
+    int m_BackgroundCameraFrame;
+    IVisualElementScheduledItem m_GameViewSync;
 
     string m_StorageKey;
 
@@ -149,6 +170,11 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     }
 
     public VisualElement Header => m_Header;
+
+    /// <summary>
+    /// The object <see cref="Select"/> selects, which the inspector shows the canvas options of. Null without a context.
+    /// </summary>
+    public CanvasSettings Settings => m_Settings;
 
     /// <summary>
     /// Re-clones the document into the panel. Supplied by whoever owns that panel, since the canvas only knows
@@ -182,6 +208,8 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         get => m_TitleTagLabel.text;
         set => m_TitleTagLabel.text = value;
     }
+
+    public bool MatchesGameView => m_Settings != null && m_Settings.MatchGameView;
 
     public Vector2 BaseSize
     {
@@ -237,6 +265,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     Texture2D EffectiveBackgroundImage => m_Settings != null ? m_Settings.BackgroundImage : CanvasSettings.DefaultBackgroundImage;
     float EffectiveBackgroundImageOpacity => m_Settings != null ? m_Settings.BackgroundImageOpacity : CanvasSettings.DefaultBackgroundOpacity;
     ScaleMode EffectiveBackgroundImageScaleMode => m_Settings != null ? m_Settings.BackgroundImageScaleMode : CanvasSettings.DefaultScaleMode;
+    float EffectiveBackgroundCameraOpacity => m_Settings != null ? m_Settings.BackgroundCameraOpacity : CanvasSettings.DefaultBackgroundOpacity;
 
     public UICanvas()
     {
@@ -258,9 +287,11 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
         m_CanvasDocument = this.Q(className: CanvasDocumentUssClass);
 
+        m_Background = this.Q(className: BackgroundUssClass);
         m_CheckerboardBackground = this.Q<CheckerboardBackground>();
         m_BackgroundColorOverlay = this.Q(className: BackgroundColorOverlayUssClass);
         m_BackgroundImageOverlay = this.Q(className: BackgroundImageOverlayUssClass);
+        m_BackgroundCameraOverlay = this.Q(className: BackgroundCameraOverlayUssClass);
 
         style.width = CanvasSettings.DefaultSize.x;
         style.height = CanvasSettings.DefaultSize.y;
@@ -305,6 +336,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
         // The context can arrive after the surface is laid out, in which case no geometry change will follow.
         TryPerformInitialFit(ViewSize);
+        UpdateGameViewSync();
     }
 
     public void ClearContext()
@@ -312,6 +344,8 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         m_DocumentRoot.style.backgroundImage = default;
         PanelElement = null;
         m_BackdropTexture.Release();
+        StopBackgroundCamera();
+        StopGameViewSync();
         RequestRefresh = null;
 
         if (!m_Settings)
@@ -353,17 +387,67 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         m_DocumentRoot.style.backgroundImage = default;
         PanelElement = null;
         m_BackdropTexture.Release();
+        StopBackgroundCamera();
+        StopGameViewSync();
         m_Settings = null;
         m_SettingsKey = EntityId.None;
     }
 
     void OnCanvasChanged(CanvasSettings settings, Vector2 canvasSize, Vector2 offset, float zoomFactor)
     {
+        UpdateGameViewSync();
         CommitToPanelElement();
+    }
+
+    void UpdateGameViewSync()
+    {
+        if (!MatchesGameView)
+        {
+            StopGameViewSync();
+            return;
+        }
+
+        SetResizersDrivenByGameView(true);
+        if (m_GameViewSync == null)
+            m_GameViewSync = schedule.Execute(SyncToGameView).Every(k_GameViewSyncIntervalMs);
+        else if (!m_GameViewSync.isActive)
+            m_GameViewSync.Resume();
+    }
+
+    void StopGameViewSync()
+    {
+        SetResizersDrivenByGameView(false);
+        m_GameViewSync?.Pause();
+    }
+
+    void SetResizersDrivenByGameView(bool driven)
+    {
+        if (ClassListContains(MatchGameViewUssClass) == driven)
+            return;
+
+        EnableInClassList(MatchGameViewUssClass, driven);
+        foreach (var resizer in this.Query<UICanvasResizerHandle>().Build())
+        {
+            resizer.tooltip = driven ? MatchGameViewResizeMessage : null;
+            resizer.MarkDirtyRepaint();
+        }
+    }
+
+    void SyncToGameView()
+    {
+        if (!MatchesGameView)
+            return;
+
+        if (!TryGetMainGameViewSize(out var gameViewSize) || BaseSize == gameViewSize)
+            return;
+
+        using var _ = new CanvasManipulationScope(this, registerUndo: false);
+        BaseSize = gameViewSize;
     }
 
     void OnCanvasBackgroundTypeChanged(CanvasSettings settings)
     {
+        m_BackgroundCamera = null;
         SetupBackground();
         SetupOverlays();
     }
@@ -375,8 +459,8 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
     public void Select()
     {
-        if (Selection.activeObject != m_Settings)
-            Selection.activeObject = m_Settings;
+        if (m_Context.Selection.ActiveObject != m_Settings)
+            m_Context.Selection.ActiveObject = m_Settings;
     }
 
     protected override void HandleEventBubbleUp(EventBase evt)
@@ -384,15 +468,16 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         switch (evt)
         {
             case AttachToPanelEvent:
-                Selection.selectionChanged += OnSelectionChanged;
+                m_Context = AuthoringContext.For(this);
+                m_Context.Selection.Changed += OnSelectionChanged;
                 OnSelectionChanged();
                 PrefSettings.settingChanged += OnPrefsChanged;
-                UICommandQueue.RegisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
+                m_Context.Messages.RegisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
                 break;
             case DetachFromPanelEvent:
-                Selection.selectionChanged -= OnSelectionChanged;
+                m_Context.Selection.Changed -= OnSelectionChanged;
                 PrefSettings.settingChanged -= OnPrefsChanged;
-                UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
+                m_Context.Messages.UnregisterHandlerForCategory(CommandCategory.Highlight, OnHighlight);
                 break;
         }
 
@@ -459,10 +544,32 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         m_DocumentRoot.style.backgroundImage = StyleKeyword.Null;
         panelElement.OnAfterRepaint -= OnPanelElementWasRepainted;
         panelElement.OnBeforeRender -= OnSubPanelBeforeRender;
+        panelElement.SubPanelReleasing -= OnSubPanelReleasing;
+        panelElement.SubPanelRecreated -= OnSubPanelRecreated;
+        panelElement.ThemeChanged -= OnPanelThemeChanged;
         panelElement.SubPanel?.UnregisterChangeProcessor(this);
         Panel.beforeTickingAnyScheduledPanel -= ForceRuntimePanelUpdate;
         // The domain-reload teardown releases only the panel, so this is the last hook that runs on it.
         m_BackdropTexture.Release();
+        StopBackgroundCamera();
+    }
+
+    void OnSubPanelReleasing(PanelElement panelElement)
+    {
+        m_DocumentRoot.PanelElement = null;
+        panelElement.SubPanel?.UnregisterChangeProcessor(this);
+    }
+
+    // A context type switch replaces the sub-panel and its render texture; what was bound to them is bound again.
+    void OnPanelThemeChanged(PanelElement panelElement) => SetupBackground();
+
+    void OnSubPanelRecreated(PanelElement panelElement)
+    {
+        panelElement.ContentOverflowMode = m_PreviewMode ? Overflow.Hidden : Overflow.Visible;
+        panelElement.SubPanel?.RegisterChangeProcessor(this);
+        m_DocumentRoot.style.backgroundImage = Background.FromRenderTexture(panelElement.DisplayTexture);
+        m_DocumentRoot.PanelElement = panelElement;
+        ApplySettings();
     }
 
     void Acquire(PanelElement panelElement)
@@ -473,8 +580,11 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         panelElement.ContentOverflowMode = m_PreviewMode ? Overflow.Hidden : Overflow.Visible;
         panelElement.OnAfterRepaint += OnPanelElementWasRepainted;
         panelElement.OnBeforeRender += OnSubPanelBeforeRender;
+        panelElement.SubPanelReleasing += OnSubPanelReleasing;
+        panelElement.SubPanelRecreated += OnSubPanelRecreated;
+        panelElement.ThemeChanged += OnPanelThemeChanged;
         panelElement.SubPanel?.RegisterChangeProcessor(this);
-        m_DocumentRoot.style.backgroundImage = Background.FromRenderTexture(panelElement.RenderTexture);
+        m_DocumentRoot.style.backgroundImage = Background.FromRenderTexture(panelElement.DisplayTexture);
         m_DocumentRoot.PanelElement = panelElement;
         m_DocumentRoot.EventMode = m_PreviewMode ? CanvasEventMode.Forward : CanvasEventMode.Pick;
         panelElement.EnableAnimationSystem(m_PreviewMode);
@@ -486,7 +596,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     {
         // Do NOT MarkDirtyRepaint here, as it will be handled in ForceRuntimePanelUpdate if the panel's version
         // has changed since last tick.
-        m_DocumentRoot.style.backgroundImage = Background.FromRenderTexture(panelElement.RenderTexture);
+        m_DocumentRoot.style.backgroundImage = Background.FromRenderTexture(panelElement.DisplayTexture);
     }
 
     internal void OnViewportChanged(Vector2 viewportSize)
@@ -632,7 +742,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     void OnSelectionChanged()
     {
         var partOfSelection = false;
-        foreach (var selectedId in Selection.entityIds)
+        foreach (var selectedId in m_Context.Selection.EntityIds)
         {
             if (EditorUtility.EntityIdToObject(selectedId) is CanvasSettings)
             {
@@ -666,19 +776,117 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
             case CanvasBackgroundType.Checkerboard:
                 m_BackgroundColorOverlay.style.display = DisplayStyle.None;
                 m_BackgroundImageOverlay.style.display = DisplayStyle.None;
+                m_BackgroundCameraOverlay.style.display = DisplayStyle.None;
                 break;
             case CanvasBackgroundType.Color:
                 m_BackgroundColorOverlay.style.display = DisplayStyle.Flex;
                 m_BackgroundImageOverlay.style.display = DisplayStyle.None;
+                m_BackgroundCameraOverlay.style.display = DisplayStyle.None;
                 break;
             case CanvasBackgroundType.Image:
                 m_BackgroundColorOverlay.style.display = DisplayStyle.None;
                 m_BackgroundImageOverlay.style.display = DisplayStyle.Flex;
+                m_BackgroundCameraOverlay.style.display = DisplayStyle.None;
+                break;
+            case CanvasBackgroundType.Camera:
+                m_BackgroundColorOverlay.style.display = DisplayStyle.None;
+                m_BackgroundImageOverlay.style.display = DisplayStyle.None;
+                m_BackgroundCameraOverlay.style.display = DisplayStyle.Flex;
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(m_Settings.BackgroundType), m_Settings.BackgroundType,
                     null);
         }
+
+        var hasEditorThemeBackground = TryGetEditorThemeBackground(out var editorThemeBackground);
+        m_CheckerboardBackground.style.display = hasEditorThemeBackground ? DisplayStyle.None : DisplayStyle.Flex;
+        m_Background.style.backgroundColor = hasEditorThemeBackground ? editorThemeBackground : StyleKeyword.Null;
+
+        if (EffectiveBackgroundType == CanvasBackgroundType.Camera)
+            StartBackgroundCamera();
+        else
+            StopBackgroundCamera();
+    }
+
+    // Editor UI is drawn over the editor window background, so an editor theme is previewed over it too.
+    bool TryGetEditorThemeBackground(out Color background)
+    {
+        background = default;
+        if (!ThemeUtility.TryGetEditorCanvasTheme(m_PanelElement?.AppliedTheme, out var theme))
+            return false;
+
+        background = theme == CanvasTheme.Light ? k_LightEditorThemeBackground : k_DarkEditorThemeBackground;
+        return true;
+    }
+
+    void StartBackgroundCamera()
+    {
+        if (m_BackgroundCameraRefresh == null)
+            m_BackgroundCameraRefresh = schedule.Execute(RenderBackgroundCamera).Every(k_BackgroundCameraRefreshIntervalMs);
+        else
+            m_BackgroundCameraRefresh.Resume();
+    }
+
+    void StopBackgroundCamera()
+    {
+        m_BackgroundCameraRefresh?.Pause();
+        m_BackgroundCamera = null;
+        ReleaseBackgroundCameraTexture();
+    }
+
+    void RenderBackgroundCamera()
+    {
+        if (m_Settings == null || panel is not Panel hostPanel)
+            return;
+
+        if (m_BackgroundCamera == null)
+            m_BackgroundCamera = m_Settings.FindBackgroundCamera();
+
+        if (m_BackgroundCamera == null)
+        {
+            ReleaseBackgroundCameraTexture();
+            return;
+        }
+
+        var width = Mathf.Max(1, Mathf.RoundToInt(BaseSize.x * hostPanel.pixelsPerPoint));
+        var height = Mathf.Max(1, Mathf.RoundToInt(BaseSize.y * hostPanel.pixelsPerPoint));
+        if (m_BackgroundCameraTexture == null ||
+            m_BackgroundCameraTexture.width != width ||
+            m_BackgroundCameraTexture.height != height)
+        {
+            ReleaseBackgroundCameraTexture();
+            m_BackgroundCameraTexture = new RenderTexture(width, height, 24)
+            {
+                name = "CanvasBackgroundCamera",
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            m_BackgroundCameraOverlay.style.backgroundImage = Background.FromRenderTexture(m_BackgroundCameraTexture);
+        }
+
+        var previousTarget = m_BackgroundCamera.targetTexture;
+        m_BackgroundCamera.targetTexture = m_BackgroundCameraTexture;
+        try
+        {
+            m_BackgroundCamera.Render();
+        }
+        finally
+        {
+            m_BackgroundCamera.targetTexture = previousTarget;
+        }
+
+        m_BackgroundCameraFrame++;
+        m_BackgroundCameraOverlay.MarkDirtyRepaint();
+    }
+
+    void ReleaseBackgroundCameraTexture()
+    {
+        if (m_BackgroundCameraTexture == null)
+            return;
+
+        m_BackgroundCameraOverlay.style.backgroundImage = StyleKeyword.Null;
+        m_BackgroundCameraTexture.Release();
+        UnityEngine.Object.DestroyImmediate(m_BackgroundCameraTexture);
+        m_BackgroundCameraTexture = null;
     }
 
     void ApplySettings()
@@ -696,6 +904,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         m_BackgroundColorOverlay.style.backgroundColor = EffectiveBackgroundColor;
         m_BackgroundColorOverlay.style.opacity = EffectiveBackgroundColorOpacity;
         m_BackgroundImageOverlay.style.opacity = EffectiveBackgroundImageOpacity;
+        m_BackgroundCameraOverlay.style.opacity = EffectiveBackgroundCameraOpacity;
         m_BackgroundImageOverlay.style.backgroundImage = EffectiveBackgroundImage;
         var scaleMode = EffectiveBackgroundImageScaleMode;
         m_BackgroundImageOverlay.style.backgroundRepeat =
@@ -725,12 +934,21 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     }
 
     CanvasBackdropTexture.Settings GetBackdropSettings(float pixelsPerPoint)
+        => GetBackdropSettings(new Rect(Offset * pixelsPerPoint, BaseSize * ZoomScale * pixelsPerPoint), pixelsPerPoint);
+
+    /// <summary>
+    /// The background of the canvas, drawn in <paramref name="canvasRect"/> (render-target pixels) instead of where
+    /// the canvas is: what another view of the document, such as a library preview, shows behind it.
+    /// </summary>
+    internal CanvasBackdropTexture.Settings GetBackdropSettings(Rect canvasRect, float pixelsPerPoint)
     {
         return new CanvasBackdropTexture.Settings
         {
-            CanvasRect = new Rect(Offset * pixelsPerPoint, BaseSize * ZoomScale * pixelsPerPoint),
+            CanvasRect = canvasRect,
             PixelsPerPoint = pixelsPerPoint,
             CheckerTexture = m_CheckerboardBackground.texture,
+            UseEditorThemeBackground = TryGetEditorThemeBackground(out var editorThemeBackground),
+            EditorThemeBackground = editorThemeBackground,
             CheckerCellSize = m_CheckerboardBackground.cellSize,
             BackgroundType = EffectiveBackgroundType,
             BackgroundColor = EffectiveBackgroundColor,
@@ -739,6 +957,9 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
             BackgroundImageContentsHash = EffectiveBackgroundImage != null ? EffectiveBackgroundImage.imageContentsHash : default,
             BackgroundImageOpacity = EffectiveBackgroundImageOpacity,
             BackgroundImageScaleMode = EffectiveBackgroundImageScaleMode,
+            BackgroundCameraTexture = m_BackgroundCameraTexture,
+            BackgroundCameraFrame = m_BackgroundCameraFrame,
+            BackgroundCameraOpacity = EffectiveBackgroundCameraOpacity,
         };
     }
 
@@ -753,15 +974,8 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         if (texture == null)
             return;
 
-        var previous = RenderTexture.active;
-        try
-        {
-            Graphics.Blit(texture, renderTexture);
-        }
-        finally
-        {
-            RenderTexture.active = previous;
-        }
+        // The backdrop is drawn in the project color space; an editor sub-panel target stores gamma-encoded colors.
+        PanelElement.CopyStoredColors(texture, renderTexture);
         m_PanelElement.MarkTargetPrefilled();
     }
 

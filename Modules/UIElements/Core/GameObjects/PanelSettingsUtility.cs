@@ -109,6 +109,7 @@ internal static class PanelSettingsUtility
         panel.referenceSpritePixelsPerUnit = panelSettings.referenceSpritePixelsPerUnit;
         panel.panelRenderer.vertexBudget = panelSettings.vertexBudget;
         panel.panelRenderer.textureSlotCount = panelSettings.textureSlotCount;
+        panel.panelRenderer.filterTextureBudget = panelSettings.filterTextureBudget;
         panel.panelRenderer.extraVertexChannels = panelSettings.extraVertexChannels;
         panel.dataBindingManager.logLevel = panelSettings.bindingLogLevel;
 

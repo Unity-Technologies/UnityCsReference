@@ -94,39 +94,30 @@ namespace UnityEditor
             throw new InvalidOperationException("Use SetSelectionWithActiveEntityId.");
         }
 
-        internal static void SetFullSelection(Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint, bool notifyOnReselection)
-            => SetFullSelectionByID(EntityIdsOf(newSelection), EntityIdOf(activeObject), EntityIdOf(context), dataModeHint, notifyOnReselection);
-        internal static void SetFullSelection(Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint)
-            => SetFullSelection(newSelection, activeObject, context, dataModeHint, false);
+        internal static void SetFullSelection(Object[] newSelection, Object activeObject, Object context, bool notifyOnReselection)
+            => SetFullSelectionByID(EntityIdsOf(newSelection), EntityIdOf(activeObject), EntityIdOf(context), notifyOnReselection);
+        internal static void SetFullSelection(Object[] newSelection, Object activeObject, Object context)
+            => SetFullSelection(newSelection, activeObject, context, false);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        internal static extern void SetFullSelectionByID(ReadOnlySpan<EntityId> newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, DataMode dataModeHint, bool notifyOnReselection);
-        internal static void SetFullSelectionByID(EntityId[] newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, DataMode dataModeHint)
+        internal static extern void SetFullSelectionByID(ReadOnlySpan<EntityId> newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, bool notifyOnReselection);
+        internal static void SetFullSelectionByID(EntityId[] newSelection, EntityId activeObjectEntityId, EntityId contextEntityId)
         {
             if (newSelection == null)
                 throw new ArgumentNullException(nameof(newSelection), "Pass an empty array to clear the selection.");
-            SetFullSelectionByID(newSelection, activeObjectEntityId, contextEntityId, dataModeHint, false);
+            SetFullSelectionByID(newSelection, activeObjectEntityId, contextEntityId, false);
         }
 
         [Obsolete("Use EntityId version of SetFullSelectionByID instead.", true)]
-        internal static void SetFullSelectionByID(int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint)
+        internal static void SetFullSelectionByID(int[] newSelection, int activeObjectInstanceID, int contextInstanceID)
         {
             throw new InvalidOperationException("Use EntityId version of SetFullSelectionByID.");
         }
-
-        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        internal static extern void UpdateSelectionMetaData(Object context, DataMode dataModeHint);
 
         // Returns the active context object
         extern public static Object activeContext
         {
             [NativeMethod("GetActiveContext", true)]
-            get;
-        }
-
-        internal extern static DataMode dataModeHint
-        {
-            [NativeMethod("GetDataModeHint", true)]
             get;
         }
 

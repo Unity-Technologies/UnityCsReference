@@ -344,6 +344,8 @@ namespace UnityEditor
             object[] args = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets };
             object[] argsWithDidDomainReload = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets, didDomainReload};
             var containsNoAssets = importedAssets.Length == 0 && addedAssets.Length == 0 && deletedAssets.Length == 0 && movedAssets.Length == 0 && movedFromPathAssets.Length == 0;
+            if (!containsNoAssets)
+                InspectedAssets.IncrementAssetsVersion();
 
             foreach (OnPostprocessAllAssetsCallbackCollection.MethodInfoCallback assetPostProcessor in s_OnPostprocessAllAssetsCallbacks.sortedCallbacks)
             {
@@ -833,12 +835,13 @@ namespace UnityEditor
             AssetDatabase.RegisterCustomDependency(kSinglePassBuildSceneProcessorDependencyName, Hash128.Compute(GetSinglePassBuildSceneProcessorsHashString()));
         }
 
-        static void GetProcessorHashString(string methodName, ref string hashString)
+        internal static void GetProcessorHashString(string methodName, ref string hashString)
         {
             if (hashString != null)
                 return;
 
-            var versionsByType = new SortedList<string, uint>();
+            // Ordinal keys with the assembly name (not its version) so distinct classes never collide
+            var versionsByType = new SortedList<string, uint>(StringComparer.Ordinal);
 
             foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
@@ -848,7 +851,7 @@ namespace UnityEditor
                     {
                         var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
                         uint version = inst.GetVersion();
-                        versionsByType.Add(assetPostprocessorClass.FullName, version);
+                        versionsByType.Add(assetPostprocessorClass.FullName + ", " + assetPostprocessorClass.Assembly.GetName().Name, version);
                     }
                 }
                 catch (MissingMethodException)

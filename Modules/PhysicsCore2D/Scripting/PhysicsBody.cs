@@ -1838,6 +1838,11 @@ namespace Unity.U2D.Physics
         /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.
         /// </summary>
+        /// <remarks>
+        /// The owner also decides whether the bodies are kept when a scene loads in Single mode.
+        /// They are kept when their owner is a GameObject, or a component on one, that is in the DontDestroyOnLoad scene or has <see cref="HideFlags.DontSave"/> set.
+        /// See <see cref="PhysicsWorld.SceneLoadMode"/>.
+        /// </remarks>
         /// <param name="bodies">The bodies to set ownership for.</param>
         /// <param name="owner">The object that owns this key. Whilst it is valid to not specify an owner object (NULL), it is recommended for debugging purposes.</param>
         /// <param name="ownerKey">The owner key to be used. The value must be non-zero. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
@@ -1849,6 +1854,11 @@ namespace Unity.U2D.Physics
         /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
         /// </summary>
+        /// <remarks>
+        /// The owner also decides whether the body is kept when a scene loads in Single mode.
+        /// The body is kept when its owner is a GameObject, or a component on one, that is in the DontDestroyOnLoad scene or has <see cref="HideFlags.DontSave"/> set.
+        /// See <see cref="PhysicsWorld.SceneLoadMode"/>.
+        /// </remarks>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
         public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => SetOwner(stackalloc PhysicsBody[1] { this }, owner, ownerKey);
@@ -1859,6 +1869,11 @@ namespace Unity.U2D.Physics
         /// This call does not bind the lifetime of the specified owner object, it is simply a reference.
         /// It is also valid to not specify an owner object (NULL) to simply gain an owner key however it can be useful, if simply for debugging purposes and discovery, to know which object is the owner.
         /// </summary>
+        /// <remarks>
+        /// The owner also decides whether the body is kept when a scene loads in Single mode.
+        /// The body is kept when its owner is a GameObject, or a component on one, that is in the DontDestroyOnLoad scene or has <see cref="HideFlags.DontSave"/> set.
+        /// See <see cref="PhysicsWorld.SceneLoadMode"/>.
+        /// </remarks>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <returns>The owner key assigned.</returns>
         public readonly int SetOwner(UnityEngine.Object owner)

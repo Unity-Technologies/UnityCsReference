@@ -10,7 +10,6 @@ using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Internal;
-using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Search
 {
@@ -632,7 +631,6 @@ namespace UnityEditor.Search
             };
         }
 
-        [NoAutoStaticsCleanup] // Immutable default/invalid sentinel value; holds no user-code references, safe to persist across reloads.
         static readonly ItemCellDescriptor k_InvalidDescriptor = new();
 
         SearchTableViewCell GetCell(ItemCellDescriptor descriptor)

@@ -29,6 +29,10 @@ namespace Unity.Entities
     public struct UnityObjectRef<T> : IEquatable<UnityObjectRef<T>>
         where T : Object
     {
+        // The referenced object's EntityId must stay the first and only 8 bytes of this struct.
+        // Managed serialization treats UntypedUnityObjectRef as the asset reference and reads/writes the id
+        // at offset 0, and Entities subscene serialization patches ids at the same offset.
+        // UnityObjectRefLayoutTests.IdIsOnlyFieldAtOffsetZero pins this layout.
         [SerializeField]
         internal UntypedUnityObjectRef Id;
 

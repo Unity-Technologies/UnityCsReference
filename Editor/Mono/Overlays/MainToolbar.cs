@@ -423,7 +423,6 @@ namespace UnityEditor.Toolbars
         readonly static SaveData[] m_EmptySave = Array.Empty<SaveData>();
         [NoAutoStaticsCleanup] // Shared zero-length empty array (Array.Empty); holds no references, safe to persist.
         readonly static DynamicPanelContainerData[] m_EmptyDynamicPanelContainerData = Array.Empty<DynamicPanelContainerData>();
-        [NoAutoStaticsCleanup] // Shared zero-length empty array (Array.Empty); holds no references, safe to persist.
         readonly static string[] m_EmptyMenuItemPaths = Array.Empty<string>();
 
         public SaveData[] saveData => m_EmptySave;

@@ -13,24 +13,24 @@ namespace Unity.UIToolkit.Editor;
 /// </summary>
 static class HighlightUtility
 {
-    public static void RequestHighlights(StyleRule rule, CommandSources.CommandSource source)
+    public static void RequestHighlights(AuthoringContext context, StyleRule rule, CommandSources.CommandSource source)
     {
-        RequestHighlightsCommand.Execute(source, rule);
+        RequestHighlightsCommand.Execute(context, source, rule);
     }
 
-    public static void RequestHighlights(VisualElement element, CommandSources.CommandSource source)
+    public static void RequestHighlights(AuthoringContext context, VisualElement element, CommandSources.CommandSource source)
     {
-        RequestHighlightsCommand.Execute(source, element);
+        RequestHighlightsCommand.Execute(context, source, element);
     }
 
-    public static void RequestHighlights(int elementId, VisualTreeAsset elementDocument, CommandSources.CommandSource source)
+    public static void RequestHighlights(AuthoringContext context, int elementId, VisualTreeAsset elementDocument, CommandSources.CommandSource source)
     {
-        RequestHighlightsCommand.Execute(source, elementId, elementDocument);
+        RequestHighlightsCommand.Execute(context, source, elementId, elementDocument);
     }
 
-    public static void ClearHighlights()
+    public static void ClearHighlights(AuthoringContext context)
     {
-        HighlightCommand.Execute(null, null, null);
+        HighlightCommand.Execute(context, null, null, null);
     }
 
     public static void GetMatchingElementsForSelector(VisualElement root, StyleComplexSelector complexSelector, HashSet<VisualElement> matched)

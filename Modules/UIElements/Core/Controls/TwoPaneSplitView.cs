@@ -132,7 +132,6 @@ namespace UnityEngine.UIElements
             ? m_FixedPaneInitialDimension
             : m_FixedPaneDimension;
 
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             set
             {
                 if (value == m_FixedPaneDimension)
@@ -142,7 +141,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal TwoPaneSplitViewResizer m_Resizer;
 
         public TwoPaneSplitView()

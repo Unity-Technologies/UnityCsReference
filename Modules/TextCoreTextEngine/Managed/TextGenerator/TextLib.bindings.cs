@@ -307,6 +307,23 @@ namespace UnityEngine.TextCore.Text
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         public static extern float GetLineWidth(IntPtr ptr, int lineNumber);
+
+        [NativeMethod(IsThreadSafe = true)]
+        static extern IntPtr GetWordsBuffer(IntPtr ptr, ref int count);
+
+        // Returns the word count; grows `words` when needed.
+        public static unsafe int GetWords(IntPtr ptr, ref RangeInt[] words)
+        {
+            int count = 0;
+            var buffer = GetWordsBuffer(ptr, ref count);
+            if (buffer == IntPtr.Zero || count <= 0)
+                return 0;
+
+            if (words == null || words.Length < count)
+                words = new RangeInt[Mathf.NextPowerOfTwo(count)];
+            new ReadOnlySpan<RangeInt>((void*)buffer, count).CopyTo(words);
+            return count;
+        }
     }
 
     [NativeHeader("Modules/TextCoreTextEngine/Native/OSFontFallback.h")]

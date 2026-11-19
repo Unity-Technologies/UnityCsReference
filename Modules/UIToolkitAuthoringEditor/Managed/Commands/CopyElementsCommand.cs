@@ -42,9 +42,10 @@ sealed class CopyElementsCommand : Command<CopyElementsCommand>
         return true;
     }
 
-    public static CommandExecutionStatus Execute(object source, VisualElementAsset[] elements)
+    public static CommandExecutionStatus Execute(object source, VisualElementAsset[] elements, AuthoringContext requestingContext = null)
     {
         using var cmd = GetPooled(source, elements);
+        cmd.RequestingContext = requestingContext;
         return UICommandQueue.Execute(cmd).Status;
     }
 
@@ -68,7 +69,7 @@ sealed class CopyElementsCommand : Command<CopyElementsCommand>
             return CommandExecutionStatus.ExecutionFailed;
 
         Clipboard.SystemCopyBuffer = content;
-        Clipboard.GetClipboardForStage()?.ClearCutElements();
+        Clipboard.For(RequestingContext)?.ClearCutElements();
         return CommandExecutionStatus.Success;
     }
 }

@@ -176,6 +176,11 @@ namespace UnityEditor
 
         [NoAutoStaticsCleanup] // theme-defined style value; SVC is self-managing and safe to keep
         internal static readonly SVC<Color> kViewBackgroundColor = new SVC<Color>("view", StyleCatalogKeyword.backgroundColor, GetDefaultBackgroundColor);
+        
+        [NoAutoStaticsCleanup] // theme-defined style value; SVC is self-managing and safe to keep
+        private static readonly SVC<Color> kSplitDraglineAnchorBackgroundColor = new SVC<Color>("--unity-colors-splitter_dragline_anchor-background");
+        [NoAutoStaticsCleanup] // theme-defined style value; SVC is self-managing and safe to keep
+        private static readonly SVC<Color> kSplitDraglineAnchorBackgroundHoverColor = new SVC<Color>("--unity-colors-splitter_dragline_anchor-background-hover");
 
         [NoAutoStaticsCleanup] // theme-defined style value; SVC is self-managing and safe to keep
         static readonly SVC<Color> k_HyperlinkColorDarkTheme = new SVC<Color>("--color-indigo-80", new Color(0.490f, 0.627f, 1.000f, 1f));
@@ -384,41 +389,33 @@ namespace UnityEditor
             }
         }
 
-        private delegate bool HeaderItemDelegate(Rect rectangle, UnityObject[] targets);
+        delegate bool HeaderItemDelegate(Rect rectangle, Type targetType, UnityObject[] targets);
+        delegate bool ObjectHeaderItemDelegate(Rect rectangle, UnityObject[] targets);
+
         [AutoStaticsCleanupOnCodeReload]
-        private static List<HeaderItemDelegate> s_EditorHeaderItemsMethods = null;
+        static Dictionary<Type, List<HeaderItemDelegate>> s_EditorHeaderItemsByTargetType = new Dictionary<Type, List<HeaderItemDelegate>>();
+
         internal static Rect DrawEditorHeaderItems(Rect rectangle, UnityObject[] targetObjs, float spacing = 0)
         {
-            if (targetObjs.Length == 0 || (targetObjs.Length == 1 && targetObjs[0].GetType() == typeof(System.Object)))
+            if (targetObjs.Length == 0)
+                return rectangle;
+
+            return DrawEditorHeaderItems(rectangle, targetObjs[0].GetType(), targetObjs, spacing);
+        }
+
+        // targetObjs is empty when targetType has no Object instances, such as data components
+        internal static Rect DrawEditorHeaderItems(Rect rectangle, Type targetType, UnityObject[] targetObjs, float spacing = 0)
+        {
+            if (targetType == null)
                 return rectangle;
 
             if (comparisonViewMode != ComparisonViewMode.None)
                 return rectangle;
 
-            if (s_EditorHeaderItemsMethods == null)
-            {
-                List<Type> targetObjTypes = new List<Type>();
-                var type = targetObjs[0].GetType();
-                while (type.BaseType != null)
-                {
-                    targetObjTypes.Add(type);
-                    type = type.BaseType;
-                }
-
-                AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<EditorHeaderItemAttribute>(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
-                Func<EditorHeaderItemAttribute, bool> filter = (a) => targetObjTypes.Exists(c => a.TargetType == c);
-                var methodInfos = methods.FilterAndSortOnAttribute(filter, (a) => a.callbackOrder);
-                s_EditorHeaderItemsMethods = new List<HeaderItemDelegate>();
-                foreach (MethodInfo methodInfo in methodInfos)
-                {
-                    s_EditorHeaderItemsMethods.Add((HeaderItemDelegate)Delegate.CreateDelegate(typeof(HeaderItemDelegate), methodInfo));
-                }
-            }
-
             float spacingToRemove = 0;
-            foreach (HeaderItemDelegate @delegate in s_EditorHeaderItemsMethods)
+            foreach (HeaderItemDelegate @delegate in GetEditorHeaderItems(targetType))
             {
-                if (@delegate(rectangle, targetObjs))
+                if (@delegate(rectangle, targetType, targetObjs))
                 {
                     rectangle.x -= rectangle.width + spacing;
                     spacingToRemove = rectangle.width + spacing;
@@ -427,6 +424,31 @@ namespace UnityEditor
             rectangle.x += spacingToRemove; // the spacing after a delegate is used to position the next element to draw but the last one is not used so we must remove it before exiting the method
 
             return rectangle;
+        }
+
+        static List<HeaderItemDelegate> GetEditorHeaderItems(Type targetType)
+        {
+            if (s_EditorHeaderItemsByTargetType.TryGetValue(targetType, out var items))
+                return items;
+
+            AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<EditorHeaderItemAttribute>(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+            Func<EditorHeaderItemAttribute, bool> filter = (a) => a.TargetType != null && a.TargetType.IsAssignableFrom(targetType);
+            items = new List<HeaderItemDelegate>();
+            foreach (MethodInfo methodInfo in methods.FilterAndSortOnAttribute(filter, (a) => a.callbackOrder))
+            {
+                items.Add(CreateHeaderItemDelegate(methodInfo));
+            }
+            s_EditorHeaderItemsByTargetType[targetType] = items;
+            return items;
+        }
+
+        static HeaderItemDelegate CreateHeaderItemDelegate(MethodInfo method)
+        {
+            if (method.GetParameters()[1].ParameterType == typeof(Type))
+                return (HeaderItemDelegate)Delegate.CreateDelegate(typeof(HeaderItemDelegate), method);
+
+            var objectItem = (ObjectHeaderItemDelegate)Delegate.CreateDelegate(typeof(ObjectHeaderItemDelegate), method);
+            return (rectangle, targetType, targets) => targets.Length > 0 && objectItem(rectangle, targets);
         }
 
         /// <summary>
@@ -888,7 +910,7 @@ namespace UnityEditor
 
         // Automatically loads version of icon that matches current skin.
         // Equivalent to Texture2DNamed in ObjectImages.cpp
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.ProjectAuditorModule", "UnityEditor.PlayModeModule")]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule", "UnityEditor.ProjectAuditorModule", "UnityEditor.PlayModeModule", "UnityEditor.NetworkProfilerModule")]
         internal static Texture2D LoadIcon(string name)
         {
             return LoadIconForSkin(name, skinIndex);
@@ -2077,14 +2099,19 @@ namespace UnityEditor
             return dragRect;
         }
 
-        internal static void DrawHorizontalSplitter(Rect dragRect)
+        internal static void DrawHorizontalSplitter(Rect dragRect) =>
+            DrawHorizontalSplitter(dragRect, dragRect);
+
+        internal static void DrawHorizontalSplitter(Rect dragRect, Rect hoverRect)
         {
+            GUIView.current?.MarkHotRegion(GUIClip.UnclipToWindow(hoverRect));
+
             if (Event.current.type != EventType.Repaint)
                 return;
-
+            bool hovered = hoverRect.Contains(Event.current.mousePosition);
+            Color tint = hovered ? kSplitDraglineAnchorBackgroundHoverColor : kSplitDraglineAnchorBackgroundColor;
             Color orgColor = GUI.color;
-            Color tintColor = (isProSkin) ? new Color(0.12f, 0.12f, 0.12f, 1.333f) : new Color(0.6f, 0.6f, 0.6f, 1.333f);
-            GUI.color = GUI.color * tintColor;
+            GUI.color = GUI.color * tint;
             Rect splitterRect = new Rect(dragRect.x - 1, dragRect.y, 1, dragRect.height);
             GUI.DrawTexture(splitterRect, whiteTexture);
             GUI.color = orgColor;

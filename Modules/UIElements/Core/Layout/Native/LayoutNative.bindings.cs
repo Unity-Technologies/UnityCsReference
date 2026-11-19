@@ -39,6 +39,9 @@ static partial class LayoutNative
     internal static extern IntPtr GetGridTracks(int manager, int handle, out int columnCount, out int rowCount);
 
     [NativeMethod(IsThreadSafe = false)]
+    internal static extern void GetGridExplicitStart(int manager, int handle, out int columnStart, out int rowStart);
+
+    [NativeMethod(IsThreadSafe = false)]
     internal static extern void ReleaseGridTracks(int manager, int handle);
 
     [NativeMethod(IsThreadSafe = false)]

@@ -41,7 +41,7 @@ internal class AuthoringVariableEditingContext : IVariableEditingContext
     public StyleSheet CurrentStyleSheet => m_Inspector.Target.Sheet ??
         CurrentVisualElement.visualTreeAssetSource?.inlineSheet;
 
-    public bool EditorExtensionMode => false;
+    public bool EditorExtensionMode => EditorExtensionAuthoring.IsEnabledFor(CurrentVisualElement);
     public bool IsSelectorElement => m_Inspector.Target.Type == StyleDiff.ContextType.StyleSheet;
     public VisualElement TooltipRoot => m_Inspector;
 

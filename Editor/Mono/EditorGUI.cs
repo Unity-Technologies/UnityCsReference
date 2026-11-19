@@ -320,8 +320,6 @@ namespace UnityEditor
             public static Texture2D prefabOverlayAddedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayAdded Icon");
             [NoAutoStaticsCleanup] // lazy-loaded Texture2D; null after reload is fine, re-loaded by LoadIcon
             public static Texture2D prefabOverlayRemovedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayRemoved Icon");
-            [NoAutoStaticsCleanup] // lazy-loaded Texture2D; null after reload is fine, re-loaded by LoadIcon
-            public static Texture2D dataComponentIcon = EditorGUIUtility.LoadIcon("DataComponent Icon");
             public static readonly GUIStyle linkButton = "FloatFieldLinkButton";
             [NoAutoStaticsCleanup] // lazy-loaded Texture2D; null after reload is fine, re-loaded by LoadIcon
             public static Texture2D repaintDot = EditorGUIUtility.LoadIcon("RepaintDot");
@@ -1856,7 +1854,7 @@ namespace UnityEditor
                         DisplayDataComponentContextMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), editor);
                         evt.Use();
                     }
-                    else if (IsValidForContextMenu(targetObjs[0]))
+                    else if (hasUnityObjectTargets && IsValidForContextMenu(targetObjs[0]))
                     {
                         EditorUtility.DisplayObjectContextMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), targetObjs, 0);
                         evt.Use();
@@ -3521,6 +3519,10 @@ namespace UnityEditor
                                 properties);
                         }
                     }
+                    else if (shouldDisplayPrefabContextMenuItems && property.serializedObject.isTargetDataComponent)
+                    {
+                        AddDataComponentPrefabOverrideMenuItems(pm, property, properties);
+                    }
                     else if (shouldDisplayPrefabContextMenuItems)
                     {
                         bool samePropertyValueAsSource = false;
@@ -5082,7 +5084,6 @@ namespace UnityEditor
             return null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Object ValidateObjectFieldAssignment(Object[] references, Type objType, SerializedProperty property, ObjectFieldValidatorOptions options)
         {
             if (references.Length > 0)
@@ -6647,10 +6648,32 @@ namespace UnityEditor
 
         // Data-component editors have no UnityEngine.Object target for DisplayObjectContextMenu,
         // so their titlebar gets its own menu.
-        static void DisplayDataComponentContextMenu(Rect position, Editor editor)
+        internal static void DisplayDataComponentContextMenu(Rect position, Editor editor)
         {
-            EntityId[] componentIds = editor.targetEntityIds;
+            FillDataComponentContextMenu(editor.targetEntityIds).DropDown(position);
+        }
+
+        internal static GenericMenu FillDataComponentContextMenu(EntityId[] componentIds)
+        {
             var menu = new GenericMenu();
+            if (componentIds.Length == 1 && PrefabUtility.IsAddedDataComponentOverride(componentIds[0]))
+            {
+                AddAddedDataComponentMenuItems(menu, componentIds[0]);
+                menu.AddSeparator("");
+            }
+            else if (componentIds.Length == 1 && PrefabUtility.HasDataComponentOverride(componentIds[0]))
+            {
+                AddModifiedDataComponentMenuItems(menu, componentIds[0]);
+                menu.AddSeparator("");
+            }
+
+            GUIContent resetContent = L10n.TextContent("Reset", null, null, null);
+            if (CanModifyDataComponents(componentIds))
+                menu.AddItem(resetContent, false, () => ResetDataComponents(componentIds));
+            else
+                menu.AddDisabledItem(resetContent);
+            menu.AddSeparator("");
+
             GUIContent removeContent = L10n.TextContent("Remove Component", null, null, null);
             if (CanRemoveDataComponents(componentIds))
                 menu.AddItem(removeContent, false, () => RemoveDataComponents(componentIds));
@@ -6675,11 +6698,158 @@ namespace UnityEditor
             else
                 menu.AddDisabledItem(pasteValuesContent);
 
-            menu.DropDown(position);
+            return menu;
+        }
+
+        internal static void ResetDataComponents(EntityId[] componentIds)
+        {
+            if (!CanModifyDataComponents(componentIds))
+                return;
+
+            foreach (EntityId componentId in componentIds)
+                ComponentUtility.ResetDataComponent(componentId);
         }
 
         static Object GetDataComponentOwner(EntityId componentId)
             => EditorUtility.EntityIdToObject(DataComponentEntityId.GetOwner(componentId));
+
+        // Matches the added component items EditorUtility.DisplayObjectContextMenu gives a component, with the owner GameObject's apply targets.
+        static void AddAddedDataComponentMenuItems(GenericMenu menu, EntityId dataComponent)
+        {
+            var owner = GetDataComponentOwner(dataComponent) as GameObject;
+            if (owner == null)
+                return;
+
+            PrefabUtility.HandleApplyRevertMenuItems(
+                "Added Component",
+                owner,
+                (menuItemContent, sourceGo, _) =>
+                {
+                    string assetPath = AssetDatabase.GetAssetPath(sourceGo);
+                    GameObject rootObject = PrefabUtility.GetRootGameObject(sourceGo);
+
+                    if (EditorUtility.IsPersistent(owner)
+                        || !PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                    {
+                        menu.AddDisabledItem(menuItemContent);
+                    }
+                    else
+                    {
+                        menu.AddItem(menuItemContent, false, () =>
+                        {
+                            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(assetPath, PrefabUtility.SaveVerb.Apply))
+                                return;
+                            PrefabUtility.ApplyAddedDataComponent(dataComponent, assetPath, InteractionMode.UserAction);
+                            EditorUtility.ForceRebuildInspectors();
+                        });
+                    }
+                },
+                (menuItemContent) =>
+                {
+                    menu.AddItem(menuItemContent, false, () =>
+                    {
+                        PrefabUtility.RevertAddedDataComponent(dataComponent, InteractionMode.UserAction);
+                        EditorUtility.ForceRebuildInspectors();
+                    });
+                }
+            );
+        }
+
+        // Matches the modified component items EditorUtility.DisplayObjectContextMenu gives a component, with the owner GameObject's apply targets.
+        static void AddModifiedDataComponentMenuItems(GenericMenu menu, EntityId dataComponent)
+        {
+            var owner = GetDataComponentOwner(dataComponent) as GameObject;
+            if (owner == null)
+                return;
+
+            PrefabUtility.HandleApplyRevertMenuItems(
+                "Modified Component",
+                owner,
+                (menuItemContent, sourceObject, _) =>
+                {
+                    string assetPath = AssetDatabase.GetAssetPath(sourceObject);
+                    GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
+
+                    if (EditorUtility.IsPersistent(owner)
+                        || !PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject)
+                        || !PrefabUtility.HasApplicableDataComponentOverridesForTarget(dataComponent, sourceObject, false))
+                    {
+                        menu.AddDisabledItem(menuItemContent);
+                    }
+                    else
+                    {
+                        menu.AddItem(menuItemContent, false, () =>
+                        {
+                            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(assetPath, PrefabUtility.SaveVerb.Apply))
+                                return;
+                            PrefabUtility.ApplyDataComponentOverride(dataComponent, assetPath, InteractionMode.UserAction);
+                            EditorUtility.ForceReloadInspectors();
+                        });
+                    }
+                },
+                (menuItemContent) =>
+                {
+                    menu.AddItem(menuItemContent, false, () =>
+                    {
+                        PrefabUtility.RevertDataComponentOverride(dataComponent, InteractionMode.UserAction);
+                        EditorUtility.ForceReloadInspectors();
+                    });
+                }
+            );
+        }
+
+        // A data component has no Object. It is in the same Prefab assets as its owner GameObject, so the owner's apply targets are its apply targets.
+        static void AddDataComponentPrefabOverrideMenuItems(GenericMenu pm, SerializedProperty property, SerializedProperty[] properties)
+        {
+            EntityId dataComponent = property.serializedObject.targetEntityId;
+            var owner = GetDataComponentOwner(dataComponent) as GameObject;
+            if (owner == null)
+                return;
+
+            bool samePropertyValueAsSource = false;
+            EntityId source = PrefabUtility.GetCorrespondingDataComponentFromSource(dataComponent);
+            if (source != EntityId.None)
+            {
+                using (var sourceSerializedObject = new SerializedObject(source))
+                {
+                    SerializedProperty sourceProperty = sourceSerializedObject.FindProperty(property.propertyPath);
+                    samePropertyValueAsSource = sourceProperty != null && SerializedProperty.DataEquals(property, sourceProperty);
+                }
+            }
+
+            PrefabUtility.HandleApplyRevertMenuItems(
+                null,
+                owner,
+                (menuItemContent, sourceObject, _) =>
+                {
+                    // Add apply menu item for this apply target.
+                    TargetChoiceHandler.PropertyAndSourcePathInfo info = new TargetChoiceHandler.PropertyAndSourcePathInfo();
+                    info.properties = properties;
+                    info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
+                    GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
+                    if (EditorUtility.IsPersistent(owner)
+                        || !PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject)
+                        || !PrefabUtility.CanPropertyBeAppliedToTarget(property, rootObject))
+                        pm.AddDisabledItem(menuItemContent);
+                    else
+                        pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
+                },
+                (menuItemContent) =>
+                {
+                    // Add revert menu item.
+                    GUIContent content = menuItemContent;
+                    if (samePropertyValueAsSource)
+                    {
+                        GameObject sourceRoot = PrefabUtility.GetRootGameObject(PrefabUtility.GetCorrespondingObjectFromSource(owner));
+                        content = new GUIContent(string.Format(Styles.revertPropertyValueIdenticalToSource, sourceRoot.name));
+                    }
+
+                    pm.AddItem(content, false, TargetChoiceHandler.RevertPrefabPropertyOverride, properties);
+                },
+                false,
+                property.serializedObject.targetObjectsCount
+            );
+        }
 
         internal static bool CanRemoveDataComponents(EntityId[] componentIds)
         {
@@ -6688,6 +6858,18 @@ namespace UnityEditor
             foreach (EntityId componentId in componentIds)
             {
                 if (!EditorUtility.IsUserModifiable(GetDataComponentOwner(componentId)))
+                    return false;
+            }
+            return true;
+        }
+
+        static bool CanModifyDataComponents(EntityId[] componentIds)
+        {
+            if (componentIds == null || componentIds.Length == 0)
+                return false;
+            foreach (EntityId componentId in componentIds)
+            {
+                if (!ComponentUtility.CanModifyDataComponent(componentId))
                     return false;
             }
             return true;
@@ -6705,8 +6887,8 @@ namespace UnityEditor
 
         // Make an inspector-window-like titlebar.
         //
-        // editor is optional. Without UnityEngine.Object targets (data components, entities) targetObjs is null-filled and the
-        // Object-only parts are skipped; data components get their own options menu.
+        // editor is optional. Without UnityEngine.Object targets (data components, entities) targetObjs is empty and the
+        // Object-only parts are skipped. Data components get their own options menu.
         internal static void DoInspectorTitlebar(Rect position, int id, bool foldout, Object[] targetObjs, Editor editor, SerializedProperty enabledProperty, GUIStyle baseStyle)
         {
             bool hasUnityObjectTargets = editor == null || editor.hasUnityObjectTargets;
@@ -6737,7 +6919,7 @@ namespace UnityEditor
 
             bool isAddedComponentAndEventIsRepaint = false;
             Component comp = hasUnityObjectTargets ? targetObjs[0] as Component : null;
-            if (hasUnityObjectTargets && ShouldDrawOverrideBackground(targetObjs, evt, comp))
+            if (hasUnityObjectTargets ? ShouldDrawOverrideBackground(targetObjs, evt, comp) : ShouldDrawDataComponentOverrideBackground(editor, evt))
             {
                 isAddedComponentAndEventIsRepaint = true;
                 DrawOverrideBackgroundApplicable(position, true);
@@ -6746,33 +6928,32 @@ namespace UnityEditor
             if (hasUnityObjectTargets)
                 DoInspectorEnabledToggle(position, targetObjs, comp, iconRect, enabledProperty, toggleRect, hovered, hasFocus);
 
-            if (hasUnityObjectTargets)
+            Type targetType = hasUnityObjectTargets ? targetObjs[0].GetType() : editor.targetType;
+            if (targetType != null)
             {
                 Rect headerItemRect = settingsRect;
                 headerItemRect.x -= kInspTitlebarIconWidth + kInspTitlebarSpacing;
                 if (hovered || hasFocus)
                 {
-                    headerItemRect = EditorGUIUtility.DrawEditorHeaderItems(headerItemRect, targetObjs, kInspTitlebarSpacing);
+                    headerItemRect = EditorGUIUtility.DrawEditorHeaderItems(headerItemRect, targetType, targetObjs, kInspTitlebarSpacing);
                 }
                 textRect.xMax = headerItemRect.xMin - kInspTitlebarSpacing;
             }
             else
             {
-                // No header items without Object targets; extend text to the settings rect.
+                // targetType is null until the editor resolves it after a code reload
                 textRect.xMax = settingsRect.xMin - kInspTitlebarSpacing;
             }
 
-            if (evt.type == EventType.Repaint && hasUnityObjectTargets)
+            if (evt.type == EventType.Repaint)
             {
-                var icon = AssetPreview.GetMiniThumbnail(targetObjs[0]);
+                var icon = hasUnityObjectTargets
+                    ? AssetPreview.GetMiniThumbnail(targetObjs[0])
+                    : AssetPreview.GetMiniTypeThumbnail(editor.targetType);
                 GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), iconRect.Contains(Event.current.mousePosition), false, false, false);
 
                 if (isAddedComponentAndEventIsRepaint)
                     GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(Styles.prefabOverlayAddedIcon), false, false, false, false);
-            }
-            else if (evt.type == EventType.Repaint)
-            {
-                GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(Styles.dataComponentIcon), iconRect.Contains(Event.current.mousePosition), false, false, false);
             }
 
             // Temporarily set GUI.enabled = true to enable the Settings button. see Case 947218.
@@ -6793,7 +6974,7 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.Repaint:
-                    string title = editor?.GetInspectorTitle(targetObjs.Length > 1)
+                    string title = editor?.GetInspectorTitle(editor.targetCount > 1)
                         ?? ObjectNames.GetInspectorTitle(targetObjs[0], targetObjs.Length > 1);
                     textStyle.Draw(textRect, EditorGUIUtility.TempContent(title), hovered, pressed, foldout, hasFocus);
                     if (hasOptionsMenu && EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None && (hovered || hasFocus))
@@ -6915,7 +7096,37 @@ namespace UnityEditor
                 PrefabUtility.GetCorrespondingObjectFromSource(comp) == null;
         }
 
+        // A data component has no Object, so whether it is an added override is checked by EntityId.
+        internal static bool ShouldDrawDataComponentOverrideBackground(Editor editor, Event evt)
+        {
+            return evt.type == EventType.Repaint &&
+                editor != null &&
+                editor.isDataComponentEditor &&
+                editor.targetEntityIds.Length == 1 &&
+                EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
+                PrefabUtility.IsAddedDataComponentOverride(editor.targetEntityId);
+        }
+
         internal static void RemovedComponentTitlebar(Rect position, GameObject instanceGo, Component sourceComponent)
+        {
+            RemovedComponentTitlebar(
+                position,
+                AssetPreview.GetMiniThumbnail(sourceComponent),
+                ObjectNames.GetInspectorTitle(sourceComponent),
+                menu => AddRemovedComponentMenuItems(menu, instanceGo, sourceComponent));
+        }
+
+        internal static void RemovedDataComponentTitlebar(Rect position, GameObject instanceGo, EntityId assetDataComponent)
+        {
+            Type type = PrefabUtility.GetDataComponentType(assetDataComponent);
+            RemovedComponentTitlebar(
+                position,
+                AssetPreview.GetMiniTypeThumbnail(type),
+                type != null ? ObjectNames.GetInspectorTitle(type) : "Component",
+                menu => AddRemovedDataComponentMenuItems(menu, instanceGo, assetDataComponent));
+        }
+
+        static void RemovedComponentTitlebar(Rect position, Texture icon, string title, Action<GenericMenu> addMenuItems)
         {
             GUIStyle baseStyle = EditorStyles.inspectorTitlebar;
             GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
@@ -6962,8 +7173,6 @@ namespace UnityEditor
 
                     EditorStyles.optionsButtonStyle.Draw(settingsRect, GUIContent.none, id, false, settingsRect.Contains(Event.current.mousePosition));
 
-                    var icon = AssetPreview.GetMiniThumbnail(sourceComponent);
-
                     using (new DisabledScope(true))
                     {
                         GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), false, false, false, false);
@@ -6974,7 +7183,7 @@ namespace UnityEditor
 
                     using (new DisabledScope(true))
                     {
-                        textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(sourceComponent) + " (Removed)"), false, false, false, false);
+                        textStyle.Draw(textRect, EditorGUIUtility.TempContent(title + " (Removed)"), false, false, false, false);
                     }
                     break;
             }
@@ -6982,40 +7191,78 @@ namespace UnityEditor
             if (openMenu)
             {
                 GenericMenu menu = new GenericMenu();
-                PrefabUtility.HandleApplyRevertMenuItems(
-                    "Removed Component",
-                    instanceGo,
-                    (menuItemContent, sourceObject, _) =>
-                    {
-                        TargetChoiceHandler.ObjectInstanceAndSourceInfo info = new TargetChoiceHandler.ObjectInstanceAndSourceInfo();
-                        info.instanceObject = instanceGo;
-                        Component componentToRemove = sourceComponent;
-                        while (componentToRemove.gameObject != sourceObject)
-                        {
-                            componentToRemove = PrefabUtility.GetCorrespondingObjectFromSource(componentToRemove);
-                            if (componentToRemove == null)
-                                return;
-                        }
-                        info.correspondingObjectInSource = componentToRemove;
-                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(componentToRemove) || EditorUtility.IsPersistent(instanceGo))
-                            menu.AddDisabledItem(menuItemContent);
-                        else
-                            menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabRemovedComponent, info);
-                    },
-                    (menuItemContent) =>
-                    {
-                        TargetChoiceHandler.ObjectInstanceAndSourceInfo info = new TargetChoiceHandler.ObjectInstanceAndSourceInfo();
-                        info.instanceObject = instanceGo;
-                        info.correspondingObjectInSource = sourceComponent;
-                        menu.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabRemovedComponent, info);
-                    }
-                );
+                addMenuItems(menu);
                 if (openMenuRect == new Rect())
                     menu.ShowAsContext();
                 else
                     menu.DropDown(settingsRect);
                 evt.Use();
             }
+        }
+
+        static void AddRemovedComponentMenuItems(GenericMenu menu, GameObject instanceGo, Component sourceComponent)
+        {
+            PrefabUtility.HandleApplyRevertMenuItems(
+                "Removed Component",
+                instanceGo,
+                (menuItemContent, sourceObject, _) =>
+                {
+                    TargetChoiceHandler.ObjectInstanceAndSourceInfo info = new TargetChoiceHandler.ObjectInstanceAndSourceInfo();
+                    info.instanceObject = instanceGo;
+                    Component componentToRemove = sourceComponent;
+                    while (componentToRemove.gameObject != sourceObject)
+                    {
+                        componentToRemove = PrefabUtility.GetCorrespondingObjectFromSource(componentToRemove);
+                        if (componentToRemove == null)
+                            return;
+                    }
+                    info.correspondingObjectInSource = componentToRemove;
+                    if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(componentToRemove) || EditorUtility.IsPersistent(instanceGo))
+                        menu.AddDisabledItem(menuItemContent);
+                    else
+                        menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabRemovedComponent, info);
+                },
+                (menuItemContent) =>
+                {
+                    TargetChoiceHandler.ObjectInstanceAndSourceInfo info = new TargetChoiceHandler.ObjectInstanceAndSourceInfo();
+                    info.instanceObject = instanceGo;
+                    info.correspondingObjectInSource = sourceComponent;
+                    menu.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabRemovedComponent, info);
+                }
+            );
+        }
+
+        static void AddRemovedDataComponentMenuItems(GenericMenu menu, GameObject instanceGo, EntityId assetDataComponent)
+        {
+            PrefabUtility.HandleApplyRevertMenuItems(
+                "Removed Component",
+                instanceGo,
+                (menuItemContent, sourceObject, _) =>
+                {
+                    if (!RemovedDataComponent.CanApplyTo(instanceGo, sourceObject, assetDataComponent))
+                    {
+                        menu.AddDisabledItem(menuItemContent);
+                        return;
+                    }
+
+                    string assetPath = AssetDatabase.GetAssetPath(sourceObject);
+                    menu.AddItem(menuItemContent, false, () =>
+                    {
+                        if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(assetPath, PrefabUtility.SaveVerb.Apply))
+                            return;
+                        PrefabUtility.ApplyRemovedDataComponent(instanceGo, assetDataComponent, assetPath, InteractionMode.UserAction);
+                        EditorUtility.ForceRebuildInspectors();
+                    });
+                },
+                (menuItemContent) =>
+                {
+                    menu.AddItem(menuItemContent, false, () =>
+                    {
+                        PrefabUtility.RevertRemovedDataComponent(instanceGo, assetDataComponent, InteractionMode.UserAction);
+                        EditorUtility.ForceRebuildInspectors();
+                    });
+                }
+            );
         }
 
         internal static bool ToggleTitlebar(Rect position, GUIContent label, bool foldout, ref bool toggleValue, bool supportHover = false)
@@ -7094,21 +7341,24 @@ namespace UnityEditor
             return EditorGUIInternal.DoToggleForward(IndentedRect(position), id, foldout, GUIContent.none, GUIStyle.none);
         }
 
-        [EditorHeaderItem(typeof(Object), -1000)]
-        internal static bool HelpIconButton(Rect position, Object[] objs)
+        [EditorHeaderItem(typeof(object), -1000)]
+        internal static bool HelpIconButton(Rect position, Type targetType, Object[] objs)
         {
-            var obj = objs[0];
+            var obj = objs.Length > 0 ? objs[0] : null;
             bool isDevBuild = Unsupported.IsSourceBuild();
 
             // For efficiency, only check in development builds if this script is a user script.
             bool monoBehaviourFallback = !isDevBuild;
             if (!monoBehaviourFallback)
             {
-                monoBehaviourFallback = HelpButtonCache.IsObjectPartOfTargetAssemblies(obj);
+                monoBehaviourFallback = HelpButtonCache.IsTypePartOfTargetAssemblies(targetType);
             }
 
-            bool hasHelp = HelpButtonCache.HasHelpForObject(obj, monoBehaviourFallback);
-            if (hasHelp || isDevBuild)
+            bool hasHelp = HelpButtonCache.HasHelpForType(targetType, obj, monoBehaviourFallback);
+
+            // Built-in docs only cover Object types, so types without Object targets don't warn about missing docs
+            bool warnMissingHelp = isDevBuild && !hasHelp && obj is not null;
+            if (hasHelp || warnMissingHelp)
             {
                 // Help button should not be disabled at any time. For example VCS system disables
                 // inspectors and it wouldn't make sense to prevent users from getting help because
@@ -7121,8 +7371,8 @@ namespace UnityEditor
                 // Only build the tooltip string if the cursor is over our help button rect
                 if (position.Contains(Event.current.mousePosition))
                 {
-                    string helpTopic = Help.GetNiceHelpNameForObject(obj, monoBehaviourFallback);
-                    if (isDevBuild && !hasHelp)
+                    string helpTopic = Help.GetNiceHelpNameForType(targetType, obj, monoBehaviourFallback);
+                    if (warnMissingHelp)
                     {
                         bool isScript = obj is MonoBehaviour;
                         string pageName = (isScript ? "script-" : "sealed partial class-") + helpTopic;
@@ -7135,13 +7385,13 @@ namespace UnityEditor
                 }
 
                 Color oldColor = GUI.color;
-                if (isDevBuild && !hasHelp)
+                if (warnMissingHelp)
                     GUI.color = Color.yellow;
 
                 GUIStyle helpIconStyle = EditorStyles.iconButton;
                 if (GUI.Button(position, content, helpIconStyle))
                 {
-                    Help.ShowHelpForObject(obj);
+                    Help.ShowHelpForType(targetType, obj);
                 }
 
                 GUI.color = oldColor;
@@ -9940,31 +10190,31 @@ namespace UnityEditor
             static readonly UnityEngine.DelegateAutoCleanup __autoCleanup =
                 new(__AutoStaticsCleanup, typeof(Unity.Scripting.LifecycleManagement.CodeLoadedScope), "UnityEditor.EditorGUI+HelpButtonCache");
 
-            internal static bool HasHelpForObject(Object obj, bool monoBehaviourFallback)
+            internal static bool HasHelpForType(Type type, Object obj, bool monoBehaviourFallback)
             {
-                if (obj == null)
+                bool isDestroyedObject = obj is not null && !obj;
+                if (type == null || isDestroyedObject)
                     return false;
 
                 bool result;
-                if (s_ObjectHasHelp.TryGetValue(obj.GetType(), out result))
+                if (s_ObjectHasHelp.TryGetValue(type, out result))
                 {
                     return result;
                 }
                 else
                 {
                     // Calc result and cache it
-                    result = Help.HasHelpForObject(obj, monoBehaviourFallback);
-                    s_ObjectHasHelp[obj.GetType()] = result;
+                    result = Help.HasHelpForType(type, obj, monoBehaviourFallback);
+                    s_ObjectHasHelp[type] = result;
                     return result;
                 }
             }
 
-            internal static bool IsObjectPartOfTargetAssemblies(Object obj)
+            internal static bool IsTypePartOfTargetAssemblies(Type type)
             {
-                if (obj == null)
+                if (type == null)
                     return false;
 
-                var type = obj.GetType();
                 bool result;
                 if (s_TypeIsPartOfTargetAssembliesMap.TryGetValue(type, out result))
                 {
@@ -9976,7 +10226,7 @@ namespace UnityEditor
                     result = false;
                     EditorCompilation.TargetAssemblyInfo[] allTargetAssemblies = EditorCompilationInterface.GetTargetAssemblyInfos();
 
-                    string assemblyName = obj.GetType().Assembly.ManifestModule.Name;
+                    string assemblyName = type.Assembly.ManifestModule.Name;
                     for (int i = 0; i < allTargetAssemblies.Length; ++i)
                     {
                         if (assemblyName == allTargetAssemblies[i].Name)

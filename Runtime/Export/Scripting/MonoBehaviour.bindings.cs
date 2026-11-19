@@ -102,7 +102,7 @@ namespace UnityEngine
                 throw new NullReferenceException("methodName is null or empty");
 
             if (!IsObjectMonoBehaviour(this))
-                throw new ArgumentException("Coroutines can only be stopped on a MonoBehaviour");
+                throw new ArgumentException("Coroutines can only be started on a MonoBehaviour");
 
             return StartCoroutineManaged(methodName, value);
         }
@@ -114,7 +114,7 @@ namespace UnityEngine
                 throw new NullReferenceException("routine is null");
 
             if (!IsObjectMonoBehaviour(this))
-                throw new ArgumentException("Coroutines can only be stopped on a MonoBehaviour");
+                throw new ArgumentException("Coroutines can only be started on a MonoBehaviour");
 
             return StartCoroutineManaged2(routine);
         }

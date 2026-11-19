@@ -8,24 +8,24 @@ namespace Unity.UIToolkit.Editor;
 
 class GetActiveStyleSheetQuery : Command<GetActiveStyleSheetQuery>
 {
-    public static StyleSheet Get()
+    public static StyleSheet Get(AuthoringContext context)
     {
         var result = default(StyleSheet);
-        UICommandQueue.RegisterHandler<QueryPayload>(Handler);
+        context.Messages.RegisterHandler<QueryPayload>(Handler);
         try
         {
             using var command = GetPooled();
-            UICommandQueue.Execute(command);
+            context.Messages.Execute(command);
         }
         finally
         {
-            UICommandQueue.UnregisterHandler<QueryPayload>(Handler);
+            context.Messages.UnregisterHandler<QueryPayload>(Handler);
         }
         return result;
 
-        void Handler(in CommandContext context)
+        void Handler(in CommandContext commandContext)
         {
-            result = ((QueryPayload)context.Command).Payload;
+            result = ((QueryPayload)commandContext.Command).Payload;
         }
     }
 
@@ -39,10 +39,10 @@ class GetActiveStyleSheetQuery : Command<GetActiveStyleSheetQuery>
             return cmd;
         }
 
-        public static void Execute(object source, StyleSheet ss)
+        public static void Execute(AuthoringContext context, object source, StyleSheet ss)
         {
             using var command = GetPooled(source, ss);
-            UICommandQueue.Execute(command);
+            context.Messages.Execute(command);
         }
 
         public StyleSheet Payload { get; private set; }

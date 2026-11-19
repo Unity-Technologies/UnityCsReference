@@ -28,7 +28,7 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId templateSourceProperty = nameof(templateSource);
         internal const string k_ElementName = "Instance";
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         [Serializable]
         internal struct TemplateUXML
         {
@@ -88,7 +88,6 @@ namespace UnityEngine.UIElements
             get { return m_ContentContainer; }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SetContentContainer(VisualElement content)
         {
             m_ContentContainer = content;

@@ -12,8 +12,10 @@ using System.Linq;
 using JetBrains.Annotations;
 using UnityEditor.StyleSheets;
 using UnityEditor.Profiling;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Internal;
+using UnityEngine.UIElements;
 using UnityEditorInternal;
 
 namespace UnityEditor.Experimental
@@ -194,6 +196,18 @@ namespace UnityEditor.Experimental
             var currentFontDef = supportedFonts[currentFontName];
 
             return currentFontDef.GetFont(fontStyle);
+        }
+
+        // Rebuilds every font-dependent cache that a domain reload used to reset.
+        internal static void OnEditorFontChanged()
+        {
+            s_CurrentFontName = null;
+            s_RefreshGlobalStyleCatalog = true;
+            Unsupported.ClearSkinCache();
+            RefreshSkin();
+            EditorTextSettings.OnEditorFontChanged();
+            UIElementsEditorUtility.ReloadCommonStyleSheets();
+            EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
         }
 
         [NoAutoStaticsCleanup] // lazy dictionary of built-in font defs, rebuilt on demand via null-check; no user types

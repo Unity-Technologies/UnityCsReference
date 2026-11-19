@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -34,11 +35,12 @@ namespace UnityEditor
 
         private static int GetPropertyHash(SerializedProperty property)
         {
-            if (property.serializedObject.targetObject == null)
+            EntityId targetId = property.serializedObject.targetEntityId;
+            if (targetId == EntityId.None)
                 return 0;
 
             // For efficiency, ignore indices inside brackets [] in order to make array elements share handlers.
-            int key = property.serializedObject.targetObject.GetEntityId().GetHashCode() ^ property.hashCodeForPropertyPathWithoutArrayIndex;
+            int key = targetId.GetHashCode() ^ property.hashCodeForPropertyPathWithoutArrayIndex;
             if (property.propertyType == SerializedPropertyType.ObjectReference)
             {
                 key ^= property.objectReferenceEntityIdValue.GetHashCode();

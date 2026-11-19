@@ -381,7 +381,7 @@ namespace UnityEditor.MPE
                     var pendingRequestAwaitingResult = GetPendingRequest(msg.eventType, msg.requestId.Value);
                     if (pendingRequestAwaitingResult != null)
                     {
-                        var timeForSuccess = new TimeSpan(Stopwatch.GetTimestamp() - pendingRequestAwaitingResult.offerStartTime).TotalMilliseconds;
+                        var timeForSuccess = GetElapsedMilliseconds(pendingRequestAwaitingResult.offerStartTime, Stopwatch.GetTimestamp());
                         Console.WriteLine($"[UMPE] Request {msg.eventType} successful in {timeForSuccess} ms");
                         Resolve(pendingRequestAwaitingResult, msg.data);
                         CleanRequest(msg.eventType);
@@ -450,6 +450,11 @@ namespace UnityEditor.MPE
             return s_Events.TryGetValue(eventType, out handlers) && handlers.Count > 0;
         }
 
+        private static double GetElapsedMilliseconds(long startTimestamp, long endTimestamp)
+        {
+            return (endTimestamp - startTimestamp) * 1000.0 / Stopwatch.Frequency;
+        }
+
         public static void Tick()
         {
             if (!isConnected)
@@ -464,7 +469,7 @@ namespace UnityEditor.MPE
 #pragma warning restore UAC2001
                 foreach (var request in pendingRequests)
                 {
-                    var elapsedTime = new TimeSpan(now - request.offerStartTime).TotalMilliseconds;
+                    var elapsedTime = GetElapsedMilliseconds(request.offerStartTime, now);
                     if (request.isAcknowledged)
                         continue;
                     if (elapsedTime > request.timeoutInMs)

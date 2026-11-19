@@ -100,7 +100,7 @@ namespace UnityEngine
 
     // Sets a custom help URL for a script.
     [UsedByNativeCode]
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
     public class HelpURLAttribute : Attribute
     {
         public HelpURLAttribute(string url) { m_Url = url; m_DispatchingFieldName = ""; m_Dispatcher = false; }

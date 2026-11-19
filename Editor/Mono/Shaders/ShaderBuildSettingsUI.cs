@@ -66,6 +66,7 @@ namespace UnityEditor.Shaders
         private const string k_RemoveKeywordOverrideUndoName = "Remove Keyword Declaration Override";
         internal const string k_ReorderKeywordOverrideUndoName = "Reorder Keyword Declaration Overrides";
         internal const string k_EditKeywordsUndoName = "Edit Keyword Declaration Override Keywords";
+        internal const string k_PasteKeywordsUndoName = "Paste Keyword Declaration Overrides";
         internal const string k_ChangeVariantGenerationModeUndoName = "Change Variant Generation Mode";
         internal const string k_ToggleKeywordInBuildUndoName = "Toggle Keyword In Build";
         private const string k_ChangeFastBuildModeUndoName = "Change Fast Build Mode";
@@ -73,9 +74,11 @@ namespace UnityEditor.Shaders
         private const string k_RemoveConstantDefinesUndoName = "Remove Shader Constant Defines";
         private const string k_ReorderConstantDefinesUndoName = "Reorder Shader Constant Defines";
         private const string k_EditConstantDefinesUndoName = "Edit Shader Constant Defines";
+        private const string k_PasteConstantDefinesUndoName = "Paste Shader Constant Defines";
         private const string k_AddCompilerBackendUndoName = "Add Compiler Backend Settings";
         private const string k_RemoveCompilerBackendUndoName = "Remove Compiler Backend Settings";
         private const string k_ChangeCompilerBackendAPIUndoName = "Change Compiler Backend API Settings";
+        private const string k_PasteCompilerBackendUndoName = "Paste Compiler Backend Settings";
         private const string k_ChangeCompilerBackendCompilerUndoName = "Change Compiler Backend Settings";
         private const string k_ChangeEnableDebugSymbolsUndoName = "Change Enable Debug Symbols";
         private const string k_ChangeOptimizationLevelUndoName = "Change Optimization Level";
@@ -84,6 +87,8 @@ namespace UnityEditor.Shaders
         private int m_RecentlyAddedConstantDefineIndex = -1;
 
         private bool m_SkipUnsavedChangesDialog;
+        enum DuplicatesChoiceOnPaste { KeepExisting = 0, Cancel = 1, Replace = 2 }
+
 
         private static string CompilerDisplayName(ShaderBuildSettings.ShaderCompilerToolchain compiler)
         {
@@ -161,6 +166,8 @@ namespace UnityEditor.Shaders
             m_KeywordDeclarationOverridesListView.itemsAdded += OnKeywordOverridesAdded;
             m_KeywordDeclarationOverridesListView.onRemove = RemoveKeywordOverrides;
             m_KeywordDeclarationOverridesListView.itemIndexChanged += OnKeywordOverrideIndexChanged;
+            m_KeywordDeclarationOverridesListView.RegisterCallback<ValidateCommandEvent>(OnKeywordOverrideValidateCommand);
+            m_KeywordDeclarationOverridesListView.RegisterCallback<ExecuteCommandEvent>(OnKeywordOverrideExecuteCommand);
 
             m_ConstantDefinesListView = shaderBuildSettingsUI.Q<ListView>("ShaderConstDefines");
             m_ConstantDefinesListView.itemsSource = m_ConstantDefines;
@@ -171,6 +178,8 @@ namespace UnityEditor.Shaders
             m_ConstantDefinesListView.onRemove = RemoveConstantDefines;
             m_ConstantDefinesListView.itemIndexChanged += OnConstantDefinesIndexChanged;
             m_ConstantDefinesListView.RegisterCallback<FocusOutEvent>(OnConstantDefinesListFocusOut);
+            m_ConstantDefinesListView.RegisterCallback<ValidateCommandEvent>(OnConstantDefinesValidateCommand);
+            m_ConstantDefinesListView.RegisterCallback<ExecuteCommandEvent>(OnConstantDefinesExecuteCommand);
 
             var compilerBackendFoldout = shaderBuildSettingsUI.Q<Foldout>("CompilerBackendFoldout");
             if (m_IsTargetingBuildProfile)
@@ -182,6 +191,8 @@ namespace UnityEditor.Shaders
                 m_CompilerBackendListView.unbindItem = UnbindCompilerBackendItem;
                 m_CompilerBackendListView.itemsRemoved += OnCompilerBackendItemsRemoved;
                 m_CompilerBackendListView.overridingAddButtonBehavior = AddCompilerBackendRow;
+                m_CompilerBackendListView.RegisterCallback<ValidateCommandEvent>(OnCompilerBackendValidateCommand);
+                m_CompilerBackendListView.RegisterCallback<ExecuteCommandEvent>(OnCompilerBackendExecuteCommand);
 
                 m_CompilerBackendEmptyApisHelpBox = new HelpBox(
                     L10n.Tr("Shader compiler toolchain selection is not available for this build target. Unity will use the default toolchain.", null),
@@ -378,7 +389,64 @@ namespace UnityEditor.Shaders
             if (!(evt.relatedTarget is VisualElement next && m_ConstantDefinesListView.Contains(next)))
                 m_RecentlyAddedConstantDefineIndex = -1;
 
+            // RefreshItems can show an error box that shifts the UI layout mid-click, so refresh after the event has been completed
+            if (m_ConstantDefinesListView.panel?.GetCapturingElement(PointerId.mousePointerId) is VisualElement capturingElement)
+                capturingElement.RegisterCallback<PointerCaptureOutEvent>(OnConstantDefinesPointerCaptureOut);
+            else
+                m_ConstantDefinesListView.RefreshItems();
+        }
+
+        private void OnConstantDefinesPointerCaptureOut(PointerCaptureOutEvent evt)
+        {
+            ((VisualElement)evt.currentTarget).UnregisterCallback<PointerCaptureOutEvent>(OnConstantDefinesPointerCaptureOut);
             m_ConstantDefinesListView.RefreshItems();
+        }
+
+        private void OnConstantDefinesValidateCommand(ValidateCommandEvent evt)
+        {
+            if ((evt.commandName == EventCommandNames.Copy && m_ConstantDefinesListView.selectedIndex >= 0)
+                || (evt.commandName == EventCommandNames.Paste && ShaderConstantDefinesClipboard.CanPaste()))
+            {
+                evt.StopPropagation();
+            }
+        }
+
+        private void OnConstantDefinesExecuteCommand(ExecuteCommandEvent evt)
+        {
+            if (evt.commandName == EventCommandNames.Copy)
+            {
+                var selectedDefines = new List<string>();
+                foreach (var index in m_ConstantDefinesListView.selectedIndices)
+                {
+                    selectedDefines.Add(m_ConstantDefines[index]);
+                }
+
+                if (selectedDefines.Count > 0)
+                {
+                    Clipboard.SetCustomValue(new ShaderConstantDefinesClipboard { defines = selectedDefines.ToArray() });
+                    evt.StopPropagation();
+                }
+            }
+            else if (evt.commandName == EventCommandNames.Paste)
+            {
+                var data = Clipboard.GetCustomValue<ShaderConstantDefinesClipboard>();
+                if (data?.defines == null)
+                    return;
+
+                bool changed = PasteWithDuplicateCheck(m_ConstantDefines, data.defines,
+                    ShaderBuildSettings.DefinesHaveSameIdentifier,
+                    define => define,
+                    define => define,
+                    L10n.Tr("{0} of the {1} pasted shader constant defines already exist in this build profile:\n{2}" +
+                            "\nKeep your existing defines or replace them with the pasted ones?", null));
+                if (changed)
+                {
+                    RecordPendingState(k_PasteConstantDefinesUndoName);
+                    m_ConstantDefinesListView.RefreshItems();
+                }
+
+                evt.StopPropagation();
+            }
         }
 
         private void CollapseConstantDefinesTyping()
@@ -442,6 +510,122 @@ namespace UnityEditor.Shaders
         private void OnKeywordOverrideIndexChanged(int oldIndex, int newIndex)
         {
             RecordPendingState(k_ReorderKeywordOverrideUndoName);
+        }
+
+        private void OnKeywordOverrideValidateCommand(ValidateCommandEvent evt)
+        {
+            if ((evt.commandName == EventCommandNames.Copy && m_KeywordDeclarationOverridesListView.selectedIndex >= 0)
+                || (evt.commandName == EventCommandNames.Paste && !m_FastBuildEnabled &&
+                    ShaderKeywordDeclarationOverridesClipboard.CanPaste()))
+            {
+                evt.StopPropagation();
+            }
+        }
+
+        private void OnKeywordOverrideExecuteCommand(ExecuteCommandEvent evt)
+        {
+            if (evt.commandName == EventCommandNames.Copy)
+            {
+                List<ShaderBuildSettings.KeywordDeclarationOverride> selectedOverrides =
+                    new List<ShaderBuildSettings.KeywordDeclarationOverride>();
+                // Intentionally enabling copy from Fast Build so users can create custom overrides from it.
+                foreach (var index in m_KeywordDeclarationOverridesListView.selectedIndices)
+                {
+                    selectedOverrides.Add(DisplayedKeywordOverrides[index]);
+                }
+
+                if (selectedOverrides.Count > 0)
+                {
+                    Clipboard.SetCustomValue(new ShaderKeywordDeclarationOverridesClipboard{ overrides = selectedOverrides.ToArray()});
+                    evt.StopPropagation();
+                }
+            }
+            else if (evt.commandName == EventCommandNames.Paste &&
+                    ShaderKeywordDeclarationOverridesClipboard.CanPaste() && !m_FastBuildEnabled)
+            {
+                var data = Clipboard.GetCustomValue<ShaderKeywordDeclarationOverridesClipboard>();
+                if (data?.overrides == null)
+                    return;
+
+                bool changed = PasteWithDuplicateCheck(m_KeywordDeclarationOverrides, data.overrides,
+                    (pasted, existing) => pasted.EqualKeywords(existing),
+                    keywordOverride => string.Join(" ", Array.ConvertAll(keywordOverride.keywords, kwInfo => kwInfo.name)),
+                    keywordOverride => keywordOverride.DeepCopy(),
+                    L10n.Tr("{0} of the {1} pasted overrides already exist in this build profile:\n{2}" +
+                            "\nKeep your existing overrides or replace them with the pasted ones?", null));
+                if (changed)
+                {
+                    RecordPendingState(k_PasteKeywordsUndoName);
+                    m_KeywordDeclarationOverridesListView.RefreshItems();
+                }
+
+                evt.StopPropagation();
+            }
+        }
+
+        private static bool PasteWithDuplicateCheck<T>(
+            List<T> target,
+            T[] itemsToPaste,
+            Func<T, T, bool> isDuplicateItem,
+            Func<T, string> duplicateDescription,
+            Func<T, T> copy,
+            string duplicatesMessageFormat)
+        {
+            var duplicates = new Dictionary<int, int>();
+            int totalItemsToPaste = itemsToPaste.Length;
+            for (int copiedIndex = 0; copiedIndex < totalItemsToPaste; ++copiedIndex)
+            {
+                for (int originalIndex = 0; originalIndex < target.Count; ++originalIndex)
+                {
+                    if (isDuplicateItem(itemsToPaste[copiedIndex], target[originalIndex]))
+                    {
+                        duplicates.Add(copiedIndex, originalIndex);
+                        break;
+                    }
+                }
+            }
+
+            int duplicatesCount = duplicates.Count;
+            bool replaceDuplicates = false;
+            if (duplicatesCount > 0)
+            {
+                var duplicateNames = new List<string>(duplicatesCount);
+                foreach (var duplicateIndex in duplicates.Keys)
+                {
+                    duplicateNames.Add(duplicateDescription(itemsToPaste[duplicateIndex]));
+                }
+                string allDuplicatesMsg = string.Join(",\n", duplicateNames);
+
+                switch (EditorUtility.DisplayDialogComplex(L10n.Tr("Pasting will override current setup", null),
+                            string.Format(duplicatesMessageFormat, duplicatesCount, totalItemsToPaste, allDuplicatesMsg),
+                            L10n.Tr("Keep existing", null),
+                            L10n.Tr("Cancel", null),
+                            L10n.Tr("Replace", null)))
+                {
+                    case (int)DuplicatesChoiceOnPaste.KeepExisting:
+                        if (duplicatesCount == totalItemsToPaste)
+                            return false;
+                        break;
+                    case (int)DuplicatesChoiceOnPaste.Replace:
+                        replaceDuplicates = true;
+                        break;
+                    case (int)DuplicatesChoiceOnPaste.Cancel:
+                        return false;
+                }
+            }
+
+            for (int i = 0; i < totalItemsToPaste; ++i)
+            {
+                if (duplicates.TryGetValue(i, out int existingIndex))
+                {
+                    if (replaceDuplicates)
+                        target[existingIndex] = copy(itemsToPaste[i]);
+                }
+                else
+                    target.Add(copy(itemsToPaste[i]));
+            }
+
+            return true;
         }
 
         private void RemoveKeywordOverrides(BaseListView listView)
@@ -625,6 +809,12 @@ namespace UnityEditor.Shaders
             if (isValidData)
             {
                 SaveSettingsData(mergedCompilerSettings);
+                bool usesKeywordOverrides = m_KeywordDeclarationOverrides.Count > 0;
+                bool usesConstantDefines = m_ConstantDefines.Count > 0;
+                ShaderBuildSettingsAnalytics.SendSettingsApplied(ShaderBuildSettingsAnalytics.CreateData(GetCurrentBuildTarget(),
+                    usesSettingsOnBuildProfile: m_IsTargetingBuildProfile, usesFastBuildMode: m_FastBuildEnabled,
+                    usesKeywordOverrides: usesKeywordOverrides, usesConstantDefines: usesConstantDefines,
+                    compilerSettings: mergedCompilerSettings));
                 SaveAppliedStates();
                 UpdateFastBuildControls();
                 RefreshApplyRevertButtons();
@@ -992,7 +1182,7 @@ namespace UnityEditor.Shaders
 
             if (m_FastBuildInfoBox != null)
             {
-                m_FastBuildInfoBox.text = L10n.Tr("In Fast Build mode, Unity converts compatible keywords to dynamic branching to reduce shader compilation time. The list below shows an approximation of the overrides in effect. Custom overrides are restored when Fast Build is disabled.", null);
+                m_FastBuildInfoBox.text = L10n.Tr("In Fast Build mode, Unity converts compatible multi_compile keywords to dynamic branching to reduce shader compilation time. Other keywords keep their regular behavior. The list below shows an approximation of the overrides in effect. Custom overrides are restored when Fast Build is disabled.", null);
             }
         }
 
@@ -1012,8 +1202,9 @@ namespace UnityEditor.Shaders
         // of the user's overrides. Display data only: never saved, and the build does not read it.
         //
         // Follows ShaderBuildSettings::ApplyOverridesOnKeywordDeclaration as closely as a project-wide
-        // list can: an override reducing a declaration to a single keyword survives, since dynamic
-        // branching has nothing left to collapse, and any other override is taken over.
+        // list can: shader_feature declarations and their overrides are left alone, an override reducing
+        // a declaration to a single keyword survives, since dynamic branching has nothing left to
+        // collapse, and any other override is taken over.
         private void BuildFastBuildDisplayedOverrides()
         {
             m_FastBuildDisplayedOverrides.Clear();
@@ -1027,6 +1218,9 @@ namespace UnityEditor.Shaders
             foreach (var declaration in gatheredDeclarations)
             {
                 if (declaration.IsRestrictedInEveryInstance(ShaderKeywordOverrideRestriction.NoDynamicBranch))
+                    continue;
+
+                if (IsDeclaredOnlyAsShaderFeature(declaration))
                     continue;
 
                 var convertedOverride = new ShaderBuildSettings.KeywordDeclarationOverride();
@@ -1069,6 +1263,14 @@ namespace UnityEditor.Shaders
                 if (!takenOverUserOverride[i])
                     m_FastBuildDisplayedOverrides.Add(m_KeywordDeclarationOverrides[i].DeepCopy());
             }
+        }
+
+        // A declaration that is multi_compile or dynamic_branch in any shader is converted in that shader
+        private static bool IsDeclaredOnlyAsShaderFeature(ShaderKeywordDeclarationInfo declaration)
+        {
+            return declaration.IsDeclaredAs(ShaderBuildSettings.ShaderVariantGenerationMode.MaterialUsageBasedVariants) &&
+                !declaration.IsDeclaredAs(ShaderBuildSettings.ShaderVariantGenerationMode.AllVariants) &&
+                !declaration.IsDeclaredAs(ShaderBuildSettings.ShaderVariantGenerationMode.SingleVariantWithDynamicBranching);
         }
 
         private void RefreshKeywordOverridesListView()
@@ -1316,6 +1518,78 @@ namespace UnityEditor.Shaders
             m_CompilerBackendListView.RefreshItems();
             UpdateAddCompilerBackendButtonState();
             RecordPendingState(k_AddCompilerBackendUndoName);
+        }
+
+        private void OnCompilerBackendValidateCommand(ValidateCommandEvent evt)
+        {
+            if ((evt.commandName == EventCommandNames.Copy && m_CompilerBackendListView.selectedIndex >= 0)
+                || (evt.commandName == EventCommandNames.Paste && ShaderCompilerBackendClipboard.CanPaste()))
+            {
+                evt.StopPropagation();
+            }
+        }
+
+        private void OnCompilerBackendExecuteCommand(ExecuteCommandEvent evt)
+        {
+            if (evt.commandName == EventCommandNames.Copy)
+            {
+                var selectedSettings = new List<ShaderBuildSettings.ShaderCompilerSettings>();
+                foreach (var index in m_CompilerBackendListView.selectedIndices)
+                {
+                    selectedSettings.Add(m_CompilerBackendSettings[index]);
+                }
+
+                if (selectedSettings.Count > 0)
+                {
+                    Clipboard.SetCustomValue(new ShaderCompilerBackendClipboard { compilerSettings = selectedSettings.ToArray() });
+                    evt.StopPropagation();
+                }
+            }
+            else if (evt.commandName == EventCommandNames.Paste)
+            {
+                var data = Clipboard.GetCustomValue<ShaderCompilerBackendClipboard>();
+                if (data?.compilerSettings == null)
+                    return;
+
+                var settingsToPaste = FilterSettingsForSelectableApis(data.compilerSettings, out string skippedAPIsMsg);
+                if(skippedAPIsMsg.Length > 0)
+                    Debug.LogWarning(skippedAPIsMsg);
+                bool changed = settingsToPaste.Length > 0 && PasteWithDuplicateCheck(m_CompilerBackendSettings, settingsToPaste,
+                    (pasted, existing) => pasted.graphicsAPI == existing.graphicsAPI,
+                    compilerSettings => compilerSettings.graphicsAPI.ToString(),
+                    compilerSettings => compilerSettings,
+                    L10n.Tr("{0} of the {1} pasted settings are for graphics APIs that already have settings in this build profile:\n{2}" +
+                            "\nKeep your existing settings or replace them with the pasted ones?", null));
+                if (changed)
+                {
+                    RecordPendingState(k_PasteCompilerBackendUndoName);
+                    m_CompilerBackendListView.RefreshItems();
+                    UpdateAddCompilerBackendButtonState();
+                }
+
+                evt.StopPropagation();
+            }
+        }
+
+        private ShaderBuildSettings.ShaderCompilerSettings[] FilterSettingsForSelectableApis(ShaderBuildSettings.ShaderCompilerSettings[] settings, out string msg)
+        {
+            var selectable = GetSelectableApisForCurrentTarget();
+            var kept = new List<ShaderBuildSettings.ShaderCompilerSettings>(settings.Length);
+            var skippedApis = new List<string>();
+            msg = string.Empty;
+            foreach (var setting in settings)
+            {
+                if (selectable.Contains(setting.graphicsAPI))
+                    kept.Add(setting);
+                else
+                    skippedApis.Add(setting.graphicsAPI.ToString());
+            }
+
+            if (skippedApis.Count > 0)
+                msg = "Did not paste compiler backend settings for graphics APIs that " +
+                      GetCurrentBuildTarget() + " does not support: " + string.Join(", ", skippedApis);
+
+            return kept.ToArray();
         }
 
         private void OnCompilerBackendItemsRemoved(IEnumerable<int> indices)

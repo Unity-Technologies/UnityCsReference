@@ -47,8 +47,6 @@ public partial class LocalizationSettings : ScriptableObject
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
     internal static void ResetStaticsForPlayMode()
     {
-        SelectedLocaleChanged = null;
-        InitializationCompleted = null;
         s_WarnedNoSettings = false;
         if (s_Instance != null)
         {
@@ -60,6 +58,8 @@ public partial class LocalizationSettings : ScriptableObject
             s_Instance.m_Initializing = false;
             s_Instance.m_Preparing = false;
             s_Instance.m_InitializationRequested = false;
+            s_Instance.m_SelectedBeforeInitialization = false;
+            s_Instance.StartupSelector = null;
             s_Instance.m_StallWarned = false;
             s_Instance.CompleteInitWaiters();
             s_Instance.m_SelectedLocaleCode = s_Instance.m_ProjectLocaleCode;
@@ -75,7 +75,7 @@ public partial class LocalizationSettings : ScriptableObject
     [SerializeReference] List<Locale> m_AvailableLocales = new();
     [SerializeField] string m_ProjectLocaleCode;
     [SerializeReference] ResourceDatabase m_ResourceDatabase = new();
-    [SerializeReference] List<IStartupLocaleSelector> m_StartupSelectors = new() { new CommandLineLocaleSelector(), new SystemLocaleSelector() };
+    [StartupSelectors, SerializeReference] List<IStartupLocaleSelector> m_StartupSelectors = new() { new CommandLineLocaleSelector(), new SystemLocaleSelector() };
     [SerializeField] LoadingPreference m_PreferredLoading = LoadingPreference.Asynchronous;
     [SerializeField] SmartStringsSettings m_SmartStringsSettings;
     [SerializeField] PreloadBehavior m_PreloadBehavior = PreloadBehavior.PreloadSelectedLocale;
@@ -94,6 +94,7 @@ public partial class LocalizationSettings : ScriptableObject
     bool m_Initializing;
     bool m_Preparing;
     bool m_InitializationRequested;
+    bool m_SelectedBeforeInitialization;
     bool m_StallWarned;
     float m_StallWarningSeconds = k_StallWarningSeconds;
 #pragma warning disable CS0649
@@ -118,7 +119,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// </example>
     /// <seealso cref="SelectedLocale"/>
     /// <seealso cref="InitializationCompleted"/>
-    [AutoStaticsCleanup] // holds subscriber delegates; mirrors ResetStaticsForPlayMode()
+    [NoAutoStaticsCleanup] // localized references and language controls subscribe once and outlive Play Mode
     public static event Action<Locale> SelectedLocaleChanged;
 
     /// <summary>
@@ -136,8 +137,17 @@ public partial class LocalizationSettings : ScriptableObject
     /// </example>
     /// <seealso cref="InitializeAsync"/>
     /// <seealso cref="SelectedLocaleChanged"/>
-    [AutoStaticsCleanup] // holds subscriber delegates; mirrors ResetStaticsForPlayMode()
+    [NoAutoStaticsCleanup] // localized references and language controls subscribe once and outlive Play Mode
     public static event Action InitializationCompleted;
+
+    // The selected locale goes back to the project locale on a Play Mode transition without raising a change.
+    [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
+    internal static void RefreshSubscribers(string previousCode)
+    {
+        var current = SelectedLocale;
+        if (!string.Equals(previousCode, current?.Code, StringComparison.OrdinalIgnoreCase))
+            SelectedLocaleChanged?.Invoke(current);
+    }
 
     /// <summary>
     /// The active settings instance, or null when none is registered.
@@ -329,7 +339,8 @@ public partial class LocalizationSettings : ScriptableObject
     /// <seealso cref="IsInitialized"/>
     public bool DeferInitialization => m_DeferInitialization;
     /// <summary>
-    /// The selector that chose the startup locale, or null when the chain fell through to the project locale.
+    /// The selector that chose the startup locale, or null when the chain fell through to the project locale or
+    /// <see cref="SelectedLocale"/> was set before initialization finished.
     /// </summary>
     /// <remarks>
     /// Set during <see cref="InitializeAsync"/>. Read it to tell whether a user override was applied at startup or
@@ -423,6 +434,8 @@ public partial class LocalizationSettings : ScriptableObject
     /// Reading this returns the active locale, falling back to <see cref="ProjectLocale"/> when no explicit
     /// selection has been made. Setting it changes the locale and raises <see cref="SelectedLocaleChanged"/>. The
     /// value is stored as a locale code, so the assigned locale should be one of the <see cref="AvailableLocales"/>.
+    /// Setting it before initialization finishes takes priority over the <see cref="StartupSelectors"/>, which are
+    /// then not evaluated.
     /// </remarks>
     public static Locale SelectedLocale
     {
@@ -435,8 +448,11 @@ public partial class LocalizationSettings : ScriptableObject
         }
         set
         {
-            if (s_Instance != null)
-                s_Instance.SetSelectedLocale(value);
+            if (s_Instance == null)
+                return;
+            if (!s_Instance.m_Initialized)
+                s_Instance.m_SelectedBeforeInitialization = true;
+            s_Instance.SetSelectedLocale(value);
         }
     }
 
@@ -822,10 +838,13 @@ public partial class LocalizationSettings : ScriptableObject
             if (generation != m_InitGeneration)
                 return;
 
-            var selected = SelectStartupLocale(null, out var selectedBy);
-            StartupSelector = selectedBy;
-            if (selected != null)
-                SetSelectedLocale(selected);
+            if (!m_SelectedBeforeInitialization)
+            {
+                var selected = SelectStartupLocale(null, out var selectedBy);
+                StartupSelector = selectedBy;
+                if (selected != null)
+                    SetSelectedLocale(selected);
+            }
 
             m_Initialized = true;
             if (m_StartupSelectors != null)

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Properties;
-using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -46,7 +45,6 @@ namespace UnityEditor.UIElements
         [Obsolete("borderUssClass is not used anymore", false)]
         public static readonly string borderUssClassName = ussClassName + "__border";
 
-        [NoAutoStaticsCleanup]
         private static readonly CustomStyleProperty<Color> s_CurveColorProperty = new("--unity-curve-color");
         /// <summary>
         /// Optional rectangle that the curve is restrained within. If the range width or height is &lt; 0 then CurveField computes an automatic range, which encompasses the whole curve.
@@ -210,6 +208,9 @@ namespace UnityEditor.UIElements
 
         public override void SetValueWithoutNotify(AnimationCurve newValue)
         {
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
+
             m_ValueNull = newValue == null;
             if (newValue != null)
             {

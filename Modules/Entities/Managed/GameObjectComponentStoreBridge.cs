@@ -3,40 +3,48 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Debug = Unity.Scripting.LowLevel.Debug;
 
 namespace Unity.Entities
 {
+    [VisibleToOtherModules("UnityEngine.CoreModule")]
     static unsafe partial class GameObjectComponentStoreBridge
     {
         // Marks archetypes whose entity ids are engine-owned: destroy/dispose detaches the
         // entity from its chunk instead of releasing the id back to the store.
         public struct IsGameObject : IComponentData {}
 
-        // Callbacks that fire while a structural change is in flight are deferred here.
-        // Destroyed ids are recycled by the engine immediately, so destroys record the chunk
-        // to scavenge rather than the (unresolvable) entity.
-        [AutoStaticsCleanupOnCodeReload]
-        static List<Entity> s_PendingCreated = new List<Entity>();
-        [AutoStaticsCleanupOnCodeReload]
-        static List<ChunkIndex> s_PendingStaleChunks = new List<ChunkIndex>();
-        [AutoStaticsCleanupOnCodeReload]
-        static bool s_ProcessPending;
+        // Every GameObject's entity has these, and Simulate, which CreateArchetype adds
+        internal const int k_GameObjectEntityTypeCount = 3;
 
-        // True inside a foreach-iteration window or while managed deferred commands are being
-        // played back (where companion GameObjects get created/destroyed) - structural changes
-        // are not allowed there, so callbacks must defer.
-        static bool IsStructuralChangeInProgress(EntityDataAccess* access)
+        internal static void GetGameObjectEntityTypes(ComponentType* types)
         {
-            return access->EntityComponentStore->CompanionChangesTracker.CommandBuffer.Length > 0;
+            types[0] = ComponentType.FromTypeIndex(TypeManager.GetTypeIndex<IsGameObject>());
+            types[1] = ComponentType.FromTypeIndex(TypeManager.GetTypeIndex<TransformRef>());
+            types[2] = ComponentType.FromTypeIndex(TypeManager.GetTypeIndex<HasHierarchy>());
         }
 
-        // Gives the new GameObject's entity chunk storage in the World on top of the active World stack.
+        // Native code leaves them out of a GameObject's data components
+        internal static void RegisterGameObjectEntityTypes()
+        {
+            var types = stackalloc ComponentType[k_GameObjectEntityTypeCount];
+            GetGameObjectEntityTypes(types);
+            var typeIds = stackalloc uint[k_GameObjectEntityTypeCount + 1];
+            for (var i = 0; i < k_GameObjectEntityTypeCount; ++i)
+            {
+                typeIds[i] = (uint)types[i].TypeIndex.Index;
+            }
+            typeIds[k_GameObjectEntityTypeCount] = (uint)TypeManager.GetTypeIndex<Simulate>().Index;
+            SetGameObjectEntityTypes(typeIds, k_GameObjectEntityTypeCount + 1);
+        }
+
+        // Gives the new GameObject's entity chunk storage in the World on top of the active World stack. A companion
+        // GameObject is cloned with its owner entity's id, so its entity already has a chunk.
         [RequiredByNativeCode]
         static void OnGameObjectCreated(ulong entityIdRaw, IntPtr world)
         {
@@ -45,16 +53,15 @@ namespace Unity.Entities
                 var entity = UnsafeUtility.As<ulong, Entity>(ref entityIdRaw);
                 if (!EntityComponentStore.s_entityStore.Data.Exists(entity))
                     return;
+                if (!EntityComponentStore.s_entityStore.Data.GetEntityInChunk(entity).Equals(EntityInChunk.Null))
+                    return;
 
                 var access = ((WorldUnmanagedImpl*)world)->m_EntityManager.GetCheckedEntityDataAccess();
-                if (IsStructuralChangeInProgress(access))
-                {
-                    s_PendingCreated.Add(entity);
-                    return;
-                }
-
-                ProcessPending(access);
-                AssignChunkStorage(access, entity);
+                var archetype = access->GetGameObjectEntityArchetype();
+                access->PrepareForAdditiveStructuralChanges(archetype.Archetype);
+                var changes = access->BeginAdditiveStructuralChanges();
+                access->AllocateAndAssignChunksToExistingEntities(archetype, &entity, 1);
+                access->EndStructuralChanges(ref changes);
             }
             catch (Exception ex)
             {
@@ -62,35 +69,79 @@ namespace Unity.Entities
             }
         }
 
-        // Detaches the entity from its chunk so the id release does not leave chunk data behind.
+        // Writes up to capacity of the GameObject entities the Worlds hold and returns how many they hold.
+        [RequiredByNativeCode]
+        static int GetGameObjectEntities(ulong* entities, int capacity)
+        {
+            var count = 0;
+            foreach (var world in World.s_AllWorlds)
+            {
+                var store = world.EntityManager.GetCheckedEntityDataAccess()->EntityComponentStore;
+                for (int i = 0, archetypeCount = store->m_Archetypes.Length; i < archetypeCount; i++)
+                {
+                    var archetype = store->m_Archetypes.Ptr[i];
+                    if (!archetype->HasGameObjectEntities)
+                        continue;
+                    for (int c = 0, chunkCount = archetype->Chunks.Count; c < chunkCount; c++)
+                    {
+                        var chunk = archetype->Chunks[c];
+                        var copied = Math.Min(chunk.Count, Math.Max(capacity - count, 0));
+                        UnsafeUtility.MemCpy(entities + count, chunk.Buffer, copied * sizeof(ulong));
+                        count += chunk.Count;
+                    }
+                }
+            }
+            return count;
+        }
+
+        // Gives the GameObject entities that have no chunk storage one in the World, in one structural change.
+        [RequiredByNativeCode]
+        static void AttachGameObjectEntities(IntPtr world, ulong* entities, int count)
+        {
+            try
+            {
+                using var detached = new NativeList<Entity>(count, Allocator.Temp);
+                for (var i = 0; i < count; i++)
+                {
+                    var entity = UnsafeUtility.As<ulong, Entity>(ref entities[i]);
+                    if (EntityComponentStore.s_entityStore.Data.Exists(entity) && EntityComponentStore.s_entityStore.Data.GetEntityInChunk(entity).Equals(EntityInChunk.Null))
+                        detached.Add(entity);
+                }
+                if (detached.Length == 0)
+                    return;
+
+                var access = ((WorldUnmanagedImpl*)world)->m_EntityManager.GetCheckedEntityDataAccess();
+                var archetype = access->GetGameObjectEntityArchetype();
+                access->PrepareForAdditiveStructuralChanges(archetype.Archetype);
+                var changes = access->BeginAdditiveStructuralChanges();
+                access->AllocateAndAssignChunksToExistingEntities(archetype, detached.GetUnsafePtr(), detached.Length);
+                access->EndStructuralChanges(ref changes);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+
+        // Detaches a GameObject entity from its chunk so the id release does not leave chunk data behind.
+        // A companion shares its id with its entity, so destroying the companion destroys that entity too.
         [RequiredByNativeCode]
         static void OnGameObjectDestroyed(ulong entityIdRaw)
         {
             try
             {
-                var world = World.DefaultGameObjectInjectionWorld;
-                if (world == null || !world.IsCreated)
-                    return;
-
                 var entity = UnsafeUtility.As<ulong, Entity>(ref entityIdRaw);
                 var chunk = EntityComponentStore.s_entityStore.Data.GetEntityInChunk(entity).Chunk;
                 if (chunk == ChunkIndex.Null)
                     return;
 
-                var access = world.EntityManager.GetCheckedEntityDataAccess();
-
-                // Only the default World is resolved for now.
                 var archetype = EntityComponentStore.PerChunkArray.ChunkData[chunk].Archetype;
-                if (archetype == null || archetype->EntityComponentStore != access->EntityComponentStore)
+                if (archetype == null || !archetype->HasGameObjectEntities)
                     return;
 
-                if (IsStructuralChangeInProgress(access))
-                {
-                    s_PendingStaleChunks.Add(chunk);
+                var access = FindEntityDataAccess(archetype->EntityComponentStore);
+                if (access == null)
                     return;
-                }
-
-                ProcessPending(access);
 
                 var changes = access->BeginStructuralChanges();
                 access->DeallocateAndUnAssignChunksToExistingEntities(&entity, 1);
@@ -102,91 +153,73 @@ namespace Unity.Entities
             }
         }
 
-        static void AssignChunkStorage(EntityDataAccess* access, Entity entity)
+        // Companion GameObjects are destroyed during playback, inside the structural change of the store that owns
+        // them. A baked companion has an entity of its own, which leaves its chunk here, in that open structural change
+        // when it is in the same store, so the destroy callback finds nothing left to detach.
+        internal static void DetachGameObjectEntitiesDuringStructuralChange(EntityId* gameObjectIds, int count, EntityComponentStore* changingStore)
         {
-            if (!EntityComponentStore.s_entityStore.Data.Exists(entity))
-                return;
-            if (!EntityComponentStore.s_entityStore.Data.GetEntityInChunk(entity).Equals(EntityInChunk.Null))
-                return;
+            for (int i = 0; i < count; i++)
+            {
+                var entity = UnsafeUtility.As<EntityId, Entity>(ref gameObjectIds[i]);
+                if (!EntityComponentStore.s_entityStore.Data.Exists(entity))
+                    continue;
+                var chunk = EntityComponentStore.s_entityStore.Data.GetEntityInChunk(entity).Chunk;
+                if (chunk == ChunkIndex.Null)
+                    continue;
 
-            var archetype = access->GetGameObjectEntityArchetype();
-            access->PrepareForAdditiveStructuralChanges(archetype.Archetype);
-            var changes = access->BeginAdditiveStructuralChanges();
-            access->AllocateAndAssignChunksToExistingEntities(archetype, &entity, 1);
-            // A deferred entity gets its chunk after its Transform was set up, so its TransformRef is still unassigned
-            CoreModuleLightShim.Hooks.AssignTransformHierarchyToGameObjectEntity(entity);
-            access->EndStructuralChanges(ref changes);
+                var archetype = EntityComponentStore.PerChunkArray.ChunkData[chunk].Archetype;
+                if (archetype == null || !archetype->HasGameObjectEntities)
+                    continue;
+
+                var access = FindEntityDataAccess(archetype->EntityComponentStore);
+                if (access == null)
+                    continue;
+
+                if (archetype->EntityComponentStore == changingStore)
+                {
+                    access->DeallocateAndUnAssignChunksToExistingEntities(&entity, 1);
+                    continue;
+                }
+
+                var changes = access->BeginStructuralChanges();
+                access->DeallocateAndUnAssignChunksToExistingEntities(&entity, 1);
+                access->EndStructuralChanges(ref changes);
+            }
         }
 
-        // Called from EntityDataAccess.EndStructuralChanges so deferred work resolves in the
-        // same structural-change scope that produced it.
-        internal static void ProcessPendingAfterStructuralChange()
+        static EntityDataAccess* FindEntityDataAccess(EntityComponentStore* store)
         {
-            if (s_ProcessPending || (s_PendingCreated.Count == 0 && s_PendingStaleChunks.Count == 0))
-                return;
+            var defaultWorld = World.DefaultGameObjectInjectionWorld;
+            if (defaultWorld != null && defaultWorld.IsCreated)
+            {
+                var access = defaultWorld.EntityManager.GetCheckedEntityDataAccess();
+                if (access->EntityComponentStore == store)
+                    return access;
+            }
 
+            foreach (var world in World.s_AllWorlds)
+            {
+                var access = world.EntityManager.GetCheckedEntityDataAccess();
+                if (access->EntityComponentStore == store)
+                    return access;
+            }
+
+            return null;
+        }
+
+        // Creating a GameObject creates an entity, so it can't happen while iterating a query that matches GameObject entities.
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
+        internal static void CheckGameObjectCreationAllowed()
+        {
             var world = World.DefaultGameObjectInjectionWorld;
             if (world == null || !world.IsCreated)
                 return;
 
             var access = world.EntityManager.GetCheckedEntityDataAccess();
-            if (IsStructuralChangeInProgress(access))
-                return;
-
-            ProcessPending(access);
-        }
-
-        static void ProcessPending(EntityDataAccess* access)
-        {
-            if (s_ProcessPending)
-                return;
-
-            s_ProcessPending = true;
-            try
-            {
-                while (s_PendingStaleChunks.Count > 0 || s_PendingCreated.Count > 0)
-                {
-                    if (s_PendingStaleChunks.Count > 0)
-                    {
-                        var chunk = s_PendingStaleChunks[s_PendingStaleChunks.Count - 1];
-                        s_PendingStaleChunks.RemoveAt(s_PendingStaleChunks.Count - 1);
-                        ScavengeStaleEntities(access, chunk);
-                    }
-                    else
-                    {
-                        var entity = s_PendingCreated[s_PendingCreated.Count - 1];
-                        s_PendingCreated.RemoveAt(s_PendingCreated.Count - 1);
-                        AssignChunkStorage(access, entity);
-                    }
-                }
-            }
-            finally
-            {
-                s_ProcessPending = false;
-            }
-        }
-
-        // Removes chunk entries whose GameObject died while destruction was deferred: the id is
-        // already recycled, so stale entries are found by scanning the recorded chunk.
-        static void ScavengeStaleEntities(EntityDataAccess* access, ChunkIndex chunk)
-        {
-            var archetype = EntityComponentStore.PerChunkArray.ChunkData[chunk].Archetype;
-            if (archetype == null
-                || !archetype->HasGameObjectEntities
-                || archetype->EntityComponentStore != access->EntityComponentStore)
-                return;
-
-            var changes = access->BeginStructuralChanges();
-            for (int i = chunk.Count - 1; i >= 0; i--)
-            {
-                var entity = ((Entity*)chunk.Buffer)[i];
-                if (EntityComponentStore.s_entityStore.Data.Exists(entity))
-                    continue;
-
-                access->EntityComponentStore->DestroyStaleGameObjectEntityBatch(
-                    new EntityBatchInChunk { Chunk = chunk, StartIndex = i, Count = 1 });
-            }
-            access->EndStructuralChanges(ref changes);
+            if (!access->DependencyManager->ForEachStructuralChange.IsAdditiveStructuralChangePossible(access->GetGameObjectEntityArchetype().Archetype))
+                throw new InvalidOperationException(
+                    "GameObjects can't be created while iterating over entities with a query that matches GameObject entities. " +
+                    "Create them after the loop, or narrow the query so it excludes GameObject entities.");
         }
     }
 }
