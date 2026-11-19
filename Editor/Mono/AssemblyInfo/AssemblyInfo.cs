@@ -201,6 +201,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Core.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.ShaderGraph.Editor")]
 [assembly: InternalsVisibleTo("Unity.Testing.SRP.Universal.Foundation.Editor")]
+[assembly: InternalsVisibleTo("Universal2DEditorTests")]
 
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]

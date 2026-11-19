@@ -21,22 +21,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             add
             {
+                // Kept after invoking so the handler also runs when MPPM is re-enabled from Preferences.
+                s_OnInitializedCallbacks += value;
                 if (IsInitialized)
                 {
                     value?.Invoke(IsMainEditor);
-                    return;
                 }
-
-                s_PendingOnInitializedCallbacks += value;
             }
             remove
             {
-                if (IsInitialized)
-                {
-                    return;
-                }
-
-                s_PendingOnInitializedCallbacks -= value;
+                s_OnInitializedCallbacks -= value;
             }
         }
 
@@ -55,7 +49,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
 
 
-        static Action<bool> s_PendingOnInitializedCallbacks;
+        static Action<bool> s_OnInitializedCallbacks;
 
         static WorkflowMainEditorContext s_WorkflowMainEditorContext;
         static WorkflowCloneContext s_WorkflowCloneContext;
@@ -284,8 +278,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             IsInitialized = true;
             IsMainEditor = s_WorkflowMainEditorContext != null;
-            s_PendingOnInitializedCallbacks?.Invoke(IsMainEditor);
-            s_PendingOnInitializedCallbacks = null;
+            s_OnInitializedCallbacks?.Invoke(IsMainEditor);
         }
 
         static void DisableMPPMContexts()

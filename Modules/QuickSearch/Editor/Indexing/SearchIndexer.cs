@@ -256,7 +256,10 @@ namespace UnityEditor.Search
         // 2- Fix Search Areas for sub assets and sub objects
         // 3- Add metadata to document hash.
         // 4- Keywords per document.
-        internal const int version = 4;
+        // 5- Index properties inside SerializeReference fields (trunk version 6).
+        //    Trunk's version 5 (index material references of all Renderer types, UUM-157571) is not backported yet;
+        //    when it is, bump to 6 since 5 has already shipped without it.
+        internal const int version = 5;
 
         /// <summary>
         /// Name of the index. Generally this name is given by a user from a <see cref="SearchDatabase.Settings"/>

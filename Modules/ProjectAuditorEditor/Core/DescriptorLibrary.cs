@@ -34,6 +34,18 @@ namespace Unity.ProjectAuditor.Editor.Core
             return alreadyFound;
         }
 
+        public static bool UnregisterDescriptor(string id)
+        {
+            if (s_Descriptors != null)
+                return s_Descriptors.Remove(new DescriptorId(id));
+            return false;
+        }
+
+        public static bool HasDescriptor(int idAsInt)
+        {
+            return s_Descriptors != null && s_Descriptors.ContainsKey(idAsInt);
+        }
+
         public static Descriptor GetDescriptor(int idAsInt)
         {
             if (!s_Descriptors.TryGetValue(idAsInt, out var descriptor))

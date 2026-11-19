@@ -2713,13 +2713,8 @@ internal static unsafe class SerializationBackendManagedCommands
         // write-side InvokeMethodCommand), so this is the single OBS invocation
         // for the callsite — see EmitInvokeInterfaceMethodCommandIfRequired.
 
-        // Instance methods on value types take their `this` as a managed
-        // byref to the struct data (NOT as a boxed MonoObject*). The build
-        // side resolves the function pointer via GetMethodFunctionPointer
-        // below, which goes through MethodInfo.MethodHandle.GetFunctionPointer
-        // — that returns the underlying instance entry, not the unboxing
-        // thunk — so passing `ref baseAddr` to the struct's inline data
-        // matches the ABI calli expects.
+        // Mono: fnPtr is a static StructCallbackInvokerHelper<T> entry taking `ref T`.
+        // IL2CPP: fnPtr is the struct method's instance entry, which takes `this` by ref.
         try
         {
             ((delegate*<ref byte, void>)fnPtr)(ref baseAddr);
@@ -2750,7 +2745,7 @@ internal static unsafe class SerializationBackendManagedCommands
     }
 
     // Generic method-handle to function-pointer resolver used by callsites that
-    // dispatch any method (not just ctors) via calli — currently the interface
+    // dispatch any method (not just ctors) via calli — currently the IL2CPP interface
     // method lookup behind CallOn{Before,After}{Class,Struct} struct callbacks.
     [RequiredByNativeCode]
     internal static IntPtr GetMethodFunctionPointer(IntPtr methodHandleValue)
@@ -2761,21 +2756,16 @@ internal static unsafe class SerializationBackendManagedCommands
     }
 
 
-    // CoreCLR-only interface-method resolver for struct-callback dispatch.
-    // Reinterpreting the raw MethodDesc* as a RuntimeMethodHandle and calling
-    // GetFunctionPointer aborts for methods in dynamically-loaded ALCs, and even when it
-    // resolves, invoking the result through a `delegate*<ref byte, void>` calli mismatches
-    // CoreCLR's value-type instance-method calling convention (it works on Mono). So the
-    // native side (Common.cpp ResolveInterfaceMethodFunctionPointer, ENABLE_CORECLR) passes
-    // the declaring TYPE handle + the interface method NAME, and this returns a GCHandle to
-    // an Action<IntPtr> invoker that boxes the struct, invokes the method, and copies the
-    // (possibly mutated) struct back. The struct-callback consumers decode the GCHandle
-    // under ENABLE_CORECLR. Limitation: Marshal.PtrToStructure/StructureToPtr only handle
-    // blittable value types; non-blittable structs throw NotSupportedException here.
+    // Resolves a struct's ISerializationCallbackReceiver method for the executor's
+    // `delegate*<ref byte, void>` callsites. Mono: a raw entry point of a shared-generic
+    // struct method lacks its generic context, so return a StructCallbackInvokerHelper<T>
+    // entry instead. CoreCLR: a raw entry point aborts for collectible ALCs and mismatches
+    // the value-type `this` ABI, so return a GCHandle to an Action<IntPtr> invoker.
+    // Limitation: that invoker only handles blittable structs.
     [RequiredByNativeCode]
     internal static IntPtr GetInterfaceMethodFunctionPointer(IntPtr typeHandleValue, string methodName)
     {
-        // Not reachable on Mono/IL2CPP — native only calls this under ENABLE_CORECLR
+        // Not reachable on IL2CPP — native only calls this under ENABLE_CORECLR || ENABLE_MONO
         // (see Common.cpp ResolveInterfaceMethodFunctionPointer).
         return IntPtr.Zero;
     }

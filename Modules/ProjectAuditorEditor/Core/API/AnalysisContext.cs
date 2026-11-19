@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace Unity.ProjectAuditor.Editor.Core
 {
     /// <summary>
@@ -46,6 +48,29 @@ namespace Unity.ProjectAuditor.Editor.Core
         public ReportItemBuilder CreateInsight(IssueCategory category, string description)
         {
             return new ReportItemBuilder(category, description);
+        }
+
+        internal Action<Location, string> RegisterOverride;
+
+        internal void CreateOverride(string path, params string[] overriddenDescriptorIds)
+        {
+            CreateOverride(new Location(path, 0), overriddenDescriptorIds);
+        }
+
+        internal void CreateOverride(ReportItemBuilder issue, params string[] overriddenDescriptorIds)
+        {
+            CreateOverride(issue.Location, overriddenDescriptorIds);
+        }
+
+        internal void CreateOverride(Location location, params string[] overriddenDescriptorIds)
+        {
+            if (RegisterOverride == null)
+                return;
+
+            foreach (var overriddenDescriptorId in overriddenDescriptorIds)
+            {
+                RegisterOverride(location, overriddenDescriptorId);
+            }
         }
 
         /// <summary>

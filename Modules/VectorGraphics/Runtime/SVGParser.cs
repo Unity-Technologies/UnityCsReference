@@ -1505,7 +1505,9 @@ namespace Unity.VectorGraphics
                 if (clipper.Key.Clipper != clipper.Value)
                     continue;
 
-                var rect = VectorUtils.SceneNodeBounds(clipper.Key);
+                // The clipper is drawn in the target's local space, so exclude the target's own transform
+                var target = clipper.Key;
+                var rect = VectorUtils.SceneNodeBounds(new SceneNode() { Shapes = target.Shapes, Children = target.Children });
                 clipper.Value.Transform = Matrix2D.Translate(rect.position) * Matrix2D.Scale(rect.size);
             }
         }
@@ -2267,7 +2269,9 @@ namespace Unity.VectorGraphics
                     if (stroke != null && stroke.Fill is GradientFill)
                     {
                         var fillTransform = Matrix2D.identity;
-                        if (AdjustGradientFill(nodeInfo.Node, nodeInfo.WorldTransform, stroke.Fill, shape.Contours, ref fillTransform))
+                        if (!VectorUtils.HasStops((GradientFill)stroke.Fill))
+                            stroke.Fill = null;
+                        else if (AdjustGradientFill(nodeInfo.Node, nodeInfo.WorldTransform, stroke.Fill, shape.Contours, ref fillTransform))
                             stroke.FillTransform = fillTransform;
                         else
                             stroke.Fill = MakeLastStopFill((GradientFill)stroke.Fill);
@@ -2283,7 +2287,9 @@ namespace Unity.VectorGraphics
                     if (shape.Fill is GradientFill)
                     {
                         var fillTransform = Matrix2D.identity;
-                        if (AdjustGradientFill(nodeInfo.Node, nodeInfo.WorldTransform, shape.Fill, shape.Contours, ref fillTransform))
+                        if (!VectorUtils.HasStops((GradientFill)shape.Fill))
+                            shape.Fill = null;
+                        else if (AdjustGradientFill(nodeInfo.Node, nodeInfo.WorldTransform, shape.Fill, shape.Contours, ref fillTransform))
                             shape.FillTransform = fillTransform;
                         else
                             shape.Fill = MakeLastStopFill((GradientFill)shape.Fill);
@@ -2332,8 +2338,7 @@ namespace Unity.VectorGraphics
 
         static IFill MakeLastStopFill(GradientFill gradientFill)
         {
-            // Per SVG spec, a gradient without stops paints nothing
-            if (gradientFill.Stops == null || gradientFill.Stops.Length == 0)
+            if (!VectorUtils.HasStops(gradientFill))
                 return null;
 
             var color = gradientFill.Stops[gradientFill.Stops.Length - 1].Color;

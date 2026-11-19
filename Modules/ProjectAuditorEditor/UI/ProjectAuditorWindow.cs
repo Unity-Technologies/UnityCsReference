@@ -447,6 +447,27 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_ViewSelectionTreeView.SelectNonAnalyzedCategory(category);
         }
 
+        void RefreshViewsAfterIssuesRemoved(Report report, IReadOnlyList<ReportItem> removedIssues)
+        {
+            var categories = new HashSet<IssueCategory>(removedIssues.Count);
+            foreach (var issue in removedIssues)
+            {
+                categories.Add(issue.Category);
+            }
+
+            foreach (var category in categories)
+            {
+                var view = m_ViewManager.GetView(category);
+                if (view == null)
+                    continue;
+
+                view.Clear();
+                view.AddIssues(report.FindByCategory(category));
+            }
+
+            m_ViewManager.MarkViewsAsDirty();
+        }
+
         // Invoked whenever a module finishes during analysis. Updates the set of pending
         // modules/categories and refreshes the summary view. Crucially, if the user is currently
         // viewing a category whose data has just arrived (its module finished mid-analysis), it
@@ -1117,6 +1138,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     m_ViewManager.OnAnalysisStarted(report, moduleNames, categories);
                     m_ViewManager.ClearSearch();
                 },
+                OnIssuesRemoved = RefreshViewsAfterIssuesRemoved,
                 OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
                 {
                     HandleModuleCompleted(moduleName);
@@ -1200,6 +1222,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     m_ViewManager.OnAnalysisStarted(report, moduleNames, categories);
                 },
+                OnIssuesRemoved = RefreshViewsAfterIssuesRemoved,
                 OnModuleCompleted = (moduleName, analysisResult, extraAnalysisTimeMs) =>
                 {
                     HandleModuleCompleted(moduleName);

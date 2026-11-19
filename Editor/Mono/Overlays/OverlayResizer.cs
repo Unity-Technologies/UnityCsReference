@@ -320,6 +320,15 @@ namespace UnityEditor.Overlays
             var alignment = container.resolvedStyle.alignItems;
             bool hide = false;
 
+            // The anchored edge along the stacking axis cannot follow the mouse, so hide the resizer on that side
+            if (container is AnchoredOverlayContainer && container.GetOverlayIndex(m_Overlay, out OverlayContainerSection section, out _))
+            {
+                if (section == OverlayContainerSection.BeforeSpacer)
+                    hide |= resizer.HasDirection(container.isHorizontal ? Direction.Left : Direction.Top);
+                else if (section == OverlayContainerSection.AfterSpacer)
+                    hide |= resizer.HasDirection(container.isHorizontal ? Direction.Right : Direction.Bottom);
+            }
+
             // Check the opposite direction. If the content is align to one side, hide resizer on that side
             switch (alignment)
             {

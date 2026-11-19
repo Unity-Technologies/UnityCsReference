@@ -118,6 +118,12 @@ namespace Unity.ProjectAuditor.Editor
         [NonSerialized]
         internal DependencyCrawler DependencyCrawler;
 
+        [NonSerialized]
+        internal IssueOverrides IssueOverrides;
+
+        [NonSerialized]
+        internal Action<Report, IReadOnlyList<ReportItem>> OnIssuesRemoved;
+
         internal string PlatformAsString => m_PlatformAsString;
 
         /// <summary>
@@ -167,6 +173,8 @@ namespace Unity.ProjectAuditor.Editor
 
             AssetPathFilter = original.AssetPathFilter;
             DependencyCrawler = original.DependencyCrawler;
+            IssueOverrides = original.IssueOverrides;
+            OnIssuesRemoved = original.OnIssuesRemoved;
         }
 
         /// <summary>

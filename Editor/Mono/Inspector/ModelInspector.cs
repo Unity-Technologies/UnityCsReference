@@ -127,6 +127,8 @@ namespace UnityEditor
             if (!(target is Mesh mesh))
                 return;
 
+            serializedObject.Update();
+
             var attributes = mesh.GetVertexAttributes();
 
             ShowVertexInfo(mesh, attributes);
@@ -135,6 +137,8 @@ namespace UnityEditor
             ShowBlendShapeInfo(mesh);
             ShowOtherInfo(mesh);
             ShowCollisionInfo(mesh);
+
+            serializedObject.ApplyModifiedProperties();
 
             GUI.enabled = false;
         }

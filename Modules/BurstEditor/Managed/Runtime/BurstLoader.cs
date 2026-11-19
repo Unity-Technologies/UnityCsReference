@@ -51,6 +51,7 @@ namespace Unity.Burst.Editor
 
         private const string msbuildReadySessionKey = "BURST_MSBUILD_READY";
         private const string packagesChangedSessionKey = "BURST_PACKAGES_CHANGED";
+        private const string assembliesDroppedSessionKey = "BURST_ASSEMBLIES_DROPPED";
 
         private static CompilationTaskReason _currentBuildKind;
 
@@ -165,9 +166,11 @@ namespace Unity.Burst.Editor
             //     from Debug to Release or vice-versa.
             // This is because these are the two cases in which CompilerClient will be
             // destroyed and recreated.
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code.
-            var assemblyNamesAndDefines = (IEnumerable<(string, string[])>)Array.Empty<(string, string[])>();
-#pragma warning restore UA2001
+            // We also need to send it if (c) OnAssemblyCompilationFinished ignored the assemblies of a build that had
+            // a C# compile error. ScriptAssembly.HasCompileErrors is set for the whole build, but the assemblies that
+            // did get built are still loaded by this domain, so otherwise all of their entry points are rejected.
+            var sendAssemblies = SessionState.GetBool(assembliesDroppedSessionKey, false);
+            SessionState.SetBool(assembliesDroppedSessionKey, false);
 
             if (BurstCompilerService.DequeuePendingBurstLoad())
             {
@@ -181,15 +184,22 @@ namespace Unity.Burst.Editor
                 }
                 else
                 {
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code.
-                    // Gather list of assemblies to compile (only actually used at Editor startup)
-                    assemblyNamesAndDefines = UnityEditor.Compilation.CompilationPipeline
-                        .GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor)
-                        .Where(x => File.Exists(x.outputPath)) // If C# compilation fails, it won't exist on disk
-                        .Select(x => (x.name, x.defines));
-#pragma warning restore UA2001
+                    sendAssemblies = true;
                 }
             }
+
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code.
+            var assemblyNamesAndDefines = (IEnumerable<(string, string[])>)Array.Empty<(string, string[])>();
+
+            if (sendAssemblies)
+            {
+                // Gather list of assemblies to compile (only actually used at Editor startup)
+                assemblyNamesAndDefines = UnityEditor.Compilation.CompilationPipeline
+                    .GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor)
+                    .Where(x => File.Exists(x.outputPath)) // If C# compilation fails, it won't exist on disk
+                    .Select(x => (x.name, x.defines));
+            }
+#pragma warning restore UA2001
 
             var packagesChanged = SessionState.GetBool(packagesChangedSessionKey, false);
             BurstCompiler.DomainReload(assemblyNamesAndDefines, packagesChanged);
@@ -580,6 +590,7 @@ namespace Unity.Burst.Editor
                     UnityEngine.Debug.Log($"{DateTime.UtcNow} Burst - ignoring '{assembly.Filename}' because it failed C# compilation");
                 }
 
+                SessionState.SetBool(assembliesDroppedSessionKey, true);
                 return;
             }
 

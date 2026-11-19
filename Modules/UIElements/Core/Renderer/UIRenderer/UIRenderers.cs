@@ -200,7 +200,7 @@ namespace UnityEngine.UIElements.UIR
                         oldCamera = Camera.current;
                         oldRT = RenderTexture.active;
 
-                        UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out var matrix);
+                        UIRUtility.GetImmediateViewMatrix(owner, out var matrix);
                         GL.modelview = matrix;
 
                         PushScissor(drawParams, owner.clippingRect);

@@ -231,6 +231,12 @@ namespace UnityEditorInternal.Profiling
         void ReloadData(long selectedFrameIndex)
         {
             m_Content.Clear();
+            BuildContent(selectedFrameIndex);
+            MakeLabelsSelectable(m_Content);
+        }
+
+        void BuildContent(long selectedFrameIndex)
+        {
             int frame = Convert.ToInt32(selectedFrameIndex);
             if (frame < 0) { AddNoData(); return; }
 
@@ -442,7 +448,7 @@ namespace UnityEditorInternal.Profiling
 
             if (detail == null) return;
 
-            var header = new Label(Content.ExclusionReasonsHeader);
+            var header = new Label(Content.ExclusionReasonsHeader) { pickingMode = PickingMode.Ignore };
             header.AddToClassList("rd-reason-header");
             detail.Add(header);
 
@@ -735,6 +741,9 @@ namespace UnityEditorInternal.Profiling
 
             var valueEl = new Label(trailingValue ?? string.Empty);
             valueEl.AddToClassList("rd-bar-row__value");
+            // The value is selectable, so clicking it to select text shouldn't also toggle the row.
+            if (expandable)
+                valueEl.RegisterCallback<ClickEvent>(evt => evt.StopPropagation());
             row.Add(valueEl);
 
             return row;
@@ -821,6 +830,15 @@ namespace UnityEditorInternal.Profiling
             valLbl.AddToClassList("rd-resource-row__value");
             row.Add(valLbl);
             parent.Add(row);
+        }
+
+        static void MakeLabelsSelectable(VisualElement root)
+        {
+            root.Query<Label>().ForEach(label =>
+            {
+                if (label.pickingMode != PickingMode.Ignore)
+                    label.selection.isSelectable = true;
+            });
         }
 
         // ==================== DATA HELPERS ====================
