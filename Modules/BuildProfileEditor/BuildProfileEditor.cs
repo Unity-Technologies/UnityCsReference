@@ -173,6 +173,9 @@ namespace UnityEditor.Build.Profile
         VisualElement CreateBootstrapGUI(BuildProfilePackageAddInfo packageAddInfo)
         {
             var bootstrapView = new BuildProfileBootstrapView();
+            if (packageAddInfo.isRegistrationPending)
+                bootstrapView.SetAwaitingPackageRegistration();
+
             m_Profile.OnPackageAddProgress = () =>
             {
                 bootstrapView.StartSpinner();

@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using UnityEditor.Marketplace;
 using UnityEditor.PackageManager;
-using UnityEditor.PackageManager.UI.Internal;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -25,26 +25,11 @@ internal class PlatformPackageServiceInfoProvider
         Timeout
     }
 
-    List<PlatformPackageServiceInfo> m_PackageServiceInfoList = new List<PlatformPackageServiceInfo>();
-    readonly HttpClientFactory m_HttpClientFactory = new HttpClientFactory();
-    readonly DateTimeProxy m_DateTimeProxy = new DateTimeProxy();
-    readonly UnityConnectProxy m_UnityConnectProxy = new UnityConnectProxy();
-    readonly UnityOAuthProxy m_UnityOAuthProxy = new UnityOAuthProxy();
-    readonly AssetStoreOAuth m_AssetStoreOAuth;
-
-    string m_Host = string.Empty;
-    string host
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(m_Host))
-                m_Host = m_UnityConnectProxy.GetConfigurationURL(Connect.CloudConfigUrl.CloudPackagesApi);
-            return m_Host;
-        }
-    }
+    readonly Dictionary<string, PlatformPackageServiceInfo> m_PackageServiceInfos = new Dictionary<string, PlatformPackageServiceInfo>();
+    IMarketplaceEditorApiClient m_ApiClient;
+    IMarketplaceEditorApiClient apiClient => m_ApiClient ??= new MarketplaceEditorApiClient();
 
     const int k_TimeoutSeconds = 30;
-    const string k_ProductInfoUri = "/-/api/product";
 
     class PlatformPackageServiceInfo
     {
@@ -71,14 +56,9 @@ internal class PlatformPackageServiceInfoProvider
         }
     }
 
-    internal PlatformPackageServiceInfoProvider()
-    {
-        m_AssetStoreOAuth = new AssetStoreOAuth(m_DateTimeProxy, m_UnityConnectProxy, m_UnityOAuthProxy, m_HttpClientFactory);
-    }
-
     public void Dispose()
     {
-        foreach (var packageInfo in m_PackageServiceInfoList)
+        foreach (var packageInfo in m_PackageServiceInfos.Values)
             packageInfo.Dispose();
     }
 
@@ -98,14 +78,12 @@ internal class PlatformPackageServiceInfoProvider
 
     public PackageManager.PackageInfo GetPackageInfo(string packageName)
     {
-        var packageServiceInfo = m_PackageServiceInfoList.Find(p => p.name == packageName);
-        return packageServiceInfo?.packageInfo;
+        return m_PackageServiceInfos.TryGetValue(packageName, out var packageServiceInfo) ? packageServiceInfo.packageInfo : null;
     }
 
     public Texture GetThumbnail(string packageName)
     {
-        var packageServiceInfo = m_PackageServiceInfoList.Find(p => p.name == packageName);
-        return packageServiceInfo?.thumbnail;
+        return m_PackageServiceInfos.TryGetValue(packageName, out var packageServiceInfo) ? packageServiceInfo.thumbnail : null;
     }
 
     async void FetchPackageServiceInfo()
@@ -118,11 +96,10 @@ internal class PlatformPackageServiceInfoProvider
             var packageInfo = PackageManager.PackageInfo.FindForPackageName(name);
             if (packageInfo != null)
             {
-                var packageServiceInfo = new PlatformPackageServiceInfo(packageInfo);
-                m_PackageServiceInfoList.Add(packageServiceInfo);
+                var packageServiceInfo = Store(packageInfo);
 
                 if (packageServiceInfo.productId != -1)
-                    packageInfoSearchTasks.Add(FetchThumbnailFromAssetStoreAsync(packageServiceInfo.productId));
+                    packageInfoSearchTasks.Add(FetchProductInfoAsync(packageServiceInfo.name));
             }
             else
                 packageInfoSearchTasks.Add(FetchPackageServiceInfoFromServerAsync(name));
@@ -137,7 +114,7 @@ internal class PlatformPackageServiceInfoProvider
 
         var searchTask = Task.WhenAll(packageInfoSearchTasks);
         var timeoutTask = Task.Delay(TimeSpan.FromSeconds(k_TimeoutSeconds));
-        
+
         var completedTask = await Task.WhenAny(searchTask, timeoutTask);
 
         if (completedTask == timeoutTask)
@@ -185,13 +162,11 @@ internal class PlatformPackageServiceInfoProvider
 
                 try
                 {
-                    var packageInformation = new PlatformPackageServiceInfo(packageInfo);
-                    m_PackageServiceInfoList.Add(packageInformation);
-
+                    var packageInformation = Store(packageInfo);
                     if (packageInformation.productId != -1)
                     {
-                        var thumbnailResult = await FetchThumbnailFromAssetStoreAsync(packageInformation.productId);
-                        if (!thumbnailResult)
+                        var productInfoResult = await FetchProductInfoAsync(packageInformation.name);
+                        if (!productInfoResult)
                         {
                             tcs.SetResult(false);
                             return;
@@ -214,64 +189,39 @@ internal class PlatformPackageServiceInfoProvider
         return tcs.Task;
     }
 
-    Task<bool> FetchThumbnailFromAssetStoreAsync(long productId)
+    async Task<bool> FetchProductInfoAsync(string packageName)
     {
-        var tcs = new TaskCompletionSource<bool>();
-        FetchProductInfoFromAssetStore(productId, async result =>
+        try
         {
-            try
-            {
-                if (result == null || result.ContainsKey("errorMessage"))
-                {
-                    tcs.SetResult(false);
-                    return;
-                }
+            var productInfo = await apiClient.GetPackageInfoAsync(packageName);
+            if (productInfo == null || !m_PackageServiceInfos.TryGetValue(packageName, out var packageServiceInfo))
+                return false;
 
-                var imageUrl = GetThumbnailUrlFromProductDetails(result);
-                if (string.IsNullOrEmpty(imageUrl))
-                {
-                    tcs.SetResult(false);
-                    return;
-                }
+            if (string.IsNullOrEmpty(productInfo.thumbnail))
+                return false;
 
-                var image = await DownloadImageByUrlAsync(imageUrl);
-                if (image == null)
-                {
-                    tcs.SetResult(false);
-                    return;
-                }
+            var image = await DownloadImageByUrlAsync(productInfo.thumbnail);
+            if (image == null)
+                return false;
 
-                var packageServiceInfo = m_PackageServiceInfoList.Find(p => p.productId == productId);
-                if (packageServiceInfo == null)
-                {
-                    tcs.SetResult(false);
-                    return;
-                }
-
-                image.hideFlags = HideFlags.HideAndDontSave;
-                packageServiceInfo.thumbnail = image;
-                tcs.SetResult(true);
-            }
-            catch
-            {
-                tcs.SetResult(false);
-            }
-        });
-        return tcs.Task;
+            image.hideFlags = HideFlags.HideAndDontSave;
+            packageServiceInfo.thumbnail = image;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
-    string GetThumbnailUrlFromProductDetails(IDictionary<string, object> productDetail)
+    PlatformPackageServiceInfo Store(PackageManager.PackageInfo packageInfo)
     {
-        if (productDetail == null)
-            return string.Empty;
+        var packageServiceInfo = new PlatformPackageServiceInfo(packageInfo);
+        if (m_PackageServiceInfos.TryGetValue(packageServiceInfo.name, out var existing))
+            existing.Dispose();
 
-        var mainImageDictionary = productDetail.GetDictionary("mainImage");
-        var thumbnailUrl = mainImageDictionary?.GetString("small_v2");
-        if (string.IsNullOrEmpty(thumbnailUrl))
-            return string.Empty;
-
-        thumbnailUrl = thumbnailUrl.Replace("//d2ujflorbtfzji.cloudfront.net/", "//assetstorev1-prd-cdn.unity3d.com/");
-        return "http:" + thumbnailUrl;
+        m_PackageServiceInfos[packageServiceInfo.name] = packageServiceInfo;
+        return packageServiceInfo;
     }
 
     Task<Texture> DownloadImageByUrlAsync(string url)
@@ -284,7 +234,7 @@ internal class PlatformPackageServiceInfoProvider
             return tcs.Task;
         }
 
-        var httpRequest = m_HttpClientFactory.GetASyncHTTPClient(url);
+        var httpRequest = new AsyncHTTPClient(url);
         httpRequest.doneCallback = httpClient =>
         {
             if (httpClient.IsSuccess() && httpClient.texture != null)
@@ -295,34 +245,5 @@ internal class PlatformPackageServiceInfoProvider
         httpRequest.Begin();
 
         return tcs.Task;
-    }
-
-    void FetchProductInfoFromAssetStore(long productId, Action<Dictionary<string, object>> value)
-    {
-        var url = $"{host}{k_ProductInfoUri}/{productId}";
-        var httpRequest = m_HttpClientFactory.GetASyncHTTPClient(url);
-        m_AssetStoreOAuth.FetchAccessToken(
-            token =>
-            {
-                httpRequest.tag = $"GetPlatformPackageProductDetail{productId}";
-                httpRequest.header["Content-Type"] = "application/json";
-                httpRequest.header["Authorization"] = "Bearer " + token.accessToken;
-                httpRequest.doneCallback = request =>
-                {
-                    if (!request.IsSuccess())
-                    {
-                        value?.Invoke(null);
-                        return;
-                    }
-
-                    var parsedResult = m_HttpClientFactory.ParseResponseAsDictionary(request);
-                    value?.Invoke(parsedResult);
-                };
-                httpRequest.Begin();
-            },
-            error =>
-            {
-                value?.Invoke(null);
-            });
     }
 }

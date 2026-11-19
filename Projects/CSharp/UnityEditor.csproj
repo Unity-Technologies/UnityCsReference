@@ -852,6 +852,24 @@
     <Compile Include="..\..\Editor\Mono\BuildProfile\Internal\IAddSettingsDataProvider.cs">
       <Link>Editor\Mono\BuildProfile\Internal\IAddSettingsDataProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\IMarketplaceWebRequestSender.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\IMarketplaceWebRequestSender.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\IServiceTokenProvider.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\IServiceTokenProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceApiError.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceApiError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceEditorApiClient.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceEditorApiClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceEditorApiModels.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceEditorApiModels.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceJson.cs">
+      <Link>Editor\Mono\BuildProfile\MarketplaceEditorApi\MarketplaceJson.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\PlatformPackageServiceInfoProvider.cs">
       <Link>Editor\Mono\BuildProfile\PlatformPackageServiceInfoProvider.cs</Link>
     </Compile>
@@ -6534,9 +6552,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreLocalInfo.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreLocalInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreOAuth.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreOAuth.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageFactory.cs</Link>
     </Compile>
@@ -6959,9 +6974,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\UnityConnectProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\UnityConnectProxy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\UnityOAuthProxy.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\UnityOAuthProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ServicesContainer.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\ServicesContainer.cs</Link>
@@ -7631,6 +7643,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\TrustLevel.cs">
       <Link>Modules\PackageManager\Editor\Managed\TrustLevel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\TrustPolicySettings.bindings.cs">
+      <Link>Modules\PackageManager\Editor\Managed\TrustPolicySettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\TrustPolicySettings.cs">
+      <Link>Modules\PackageManager\Editor\Managed\TrustPolicySettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\UnityLifecycleInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\UnityLifecycleInfo.cs</Link>
@@ -11679,7 +11697,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_6d1a/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_1d01/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/netstandard2.0/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

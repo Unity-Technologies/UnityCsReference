@@ -300,7 +300,7 @@ namespace Unity.VectorGraphics
             bool hasClipper = node.Clipper != null;
             if (hasClipper)
             {
-                DrawClipPathWithPainter2D(node.Clipper, matrix, painter);
+                DrawClipPathWithPainter2D(node.Clipper, matrix * node.Clipper.Transform, painter);
                 painter.PushClip();
             }
 
@@ -349,7 +349,7 @@ namespace Unity.VectorGraphics
                         }
 
                         var gradientFill = shape.Fill as GradientFill;
-                        if (gradientFill != null)
+                        if (gradientFill != null && HasStops(gradientFill))
                         {
                             ComputeFillGradientFromGradientFill(shape, matrix, gradientFill, out var fillGradient, out var fillTransform);
                             painter.fillGradient = fillGradient;
@@ -359,15 +359,15 @@ namespace Unity.VectorGraphics
                         }
                     }
 
-                    if (shape.PathProps.Stroke != null)
+                    var stroke = shape.PathProps.Stroke;
+                    var strokeGradient = stroke?.Fill as GradientFill;
+                    if (stroke != null && (strokeGradient == null || HasStops(strokeGradient)))
                     {
                         var pathProps = shape.PathProps;
-                        var stroke = pathProps.Stroke;
 
-                        var gradientFill = stroke.Fill as GradientFill;
-                        if (gradientFill != null)
+                        if (strokeGradient != null)
                         {
-                            ComputeFillGradientFromGradientFill(shape, matrix, gradientFill, out var fillGradient, out var fillTransform);
+                            ComputeFillGradientFromGradientFill(shape, matrix, strokeGradient, out var fillGradient, out var fillTransform);
                             painter.strokeFillGradient = fillGradient;
                             painter.fillTransform = fillTransform.ToMatrix4x4();
                         }
@@ -461,6 +461,12 @@ namespace Unity.VectorGraphics
                     DrawClipPathWithPainter2D(child, transform, painter);
                 }
             }
+        }
+
+        // Per SVG spec, a gradient without stops paints nothing
+        internal static bool HasStops(GradientFill gradientFill)
+        {
+            return gradientFill.Stops != null && gradientFill.Stops.Length > 0;
         }
 
         static void ComputeFillGradientFromGradientFill(Shape shape, Matrix2D matrix, GradientFill gradientFill, out FillGradient outFillGradient, out Matrix2D outFillTransform)

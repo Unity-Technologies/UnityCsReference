@@ -349,10 +349,10 @@ namespace UnityEngine
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Equals(Plane other) => this == other;
+        public readonly bool Equals(Plane other) => m_Normal.Equals(in other.m_Normal) && m_Distance.Equals(other.m_Distance);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly bool Equals(in Plane other) => this == other;
+        public readonly bool Equals(in Plane other) => m_Normal.Equals(in other.m_Normal) && m_Distance.Equals(other.m_Distance);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override readonly int GetHashCode() => m_Distance.GetHashCode() ^ (m_Normal.GetHashCode() << 2);

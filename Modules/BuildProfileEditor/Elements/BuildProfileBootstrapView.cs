@@ -39,6 +39,15 @@ internal class BuildProfileBootstrapView : VisualElement
         }
     }
 
+    /// <summary>
+    /// Shows that the installed packages are still being registered, imported and compiled.
+    /// </summary>
+    internal void SetAwaitingPackageRegistration()
+    {
+        StartSpinner();
+        m_PackageAddProgressLabel.text = TrText.buildProfileConfiguration;
+    }
+
     internal void Set(BuildProfilePackageAddInfo.ProgressEntry info)
     {
         string message = "";

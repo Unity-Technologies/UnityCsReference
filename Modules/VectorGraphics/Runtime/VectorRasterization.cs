@@ -12,7 +12,7 @@ namespace Unity.VectorGraphics
     {
         static Color SampleGradient(GradientStop[] stops, float u)
         {
-            if (stops == null)
+            if (stops == null || stops.Length == 0)
                 return Color.white;
 
             int stop;

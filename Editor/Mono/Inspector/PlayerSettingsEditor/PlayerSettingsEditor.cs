@@ -3146,6 +3146,17 @@ namespace UnityEditor
 
         private void OtherSectionD3D12SettingsGUI(BuildPlatform buildPlatform, ISettingEditorExtension settingsExtension)
         {
+            if (buildPlatform.namedBuildTarget == NamedBuildTarget.WebGL) return;
+
+            // Device filtering is meaningless on fixed-hardware consoles, even Xbox which uses D3D12.
+            if (BuildTargetDiscovery.PlatformHasFlag(buildPlatform.defaultTarget, BuildTargetDiscovery.TargetAttributes.IsConsole)) return;
+
+            // Standalone is a composite; check Windows (its only D3D12 target) so it shows on any Editor host.
+            bool supportsD3D12 = buildPlatform.namedBuildTarget == NamedBuildTarget.Standalone
+                ? BuildTargetDiscovery.BuildTargetSupportsRenderer(BuildTarget.StandaloneWindows64, GraphicsDeviceType.Direct3D12)
+                : BuildTargetDiscovery.BuildTargetSupportsRenderer(buildPlatform, GraphicsDeviceType.Direct3D12);
+            if (!supportsD3D12) return;
+
             GUILayout.Label(SettingsContent.d3d12SettingsTitle, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_D3D12FilterListsAsset, SettingsContent.d3d12FilterLists);
