@@ -247,6 +247,15 @@ namespace UnityEditor
         [NativeName("SelectionCount")]
         public extern static int count { get; }
 
+        /// <summary>
+        /// The number of selected Objects that are in memory or known to the asset database, counted without loading any.
+        /// Unlike <see cref="count"/>, it includes a selected asset that fails to load, so it can exceed <c>objects.Length</c>.
+        /// </summary>
+        [StaticAccessor("Selection", StaticAccessorType.DoubleColon)]
+        [NativeName("SelectionKnownCount")]
+        [VisibleToOtherModules]
+        internal extern static int knownCount { get; }
+
         [NativeMethod("DoAllGOsHaveConstrainProportionsEnabled", true)]
         internal static extern bool DoAllGOsHaveConstrainProportionsEnabled([NotNull] Object[] targetObjects);
     }

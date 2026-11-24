@@ -79,6 +79,7 @@ namespace UnityEditor.U2D
             public readonly int packableElementHash = "PackableElement".GetHashCode();
             public readonly int packableSelectorHash = "PackableSelector".GetHashCode();
 
+            public readonly string spriteAtlasV1Obsolete = L10n.Tr("SpriteAtlas V1 is Obsolete and will be removed in an upcoming version. Please use V2.", null);
             public readonly string swapObjectRegisterUndo = L10n.Tr("Swap Packable", null);
             public readonly string secondaryTextureNameTextControlName = "secondary_texture_name_text_field";
             public readonly string defaultTextForSecondaryTextureName = L10n.Tr("(Matches the names of the Secondary Textures in your Sprites.)", null);
@@ -351,7 +352,7 @@ namespace UnityEditor.U2D
                 // This ensure the Sprites was pack in this atlas will be refreshed of it unbound.
                 Undo.RegisterCompleteObjectUndo(spriteAtlas, styles.swapObjectRegisterUndo);
                 if (previousObject != null)
-                    spriteAtlas.Remove(new Object[] { previousObject });
+                    spriteAtlas.RemoveInternal(new Object[] { previousObject });
                 property.objectReferenceValue = changedObject;
             }
 
@@ -361,6 +362,8 @@ namespace UnityEditor.U2D
 
         public override void OnInspectorGUI()
         {
+            EditorGUILayout.HelpBox(styles.spriteAtlasV1Obsolete, MessageType.Warning, true);
+
             // Ensure changes done through script are reflected immediately in Inspector by Syncing m_TempPlatformSettings with Actual Settings.
             SyncPlatformSettings();
 
@@ -387,8 +390,7 @@ namespace UnityEditor.U2D
             if (targets.Length == 1 && AllTargetsAreMaster())
                 HandlePackableListUI();
 
-            bool spriteAtlasPackingEnabled = (EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnlyAtlas
-                || EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOnAtlas || EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2);
+            bool spriteAtlasPackingEnabled = (EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnlyAtlas || EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2);
             if (spriteAtlasPackingEnabled && !Application.isPlaying)
             {
                 using (new EditorGUI.DisabledScope(!Editor.IsPersistent(spriteAtlas)))

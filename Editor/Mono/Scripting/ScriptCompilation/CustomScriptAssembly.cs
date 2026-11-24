@@ -737,9 +737,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 return;
             }
+            // Use a relative path so Bee cache signatures are consistent across projects
+            // The file is still in Library/, but we use a relative path in the .rsp
+            ImmutablePackageRulesetPath = "Library/ImmutablePackage.ruleset";
+
+            // Still need to create the file with absolute path
             var projectPath = System.IO.Path.GetDirectoryName(UnityEngine.Application.dataPath);
-            var rulesetDirectory = System.IO.Path.Combine(projectPath, "Library");
-            ImmutablePackageRulesetPath = System.IO.Path.Combine(rulesetDirectory, "ImmutablePackage.ruleset");
+            var absoluteRulesetPath = System.IO.Path.Combine(projectPath, ImmutablePackageRulesetPath);
 
             // UAC0036 ([AutoStaticsCleanup] code generation failed on the package's code) is lowered to a Warning: the
             // user cannot edit a read-only package, so it must not fail their compilation. User code keeps the default
@@ -760,15 +764,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 """;
 
             // Check if file exists with correct content before writing.
-            if (System.IO.File.Exists(ImmutablePackageRulesetPath))
+            if (System.IO.File.Exists(absoluteRulesetPath))
             {
-                var existingContent = System.IO.File.ReadAllText(ImmutablePackageRulesetPath, System.Text.Encoding.UTF8);
+                var existingContent = System.IO.File.ReadAllText(absoluteRulesetPath, System.Text.Encoding.UTF8);
                 if (string.Equals(existingContent, rulesetContent, System.StringComparison.Ordinal))
                     return;
             }
 
-            System.IO.Directory.CreateDirectory(rulesetDirectory);
-            System.IO.File.WriteAllText(ImmutablePackageRulesetPath, rulesetContent, System.Text.Encoding.UTF8);
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(absoluteRulesetPath));
+            System.IO.File.WriteAllText(absoluteRulesetPath, rulesetContent, System.Text.Encoding.UTF8);
         }
     }
 }

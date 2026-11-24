@@ -70,6 +70,8 @@ namespace UnityEditor.Build.Profile
         public static readonly string removeSettings = L10n.Tr("Remove Settings", null);
         public static readonly string resetMessage = L10n.Tr("Are you sure you want to reset these settings? This operation cannot be undone.", null);
         public static readonly string removeMessage = L10n.Tr("Are you sure you want to remove these settings? This operation cannot be undone.", null);
+        public static readonly string pasteSettings = L10n.Tr("Paste Settings", null);
+        public static readonly string adaptivePerformancePasteMessage = L10n.Tr("This action replaces all existing Adaptive Performance settings in this build profile, including provider settings. Are you sure you want to continue?", null);
         public static readonly string diagnostics = L10n.Tr("Diagnostics", null);
 
         // Build Profile Player Settings

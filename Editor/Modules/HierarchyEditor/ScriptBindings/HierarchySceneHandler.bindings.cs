@@ -81,7 +81,7 @@ namespace Unity.Hierarchy.Editor
             EditorSceneManager.sceneDirtied += OnSceneDirty;
             EditorSceneManager.sceneSaved += OnSceneSaved;
             EditorSceneManager.sceneOpened += OnSceneOpened;
-            AssetEvents.assetsChangedOnHDD += OnAssetsChangedOnHDD;
+            EditorSceneManager.sceneRenamed += OnSceneRenamed;
         }
 
         protected override void Dispose(bool disposing)
@@ -90,7 +90,7 @@ namespace Unity.Hierarchy.Editor
             EditorSceneManager.sceneDirtied -= OnSceneDirty;
             EditorSceneManager.sceneSaved -= OnSceneSaved;
             EditorSceneManager.sceneOpened -= OnSceneOpened;
-            AssetEvents.assetsChangedOnHDD -= OnAssetsChangedOnHDD;
+            EditorSceneManager.sceneRenamed -= OnSceneRenamed;
 
             base.Dispose(disposing);
         }
@@ -437,13 +437,6 @@ namespace Unity.Hierarchy.Editor
 
             // Force an update even if nothing has changed.
             CommandList.SetDirty();
-
-            var sceneNode = GetOrCreateNode(scene);
-            if (sceneNode != HierarchyNode.Null)
-            {
-                // Name might have changed
-                CommandList.SetName(in sceneNode, scene.name);
-            }
         }
 
         void OnActiveSceneChanged(Scene previousActiveScene, Scene newActiveScene)
@@ -455,25 +448,12 @@ namespace Unity.Hierarchy.Editor
                 CommandList.SetDirty();
         }
 
-        void OnAssetsChangedOnHDD(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        void OnSceneRenamed(Scene scene, string previousName)
         {
-            foreach (var asset in importedAssets)
-            {
-                bool isScene = asset.EndsWith(".unity", StringComparison.OrdinalIgnoreCase);
-                if (isScene)
-                {
-                    var scene = EditorSceneManager.GetSceneByPath(asset);
+            if (scene.isSubScene)
+                return;
 
-                    // When saving a new scene or as a new scene, the new asset path has not been set on the scene yet.
-                    // We have to rely on OnSceneSaved.
-                    if (!scene.IsValid() || scene.isSubScene)
-                        continue;
-
-                    var sceneNode = GetOrCreateNode(scene);
-                    if (sceneNode != HierarchyNode.Null)
-                        CommandList.SetName(in sceneNode, scene.name);
-                }
-            }
+            UpdateSceneName(scene);
         }
 
         void OnSceneOpened(Scene scene, OpenSceneMode mode)
@@ -788,6 +768,9 @@ namespace Unity.Hierarchy.Editor
 
         [FreeFunction("HierarchySceneHandlerBindings::OpenSceneUnloaded", HasExplicitThis = true, IsThreadSafe = true)]
         extern void OpenSceneUnloaded(Scene scene);
+
+        [FreeFunction("HierarchySceneHandlerBindings::UpdateSceneName", HasExplicitThis = true, IsThreadSafe = true)]
+        extern void UpdateSceneName(Scene scene);
 
         #region Called from native
         [RequiredByNativeCode(Optional = true)]

@@ -37,6 +37,8 @@ namespace UnityEngine
         }
 
 
+        const string k_LoggedDataKey = "Unity.Awaitable.Logged";
+
         // Message methods like Awake or Start can return an Awaitable that nothing awaits, so log its exception here.
         [RequiredByNativeCode]
         private static void LogExceptionsFromMessage(object returnValue, object context)
@@ -46,17 +48,18 @@ namespace UnityEngine
 
             awaitable.SetContinuation(() =>
             {
-                try
-                {
-                    awaitable.GetAwaiter().GetResult();
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e, context as Object);
-                }
+                // Peek instead of GetResult: releasing would detach the Awaitable a later reader still holds.
+                var exception = awaitable.PeekException();
+                awaitable.ReleaseNativeBackingKeepCompletion();
+                if (exception == null || exception is OperationCanceledException)
+                    return;
+
+                // A late reader that rethrows this exception must not log it a second time.
+                if (exception.Data.Contains(k_LoggedDataKey))
+                    return;
+
+                exception.Data[k_LoggedDataKey] = true;
+                Debug.LogException(exception, context as Object);
             });
         }
 

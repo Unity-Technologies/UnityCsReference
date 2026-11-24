@@ -1,0 +1,397 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEditor.Overlays;
+using Cursor = UnityEngine.UIElements.Cursor;
+
+namespace UnityEditor.Snap
+{
+    sealed class SnapSettingsWindow : OverlayPopupWindow
+    {
+        const string k_GridSnapSettingsWindowUxmlPath = "UXML/GridAndSnap/GridSnapSettings.uxml";
+        const string k_SnapWindowsCommonStyleSheet = "StyleSheets/SceneViewToolbarElements/SnapWindowsCommon.uss";
+        
+        readonly SceneViewGrid.GridRenderAxis[] m_Axes =
+        {
+            SceneViewGrid.GridRenderAxis.X,
+            SceneViewGrid.GridRenderAxis.Y,
+            SceneViewGrid.GridRenderAxis.Z,
+        };
+
+        Toggle m_DisplayGrid;
+        Toggle m_ShowClosestToHandle;
+
+        ButtonStripField m_GridPlane;
+        SliderInt m_GridOpacity;
+
+        LinkedVector3Field m_GridSize;
+        LinkedVector3Field m_IncrementSnapSize;
+        Vector3Field m_GridPosition;
+        Vector3Field m_GridRotation;
+
+        Button m_CopyFromActiveButton;
+        Button m_ApplyLastCustomButton;
+        Button m_ResetWorldButton;
+
+        SceneView sceneView => SceneView.lastActiveSceneView;
+
+        public void CreateGUI()
+        {
+             var mainTemplate = EditorGUIUtility.Load(k_GridSnapSettingsWindowUxmlPath) as VisualTreeAsset;
+            mainTemplate.CloneTree(rootVisualElement);
+            
+            SceneViewToolbarStyles.AddStyleSheets(rootVisualElement);
+
+            rootVisualElement.Q<TextElement>("PaneTitle").text = L10n.Tr("Grid and Snap Settings", null);
+            rootVisualElement.Q<Button>("PaneOption").clicked += PaneOptionMenu;
+            
+            m_DisplayGrid = rootVisualElement.Q<Toggle>("DisplayGrid");
+            m_DisplayGrid.label = L10n.Tr("Display Grid", null);
+            m_DisplayGrid.tooltip = L10n.Tr("Toggle visibility of the Scene view's grid.", null);
+            m_DisplayGrid.RegisterValueChangedCallback(evt => sceneView.sceneViewGrids.showGrid = evt.newValue);
+            m_DisplayGrid.SetValueWithoutNotify(sceneView.sceneViewGrids.showGrid);
+            
+            m_ShowClosestToHandle = rootVisualElement.Q<Toggle>("ShowClosestToHandle");
+            m_ShowClosestToHandle.label = L10n.Tr("Show closest grid to handle", null);
+            m_ShowClosestToHandle.tooltip = L10n.Tr("Toggle whether to display the Scene view grid on a grid plane that is closest to the active handle position.", null);
+            m_ShowClosestToHandle.RegisterValueChangedCallback(evt => sceneView.sceneViewGrids.nearestPlaneToHandleMode = evt.newValue);
+            m_ShowClosestToHandle.SetValueWithoutNotify(sceneView.sceneViewGrids.nearestPlaneToHandleMode);
+            
+            m_GridPlane = rootVisualElement.Q<ButtonStripField>("GridPlane");
+            foreach (var axis in m_Axes)
+                m_GridPlane.AddButton(axis.ToString());
+            m_GridPlane.label = L10n.Tr("Grid Plane", null);
+            m_GridPlane.tooltip = L10n.Tr("The axis that the Scene view grid is drawn on.", null);
+            m_GridPlane.RegisterValueChangedCallback((evt) =>
+            {
+                sceneView.sceneViewGrids.gridAxis = m_Axes[evt.newValue];
+                SceneView.RepaintAll();
+            });
+            m_GridPlane.SetValueWithoutNotify((int)sceneView.sceneViewGrids.gridAxis);
+
+            m_GridOpacity = rootVisualElement.Q<SliderInt>("Opacity");
+            m_GridOpacity.label = L10n.Tr("Opacity", null);
+            m_GridOpacity.tooltip = L10n.Tr("The opacity of the Scene view grid.", null);
+            m_GridOpacity.lowValue = 0;
+            m_GridOpacity.highValue = 100;
+            m_GridOpacity.RegisterValueChangedCallback(evt =>
+            {
+                sceneView.sceneViewGrids.gridOpacity = evt.newValue / 100f;
+                SceneView.RepaintAll();
+            });
+            m_GridOpacity.SetValueWithoutNotify((int)(sceneView.sceneViewGrids.gridOpacity * 100));
+
+            var transformGridSection = rootVisualElement.Q<Label>("TransformGrid");
+            transformGridSection.text = L10n.Tr("Grid Transform", null);
+
+            var gridSettings = GridSettings.instance;
+          
+            m_GridSize = new LinkedVector3Field(L10n.Tr("Grid Size", null)) { name = "GridSize" };
+            m_GridSize.value = gridSettings.gridSize;
+            m_GridSize.style.flexGrow = 1;
+            m_GridSize.linked = Mathf.Approximately(m_GridSize.value.x, m_GridSize.value.y) && Mathf.Approximately(m_GridSize.value.x, m_GridSize.value.z);
+            m_GridSize.tooltip = L10n.Tr("The size of the Scene view grid in world units.", null);
+            m_GridSize.RegisterValueChangedCallback(evt =>
+            {
+                var value = evt.newValue;
+                if (m_GridSize.linked)
+                    value = evt.newValue.x * Vector3.one;
+
+                if (GridSettings.IsValid(value))
+                    gridSettings.gridSize = value;
+                else
+                    m_GridSize.SetValueWithoutNotify(evt.previousValue);
+            });
+            rootVisualElement.Q<VisualElement>("GridSizeContainer").Add(m_GridSize);
+
+            m_IncrementSnapSize = new LinkedVector3Field(L10n.Tr("Increment Snap", null)) { name = "IncrementSnapSize" };
+            m_IncrementSnapSize.value = EditorSnapSettings.move;
+            m_IncrementSnapSize.style.flexGrow = 1;
+            m_IncrementSnapSize.linked = Mathf.Approximately(m_IncrementSnapSize.value.x, m_IncrementSnapSize.value.y) &&
+                                         Mathf.Approximately(m_IncrementSnapSize.value.x, m_IncrementSnapSize.value.z);
+            m_IncrementSnapSize.tooltip = L10n.Tr("The increment value for moving objects when incremental snapping is enabled.", null);
+            m_IncrementSnapSize.RegisterValueChangedCallback(evt =>
+            {
+                var value = evt.newValue;
+                if (m_IncrementSnapSize.linked)
+                    value = evt.newValue.x * Vector3.one;
+
+                if (GridSettings.IsValid(value))
+                    EditorSnapSettings.move = value;
+                else
+                    m_IncrementSnapSize.SetValueWithoutNotify(evt.previousValue);
+            });
+            rootVisualElement.Q<VisualElement>("IncrementSnapSizeContainer").Add(m_IncrementSnapSize);
+
+            m_GridPosition = rootVisualElement.Q<Vector3Field>("GridPositionField");
+            m_GridPosition.value = gridSettings.position;
+            m_GridPosition.isDelayed = true;
+            m_GridPosition.tooltip = L10n.Tr("The origin position of the Scene view grid in world space.", null);
+            m_GridPosition.RegisterValueChangedCallback(evt =>
+            {
+                if (GridSettings.IsValid(evt.newValue))
+                    ApplyCustomPosition(evt.newValue);
+                else
+                    m_GridPosition.SetValueWithoutNotify(evt.previousValue);
+            });
+
+            m_GridRotation = rootVisualElement.Q<Vector3Field>("GridRotationField");
+            RefreshGridRotationField();
+
+            m_GridRotation.tooltip = L10n.Tr("The rotation of the Scene view grid in world space.", null);
+            m_GridRotation.isDelayed = true;
+            m_GridRotation.RegisterValueChangedCallback(evt =>
+            {
+                if (GridSettings.IsValid(evt.newValue))
+                    ApplyCustomRotation(Quaternion.Euler(evt.newValue));
+                else
+                    m_GridRotation.SetValueWithoutNotify(evt.previousValue);
+            });
+
+            m_CopyFromActiveButton = rootVisualElement.Q<Button>("CopyFromActiveObject");
+            m_CopyFromActiveButton.text = L10n.Tr("Copy from Active Object", null);
+            m_CopyFromActiveButton.tooltip = L10n.Tr("Apply the active GameObject's position and rotation to the Scene view grid.", null);
+            m_CopyFromActiveButton.clicked += () =>
+            {
+                if (Selection.activeGameObject != null)
+                {
+                    gridSettings.ActivateMode(GridMode.Custom);
+
+                    var transform = Selection.activeGameObject.transform;
+                    EditorSnapSettings.gridPosition = transform.position;
+                    
+                    gridSettings.SampleTransformRotation(transform);
+                    m_GridRotation.SetValueWithoutNotify(GetEulerRotationFromTransform(transform));
+                    
+                    SceneView.RepaintAll();
+                }
+            };
+
+            m_ApplyLastCustomButton = rootVisualElement.Q<Button>("ApplyLastCustom");
+            m_ApplyLastCustomButton.text = L10n.Tr("Apply Last Custom", null);
+            m_ApplyLastCustomButton.tooltip = L10n.Tr("Restore Scene view grid's position and rotation to the last custom values.\n\n" +
+                                                      "Only available when grid is at world origin and has no rotation.", null);
+            m_ApplyLastCustomButton.clicked += () =>
+            {
+                gridSettings.ActivateMode(GridMode.Custom);
+                RefreshGridRotationField();
+                SceneView.RepaintAll();
+            };
+
+            m_ResetWorldButton = rootVisualElement.Q<Button>("ResetToWorld");
+            m_ResetWorldButton.text = L10n.Tr("Reset to World", null);
+            m_ResetWorldButton.tooltip = L10n.Tr("Reset Scene view's grid to world origin with default rotation.", null);
+            m_ResetWorldButton.clicked += () =>
+            {
+                gridSettings.ActivateMode(GridMode.World);
+                SceneView.RepaintAll();
+            };
+            
+            RefreshLastCustomAndWorldButtons();
+            OnSelectionChanged();
+        }
+        
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            
+            Selection.selectionChanged += OnSelectionChanged;
+           
+            var gridSettings = GridSettings.instance;
+            gridSettings.sizeChanged += OnGridSizeChanged;
+            gridSettings.modeChanged += OnGridModeChanged;
+            gridSettings.modeSettingsChanged += OnGridModeSettingsChanged;
+            EditorSnapSettings.moveChanged += OnIncrementalSnapSizeChanged;
+
+            sceneView.sceneViewGrids.gridVisibilityChanged += OnDisplayGridChanged;
+            sceneView.sceneViewGrids.nearestPlaneToHandleModeChanged += OnShowPlaneClosestToGridChanged;
+        }
+
+        void OnDisable()
+        {
+            Selection.selectionChanged -= OnSelectionChanged;
+            
+            var gridSettings = GridSettings.instance;
+            gridSettings.sizeChanged -= OnGridSizeChanged;
+            gridSettings.modeChanged -= OnGridModeChanged;
+            gridSettings.modeSettingsChanged -= OnGridModeSettingsChanged;
+            EditorSnapSettings.moveChanged -= OnIncrementalSnapSizeChanged;
+            
+            sceneView.sceneViewGrids.gridVisibilityChanged -= OnDisplayGridChanged;
+            sceneView.sceneViewGrids.nearestPlaneToHandleModeChanged -= OnShowPlaneClosestToGridChanged;
+        }
+        
+        void PaneOptionMenu()
+        {
+            GenericMenu menu = new GenericMenu();
+            menu.AddItem(L10n.TextContent("Reset", null, null, null), false, ResetValues);
+            menu.ShowAsContext();
+        }
+
+        void ApplyCustomPosition(Vector3 newPosition)
+        {
+            // Switch to custom grid mode if user manually enters origin values
+            var gridSettings = GridSettings.instance;
+            if (gridSettings.activeModeIndex != GridMode.Custom)
+            {
+                var retainedRotation = gridSettings.rotation;
+                gridSettings.ActivateMode(GridMode.Custom);
+                gridSettings.rotation = retainedRotation;
+            }
+            
+            EditorSnapSettings.gridPosition = newPosition;
+            SceneView.RepaintAll();
+        }
+        
+        void ApplyCustomRotation(Quaternion newRotation)
+        {
+            // Switch to custom grid mode if user manually enters origin values
+            var gridSettings = GridSettings.instance;
+            if (gridSettings.activeModeIndex != GridMode.Custom)
+            {
+                var retainedPosition = gridSettings.position;
+                gridSettings.ActivateMode(GridMode.Custom);
+                EditorSnapSettings.gridPosition = retainedPosition;
+            }
+
+            EditorSnapSettings.gridRotation = newRotation;
+            SceneView.RepaintAll();
+        }
+
+        void ResetValues()
+        {
+            var gridSettings = GridSettings.instance;
+            gridSettings.ResetGridSettings();
+            
+            m_GridSize.linked = true;
+            m_IncrementSnapSize.linked = true;
+
+            var sceneViewGrids = sceneView.sceneViewGrids;
+            sceneViewGrids.gridAxis = SceneViewGrid.defaultRenderAxis;
+            sceneViewGrids.gridOpacity = SceneViewGrid.defaultGridOpacity;
+            sceneViewGrids.showGrid = true;
+            sceneViewGrids.nearestPlaneToHandleMode = false;
+
+            var snapVal = SnapSettings.defaultIncrementalSnapSize;
+            EditorSnapSettings.move = new Vector3(snapVal, snapVal, snapVal);
+            ResetVisualSettings();
+
+            SceneView.RepaintAll();
+        }
+
+        public void ResetVisualSettings()
+        {
+            m_GridOpacity.SetValueWithoutNotify((int)(sceneView.sceneViewGrids.gridOpacity * 100));
+
+            SceneViewGrid grid = sceneView.sceneViewGrids;
+            grid.gridRenderAxisChanged += axis => { m_GridPlane.SetValueWithoutNotify((int)axis); };
+            m_GridPlane.SetValueWithoutNotify((int)grid.gridAxis);
+        }
+
+        void OnGridSizeChanged(Vector3 size)
+        {
+            m_GridSize.SetValueWithoutNotify(size);
+        }
+
+        void OnGridModeChanged()
+        {
+            var gridSettings = GridSettings.instance;
+            m_GridSize.SetValueWithoutNotify(gridSettings.gridSize);
+            m_GridPosition.SetValueWithoutNotify(gridSettings.position);
+            m_GridRotation.SetValueWithoutNotify(gridSettings.rotation.eulerAngles);
+
+            RefreshLastCustomAndWorldButtons();
+        }
+
+        void OnGridModeSettingsChanged()
+        {
+            var gridSettings = GridSettings.instance;
+            m_GridPosition.SetValueWithoutNotify(gridSettings.position);
+            m_GridRotation.SetValueWithoutNotify(gridSettings.rotation.eulerAngles);
+
+            RefreshLastCustomAndWorldButtons();
+        }
+
+        void OnIncrementalSnapSizeChanged(Vector3 newValue)
+        {
+            m_IncrementSnapSize.SetValueWithoutNotify(newValue);
+        }
+
+        void OnDisplayGridChanged(bool newValue)
+        {
+            m_DisplayGrid.SetValueWithoutNotify(sceneView.sceneViewGrids.showGrid);
+        }
+
+        void OnShowPlaneClosestToGridChanged(bool newValue)
+        {
+            m_ShowClosestToHandle.SetValueWithoutNotify(sceneView.sceneViewGrids.nearestPlaneToHandleMode);
+        }
+
+        void RefreshLastCustomAndWorldButtons()
+        {
+            m_ApplyLastCustomButton.SetEnabled(false);
+            m_ResetWorldButton.SetEnabled(false);
+
+            var gridSettings = GridSettings.instance;
+            if (gridSettings.currentGridIsWorld)
+            {
+                // Enable apply last custom grid button if the custom mode's data is not identity
+                if (!gridSettings.customGridIsWorld)
+                    m_ApplyLastCustomButton.SetEnabled(true);
+            }
+            else
+            {
+                m_ResetWorldButton.SetEnabled(true); 
+            }
+        }
+
+        void RefreshGridRotationField()
+        {
+            var gridSettings = GridSettings.instance;
+            
+            var lastSampledTransform = GridSettings.lastRotationSampleTransform;
+            if (lastSampledTransform != null && lastSampledTransform.parent == null &&
+                lastSampledTransform.rotation.Equals(EditorSnapSettings.gridRotation))
+            {
+                var rotationOrder = (RotationOrder)lastSampledTransform.GetRotationOrderInternal();
+                m_GridRotation.SetValueWithoutNotify(lastSampledTransform.GetLocalEulerAngles(rotationOrder));
+            }
+            else
+                m_GridRotation.SetValueWithoutNotify(GetSmartRoundedVec(gridSettings.rotation.eulerAngles));
+        }
+        
+        void OnSelectionChanged()
+        {
+            if (Selection.knownCount == 0)
+                m_CopyFromActiveButton.SetEnabled(false);
+            else
+                m_CopyFromActiveButton.SetEnabled(Selection.activeGameObject != null);
+        }
+
+        Vector3 GetEulerRotationFromTransform(Transform transform)
+        {
+            Vector3 rotationEuler;
+            if (transform.parent != null)
+                rotationEuler = GetSmartRoundedVec(transform.rotation.eulerAngles);
+            else
+            {
+                var rotationOrder = (RotationOrder)transform.GetRotationOrderInternal();
+                rotationEuler = transform.GetLocalEulerAngles(rotationOrder);
+            }
+
+            return rotationEuler;
+        }
+        
+        Vector3 GetSmartRoundedVec(Vector3 vector)
+        {
+            vector.x = Mathf.RoundBasedOnMinimumDifference(vector.x, 0f);
+            vector.y = Mathf.RoundBasedOnMinimumDifference(vector.y, 0f);
+            vector.z = Mathf.RoundBasedOnMinimumDifference(vector.z, 0f);
+            return vector;
+        }
+    }
+}

@@ -342,7 +342,7 @@ namespace UnityEditor.Toolbars
             window.overlayCanvas.ApplyPreset(new UnityOnlyToolbarPreset());
         }
 
-        // Indirection so Modules/EditorToolbar can supply the button without EditorModule referencing it.
+        // Indirection so Editor/Modules/EditorToolbar can supply the button without EditorModule referencing it.
         [NoAutoStaticsCleanup] // Registered once via [InitializeOnLoadMethod].
         internal static Func<string, MainToolbarElement> menuItemButtonFactory { get; set; }
 

@@ -25,8 +25,6 @@ namespace Unity.Animations
 
         // Allocated by the first SampleRootMotion call
         public ClipSamplingCacheData* PreviousCache;
-
-        public bool ExcludeRoot;
     }
 
     /// <summary>
@@ -43,12 +41,13 @@ namespace Unity.Animations
     ///
     ///- <see cref="Sample(ref AnimationStream, in TimerState)"/> overwrites the channels that the clip animates and
     ///  leaves the others unchanged.
-    ///- <see cref="SampleAdditive(ref AnimationStream, in TimerState)"/> resets the whole stream to zero first, so that
-    ///  the stream holds an additive pose.
+    ///- <see cref="SampleAdditive(ref AnimationStream, in TimerState)"/> resets the whole stream to zero, samples the clip,
+    ///  and subtracts the additive reference pose of the clip, or its start pose, like an additive layer of an Animator.
+    ///  The stream then holds an additive pose.
     ///- <see cref="SampleRootMotion(in TimerState)"/> returns how much the root of the clip moved from the previous
-    ///  time of a timer to its current time.
-    ///- <see cref="ExcludeRoot"/> keeps the root curves out of the pose, so that the character moves only with the
-    ///  root motion that you apply.
+    ///  time of a timer to its current time, and the root transform at the current time.
+    ///- <see cref="SampleExtractingRootMotion(ref AnimationStream, in TimerState)"/> samples as `Sample` does and keeps
+    ///  the root motion out of the pose, so that the character moves only with the root motion that you apply.
     ///
     /// `Sample` and `SampleAdditive` each have a <see cref="TimerState"/> overload and a <see cref="DiscreteTime"/>
     /// overload. The remarks of each method explain which one to use. The sampler is faster when the time moves
@@ -165,52 +164,19 @@ namespace Unity.Animations
 
         /// <summary>Whether the clip has root motion curves for the rig of the sampler.</summary>
         /// <remarks>
-        /// <see cref="SampleRootMotion(in TimerState)"/> returns the identity transform if this value is `false`.
+        /// <see cref="SampleRootMotion(in TimerState)"/> returns identity transforms if this value is `false`.
         ///
-        /// The value is `true` when the clip has translation or rotation curves for the root bone of the rig. The
-        /// value ignores the root motion curves of a generic clip and the **Bake Into Pose** setting. It's therefore
-        /// `false` for a clip that has only those curves.
+        /// The value is `true` when the clip has root motion curves (`MotionT` and `MotionQ`, or `RootT` and `RootQ`),
+        /// or translation or rotation curves for the root motion bone of the rig or one of its parent bones. By
+        /// default, the root motion bone is the root bone of the rig. To choose another bone, set
+        /// <see cref="RigBuilder.RootMotionBoneId"/> when you build the rig.
         /// </remarks>
         public bool HasRootMotion
         {
             get
             {
                 ValidateCanRead();
-                var samplingData = m_Data->Instance.Value.RootMotionSamplingData;
-                return samplingData.RootTranslationIndex >= 0 || samplingData.RootRotationIndex >= 0;
-            }
-        }
-
-        /// <summary>Whether sampling leaves the root curves of the clip out of the pose.</summary>
-        /// <remarks>
-        /// The root is the first transform of the rig, which is the root transform that you passed to
-        /// <see cref="RigBuilder.Create(Transform, AnimationClip[], Allocator)"/>. By default, `Sample` writes the root
-        /// curves of the clip into the root, so the pose moves with the clip. If you also move the character with
-        /// <see cref="SampleRootMotion(in TimerState)"/>, the character moves twice. Set this value to `true` to keep
-        /// the root still.
-        ///
-        /// Sampling then handles the root translation and the root rotation like the channels that the clip doesn't
-        /// animate. They keep their value, and sampling doesn't set their bits in <see cref="AnimationStream.PassMask"/>
-        /// and <see cref="AnimationStream.FrameMask"/>. After
-        /// <see cref="SampleAdditive(ref AnimationStream, in TimerState)"/>, they stay at zero.
-        ///
-        /// The value is `false` by default. Copies of the sampler share it.
-        /// </remarks>
-        /// <exception cref="InvalidOperationException">Thrown if safety checks are enabled and you disposed another
-        /// copy of the sampler.</exception>
-        /// <exception cref="NullReferenceException">Thrown if safety checks are enabled and the sampler isn't created,
-        /// or you disposed this copy of it.</exception>
-        public readonly bool ExcludeRoot
-        {
-            get
-            {
-                ValidateCanRead();
-                return m_Data->ExcludeRoot;
-            }
-            set
-            {
-                ValidateCanWrite();
-                m_Data->ExcludeRoot = value;
+                return m_Data->Instance.Value.RootMotionSamplingData.HasRootMotion;
             }
         }
 
@@ -251,6 +217,47 @@ namespace Unity.Animations
         }
 
         /// <summary>
+        /// Samples the clip with a clip timer, and removes the root motion from the pose, as an Animator does when it
+        /// applies root motion.
+        /// </summary>
+        /// <remarks>
+        /// Use this method instead of <see cref="Sample(ref AnimationStream, in TimerState)"/> when you move the
+        /// character with the root motion of the clip from <see cref="SampleRootMotion(in TimerState)"/>. Otherwise
+        /// the pose and the root motion both move the character.
+        ///
+        /// The method samples the clip as `Sample` does, then expresses the root motion bone of the rig relative to the
+        /// root transform of the clip at the time of the timer, as
+        /// <see cref="AnimationStream.ExtractRootMotionBone(float3, quaternion)"/> does with
+        /// <see cref="MotionOutput.RootTransform"/>. When the clip has **Loop Time** and **Loop Pose** enabled, the method
+        /// removes the root motion before it corrects the pose, so the correction doesn't move the root motion bone
+        /// back.
+        ///
+        /// The channels of the root motion bone that the clip doesn't animate take their default value in the rig,
+        /// unlike with `Sample`, because the previous call replaced all the channels of that bone.
+        ///
+        /// The method only changes the root motion bone when the clip animates the translation or rotation of that bone
+        /// or of one of its parent bones. Otherwise, the pose doesn't move with the root motion, for example when only
+        /// the `RootT` and `RootQ` curves of the clip give the root motion, and the method samples the clip as `Sample`
+        /// does. By default, the root motion bone is the root bone of the rig. To choose another bone, set
+        /// <see cref="RigBuilder.RootMotionBoneId"/> when you build the rig.
+        /// </remarks>
+        /// <param name="stream">The stream to write the sampled channels to. It must have the rig that the sampler was
+        /// created for.</param>
+        /// <param name="timer">The clip timer to sample, from
+        /// <see cref="Unity.Animations.Clip.ToTimerState(DiscreteTime)"/>.</param>
+        /// <exception cref="InvalidOperationException">Thrown if safety checks are enabled and you disposed another
+        /// copy of the sampler. Also thrown if
+        /// safety checks are enabled and the rig of <paramref name="stream"/> isn't the rig of the sampler.</exception>
+        /// <exception cref="NullReferenceException">Thrown if safety checks are enabled and the sampler isn't created,
+        /// or you disposed this copy of it.</exception>
+        public void SampleExtractingRootMotion(ref AnimationStream stream, in TimerState timer)
+        {
+            ValidateCanWrite();
+            Core.SampleAnimationClipExtractingRootMotion(m_Data->Clip.AsBlobAssetReference(), m_Data->Instance,
+                ref m_Data->Cache.Memory, in timer, ref stream);
+        }
+
+        /// <summary>
         /// Samples the clip at a playback time. The method computes the value of each curve of the clip at that time,
         /// and overwrites the matching channels of the animation stream.
         /// </summary>
@@ -282,16 +289,26 @@ namespace Unity.Animations
         }
 
         /// <summary>
-        /// Samples the clip at the time of a clip timer into a stream that you can apply as an additive pose.
+        /// Samples the clip at the time of a clip timer, relative to its reference pose, into a stream that you can
+        /// apply as an additive pose.
         /// </summary>
         /// <remarks>
-        /// The method doesn't subtract a reference pose from the sampled values, so the curves of the clip must already
-        /// hold additive values. For example, blend the stream onto a pose with
-        /// <see cref="AnimationStreamBlendingExtensions.BlendAdditive(ref AnimationStream, in AnimationStream, float)"/>.
-        ///
         /// The method resets the whole stream to zero, including its channel masks, then samples the clip as
-        /// <see cref="Sample(ref AnimationStream, in TimerState)"/> does. The channels that the clip doesn't animate
-        /// stay at zero.
+        /// <see cref="Sample(ref AnimationStream, in TimerState)"/> does. It then subtracts the reference pose of the
+        /// clip from each channel that the clip animates, as an additive layer of an Animator does:
+        ///
+        ///- A translation, scale, or float channel gets the sampled value minus the reference value.
+        ///- A rotation channel gets the rotation from the reference rotation to the sampled rotation.
+        ///- A discrete int or object reference channel keeps the sampled value.
+        ///
+        /// The reference pose is the additive reference pose of the clip if it has one, for example from
+        /// `AnimationUtility.SetAdditiveReferencePose` in the Editor. Otherwise, it's the pose of the clip at its start
+        /// time, so the stream holds zero values and identity rotations at that time.
+        ///
+        /// The channels that the clip doesn't animate stay at zero, and their bits in
+        /// <see cref="AnimationStream.PassMask"/> and <see cref="AnimationStream.FrameMask"/> stay off. Blend the
+        /// stream onto a pose with
+        /// <see cref="AnimationStreamBlendingExtensions.BlendAdditive(ref AnimationStream, in AnimationStream, float)"/>.
         /// </remarks>
         /// <param name="stream">The stream to write the sampled channels to. It must have the rig that the sampler was
         /// created for.</param>
@@ -306,20 +323,30 @@ namespace Unity.Animations
         {
             ValidateCanWrite();
             stream.ResetToZero();
-            SampleUnchecked(ref stream, in timer);
+            SampleUnchecked(ref stream, in timer, true);
         }
 
         /// <summary>
-        /// Samples the clip at a playback time into a stream that you can apply as an additive pose.
+        /// Samples the clip at a playback time, relative to its reference pose, into a stream that you can apply as an
+        /// additive pose.
         /// </summary>
         /// <remarks>
-        /// The method doesn't subtract a reference pose from the sampled values, so the curves of the clip must already
-        /// hold additive values. For example, blend the stream onto a pose with
-        /// <see cref="AnimationStreamBlendingExtensions.BlendAdditive(ref AnimationStream, in AnimationStream, float)"/>.
-        ///
         /// The method resets the whole stream to zero, including its channel masks, then samples the clip as
-        /// <see cref="Sample(ref AnimationStream, DiscreteTime)"/> does. The channels that the clip doesn't animate
-        /// stay at zero.
+        /// <see cref="Sample(ref AnimationStream, DiscreteTime)"/> does. It then subtracts the reference pose of the
+        /// clip from each channel that the clip animates, as an additive layer of an Animator does:
+        ///
+        ///- A translation, scale, or float channel gets the sampled value minus the reference value.
+        ///- A rotation channel gets the rotation from the reference rotation to the sampled rotation.
+        ///- A discrete int or object reference channel keeps the sampled value.
+        ///
+        /// The reference pose is the additive reference pose of the clip if it has one, for example from
+        /// `AnimationUtility.SetAdditiveReferencePose` in the Editor. Otherwise, it's the pose of the clip at its start
+        /// time, so the stream holds zero values and identity rotations at that time.
+        ///
+        /// The channels that the clip doesn't animate stay at zero, and their bits in
+        /// <see cref="AnimationStream.PassMask"/> and <see cref="AnimationStream.FrameMask"/> stay off. Blend the
+        /// stream onto a pose with
+        /// <see cref="AnimationStreamBlendingExtensions.BlendAdditive(ref AnimationStream, in AnimationStream, float)"/>.
         /// </remarks>
         /// <param name="stream">The stream to write the sampled channels to. It must have the rig that the sampler was
         /// created for.</param>
@@ -333,20 +360,28 @@ namespace Unity.Animations
         {
             ValidateCanWrite();
             stream.ResetToZero();
-            SampleUnchecked(ref stream, time);
+            var timer = m_Data->Clip.AsBlobAssetReference().Value.ToTimerState(time);
+            SampleUnchecked(ref stream, in timer, true);
         }
 
         /// <summary>
-        /// Samples how much the root of the clip moved from the previous time to the time of a clip timer.
+        /// Samples how much the root of the clip moved from the previous time to the time of a clip timer, and the root
+        /// transform at that time.
         /// </summary>
         /// <remarks>
-        /// The result is the root transform of the clip at <see cref="TimerState.Time"/>, relative to its transform
-        /// at <see cref="TimerState.PreviousTime"/>. For a looping clip, the result includes the whole cycles that
-        /// the timer crossed, from <see cref="TimerState.PreviousLoopCount"/> to <see cref="TimerState.LoopCount"/>.
-        /// Call this method once for each update of the timer, and accumulate the results after the transform of the
-        /// character to move it, for example `character = math.mul(character, delta)`. If
-        /// <see cref="HasRootMotion"/> is `false`, the clip has no root motion and the method returns the identity
-        /// transform.
+        /// <see cref="MotionOutput.RootMotion"/> is the root transform of the clip at <see cref="TimerState.Time"/>,
+        /// relative to its transform at <see cref="TimerState.PreviousTime"/>. For a looping clip, it includes the whole
+        /// cycles that the timer crossed, from <see cref="TimerState.PreviousLoopCount"/> to
+        /// <see cref="TimerState.LoopCount"/>. Call this method once for each update of the timer, and accumulate the
+        /// root motion after the transform of the character to move it, for example
+        /// `character = math.mul(character, output.RootMotion)`.
+        ///
+        /// <see cref="MotionOutput.RootTransform"/> is the root transform of the clip at <see cref="TimerState.Time"/>.
+        /// `Sample` writes the curves of the root motion bone into the pose, so the pose moves with the clip. To keep
+        /// the root motion out of the pose while you move the character with this method, sample the pose at the same
+        /// time with <see cref="SampleExtractingRootMotion(ref AnimationStream, in TimerState)"/>.
+        ///
+        /// If <see cref="HasRootMotion"/> is `false`, the clip has no root motion and both transforms are the identity.
         ///
         /// The stream operations don't carry root motion. To blend the root motion of several clips, combine the
         /// results with the same weights as the poses, with <see cref="RootMotionUtility.Blend"/> or
@@ -358,10 +393,19 @@ namespace Unity.Animations
         /// <see cref="AnimationClipExtensions.ToClipSampler(AnimationClip, BlobAssetReference{RigDefinition}, Allocator)"/>.
         /// <see cref="Dispose"/> frees it.
         ///
-        /// Root motion comes only from the curves of the root transform of the rig. The method doesn't support a
-        /// generic clip with root motion curves. It ignores the **Bake Into Pose** setting. `Sample` still writes the
-        /// root curves into the pose, so set <see cref="ExcludeRoot"/> to `true` to keep the root still while you move
-        /// the character with this method.
+        /// The method chooses the curves of the root motion as an Animator does:
+        ///
+        ///- If the clip has `MotionT` and `MotionQ` curves, the root motion comes from them.
+        ///- Otherwise, if the clip has `RootT` and `RootQ` curves, the root motion comes from them. The method then
+        ///  applies the root motion settings of the clip: **Bake Into Pose**, **Based Upon**, **Offset**, and the
+        ///  rotation of the root motion around the vertical axis only.
+        ///- Otherwise, the root motion comes from the transform of the root motion bone of the rig in character
+        ///  space. By default, the root motion bone is the root bone of the rig. To choose another bone, set
+        ///  <see cref="RigBuilder.RootMotionBoneId"/> when you build the rig.
+        ///
+        /// For the root motion bone, the rotation of the root transform is relative to the rotation of the bone in the
+        /// default pose of the rig. The `MotionT` and `MotionQ` curves give the root transform as they are, as in an
+        /// Animator.
         ///
         /// The following example uses the `Unity.Animations`, `Unity.Collections`, `Unity.Entities`,
         /// `Unity.IntegerTime`, `Unity.Mathematics`, and `UnityEngine` namespaces. It plays a clip and moves the
@@ -372,34 +416,35 @@ namespace Unity.Animations
         /// </example>
         /// <param name="timer">The clip timer to sample, from
         /// <see cref="Unity.Animations.Clip.ToTimerState(DiscreteTime)"/>.</param>
-        /// <returns>The root transform of the clip at <see cref="TimerState.Time"/>, relative to its transform at
-        /// <see cref="TimerState.PreviousTime"/>. The identity transform if <see cref="HasRootMotion"/> is `false`.
-        /// </returns>
+        /// <returns>The root motion from <see cref="TimerState.PreviousTime"/> to <see cref="TimerState.Time"/>, and
+        /// the root transform at <see cref="TimerState.Time"/>. Both transforms are the identity if
+        /// <see cref="HasRootMotion"/> is `false`.</returns>
         /// <exception cref="InvalidOperationException">Thrown if safety checks are enabled and you disposed another
         /// copy of the sampler.</exception>
         /// <exception cref="NullReferenceException">Thrown if safety checks are enabled and the sampler isn't created,
         /// or you disposed this copy of it.</exception>
-        public RigidTransform SampleRootMotion(in TimerState timer)
+        public MotionOutput SampleRootMotion(in TimerState timer)
         {
             ValidateCanWrite();
             return SampleRootMotionUnchecked(in timer);
         }
 
-        RigidTransform SampleRootMotionUnchecked(in TimerState timer)
+        MotionOutput SampleRootMotionUnchecked(in TimerState timer)
         {
-            var samplingData = m_Data->Instance.Value.RootMotionSamplingData;
-            if (samplingData.RootTranslationIndex < 0 && samplingData.RootRotationIndex < 0)
-                return RigidTransform.identity;
+            ref var clipInstance = ref m_Data->Instance.Value;
+            if (!clipInstance.RootMotionSamplingData.HasRootMotion)
+                return MotionOutput.Identity;
 
             if (m_Data->PreviousCache == null)
             {
                 var previousCache = AllocatorManager.Allocate<ClipSamplingCacheData>(m_Data->Allocator);
                 ClipSamplingCacheData.Create(previousCache, 0, m_Data->Allocator);
-                ClipSamplingCacheData.InitializeRootMotion(previousCache, samplingData.RootTranslationIndex, samplingData.RootRotationIndex);
+                ref var curveIndices = ref clipInstance.m_RootMotionCurveIndices;
+                ClipSamplingCacheData.InitializeRootMotion(previousCache, (int*)curveIndices.GetUnsafePtr(), curveIndices.Length);
                 m_Data->PreviousCache = previousCache;
             }
 
-            return Core.SampleAnimationClipRootMotion(m_Data->Clip.AsBlobAssetReference(), m_Data->Instance,
+            return Core.SampleAnimationClipMotion(m_Data->Clip.AsBlobAssetReference(), m_Data->Instance,
                 ref m_Data->PreviousCache->Memory, ref m_Data->Cache.Memory, in timer);
         }
 
@@ -438,52 +483,23 @@ namespace Unity.Animations
             m_Data = null;
         }
 
-        void SampleUnchecked(ref AnimationStream stream, in TimerState timer)
+        void SampleUnchecked(ref AnimationStream stream, in TimerState timer, bool additive = false)
         {
-            if (m_Data->ExcludeRoot)
-            {
-                SampleExcludingRootUnchecked(ref stream, in timer);
-                return;
-            }
-
-            Core.SampleAnimationClipOverwrite(m_Data->Clip.AsBlobAssetReference(), m_Data->Instance,
+            var sampled = Core.SampleAnimationClipOverwrite(m_Data->Clip.AsBlobAssetReference(), m_Data->Instance,
                 ref m_Data->Cache.Memory, in timer, ref stream);
+
+            // Without a sample, subtracting would leave the negative reference pose in the stream
+            if (additive && sampled)
+            {
+                var clip = (Clip*)m_Data->Clip.GetUnsafeRootPtr();
+                Core.SubtractAdditiveReference(clip, ref m_Data->Instance.Value, ref stream);
+            }
         }
 
         void SampleUnchecked(ref AnimationStream stream, DiscreteTime time)
         {
             var timer = m_Data->Clip.AsBlobAssetReference().Value.ToTimerState(time);
             SampleUnchecked(ref stream, in timer);
-        }
-
-        void SampleExcludingRootUnchecked(ref AnimationStream stream, in TimerState timer)
-        {
-            var samplingData = m_Data->Instance.Value.RootMotionSamplingData;
-            var translationBit = stream.Rig.Bindings.TranslationBindingIndex;
-            var rotationBit = stream.Rig.Bindings.RotationBindingIndex;
-            var translation = stream.GetLocalToParentTranslation(0);
-            var rotation = stream.GetLocalToParentRotation(0);
-            var translationPassBit = stream.m_ChannelPassMasks.IsSet(translationBit);
-            var translationFrameBit = stream.m_ChannelFrameMasks.IsSet(translationBit);
-            var rotationPassBit = stream.m_ChannelPassMasks.IsSet(rotationBit);
-            var rotationFrameBit = stream.m_ChannelFrameMasks.IsSet(rotationBit);
-
-            Core.SampleAnimationClipOverwrite(m_Data->Clip.AsBlobAssetReference(), m_Data->Instance,
-                ref m_Data->Cache.Memory, in timer, ref stream);
-
-            if (samplingData.RootTranslationIndex >= 0)
-            {
-                stream.SetLocalToParentTranslationNoMaskWrite(0, translation);
-                stream.m_ChannelPassMasks.Set(translationBit, translationPassBit);
-                stream.m_ChannelFrameMasks.Set(translationBit, translationFrameBit);
-            }
-
-            if (samplingData.RootRotationIndex >= 0)
-            {
-                stream.SetLocalToParentRotationNoMaskWrite(0, rotation);
-                stream.m_ChannelPassMasks.Set(rotationBit, rotationPassBit);
-                stream.m_ChannelFrameMasks.Set(rotationBit, rotationFrameBit);
-            }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]

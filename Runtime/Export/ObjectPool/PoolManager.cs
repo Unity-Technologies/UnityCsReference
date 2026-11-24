@@ -26,7 +26,7 @@ namespace UnityEngine.Pool
             {
                 if (s_WeakPoolReferences[i].TryGetTarget(out var pool))
                 {
-                    pool.Clear();
+                    pool.Reset();
                 }
                 else
                 {

@@ -44,6 +44,9 @@ namespace Unity.Burst.LowLevel
 
         public static extern bool IsInitialized { get; }
 
+        [FreeFunction("SetBurstCompilationEnabled", isThreadSafe: true)]
+        public static extern void SetCompilationEnabled(bool enabled);
+
         [NativeMethod(IsThreadSafe = true)]
         public static extern void SetCurrentExecutionMode(uint environment);
 

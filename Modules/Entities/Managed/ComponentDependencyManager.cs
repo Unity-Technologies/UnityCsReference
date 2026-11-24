@@ -58,6 +58,7 @@ namespace Unity.Entities
 
         JobHandle              m_ExclusiveTransactionDependency;
         byte                   _IsInTransaction;
+        uint                   m_ExclusiveTransaction;
 
         // The m_JobHandle of the updating system if it can reach transforms, else null. Native transform code waits for it,
         // since the system's jobs are only registered here once its update returns.
@@ -107,27 +108,61 @@ namespace Unity.Entities
 
         // Native code reads this struct's memory, and the safety handles' with collection checks, so it checks that both
         // sides agree on their layout.
-        internal static void CheckNativeTransformDependencyLayout()
+        internal static int FindNativeLayoutMismatch()
         {
+            Span<int> values = stackalloc int[64];
+            var i = 0;
+
             DependencyHandle handle = default;
-            var start = (byte*)&handle;
-            var atomicSafetyHandleSize = sizeof(AtomicSafetyHandle);
-            ComponentSafetyHandles.GetComponentSafetyHandleLayout(out var safetyHandleSize, out var safetyHandleOffset,
-                out var bufferHandleOffset, out var safetyTypeIndexOffset);
-            EntitiesTransformDependencyBindings.CheckManagedLayout(sizeof(JobHandle), sizeof(DependencyHandle),
-                (int)((byte*)&handle.WriteFence - start), (int)((byte*)&handle.NumReadFences - start), (int)((byte*)&handle.TypeIndex - start),
-                kMaxReadJobHandles, NullTypeIndex, atomicSafetyHandleSize, safetyHandleSize, safetyHandleOffset, bufferHandleOffset,
-                safetyTypeIndexOffset);
+            var handleStart = (byte*)&handle;
+            values[i++] = sizeof(JobHandle);
+            values[i++] = sizeof(DependencyHandle);
+            values[i++] = (int)((byte*)&handle.WriteFence - handleStart);
+            values[i++] = (int)((byte*)&handle.NumReadFences - handleStart);
+            values[i++] = (int)((byte*)&handle.TypeIndex - handleStart);
+            values[i++] = kMaxReadJobHandles;
+            values[i++] = NullTypeIndex;
+
+            ComponentDependencyManager manager = default;
+            var start = (byte*)&manager;
+            values[i++] = (int)((byte*)&manager.m_TypeArrayIndices - start);
+            values[i++] = (int)((byte*)&manager.m_DependencyHandles - start);
+            values[i++] = (int)((byte*)&manager.m_DependencyHandlesCount - start);
+            values[i++] = (int)((byte*)&manager.m_ReadJobFences - start);
+            values[i++] = (int)((byte*)&manager.EntityTypeIndex - start);
+            values[i++] = (int)((byte*)&manager.m_TransformRefTypeIndex - start);
+            values[i++] = (int)((byte*)&manager.m_EntityJobsOnGameObjectTransformsTypeIndex - start);
+            values[i++] = (int)((byte*)&manager.m_NativeJobsOnGameObjectTransformsTypeIndex - start);
+            values[i++] = (int)((byte*)&manager.m_ExclusiveTransactionDependency - start);
+            values[i++] = (int)((byte*)&manager._IsInTransaction - start);
+            values[i++] = (int)((byte*)&manager.m_ExclusiveTransaction - start);
+            values[i++] = (int)((byte*)&manager.m_RunningTransformSystemJobHandle - start);
+            values[i++] = (int)((byte*)&manager.m_NativeTransformPendingAccess - start);
+            values[i++] = (int)((byte*)&manager.m_Marker - start);
+            values[i++] = (int)((byte*)&manager.m_World - start);
+
+            values[i++] = (int)((byte*)&manager.Safety - start);
+            i += ComponentSafetyHandles.GetNativeLayoutForStructMatchCheck(values.Slice(i));
+            values[i++] = (int)((byte*)&manager.ForEachStructuralChange - start);
+            i += ForEachDisallowStructuralChangeSupport.GetNativeLayoutForStructMatchCheck(values.Slice(i));
+            values[i++] = (int)((byte*)&manager.QueryProfilerStore - start);
+            values[i++] = sizeof(ComponentDependencyManager);
+
+            i += EntityDataAccess.GetNativeLayoutForStructMatchCheck(values.Slice(i));
+            values[i++] = EntityComponentStore.GetGlobalSystemVersionOffsetForStructMatchCheck();
+            i += EntityManager.GetNativeLayoutForStructMatchCheck(values.Slice(i));
+            values[i++] = WorldUnmanagedImpl.GetEntityManagerOffsetForStructMatchCheck();
+            i += ExclusiveEntityTransaction.GetNativeLayoutForStructMatchCheck(values.Slice(i));
+
+            fixed (int* pointer = values)
+            {
+                return EntitiesTransformDependencyBindings.CheckManagedLayout(pointer, i);
+            }
         }
 
         internal static void RegisterWithNativeTransformDependencies(ComponentDependencyManager* manager, WorldUnmanaged owner)
         {
-            var safetyTypeArrayIndices = manager->Safety.TypeArrayIndices;
-            var componentSafetyHandles = manager->Safety.ComponentSafetyHandlesPtr;
-            manager->m_NativeTransformPendingAccess = EntitiesTransformDependencyBindings.RegisterWorld(owner, manager->m_TypeArrayIndices,
-                manager->m_DependencyHandles, &manager->m_DependencyHandlesCount, manager->m_ReadJobFences, &manager->_IsInTransaction,
-                &manager->m_ExclusiveTransactionDependency, &manager->m_RunningTransformSystemJobHandle, safetyTypeArrayIndices,
-                componentSafetyHandles);
+            manager->m_NativeTransformPendingAccess = EntitiesTransformDependencyBindings.RegisterWorld(owner);
         }
 
         // Call whenever a job, transaction or system update starts that native transform code may have to wait for.
@@ -501,6 +536,9 @@ namespace Unity.Entities
             set { _IsInTransaction = (byte) (value ? 1u : 0u); }
         }
 
+        // Numbers each exclusive transaction of this World, so a holder of an ended one doesn't pass for the next
+        internal uint ExclusiveTransaction => m_ExclusiveTransaction;
+
         public JobHandle ExclusiveTransactionDependency
         {
             get { return m_ExclusiveTransactionDependency; }
@@ -547,6 +585,7 @@ namespace Unity.Entities
             Safety.BeginExclusiveTransaction();
 
             _IsInTransaction = 1;
+            ++m_ExclusiveTransaction;
             MarkNativeTransformJobsPending();
             m_ExclusiveTransactionDependency = GetCombinedDependencyForAllTypes();
             ClearDependencies();
@@ -561,6 +600,15 @@ namespace Unity.Entities
 
         // The queries being iterated, null for those the check skips
         EntityQueryImpl** _forEachQueries;
+
+        internal static int GetNativeLayoutForStructMatchCheck(Span<int> values)
+        {
+            ForEachDisallowStructuralChangeSupport support = default;
+            var start = (byte*)&support;
+            values[0] = (int)((byte*)&support.Depth - start);
+            values[1] = (int)((byte*)&support._forEachQueries - start);
+            return 2;
+        }
 
         public void Init()
         {

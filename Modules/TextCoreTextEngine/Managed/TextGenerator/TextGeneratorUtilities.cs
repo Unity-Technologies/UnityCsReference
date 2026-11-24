@@ -1730,7 +1730,7 @@ namespace UnityEngine.TextCore.Text
                 hashCode = ((hashCode << 5) + hashCode) ^ (int)ToUpperASCIIFast((uint)c);
             }
 
-            return hashCode;
+            return readIndex == tagDefinitionLength ? 0 : hashCode;
         }
 
         /// <summary>

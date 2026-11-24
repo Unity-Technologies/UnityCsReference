@@ -112,12 +112,15 @@ namespace UnityEngine.UIElements
             int r = Mathf.RoundToInt(Mathf.Clamp01(color.r) * 255f);
             int g = Mathf.RoundToInt(Mathf.Clamp01(color.g) * 255f);
             int b = Mathf.RoundToInt(Mathf.Clamp01(color.b) * 255f);
-            string colorStr = Mathf.Approximately(color.a, 1f)
+            float a = Mathf.Clamp01(color.a);
+            string colorStr = Mathf.Approximately(a, 1f)
                 ? $"rgb({r},{g},{b})"
-                : $"rgba({r},{g},{b},{color.a:0.###})";
+                : FormattableString.Invariant($"rgba({r},{g},{b},{a:0.###})");
+            if (m_PositionIsAuto)
+                return colorStr;
             return positionIsPercent
-                ? $"{colorStr} {position * 100f:0.##}%"
-                : $"{colorStr} {position:0.##}px";
+                ? FormattableString.Invariant($"{colorStr} {position * 100f:0.##}%")
+                : FormattableString.Invariant($"{colorStr} {position:0.##}px");
         }
     }
 
@@ -276,7 +279,7 @@ namespace UnityEngine.UIElements
                 return "";
 
             if (m_Type == GradientType.Linear)
-                return $"linear-gradient({m_Angle * Mathf.Rad2Deg:0.##}deg, {StopsToString()})";
+                return FormattableString.Invariant($"linear-gradient({m_Angle * Mathf.Rad2Deg:0.##}deg, {StopsToString()})");
 
             // Match the USS writer's elision rules so a round-trip is stable.
             string sizeKw = m_Size switch
@@ -300,7 +303,7 @@ namespace UnityEngine.UIElements
             if (!positionIsDefault)
             {
                 if (prefix.Length > 0) prefix.Append(' ');
-                prefix.Append($"at {m_Position.x * 100f:0.##}% {m_Position.y * 100f:0.##}%");
+                prefix.Append(FormattableString.Invariant($"at {m_Position.x * 100f:0.##}% {m_Position.y * 100f:0.##}%"));
             }
 
             return prefix.Length > 0

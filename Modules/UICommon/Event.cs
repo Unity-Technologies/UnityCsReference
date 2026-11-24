@@ -273,8 +273,16 @@ namespace UnityEngine
         ///</example>
         public bool functionKey => (modifiers & EventModifiers.FunctionKey)  != 0;
 
-        // The magnitude of Event.delta that corresponds to exactly one tick of the scroll wheel.
-        internal const float scrollWheelDeltaPerTick = 3.0f;
+        /// <summary>
+        /// The magnitude of <see cref="Event.delta"/> that corresponds to one tick of the scroll wheel.
+        /// </summary>
+        /// <remarks>
+        /// Divide the <see cref="Event.delta"/> of an <see cref="EventType.ScrollWheel"/> event by this value to get the
+        /// number of scroll wheel ticks. UI Toolkit's `WheelEvent` uses the same scale, exposed as
+        /// `WheelEvent.scrollDeltaPerTick`, so scroll distances are consistent between IMGUI and UI Toolkit, in the
+        /// Editor and at runtime.
+        /// </remarks>
+        public const float scrollWheelDeltaPerTick = 3.0f;
 
         // The current event that's being processed right now.
         // TODO: set this to null outside the event loop.
@@ -369,12 +377,20 @@ namespace UnityEngine
             get { EventType t = type; return t == EventType.ScrollWheel; }
         }
 
-        // Is this event comes from a direct manipulation device?
-        // A direct manipulation device is a device where the user directly manipulates elements
-        // (like a touch screen), without any cursor acting as an intermediate.
-        internal bool isDirectManipulationDevice
+        /// <summary>
+        /// Whether the event comes from a direct-manipulation device, such as a touchscreen or a pen.
+        /// </summary>
+        /// <remarks>
+        /// With a direct manipulation device, the user touches the elements they interact with, without a cursor in
+        /// between. This value is true when <see cref="Event.pointerType"/> is <see cref="PointerType.Touch"/> or
+        /// <see cref="PointerType.Pen"/>.
+        ///
+        /// Use this property to adapt an interaction that relies on a cursor. For example, the Editor color picker
+        /// starts its eyedropper on press rather than on release and samples the color while the user drags, because
+        /// no cursor hovers over the screen to sample from.
+        /// </remarks>
+        public bool isDirectManipulationDevice
         {
-            [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
             get
             {
                 return pointerType == PointerType.Pen

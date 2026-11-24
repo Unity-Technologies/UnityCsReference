@@ -213,6 +213,11 @@ namespace UnityEngine.UIElements
             get { return m_Immediate || m_GateCount == 0; }
         }
 
+        internal bool isDispatchQueued
+        {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")] get { return !dispatchImmediately; }
+        }
+
         // Only meaningful outside dispatch: nested queue drains reset it while an outer drain is still running.
         internal bool processingEvents { get; private set; }
 

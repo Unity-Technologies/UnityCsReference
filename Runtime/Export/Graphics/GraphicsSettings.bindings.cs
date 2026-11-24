@@ -68,10 +68,13 @@ namespace UnityEngine.Rendering
         }
         extern public static LightProbeOutsideHullStrategy lightProbeOutsideHullStrategy { get; set; }
 
+        [Obsolete("GraphicsSettings.HasShaderDefine(GraphicsTier, BuiltinShaderDefine) is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. Use GraphicsSettings.HasShaderDefine(BuiltinShaderDefine) instead.", false)]
         extern public static bool HasShaderDefine(GraphicsTier tier, BuiltinShaderDefine defineHash);
         public static bool HasShaderDefine(BuiltinShaderDefine defineHash)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             return HasShaderDefine(Graphics.activeTier, defineHash);
+#pragma warning restore CS0618
         }
 
         [NativeName("CurrentRenderPipeline")] extern private static ScriptableObject INTERNAL_currentRenderPipeline { get; }
@@ -124,10 +127,14 @@ namespace UnityEngine.Rendering
 
         [FreeFunction] extern public static Object GetGraphicsSettings();
 
+        [Obsolete("GraphicsSettings.SetShaderMode is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use built-in shader settings.", false)]
         [NativeName("SetShaderModeScript")]   extern static public void                 SetShaderMode(BuiltinShaderType type, BuiltinShaderMode mode);
+        [Obsolete("GraphicsSettings.GetShaderMode is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use built-in shader settings.", false)]
         [NativeName("GetShaderModeScript")]   extern static public BuiltinShaderMode    GetShaderMode(BuiltinShaderType type);
 
+        [Obsolete("GraphicsSettings.SetCustomShader is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use built-in shader settings.", false)]
         [NativeName("SetCustomShaderScript")] extern static public void     SetCustomShader(BuiltinShaderType type, Shader shader);
+        [Obsolete("GraphicsSettings.GetCustomShader is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use built-in shader settings.", false)]
         [NativeName("GetCustomShaderScript")] extern static public Shader   GetCustomShader(BuiltinShaderType type);
 
         extern public static bool cameraRelativeLightCulling { get; set; }

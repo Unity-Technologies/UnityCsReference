@@ -134,6 +134,7 @@ namespace UnityEditor
         protected ActiveEditorTracker m_Tracker;
         protected AssetBundleNameGUI m_AssetBundleNameGUI = new AssetBundleNameGUI();
         InspectedAssets m_InspectedAssets;
+        readonly List<Object> m_LockedObjects = new List<Object>();
         protected TypeSelectionList m_TypeSelectionList = null;
         protected double m_lastRenderedTime;
         protected List<IPreviewable> m_Previews;
@@ -1899,6 +1900,15 @@ namespace UnityEditor
                 string assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
                 if (IsOpenForEdit(assetEditor.target) && !Directory.Exists(assetPath))
                     return assetEditor.targets;
+            }
+
+            // A locked view keeps showing what it was locked on, so its labels must not follow the selection.
+            if (tracker.isLocked)
+            {
+                m_LockedObjects.Clear();
+                tracker.GetObjectsLockedByThisTracker(m_LockedObjects);
+                m_LockedObjects.RemoveAll(o => o == null || !EditorUtility.IsPersistent(o));
+                return m_LockedObjects.ToArray();
             }
 
             // This is used if more than one asset is selected

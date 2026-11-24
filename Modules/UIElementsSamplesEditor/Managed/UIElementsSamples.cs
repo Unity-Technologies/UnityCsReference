@@ -144,6 +144,7 @@ namespace UnityEditor.UIElements.Samples
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Vector4", Vector4FieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Rect", RectFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Bounds", BoundsFieldSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Quaternion", QuaternionEulerFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Integer (Unsigned)", UnsignedIntegerFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Long (Unsigned)", UnsignedLongFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Vector2 (Int)", Vector2IntFieldSnippet.Create)),

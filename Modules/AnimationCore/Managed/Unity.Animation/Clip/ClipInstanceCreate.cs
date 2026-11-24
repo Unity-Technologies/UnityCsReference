@@ -111,9 +111,7 @@ namespace Unity.Animations
             var eulerBindings = new NativeList<ClipInstance.MappedBinding>(rigBindings.BindingCount, Allocator.Temp);
             var eulerRotationOrders = new NativeList<math.RotationOrder>(rigBindings.BindingCount, Allocator.Temp);
 
-            var rootTranslationCurveIndex = -1;
-            var rootRotationCurveIndex = -1;
-            var rootRotationEulerOrder = -1;
+            var boneNodes = CreateRootMotionBoneNodes(rigDefinition, out var boneNodePositions, out var invBindRotation);
 
             var curveIndex = 0;
             for (var i = 0; i < clipBindings.Length; ++i)
@@ -134,8 +132,7 @@ namespace Unity.Animations
                         if (rigBinding != -1)
                         {
                             translationBindings.Add(new ClipInstance.MappedBinding(curveIndex, rigBinding));
-                            if (rigBinding == 0)
-                                rootTranslationCurveIndex = curveIndex;
+                            SetRootMotionBoneTranslationCurves(boneNodes, boneNodePositions, rigBinding, curveIndex);
                         }
                         curveIndex += 3;
                     }
@@ -146,12 +143,7 @@ namespace Unity.Animations
                         if (rigBinding != -1)
                         {
                             rotationBindings.Add(new ClipInstance.MappedBinding(curveIndex, rigBinding));
-                            if (rigBinding == 0)
-                            {
-                                // A quaternion curve wins over Euler curves on the same bone, as for the pose
-                                rootRotationCurveIndex = curveIndex;
-                                rootRotationEulerOrder = -1;
-                            }
+                            SetRootMotionBoneRotationCurves(boneNodes, boneNodePositions, rigBinding, curveIndex, -1);
                         }
                         curveIndex += 4;
                     }
@@ -164,11 +156,7 @@ namespace Unity.Animations
                             eulerBindings.Add(new ClipInstance.MappedBinding(curveIndex, rigBinding));
                             var rotationOrder = ToRotationOrder(clipBinding.customTypeID);
                             eulerRotationOrders.Add(rotationOrder);
-                            if (rigBinding == 0 && rootRotationCurveIndex < 0)
-                            {
-                                rootRotationCurveIndex = curveIndex;
-                                rootRotationEulerOrder = (int)rotationOrder;
-                            }
+                            SetRootMotionBoneRotationCurves(boneNodes, boneNodePositions, rigBinding, curveIndex, (int)rotationOrder);
                         }
                         curveIndex += 3;
                     }
@@ -177,7 +165,10 @@ namespace Unity.Animations
                     {
                         var rigBinding = BindingUtility.FindBindingIndex(ref rigBindings.ScaleBindings, clipBinding.transformPathHash);
                         if (rigBinding != -1)
+                        {
                             scaleBindings.Add(new ClipInstance.MappedBinding(curveIndex, rigBinding));
+                            SetRootMotionBoneScaleCurves(boneNodes, boneNodePositions, rigBinding, curveIndex);
+                        }
                         curveIndex += 3;
                     }
                         break;
@@ -283,16 +274,258 @@ namespace Unity.Animations
 
             pptrIds.Dispose();
 
+            using var muscleClipReference = sourceClip.ToClipReference();
+            var muscleClip = muscleClipReference.AsBlobAssetReference();
+
+            var source = SelectRootMotionSource(muscleClip, boneNodes);
+            var rootMotionNodes = source == RootMotionSource.Bone ? boneNodes : CreateRootMotionMuscleNodes(muscleClip, source);
+            boneNodePositions.Dispose();
+
+            var nodes = blobBuilder.Allocate(ref clipInstance.m_RootMotionNodes, rootMotionNodes.Length);
+            using var curveIndices = new NativeList<int>(Allocator.Temp);
+            for (var i = 0; i < rootMotionNodes.Length; i++)
+            {
+                var node = rootMotionNodes[i];
+                nodes[i] = node;
+                for (var j = 0; j < 4; j++)
+                {
+                    AddCurveIndex(curveIndices, j < 3 ? node.TranslationCurves[j] : -1);
+                    AddCurveIndex(curveIndices, node.RotationCurves[j]);
+                    AddCurveIndex(curveIndices, j < 3 ? node.ScaleCurves[j] : -1);
+                }
+            }
+            if (source != RootMotionSource.Bone)
+                rootMotionNodes.Dispose();
+
+            curveIndices.Sort();
+            var curveIndicesBlob = blobBuilder.Allocate(ref clipInstance.m_RootMotionCurveIndices, curveIndices.Length);
+            for (var i = 0; i < curveIndices.Length; i++)
+                curveIndicesBlob[i] = curveIndices[i];
+
             result = blobBuilder.CreateBlobAssetReference<ClipInstance>((Allocator)allocator);
 
-            using (var muscleObjRef = sourceClip.ToClipReference())
+            var samplingData = Core.CreateRootMotionSamplingData(source, invBindRotation);
+            if (source != RootMotionSource.None)
             {
-                result.Value.RootMotionSamplingData = ComputeRootMotionSamplingData(
-                    muscleObjRef.AsBlobAssetReference(),
-                    rootTranslationCurveIndex,
-                    rootRotationCurveIndex,
-                    rootRotationEulerOrder);
+                ComputeRootMotionSamplingDataBursted(ref muscleClip.Value, ref result.Value, ref samplingData);
+
+                samplingData.ExtractsBone = AnimatesTranslationOrRotation(boneNodes) ? (byte)1 : (byte)0;
+                if (samplingData.ExtractsBone != 0 && muscleClip.Value.m_LoopBlend != 0)
+                    ComputeLoopPoseBones(rigDefinition, ref muscleClip.Value, boneNodes, ref samplingData);
             }
+
+            boneNodes.Dispose();
+
+            result.Value.RootMotionSamplingData = samplingData;
+        }
+
+        // The root motion bone followed by its parents up to the root bone, with the default values of the rig
+        static NativeList<RootMotionNode> CreateRootMotionBoneNodes(BlobAssetReference<RigDefinition> rigDefinition, out NativeArray<int> nodePositions, out quaternion invBindRotation)
+        {
+            ref var skeleton = ref rigDefinition.Value.Skeleton;
+            var nodes = new NativeList<RootMotionNode>(Allocator.Temp);
+            nodePositions = new NativeArray<int>(skeleton.BoneCount, Allocator.Temp);
+            for (var i = 0; i < nodePositions.Length; i++)
+                nodePositions[i] = -1;
+
+            invBindRotation = quaternion.identity;
+            var boneIndex = rigDefinition.Value.RootMotionBoneIndex;
+            if (boneIndex < 0 || boneIndex >= skeleton.BoneCount)
+                return nodes;
+
+            var defaultStream = AnimationStream.FromDefaultValues(rigDefinition);
+            for (var i = boneIndex; i != -1; i = skeleton.ParentIndexes[i])
+            {
+                // Like Mecanim with the curves of the Animator transform, a missing curve of the root bone is identity
+                var defaultValue = boneIndex == 0 ? TRS.identity : defaultStream.GetLocalToParentTRS(i);
+                nodePositions[i] = nodes.Length;
+                nodes.Add(RootMotionNode.Create(defaultValue.t, defaultValue.r, defaultValue.s));
+            }
+
+            // Relative to the root bone, whose default rotation is its placement in the scene and not a bind rotation
+            var bindRotation = quaternion.identity;
+            if (nodes.Length > 1)
+            {
+                bindRotation = nodes[0].DefaultRotation;
+                for (var i = 1; i < nodes.Length - 1; i++)
+                    bindRotation = math.mul(nodes[i].DefaultRotation, MathUtility.scaleMulQuat(nodes[i].DefaultScale, bindRotation));
+            }
+            invBindRotation = math.conjugate(math.normalize(bindRotation));
+
+            return nodes;
+        }
+
+        static void AddCurveIndex(NativeList<int> curveIndices, int curveIndex)
+        {
+            if (curveIndex >= 0 && !curveIndices.Contains(curveIndex))
+                curveIndices.Add(curveIndex);
+        }
+
+        // A bone of the skeleton has the index of its translation, rotation and scale channels
+        static void SetRootMotionBoneTranslationCurves(NativeList<RootMotionNode> nodes, NativeArray<int> nodePositions, int rigBinding, int curveIndex)
+        {
+            if (rigBinding < nodePositions.Length && nodePositions[rigBinding] >= 0)
+                nodes.ElementAt(nodePositions[rigBinding]).TranslationCurves = new int3(curveIndex, curveIndex + 1, curveIndex + 2);
+        }
+
+        static void SetRootMotionBoneScaleCurves(NativeList<RootMotionNode> nodes, NativeArray<int> nodePositions, int rigBinding, int curveIndex)
+        {
+            if (rigBinding < nodePositions.Length && nodePositions[rigBinding] >= 0)
+                nodes.ElementAt(nodePositions[rigBinding]).ScaleCurves = new int3(curveIndex, curveIndex + 1, curveIndex + 2);
+        }
+
+        // A quaternion curve wins over Euler curves on the same bone, as for the pose
+        static void SetRootMotionBoneRotationCurves(NativeList<RootMotionNode> nodes, NativeArray<int> nodePositions, int rigBinding, int curveIndex, int eulerOrder)
+        {
+            if (rigBinding >= nodePositions.Length || nodePositions[rigBinding] < 0)
+                return;
+
+            ref var node = ref nodes.ElementAt(nodePositions[rigBinding]);
+            var hasQuaternionCurves = node.RotationCurves.x >= 0 && node.RotationEulerOrder < 0;
+            if (eulerOrder >= 0 && hasQuaternionCurves)
+                return;
+
+            node.RotationCurves = new int4(curveIndex, curveIndex + 1, curveIndex + 2, eulerOrder >= 0 ? -1 : curveIndex + 3);
+            node.RotationEulerOrder = eulerOrder;
+        }
+
+        // Clip.m_IndexArray holds the curve index of each muscle curve, or -1. The Motion curves come first, then the
+        // Root curves, each as translation x, y, z then quaternion x, y, z, w (clipmuscle.h)
+        internal const int k_MotionCurvesBegin = 0;
+        internal const int k_RootCurvesBegin = 7;
+        const int k_MuscleTransformCurveCount = 7;
+
+        static unsafe bool HasMuscleTransformCurves(ref Clip clip, int begin)
+        {
+            for (var i = 0; i < k_MuscleTransformCurveCount; i++)
+            {
+                if (clip.m_IndexArray[begin + i] != -1)
+                    return true;
+            }
+
+            return false;
+        }
+
+        static bool AnimatesTranslationOrRotation(NativeList<RootMotionNode> boneNodes)
+        {
+            for (var i = 0; i < boneNodes.Length; i++)
+            {
+                if (boneNodes[i].HasTranslationOrRotationCurves)
+                    return true;
+            }
+
+            return false;
+        }
+
+        // The root motion bone extracted from the start and stop values of the clip, as Mecanim's ComputeRootMotionValues
+        // does before it applies Loop Pose
+        static unsafe void ComputeLoopPoseBones(BlobAssetReference<RigDefinition> rigDefinition, ref Clip clip, NativeList<RootMotionNode> boneNodes, ref Core.ClipRootMotionSamplingData samplingData)
+        {
+            var deltas = (ValueDelta*)clip.m_ValueArrayDelta.Get();
+            if (deltas == null)
+                return;
+
+            var stream = AnimationStream.Create(rigDefinition, Allocator.Temp);
+            try
+            {
+                samplingData.LoopStartBone = ExtractBoneFromClipValues(ref stream, deltas, boneNodes, samplingData.StartX, true);
+                stream.ResetToDefaultValues();
+                samplingData.LoopStopBone = ExtractBoneFromClipValues(ref stream, deltas, boneNodes, samplingData.StopX, false);
+            }
+            finally
+            {
+                stream.Dispose();
+            }
+        }
+
+        // boneNodes holds the root motion bone followed by its parents. Components without a curve keep the default value
+        // of the rig, as in the sampled pose
+        static unsafe TRS ExtractBoneFromClipValues(ref AnimationStream stream, ValueDelta* deltas, NativeList<RootMotionNode> boneNodes, RigidTransform rootX, bool start)
+        {
+            ref var skeleton = ref stream.Rig.Skeleton;
+            var boneIndex = stream.Rig.RootMotionBoneIndex;
+            var index = boneIndex;
+            for (var i = 0; i < boneNodes.Length; i++, index = skeleton.ParentIndexes[index])
+            {
+                var node = boneNodes[i];
+
+                var translation = stream.GetLocalToParentTranslation(index);
+                for (var j = 0; j < 3; j++)
+                {
+                    if (node.TranslationCurves[j] >= 0)
+                        translation[j] = LoadClipValue(deltas, node.TranslationCurves[j], start);
+                }
+                stream.SetLocalToParentTranslation(index, translation);
+
+                if (node.RotationEulerOrder >= 0)
+                {
+                    var euler = float3.zero;
+                    for (var j = 0; j < 3; j++)
+                    {
+                        if (node.RotationCurves[j] >= 0)
+                            euler[j] = LoadClipValue(deltas, node.RotationCurves[j], start);
+                    }
+                    stream.SetLocalToParentRotation(index, quaternion.Euler(math.radians(euler), (math.RotationOrder)node.RotationEulerOrder));
+                }
+                else if (math.any(node.RotationCurves >= 0))
+                {
+                    var rotation = stream.GetLocalToParentRotation(index).value;
+                    for (var j = 0; j < 4; j++)
+                    {
+                        if (node.RotationCurves[j] >= 0)
+                            rotation[j] = LoadClipValue(deltas, node.RotationCurves[j], start);
+                    }
+                    stream.SetLocalToParentRotation(index, math.normalizesafe(new quaternion(rotation), quaternion.identity));
+                }
+
+                var scale = stream.GetLocalToParentScale(index);
+                for (var j = 0; j < 3; j++)
+                {
+                    if (node.ScaleCurves[j] >= 0)
+                        scale[j] = LoadClipValue(deltas, node.ScaleCurves[j], start);
+                }
+                stream.SetLocalToParentScale(index, scale);
+            }
+
+            stream.ExtractRootMotionBone(rootX.pos, rootX.rot);
+            return stream.GetLocalToParentTRS(boneIndex);
+        }
+
+        static unsafe float LoadClipValue(ValueDelta* deltas, int curveIndex, bool start) =>
+            start ? deltas[curveIndex].m_Start : deltas[curveIndex].m_Stop;
+
+        static RootMotionSource SelectRootMotionSource(BlobAssetReference<Clip> muscleClip, NativeList<RootMotionNode> boneNodes)
+        {
+            if (!muscleClip.IsCreated || muscleClip.Value.m_Clip.IsNull)
+                return RootMotionSource.None;
+
+            if (HasMuscleTransformCurves(ref muscleClip.Value, k_MotionCurvesBegin))
+                return RootMotionSource.Motion;
+
+            if (HasMuscleTransformCurves(ref muscleClip.Value, k_RootCurvesBegin))
+                return RootMotionSource.Root;
+
+            if (AnimatesTranslationOrRotation(boneNodes))
+                return RootMotionSource.Bone;
+
+            return RootMotionSource.None;
+        }
+
+        // Missing Motion or Root curves default to a zero translation and an identity rotation, as in GetClipX
+        static unsafe NativeList<RootMotionNode> CreateRootMotionMuscleNodes(BlobAssetReference<Clip> muscleClip, RootMotionSource source)
+        {
+            var nodes = new NativeList<RootMotionNode>(1, Allocator.Temp);
+            if (source != RootMotionSource.Motion && source != RootMotionSource.Root)
+                return nodes;
+
+            var begin = source == RootMotionSource.Motion ? k_MotionCurvesBegin : k_RootCurvesBegin;
+            var node = RootMotionNode.Create(float3.zero, quaternion.identity, new float3(1f));
+            ref var clip = ref muscleClip.Value;
+            node.TranslationCurves = new int3(clip.m_IndexArray[begin], clip.m_IndexArray[begin + 1], clip.m_IndexArray[begin + 2]);
+            node.RotationCurves = new int4(clip.m_IndexArray[begin + 3], clip.m_IndexArray[begin + 4], clip.m_IndexArray[begin + 5], clip.m_IndexArray[begin + 6]);
+
+            nodes.Add(node);
+            return nodes;
         }
 
         // Mecanim stores the Euler order as math::RotationOrder, which swaps YZX and YXZ compared to Unity.Mathematics
@@ -310,42 +543,25 @@ namespace Unity.Animations
             }
         }
 
-        static Core.ClipRootMotionSamplingData ComputeRootMotionSamplingData(BlobAssetReference<Clip> muscleClip, int rootTranslationCurveIndex, int rootRotationCurveIndex, int rootRotationEulerOrder)
-        {
-            var samplingData = new Core.ClipRootMotionSamplingData()
-            {
-                RootTranslationIndex = rootTranslationCurveIndex,
-                RootRotationIndex = rootRotationCurveIndex,
-                RootRotationEulerOrder = rootRotationEulerOrder,
-                InvStartX = RigidTransform.identity,
-                TotalX = RigidTransform.identity
-            };
-
-            if (rootTranslationCurveIndex < 0 && rootRotationCurveIndex < 0)
-                return samplingData;
-
-            if (!muscleClip.IsCreated)
-                return samplingData;
-
-            ComputeRootMotionSamplingDataBursted(ref muscleClip.Value, rootTranslationCurveIndex, rootRotationCurveIndex, rootRotationEulerOrder, ref samplingData);
-            return samplingData;
-        }
-
         [BurstCompile]
-        static void ComputeRootMotionSamplingDataBursted(ref Clip muscleClip, int rootTranslationCurveIndex, int rootRotationCurveIndex, int rootRotationEulerOrder, ref Core.ClipRootMotionSamplingData samplingData)
+        static void ComputeRootMotionSamplingDataBursted(ref Clip muscleClip, ref ClipInstance clipInstance, ref Core.ClipRootMotionSamplingData samplingData)
         {
             var cache = new ClipSamplingCache(0, Allocator.Temp);
             try
             {
-                cache.InitializeRootMotion(rootTranslationCurveIndex, rootRotationCurveIndex);
+                cache.InitializeRootMotion(ref clipInstance);
 
-                var startX = RigidTransform.identity;
-                Core.SampleAnimationClipRootTransformBursted(ref muscleClip,
-                    rootTranslationCurveIndex, rootRotationCurveIndex, rootRotationEulerOrder, ref cache.Memory, muscleClip.m_StartTime, ref startX);
-                var stopX = RigidTransform.identity;
-                Core.SampleAnimationClipRootTransformBursted(ref muscleClip,
-                    rootTranslationCurveIndex, rootRotationCurveIndex, rootRotationEulerOrder, ref cache.Memory, muscleClip.m_StopTime, ref stopX);
+                var startX = Core.SampleRootMotionSourceTransform(ref muscleClip, ref clipInstance, ref cache.Memory, muscleClip.m_StartTime);
+                var stopX = Core.SampleRootMotionSourceTransform(ref muscleClip, ref clipInstance, ref cache.Memory, muscleClip.m_StopTime);
 
+                if (samplingData.Source == RootMotionSource.Root)
+                    Core.InitializeRootSettings(ref samplingData, ref muscleClip, startX);
+
+                startX = Core.ProcessRootMotionTransform(in samplingData, startX);
+                stopX = Core.ProcessRootMotionTransform(in samplingData, stopX);
+
+                samplingData.StartX = startX;
+                samplingData.StopX = stopX;
                 samplingData.InvStartX = math.inverse(startX);
                 samplingData.TotalX = math.mul(samplingData.InvStartX, stopX);
             }

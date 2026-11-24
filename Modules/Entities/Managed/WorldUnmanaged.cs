@@ -187,19 +187,29 @@ namespace Unity.Entities
     //[GenerateTestsForBurstCompatibility]
     internal unsafe partial struct WorldUnmanagedImpl
     {
+        // Must stay the first field, as native code reads it (EntityDataAccess.h)
+        internal EntityManager m_EntityManager;
         internal AllocatorHelper<AutoFreeAllocator> m_WorldAllocatorHelper;
         internal NativeParallelHashMap<int, IntPtr> m_SystemStatePtrMap;
         private StateAllocator _stateMemory;
         private UnsafeParallelMultiHashMap<long, ushort> _unmanagedSlotByTypeHash;
         internal UnsafeList<PerWorldSystemInfo> sysHandlesInCreationOrder;
         internal readonly ulong SequenceNumber;
+        internal ulong OwnerSequenceNumber;
+        // Cleared when the owner is disposed
+        internal byte HasOwner;
         public WorldFlags Flags;
         public TimeData CurrentTime;
         public FixedString128Bytes Name;
         public SystemHandle ExecutingSystem;
         public DoubleRewindableAllocators *DoubleUpdateAllocators;
         internal DoubleRewindableAllocators* GroupUpdateAllocators;
-        internal EntityManager m_EntityManager;
+
+        internal static int GetEntityManagerOffsetForStructMatchCheck()
+        {
+            WorldUnmanagedImpl world = default;
+            return (int)((byte*)&world.m_EntityManager - (byte*)&world);
+        }
 
         /// <summary>
         /// The maximum DeltaTime that will be applied to a World in a single call to Update().
@@ -959,6 +969,25 @@ namespace Unity.Entities
         /// The World's current sequence number
         /// </summary>
         public ulong SequenceNumber => GetImpl().SequenceNumber;
+
+        // An owner is never newer than the World it owns, so no two Worlds can own each other and outlive DisposeAll
+        internal void SetOwner(WorldUnmanaged owner)
+        {
+            ref var impl = ref GetImpl();
+            if (owner.SequenceNumber > impl.SequenceNumber)
+                throw new ArgumentException($"World '{Name}' can't be owned by World '{owner.Name}', which was created after it.");
+            impl.OwnerSequenceNumber = owner.SequenceNumber;
+            impl.HasOwner = 1;
+        }
+
+        internal bool HasOwner => GetImpl().HasOwner != 0;
+
+        internal void ReleaseFromOwner(WorldUnmanaged owner)
+        {
+            ref var impl = ref GetImpl();
+            if (impl.HasOwner != 0 && impl.OwnerSequenceNumber == owner.SequenceNumber)
+                impl.HasOwner = 0;
+        }
 
         /// <summary>
         /// The World's current version number

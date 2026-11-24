@@ -369,7 +369,6 @@ namespace UnityEngine.UIElements
             var value = factory != null ? factory() : default;
             value.__ValidateOwnerType(this);
 
-            // When an [OnComponentAdded] method ran it may have moved the slot; resolve again.
             if (!AttachComponent(typeHandle, in value, out var insertIndex))
                 return ref GetComponentRefAt<T>(insertIndex);
 
@@ -378,8 +377,8 @@ namespace UnityEngine.UIElements
 
         // Shared by AddComponent and GetOrAddComponent: stores the component and runs the add side
         // effects. Callers have already validated the owner type and rejected duplicates. Returns
-        // whether an [OnComponentAdded] method ran (it may have added or removed other components);
-        // insertIndex is the slot the component landed in, only reliable when that method did not run.
+        // whether the component set changed after the insert (callback registration or an
+        // [OnComponentAdded] method can add or remove components); insertIndex is only reliable when false.
         unsafe bool AttachComponent<T>(RuntimeTypeHandle typeHandle, in T value, out int insertIndex) where T : struct, IVisualElementComponent
         {
             // Add the [RequiresComponentOfType] components first. This can grow the component arrays,
@@ -411,12 +410,15 @@ namespace UnityEngine.UIElements
             record.liveCount++;
 
             insertIndex = InsertComponentSlot(typeHandle, record, slot);
+            var typeSetAfterInsert = m_ComponentTypeSet;
 
             value.__RegisterComponentCallbacks(this);
 
             // [OnComponentAdded] runs last, so it sees the component stored and its callbacks
             // registered. A required component's own method already ran while it was added above.
-            return value.__InvokeComponentAdded(this);
+            value.__InvokeComponentAdded(this);
+
+            return !ReferenceEquals(m_ComponentTypeSet, typeSetAfterInsert);
         }
 
         /// <summary>

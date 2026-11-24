@@ -219,6 +219,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static bool IsCompilationPending()
         {
+            if (MsBuildCompilationInterface.IsEnabled())
+                return MsBuildCompilationInterface.Instance.IsScriptCompilationPending();
             return Instance.IsScriptCompilationRequested();
         }
 

@@ -333,6 +333,13 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
             return new BindingResult(BindingStatus.Failure, "Expected a style property as the target. Shorthand and custom properties are not supported.");
 
         var targetElement = context.targetElement;
+
+        if (targetElement.panel?.dispatcher?.isDispatchQueued == true)
+        {
+            MarkDirty();
+            return new BindingResult(BindingStatus.Pending);
+        }
+
         return Update(context.bindingId, stylePropertyId, ctx, targetElement);
     }
 

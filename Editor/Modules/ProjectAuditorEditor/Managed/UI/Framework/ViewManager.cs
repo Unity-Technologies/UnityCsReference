@@ -1,0 +1,320 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Unity.ProjectAuditor.Editor.Core;
+using UnityEngine;
+
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+
+namespace Unity.ProjectAuditor.Editor.UI.Framework
+{
+    [Serializable]
+    internal sealed class ViewManager : ISerializationCallbackReceiver
+    {
+        Report m_Report;
+        AnalysisView[] m_Views;
+        ProjectAuditorAssistantController m_AssistantController;
+
+        [SerializeField] SerializableEnum<IssueCategory>[] m_Categories;
+        [SerializeField] int m_ActiveViewIndex;
+        [SerializeField] Dictionary<SerializableEnum<IssueCategory>, TreeViewState> m_TreeViewStates = new Dictionary<SerializableEnum<IssueCategory>, TreeViewState>();
+        HashSet<IssueCategory> m_PendingCategories;
+        HashSet<string> m_PendingModuleNames;
+
+        public Report Report => m_Report;
+
+        public int NumViews => m_Views != null ? m_Views.Length : 0;
+
+        public ProjectAuditorAssistantController AssistantController => m_AssistantController;
+
+        // user interactions
+        public Action<int> OnActiveViewChanged { get; set; }
+        public Action<bool> OnIgnoredIssuesVisibilityChanged { get; set; }
+
+        // events that trigger future operations
+        public Action<IssueCategory> OnAnalysisRequested { get; set; }
+        public Action<IReadOnlyList<ReportItem>>  OnSelectedIssuesIgnoreRequested { get; set; }
+        public Action<IReadOnlyList<ReportItem>>  OnSelectedIssuesDisplayRequested { get; set; }
+        public Action<IReadOnlyList<ReportItem>>  OnSelectedIssuesQuickFixRequested { get; set; }
+
+        // events based on past operations
+        public Action OnViewExportCompleted { get; set; }
+
+        public ViewManager()
+            #pragma warning disable UAC2001 // Avoid Linq
+            : this(ViewDescriptor.GetAll().Select(d => d.Category))
+#pragma warning restore UAC2001
+        {
+        }
+
+        public ViewManager(IEnumerable<IssueCategory> categories)
+        {
+            m_Categories = categories.ToSerializableArray();
+            m_ActiveViewIndex = 0;
+        }
+
+        public bool IsValid()
+        {
+            return m_Views != null && m_Views.Length > 0;
+        }
+
+        public void AddIssues(IEnumerable<ReportItem> issues)
+        {
+            foreach (var view in m_Views)
+                view.AddIssues(issues);
+        }
+
+        public void Clear()
+        {
+            foreach (var view in m_Views)
+            {
+                if (view != null)
+                    view.Clear();
+            }
+        }
+
+        public void ReloadIssues(Report report, IEnumerable<ReportItem> changedIssues)
+        {
+            var categories = new HashSet<IssueCategory>();
+            foreach (var issue in changedIssues)
+            {
+                categories.Add(issue.Category);
+            }
+
+            foreach (var category in categories)
+            {
+                var view = GetView(category);
+                if (view == null)
+                    continue;
+
+                view.Clear();
+                view.AddIssues(report.FindByCategory(category));
+            }
+
+            MarkViewsAsDirty();
+        }
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+        }
+
+        // Remove any obsolete IssueCategory items from m_Categories
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            var categories = m_Categories.ToValuesList();
+            for (int index = categories.Count - 1; index >= 0; index--)
+            {
+                if (categories[index].IsObsolete())
+                {
+                    m_TreeViewStates.Remove(categories[index]);
+                    categories.RemoveAt(index);
+                }
+            }
+
+            if (m_Categories.Length != categories.Count)
+            {
+                m_Categories = categories.ToSerializableArray();
+                m_ActiveViewIndex = 0;
+            }
+        }
+
+        public void Create(SeverityRules rules, ViewStates viewStates, Action<ViewDescriptor, bool> onCreateView = null, ProjectAuditorWindow window = null)
+        {
+            var views = new List<AnalysisView>();
+            foreach (var category in m_Categories)
+            {
+                var desc = Array.Find(ViewDescriptor.GetAll(), d => d.Category == category);
+                if (desc == null)
+                {
+                    Debug.LogWarning($"[{ProjectAuditor.DisplayName}] Descriptor for " + ProjectAuditor.GetCategoryName(category) + " was not registered.");
+                    continue;
+                }
+                var layout = IssueLayout.GetLayout(category);
+                var isSupported = layout != null;
+
+                if (onCreateView != null)
+                    onCreateView(desc, isSupported);
+
+                if (!isSupported)
+                {
+                    Debug.LogWarning($"[{ProjectAuditor.DisplayName}] Layout for category " + ProjectAuditor.GetCategoryName(category) + " was not found.");
+                    continue;
+                }
+
+                var view = desc.Type != null ? (AnalysisView)Activator.CreateInstance(desc.Type, this) : new AnalysisView(this);
+                view.Create(desc, layout, rules, viewStates, window, GetOrCreateTreeViewState(category));
+                view.OnEnable();
+                views.Add(view);
+            }
+
+            m_Views = views.ToArray();
+            m_AssistantController = new ProjectAuditorAssistantController();
+        }
+
+        TreeViewState GetOrCreateTreeViewState(IssueCategory category)
+        {
+            if (m_TreeViewStates.TryGetValue(category, out var state))
+                return state;
+
+            state = new TreeViewState();
+            m_TreeViewStates.Add(category, state);
+            return state;
+        }
+
+        public void ClearView(IssueCategory category)
+        {
+            var view = GetView(category);
+            if (view != null)
+            {
+                view.Clear();
+            }
+        }
+
+        public AnalysisView GetActiveView()
+        {
+            return m_Views[m_ActiveViewIndex];
+        }
+
+        public AnalysisView GetView(int index)
+        {
+            return m_Views[index];
+        }
+
+        public bool HasView(IssueCategory category)
+        {
+            return GetView(category) != null;
+        }
+
+        public AnalysisView GetView(IssueCategory category)
+        {
+            return Array.Find(m_Views, v => v.Desc.Category == category);
+        }
+
+        public void ChangeView(IssueCategory category)
+        {
+            var activeView = GetActiveView();
+            if (activeView.Desc.Category == category)
+            {
+                return;
+            }
+
+            var newView = GetView(category);
+            if (newView == null)
+                return; // assume the view was not registered
+
+            ChangeView(Array.IndexOf(m_Views, newView));
+        }
+
+        void ChangeView(int index)
+        {
+            var changeViewRequired = (m_ActiveViewIndex != index);
+            if (changeViewRequired)
+            {
+                m_ActiveViewIndex = index;
+
+                if (OnActiveViewChanged != null)
+                    OnActiveViewChanged(m_ActiveViewIndex);
+            }
+        }
+
+        /// <summary>
+        /// Mark all views as dirty. Use this to reload their tables.
+        /// </summary>
+        public void MarkViewsAsDirty()
+        {
+            foreach (var view in m_Views)
+            {
+                view.MarkDirty();
+            }
+        }
+
+        /// <summary>
+        /// Mark all views as dirty. Use this to reload their tables.
+        /// </summary>
+        public void MarkViewColumnWidthsAsDirty()
+        {
+            foreach (var view in m_Views)
+            {
+                view.MarkColumnWidthsDirty();
+            }
+        }
+
+        public void OnAnalysisCompleted()
+        {
+            m_PendingCategories = null;
+            m_PendingModuleNames = null;
+            MarkViewColumnWidthsAsDirty();
+        }
+
+        public void OnAnalysisRestored(Report report)
+        {
+            AddIssues(report.GetAllIssues());
+            m_PendingCategories = null;
+            m_PendingModuleNames = null;
+            m_Report = report;
+
+            ClearSearch();
+        }
+
+        public void OnAnalysisStarted(Report report, string[] moduleNames, IssueCategory[] pendingCategories)
+        {
+            m_PendingCategories = new HashSet<IssueCategory>(pendingCategories);
+            m_PendingModuleNames = new HashSet<string>(moduleNames);
+            m_Report = report;
+        }
+
+        public void ClearSearch()
+        {
+            foreach (var view in m_Views)
+            {
+                view.SetSearch("");
+            }
+        }
+
+        public void OnDisable()
+        {
+            if (m_AssistantController != null)
+            {
+                m_AssistantController.Dispose();
+                m_AssistantController = null;
+            }
+
+            SaveSettings();
+        }
+
+        public HashSet<IssueCategory> PendingCategories
+        {
+            set => m_PendingCategories = value;
+        }
+
+        public HashSet<string> PendingModuleNames
+        {
+            get => m_PendingModuleNames;
+        }
+
+        public bool HasPendingCategories()
+        {
+            return m_PendingCategories != null;
+        }
+
+        public bool HasPendingCategory(IssueCategory category)
+        {
+            return m_PendingCategories != null && m_PendingCategories.Contains(category);
+        }
+
+        private void SaveSettings()
+        {
+            if (!IsValid())
+                return;
+
+            foreach (var view in m_Views)
+            {
+                view.SaveSettings();
+            }
+        }
+    }
+}

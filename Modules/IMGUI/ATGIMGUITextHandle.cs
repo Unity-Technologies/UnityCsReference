@@ -147,6 +147,7 @@ namespace UnityEngine
             nativeSettings.disableAdvancedFontFeatures = true;
 
             nativeSettings.richTextEnabled = style.richText;
+            nativeSettings.emojiFallbackSupport = true;
             nativeSettings.hoveredTag = HoveredTag.UnderlineAllLinks;
             nativeSettings.pixelsPerPointFixed64 = (int)Math.Round(GUIUtility.pixelsPerPoint * 64.0f);
         }

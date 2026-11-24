@@ -32,9 +32,9 @@ namespace UnityEditor.UIElements
             new ProfilerCounterDescriptor("Draw Calls Count", "Total number of draw calls.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Vertices Count", "Total number of vertices.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Indices Count", "Total number of indices.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Hierarchy Changes", "Total number of hierarchy changes (add, remove, or reparent of visual elements) during the frame, summed across panels.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Panel Changes", "Total number of changes to visual elements (style, layout, transform, hierarchy, and others) during the frame, summed across panels.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Visual Element Count", "Total number of visual elements, summed across panels.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Hierarchy Version Changes", "Total number of hierarchy changes (add, remove, or reparent of visual elements) during the frame, summed across panels.", ProfilerCategory.UIToolkit, L10n.Tr("Hierarchy Changes", null)),
+            new ProfilerCounterDescriptor("Repaint Version Changes", "Total number of changes to visual elements (style, layout, transform, hierarchy, and others) during the frame, summed across panels.", ProfilerCategory.UIToolkit, L10n.Tr("Panel Changes", null)),
+            new ProfilerCounterDescriptor("VisualElement Count", "Total number of visual elements, summed across panels.", ProfilerCategory.UIToolkit, L10n.Tr("Visual Element Count", null)),
             new ProfilerCounterDescriptor("Event Count", "Total number of events dispatched (pointer, keyboard, navigation, and others), summed across panels.", ProfilerCategory.UIToolkit),
         };
 

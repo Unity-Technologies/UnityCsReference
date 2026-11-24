@@ -106,7 +106,9 @@ namespace UnityEditor
                 return ShaderUtil.PassHasShaderStage(SourceShader, SubshaderIndex, m_PassIndex, shaderType);
             }
 
+#pragma warning disable CS0618 // Type or member is obsolete
             internal const GraphicsTier kNoGraphicsTier = (GraphicsTier)(-1);
+#pragma warning restore CS0618
 
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget)
@@ -117,16 +119,20 @@ namespace UnityEditor
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, bool forExternalTool)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 var platformKeywords = ShaderUtil.GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, kNoGraphicsTier);
+#pragma warning restore CS0618
                 return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier, forExternalTool);
             }
 
+            [Obsolete("ShaderData.Pass.CompileVariant with a GraphicsTier parameter is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. Use the overload without a GraphicsTier parameter instead.", false)]
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier)
             {
                 return CompileVariant(shaderType, keywords, shaderCompilerPlatform, buildTarget, tier, false);
             }
 
+            [Obsolete("ShaderData.Pass.CompileVariant with a GraphicsTier parameter is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. Use the overload without a GraphicsTier parameter instead.", false)]
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool forExternalTool)
             {
@@ -146,12 +152,14 @@ namespace UnityEditor
                 return ShaderUtil.CompileShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier, forExternalTool);
             }
 
+            [Obsolete("ShaderData.Pass.CompileVariant with a GraphicsTier parameter is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. Use the overload without a GraphicsTier parameter instead.", false)]
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords, GraphicsTier tier)
             {
                 return CompileVariant(shaderType, keywords, shaderCompilerPlatform, buildTarget, platformKeywords, tier, false);
             }
 
+            [Obsolete("ShaderData.Pass.CompileVariant with a GraphicsTier parameter is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. Use the overload without a GraphicsTier parameter instead.", false)]
             public VariantCompileInfo CompileVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords, GraphicsTier tier, bool forExternalTool)
             {
@@ -161,10 +169,13 @@ namespace UnityEditor
             public PreprocessedVariant PreprocessVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, bool stripLineDirectives)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 var platformKeywords = ShaderUtil.GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, kNoGraphicsTier);
+#pragma warning restore CS0618
                 return ShaderUtil.PreprocessShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier, stripLineDirectives);
             }
 
+            [Obsolete("ShaderData.Pass.PreprocessVariant with a GraphicsTier parameter is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. Use the overload without a GraphicsTier parameter instead.", false)]
             public PreprocessedVariant PreprocessVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool stripLineDirectives)
             {
@@ -178,6 +189,7 @@ namespace UnityEditor
                 return ShaderUtil.PreprocessShaderVariant(SourceShader, SubshaderIndex, m_PassIndex, shaderType, platformKeywords, keywords, shaderCompilerPlatform, buildTarget, kNoGraphicsTier, stripLineDirectives);
             }
 
+            [Obsolete("ShaderData.Pass.PreprocessVariant with a GraphicsTier parameter is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. Use the overload without a GraphicsTier parameter instead.", false)]
             public PreprocessedVariant PreprocessVariant(ShaderType shaderType, string[] keywords,
                 ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, BuiltinShaderDefine[] platformKeywords, GraphicsTier tier, bool stripLineDirectives)
             {

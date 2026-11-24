@@ -23,11 +23,14 @@ namespace UnityEditor.Connect
         static readonly IUnityConnectRequestUriProvider k_UnityConnectRequestUriProvider =
             new UnityConnectRequestUriProvider();
 
+        // A create that times out may still have been done by the server, so it waits longer than other requests
+        const int k_CreateProjectTimeoutSeconds = 60;
+
         const string k_NetworkIssueWarningMessage = "This might be caused by network issues. Try using the refresh button.";
         const string k_CouldNotCreateProjectMessage = "Could not create project with name \"{0}\".";
         const string k_CouldNotObtainProjectMessage = "Could not obtain projects within the \"{0}\" organization. " + k_NetworkIssueWarningMessage;
         const string k_CouldNotObtainOrganizationDetailsMessage = "Could not obtain organization details for organization \"{0}\". " + k_NetworkIssueWarningMessage;
-        const string k_CouldNotObtainOrganizationsMessage = "Could not obtain organizations for user \"{0}\". " + k_NetworkIssueWarningMessage;
+        const string k_CouldNotObtainOrganizationsMessage = "Could not obtain your organizations. " + k_NetworkIssueWarningMessage;
         const string k_ParsingErrorWhileFetchingProjects = "Parsing error while fetching projects. Json: \"{0}\".";
         const string k_ParsingErrorWhileFetchingOrganizationDetails = "Parsing error while fetching organization details. Json: \"{0}\".";
         const string k_ParsingErrorWhileFetchingOrganizations = "Parsing error while fetching organizations. Json: \"{0}\".";
@@ -104,7 +107,7 @@ namespace UnityEditor.Connect
                     request.downloadHandler = new DownloadHandlerBuffer();
                     request.suppressErrorsToConsole = true;
                     await AddServiceTokenHeaderToRequestAsync(request, cancellationToken);
-                    await UnityConnectWebRequestUtils.SendWebRequestAsync(request, cancellationToken);
+                    await SendAsync(request, cancellationToken);
                 }
                 catch (OperationCanceledException e)
                 {
@@ -119,7 +122,7 @@ namespace UnityEditor.Connect
                 {
                     var exception = UnityConnectWebRequestUtils.CreateUnityWebRequestException(
                         request,
-                        string.Format(k_CouldNotObtainOrganizationsMessage, CloudProjectSettings.userName));
+                        k_CouldNotObtainOrganizationsMessage);
                     throw exception;
                 }
 
@@ -184,7 +187,7 @@ namespace UnityEditor.Connect
                     request.downloadHandler = new DownloadHandlerBuffer();
                     request.suppressErrorsToConsole = true;
                     AddAccessTokenHeaderToRequest(request);
-                    await UnityConnectWebRequestUtils.SendWebRequestAsync(request, cancellationToken);
+                    await SendAsync(request, cancellationToken);
                 }
                 catch (OperationCanceledException e)
                 {
@@ -243,7 +246,7 @@ namespace UnityEditor.Connect
                     request.downloadHandler = new DownloadHandlerBuffer();
                     request.suppressErrorsToConsole = true;
                     await AddServiceTokenHeaderToRequestAsync(request, cancellationToken);
-                    await UnityConnectWebRequestUtils.SendWebRequestAsync(request, cancellationToken);
+                    await SendAsync(request, cancellationToken);
                 }
                 catch (OperationCanceledException e)
                 {
@@ -301,6 +304,31 @@ namespace UnityEditor.Connect
             return projectsInfo;
         }
 
+        internal static Task SendAsync(UnityWebRequest request, CancellationToken cancellationToken)
+        {
+            // Without a limit a request that gets no answer waits for the network library's 5 minutes
+            if (request.timeout == 0)
+                request.timeout = UnityConnectWebRequestUtils.k_RequestTimeoutSeconds;
+
+            return UnityConnectWebRequestUtils.SendWebRequestAsync(request, cancellationToken);
+        }
+
+        internal static UnityWebRequest CreateProjectRequest(string uri, string projectName)
+        {
+            var request = UnityWebRequest.Post(uri, CreateProjectRequestBody(projectName), "application/json");
+            request.timeout = k_CreateProjectTimeoutSeconds;
+            return request;
+        }
+
+        internal static string CreateProjectRequestBody(string projectName)
+        {
+            return Json.Serialize(new Dictionary<string, object>
+            {
+                { "name", projectName },
+                { "coppa", "not_compliant" },
+            });
+        }
+
         /// <summary>
         /// Creates a new cloud project under the specified organization
         /// </summary>
@@ -327,16 +355,13 @@ namespace UnityEditor.Connect
                     e);
             }
 
-            using (UnityWebRequest request = UnityWebRequest.Post(
-                       uri,
-                       $"{{\"name\": \"{projectName}\", \"coppa\": \"not_compliant\"}}",
-                       "application/json"))
+            using (UnityWebRequest request = CreateProjectRequest(uri, projectName))
             {
                 try
                 {
                     request.suppressErrorsToConsole = true;
                     await AddServiceTokenHeaderToRequestAsync(request, cancellationToken);
-                    await UnityConnectWebRequestUtils.SendWebRequestAsync(request, cancellationToken);
+                    await SendAsync(request, cancellationToken);
                 }
                 catch (OperationCanceledException e)
                 {
@@ -399,7 +424,7 @@ namespace UnityEditor.Connect
                     request.suppressErrorsToConsole = true;
                     request.downloadHandler = new DownloadHandlerBuffer();
                     await AddServiceTokenHeaderToRequestAsync(request, cancellationToken);
-                    await UnityConnectWebRequestUtils.SendWebRequestAsync(request, cancellationToken);
+                    await SendAsync(request, cancellationToken);
                 }
                 catch (OperationCanceledException e)
                 {

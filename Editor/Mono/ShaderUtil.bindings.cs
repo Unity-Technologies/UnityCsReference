@@ -424,17 +424,22 @@ namespace UnityEditor
             return String.IsNullOrEmpty(rpEditor) ? shader.customEditor : rpEditor;
         }
 
+        [Obsolete("ShaderUtil.GetShaderPlatformKeywordsForBuildTarget(ShaderCompilerPlatform, BuildTarget, GraphicsTier) is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. Use the overload without a GraphicsTier parameter instead.", false)]
         extern public static BuiltinShaderDefine[] GetShaderPlatformKeywordsForBuildTarget(ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier);
 
         public static BuiltinShaderDefine[] GetShaderPlatformKeywordsForBuildTarget(ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             return GetShaderPlatformKeywordsForBuildTarget(shaderCompilerPlatform, buildTarget, GraphicsTier.Tier1);
+#pragma warning restore CS0618
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         extern internal static ShaderData.VariantCompileInfo CompileShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
             ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool outputForExternalTool);
         extern internal static ShaderData.PreprocessedVariant PreprocessShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
             ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool stripLineDirectives);
+#pragma warning restore CS0618
 
         extern internal static ShaderData.VariantCompileInfo CompileComputeShaderVariant([NotNull] ComputeShader shader, int kernelIndex,
             string[] keywords, GraphicsDeviceType graphicsDeviceType, BuildTarget buildTarget);

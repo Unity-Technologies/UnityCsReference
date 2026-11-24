@@ -343,12 +343,46 @@ namespace Unity.Animations
         // 2424..2432 trailing padding for 16-byte struct alignment
 
         /// <summary>The time on the clip curves where the clip starts, in seconds.</summary>
+        /// <remarks>
+        /// The start time isn't always 0. For example, a clip that you set with
+        /// <c>AnimationUtility.SetAnimationClipSettings</c> can start later on its curves. A clip that
+        /// the model importer creates from a take starts at 0, because the importer shifts the curves of the take to
+        /// begin at 0. The times that you pass to a <see cref="ClipSampler"/> are times on the clip curves, between
+        /// <see cref="StartTime"/> and <see cref="StopTime"/>, so don't assume that a clip plays from 0.
+        /// </remarks>
+        /// <seealso cref="StopTime"/>
+        /// <seealso cref="Length"/>
         public float StartTime => m_StartTime;
 
         /// <summary>The time on the clip curves where the clip ends, in seconds.</summary>
+        /// <remarks>
+        /// The clip stops here even if its curves have keys after this time. <c>AnimationClip.length</c> reports the end
+        /// of the curves instead, so it can be later than the stop time.
+        /// </remarks>
+        /// <seealso cref="StartTime"/>
+        /// <seealso cref="Length"/>
         public float StopTime => m_StopTime;
 
         /// <summary>The duration of the clip in seconds, from its start time to its stop time.</summary>
+        /// <remarks>
+        /// This is the duration that a <see cref="ClipSampler"/> plays, and the size of the
+        /// <see cref="TimerState.Range"/> of the timer that <see cref="ToTimerState(DiscreteTime)"/> returns.
+        ///
+        /// <c>AnimationClip.length</c> is the time at the end of the curves of the clip, not a duration, so it can
+        /// differ from this value. The two values are the same only when <see cref="StartTime"/> is 0 and the stop
+        /// time is the end of the last curve. They differ in the following cases:
+        ///
+        ///- <see cref="StartTime"/> isn't 0. <c>AnimationClip.length</c> is then at least the stop time, while this
+        /// value is the stop time minus the start time.
+        ///- The curves of the clip go past <see cref="StopTime"/>. <c>AnimationClip.length</c> reports the end of the
+        /// curves, but the clip stops at <see cref="StopTime"/>.
+        ///- In a player build, Unity can strip the curves of a clip. <c>AnimationClip.length</c> is then the stop time.
+        ///
+        /// When you drive a <see cref="ClipSampler"/>, use <see cref="StartTime"/>, <see cref="StopTime"/>, and this
+        /// property instead of <c>AnimationClip.length</c>.
+        /// </remarks>
+        /// <seealso cref="StartTime"/>
+        /// <seealso cref="StopTime"/>
         public float Length => m_StopTime - m_StartTime;
 
         /// <summary>Whether the clip loops, as set by **Loop Time** in the clip settings.</summary>

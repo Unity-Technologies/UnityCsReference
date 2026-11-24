@@ -175,11 +175,21 @@ namespace UnityEditor
         {
             new PopupElement("Disabled"),
             new PopupElement("Sprite Atlas V1 - Enabled For Builds"),
-            new PopupElement("Sprite Atlas V1 - Always Enabled"),
             new PopupElement("Sprite Atlas V2 - Enabled"),
             new PopupElement("Sprite Atlas V2 - Enabled for Builds"),
         };
-        private static readonly int spritePackDeprecatedEnums = 2;
+
+        // Indexed by spritePackerPopupList entry
+        static readonly SpritePackerMode[] k_SpritePackerPopupModes =
+        {
+            SpritePackerMode.Disabled,
+            SpritePackerMode.BuildTimeOnlyAtlas,
+            SpritePackerMode.SpriteAtlasV2,
+            SpritePackerMode.SpriteAtlasV2Build,
+        };
+        const int k_SpritePackerDisabledIndex = 0;
+        const int k_SpritePackerV1BuildIndex = 1;
+        const int k_SpritePackerV1AlwaysOnMode = 4;
 
         private PopupElement[] lineEndingsPopupList =
         {
@@ -564,8 +574,11 @@ namespace UnityEditor
             GUILayout.Label(Content.spritePacker, EditorStyles.boldLabel);
             GUI.enabled = editorEnabled;
 
-            // Legacy Packer has been deprecated.
-            index = Mathf.Clamp(m_SpritePackerMode.intValue - spritePackDeprecatedEnums, 0, spritePackerPopupList.Length - 1);
+            index = GetSpritePackerPopupIndex(m_SpritePackerMode.intValue);
+
+            // Obsolete modes (Legacy Packer, V1 Always On) are still honored natively, so migrate to the mode the popup shows.
+            if (editorEnabled && (int)k_SpritePackerPopupModes[index] != m_SpritePackerMode.intValue)
+                SetSpritePackerMode(index);
             CreatePopupMenu(Content.mode.text, spritePackerPopupList, index, SetSpritePackerMode);
             if (EditorSettings.spritePackerMode != SpritePackerMode.SpriteAtlasV2 && EditorSettings.spritePackerMode != SpritePackerMode.SpriteAtlasV2Build && EditorSettings.spritePackerMode != SpritePackerMode.Disabled)
                 EditorGUILayout.IntSlider(m_SpritePackerCacheSize, 1, 200, Content.spriteMaxCacheSize);
@@ -1235,19 +1248,26 @@ namespace UnityEditor
             }
         }
 
+        static int GetSpritePackerPopupIndex(int mode)
+        {
+            int index = Array.IndexOf(k_SpritePackerPopupModes, (SpritePackerMode)mode);
+            if (index >= 0)
+                return index;
+
+            // Legacy Packer modes map to Disabled, V1 Always On maps to V1 Build.
+            return mode == k_SpritePackerV1AlwaysOnMode ? k_SpritePackerV1BuildIndex : k_SpritePackerDisabledIndex;
+        }
+
         private void SetSpritePackerMode(object data)
         {
-            int popupIndex = (int)data;
-
-            // Legacy Packer has been obsoleted (1 & 2). Disabled (0) is still valid.
-            popupIndex = (popupIndex != 0) ? (popupIndex + spritePackDeprecatedEnums) : 0;
-            bool refreshSprite = (m_SpritePackerMode.intValue != popupIndex);
-            m_SpritePackerMode.intValue = popupIndex;
-
+            int setValue = (int)k_SpritePackerPopupModes[(int)data];
+            bool refreshSprite = m_SpritePackerMode.intValue != setValue;
+            m_SpritePackerMode.intValue = setValue;
             if (m_IsGlobalSettings)
             {
-                EditorSettings.spritePackerMode = (SpritePackerMode)popupIndex;
-                if (popupIndex >= (int)SpritePackerMode.SpriteAtlasV2)
+                EditorSettings.spritePackerMode = (SpritePackerMode)setValue;
+
+                if (setValue >= (int)SpritePackerMode.SpriteAtlasV2)
                 {
                     UnityEditor.U2D.SpriteAtlasImporter.MigrateAllSpriteAtlases();
                 }

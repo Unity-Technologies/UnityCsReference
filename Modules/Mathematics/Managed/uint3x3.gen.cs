@@ -573,6 +573,9 @@ namespace Unity.Mathematics
 
 
 
+        [Unity.Collections.LowLevel.Unsafe.PatchedBody("c0")]
+        readonly ref uint3 FirstColumnRef() { throw new NotImplementedException("Patching this method failed"); }
+
         /// <summary>Returns the uint3 element at a specified index.</summary>
         unsafe public ref uint3 this[int index]
         {
@@ -580,7 +583,7 @@ namespace Unity.Mathematics
             {
                 if ((uint)index >= 3)
                     throw new System.ArgumentException("index must be between[0...2]");
-                fixed (uint3x3* array = &this) { return ref ((uint3*)array)[index]; }
+                return ref Unsafe.Add(ref FirstColumnRef(), index);
             }
         }
 

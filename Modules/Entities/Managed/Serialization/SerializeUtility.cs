@@ -872,7 +872,7 @@ namespace Unity.Entities.Serialization
         internal static unsafe void EndDeserializeWorld(ExclusiveEntityTransaction manager, DotsSerializationReader dotsReader, ref WorldDeserializationStatus status, out WorldDeserializationResult deserializationResult, int externalEntitiesRefRange, int sceneSectionIndex, NativeArray<EntityId> unityObjects)
         {
             deserializationResult = default;
-            var access = manager.EntityManager.GetCheckedEntityDataAccess();
+            var access = manager.GetCheckedEntityDataAccess();
             var ecs = access->EntityComponentStore;
             var companionStore = access->CompanionComponentStore;
 
@@ -1755,7 +1755,7 @@ namespace Unity.Entities.Serialization
             reader.ReadBytes(unmanagedComponentBuffer.Ptr, dataSize);
             var unmanagedStream = unmanagedComponentBuffer.AsReader();
 
-            var access = manager.EntityManager.GetCheckedEntityDataAccess();
+            var access = manager.GetCheckedEntityDataAccess();
             for (int i = 0; i < sharedComponentRecordArray.Length; ++i)
             {
                 var record = sharedComponentRecordArray[i];

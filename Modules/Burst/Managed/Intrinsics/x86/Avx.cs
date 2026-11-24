@@ -1388,6 +1388,9 @@ namespace Unity.Burst.Intrinsics
 
             private static v128 Select4(v256 src1, v256 src2, int control)
             {
+                if ((control & 8) != 0)
+                    return default;
+
                 switch (control & 3)
                 {
                     case 0: return src1.Lo128;

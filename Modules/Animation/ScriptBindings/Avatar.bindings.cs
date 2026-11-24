@@ -718,6 +718,8 @@ namespace UnityEngine
         extern internal Quaternion  GetBoneLocalRotation(int boneIndex);
         [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
         extern internal Vector3     GetBoneLocalScale(int boneIndex);
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        extern internal int         GetRootMotionBoneIndex();
 
         internal GenericBinding[] genericBindings
         {

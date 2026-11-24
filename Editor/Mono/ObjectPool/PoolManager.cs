@@ -18,6 +18,7 @@ namespace UnityEditor.ObjectPool
         static void Shutdown()
         {
             EditorApplication.playModeStateChanged -= OnEditorStateChange;
+            UnityEngine.Pool.PoolManager.Reset();
         }
 
         static void OnEditorStateChange(PlayModeStateChange stateChange)

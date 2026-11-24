@@ -34,6 +34,16 @@ Would you like to save these changes?
 
 ";
 
+        const string k_CloseBreadcrumbsMessage = @"The following graphs have unsaved changes and will be closed:
+{0}
+Would you like to save these changes?";
+
+        // Choices of the dialog shown when closing breadcrumbs with dirty graphs.
+        const int k_CloseBreadcrumbsNoDirtyGraph = -1;
+        const int k_CloseBreadcrumbsSave = 0;
+        const int k_CloseBreadcrumbsCancel = 1;
+        const int k_CloseBreadcrumbsDontSave = 2;
+
         public delegate EditorWindow CreateWindowMethod(Type[] types);
         [NoAutoStaticsCleanup] // MethodInfo obtained via reflection on a framework method; value is stable across reload
         static MethodInfo k_CreateWindowMethod;
@@ -47,6 +57,7 @@ Would you like to save these changes?
         bool m_AttachedOnce;
         bool m_HasMultipleWindowsForSameGraph;
         bool m_UnsavedChangesWindowIsEnabled;
+        Func<string, int> m_CloseBreadcrumbsDialogOverride;
         string m_GraphViewName;
 
         // Used only between OnDisable and OnDestroy
@@ -639,6 +650,134 @@ Would you like to save these changes?
         }
 
         /// <summary>
+        /// Navigates to the breadcrumb at <paramref name="breadcrumbIndex"/>, asking the user whether to save the unsaved graphs that are closed.
+        /// </summary>
+        /// <param name="breadcrumbIndex">The index in the <see cref="ToolStateComponent.SubgraphStack"/> of the graph to navigate to.</param>
+        internal void NavigateToBreadcrumb(int breadcrumbIndex)
+        {
+            var toolState = GraphTool?.ToolState;
+            if (toolState == null || toolState.SubgraphStack.Count <= breadcrumbIndex)
+                return;
+
+            var closedDirtyGraphs = m_UnsavedChangesWindowIsEnabled ? GetClosedDirtyGraphs(breadcrumbIndex) : null;
+            var choice = AskToSaveClosedDirtyGraphs(closedDirtyGraphs);
+            if (choice == k_CloseBreadcrumbsCancel)
+                return;
+
+            if (choice == k_CloseBreadcrumbsSave && !SaveClosedDirtyGraphs(closedDirtyGraphs))
+                return;
+
+            var graphModel = toolState.ResolveSubGraph(breadcrumbIndex);
+            if (graphModel == null)
+                return;
+
+            GraphTool.Dispatch(new LoadGraphCommand(graphModel,
+                LoadGraphCommand.LoadStrategies.KeepHistory, breadcrumbIndex, toolState.GetSubgraphLabel(breadcrumbIndex), toolState.GetSubgraphNodeGuid(breadcrumbIndex)));
+
+            if (choice == k_CloseBreadcrumbsDontSave)
+                DiscardClosedDirtyGraphs(closedDirtyGraphs);
+        }
+
+        // Returns null when no closed graph is dirty, to avoid allocating in the common case.
+        List<GraphObject> GetClosedDirtyGraphs(int breadcrumbIndex)
+        {
+            var toolState = GraphTool.ToolState;
+            toolState.ResolveSubGraphs();
+            List<GraphObject> closedDirtyGraphs = null;
+
+            AddIfClosedAndDirty(toolState.GraphObject);
+            for (var i = breadcrumbIndex + 1; i < toolState.SubgraphStack.Count; i++)
+            {
+                AddIfClosedAndDirty(toolState.GetSubGraphObject(i));
+            }
+
+            return closedDirtyGraphs;
+
+            void AddIfClosedAndDirty(GraphObject graphObject)
+            {
+                if (graphObject == null || !graphObject.Dirty || (closedDirtyGraphs != null && closedDirtyGraphs.Contains(graphObject)) || IsGraphObjectKeptOpened(graphObject, breadcrumbIndex))
+                    return;
+
+                closedDirtyGraphs ??= new List<GraphObject>();
+                closedDirtyGraphs.Add(graphObject);
+            }
+        }
+
+        int AskToSaveClosedDirtyGraphs(List<GraphObject> closedDirtyGraphs)
+        {
+            if (closedDirtyGraphs == null)
+                return k_CloseBreadcrumbsNoDirtyGraph;
+
+            var paths = "";
+            foreach (var graphObject in closedDirtyGraphs)
+            {
+                paths += graphObject.FilePath + "\n";
+            }
+
+            var message = string.Format(L10n.Tr(k_CloseBreadcrumbsMessage, null), paths);
+            return m_CloseBreadcrumbsDialogOverride?.Invoke(message) ??
+                EditorUtility.DisplayDialogComplex(L10n.Tr("Unsaved Changes", null), message, L10n.Tr("Save", null), L10n.Tr("Cancel", null), L10n.Tr("Don't Save", null));
+        }
+
+        static bool SaveClosedDirtyGraphs(List<GraphObject> closedDirtyGraphs)
+        {
+            foreach (var graphObject in closedDirtyGraphs)
+            {
+                graphObject.Save();
+                if (graphObject.Dirty)
+                {
+                    Debug.LogWarning($"Could not save {graphObject.FilePath}. The graph stays open.");
+                    return false;
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+            return true;
+        }
+
+        void DiscardClosedDirtyGraphs(List<GraphObject> closedDirtyGraphs)
+        {
+            foreach (var graphObject in closedDirtyGraphs)
+            {
+                Undo.ClearUndo(graphObject);
+                graphObject.UnloadObject();
+            }
+
+            // The subgraph nodes were defined from the discarded changes. Define them again from the graphs reloaded from disk.
+            GraphTool.ToolState.GraphModel?.OnLoadGraph();
+        }
+
+        // A graph stays opened when it is in the breadcrumbs that are kept, or opened in another window.
+        bool IsGraphObjectKeptOpened(GraphObject graphObject, int keptBreadcrumbIndex)
+        {
+            var toolState = GraphTool.ToolState;
+            for (var i = 0; i <= keptBreadcrumbIndex; i++)
+            {
+                if (toolState.GetSubGraphObject(i) == graphObject)
+                    return true;
+            }
+
+            foreach (var window in s_OpenedWindows)
+            {
+                var otherToolState = window.GraphTool?.ToolState;
+                if (window == this || otherToolState == null)
+                    continue;
+
+                if (otherToolState.GraphObject == graphObject)
+                    return true;
+
+                otherToolState.ResolveSubGraphs();
+                for (var i = 0; i < otherToolState.SubgraphStack.Count; i++)
+                {
+                    if (otherToolState.GetSubGraphObject(i) == graphObject)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Saves the current graph opened in the line of breadcrumbs.
         /// </summary>
         public virtual void Save()
@@ -687,18 +826,24 @@ Would you like to save these changes?
                 return;
             }
 
-            if (toolState.GraphObject != null)
-            {
-                toolState.GraphObject.UnloadObject();
-            }
+            UnloadIfNotOpenedInOtherWindow(toolState.GraphObject);
 
             // For now, it is not possible to individually close a specific breadcrumb. Thus, we have to save changes in the current opened graph AND in the other opened graphs as well.
+            toolState.ResolveSubGraphs();
             for(int i = 0 ; i < toolState.SubgraphStack.Count ; ++i)
             {
-                toolState.GetSubGraphObject(i)?.UnloadObject();
+                UnloadIfNotOpenedInOtherWindow(toolState.GetSubGraphObject(i));
             }
 
             base.DiscardChanges();
+            return;
+
+            // Another window still using the graph keeps its changes.
+            void UnloadIfNotOpenedInOtherWindow(GraphObject graphObject)
+            {
+                if (graphObject != null && !IsGraphObjectKeptOpened(graphObject, -1))
+                    graphObject.UnloadObject();
+            }
         }
 
         protected virtual void Reset()
@@ -1462,7 +1607,6 @@ Would you like to save these changes?
                 return;
 
             var subgraphStack = GraphTool?.ToolState?.SubgraphStack;
-            var initialAsset = subgraphStack is { Count: > 0 } ? GraphTool?.ResolveGraphModelFromReference(subgraphStack[0])?.GraphObject : null;
             var currentAsset = GraphTool?.ToolState?.GraphModel?.GraphObject;
 
             if (currentAsset == null)
@@ -1471,13 +1615,12 @@ Would you like to save these changes?
                 return;
             }
 
-            // If the current asset is dirty, its parent should be dirty as well
-            if (currentAsset.Dirty && initialAsset != null && !initialAsset.Dirty)
+            // Asset subgraphs are separate files: a dirty one does not dirty its parent graph, it is reported on its own.
+            var breadcrumbGraphDirty = false;
+            for (var i = 0; subgraphStack != null && i < subgraphStack.Count && !breadcrumbGraphDirty; i++)
             {
-                initialAsset.Dirty = true;
+                breadcrumbGraphDirty = GraphTool.ResolveGraphModelFromReference(subgraphStack[i])?.GraphObject?.Dirty ?? false;
             }
-
-            var initialAssetDirty = initialAsset != null && initialAsset.Dirty;
 
             var oldHasMultipleWindowsForSameGraph = m_HasMultipleWindowsForSameGraph;
             var windows = (GraphViewEditorWindow[])Resources.FindObjectsOfTypeAll(GetType());
@@ -1498,7 +1641,7 @@ Would you like to save these changes?
                 }
             }
 
-            hasUnsavedChanges = !m_HasMultipleWindowsForSameGraph && currentAsset.Dirty || initialAssetDirty;
+            hasUnsavedChanges = (!m_HasMultipleWindowsForSameGraph && currentAsset.Dirty) || breadcrumbGraphDirty;
 
             // The title update is triggered when there is a change in the title or the graph dirty state. When there are more than one window with the same graph, we need to force the title update:
             // The first window detects the dirty state change. However, the graph dirty state stays the same for the subsequent windows and the title update is not triggered.
@@ -1744,6 +1887,12 @@ Would you like to save these changes?
             }
 
             public void Update() => m_Window.Update();
+
+            // Replaces the dialog shown by NavigateToBreadcrumb. Returns 0 to save, 1 to cancel and 2 to not save.
+            public Func<string, int> CloseBreadcrumbsDialogOverride
+            {
+                set => m_Window.m_CloseBreadcrumbsDialogOverride = value;
+            }
         }
     }
 }

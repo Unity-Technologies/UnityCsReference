@@ -6927,6 +6927,8 @@ namespace UnityEditor
 
             if (hasUnityObjectTargets)
                 DoInspectorEnabledToggle(position, targetObjs, comp, iconRect, enabledProperty, toggleRect, hovered, hasFocus);
+            else if (isDataComponentEditor)
+                DoEnableableToggle(position, toggleRect, editor.targetEntityIds);
 
             Type targetType = hasUnityObjectTargets ? targetObjs[0].GetType() : editor.targetType;
             if (targetType != null)
@@ -6985,6 +6987,35 @@ namespace UnityEditor
             }
 
             GUI.enabled = oldGUIEnabledState;
+        }
+
+        // Drawn where a Behaviour's enabled toggle is, so users find it in one place
+        static void DoEnableableToggle(Rect position, Rect toggleRect, EntityId[] componentIds)
+        {
+            bool anyEnabled = false;
+            bool anyDisabled = false;
+            foreach (var componentId in componentIds)
+            {
+                int state = ComponentUtility.GetDataComponentEnabledState(componentId);
+                if (state == -1)
+                    return;
+                anyEnabled |= state == 1;
+                anyDisabled |= state == 0;
+            }
+
+            if (!anyEnabled && !anyDisabled)
+                return;
+
+            using (new DisabledScope(!CanRemoveDataComponents(componentIds)))
+            {
+                showMixedValue = anyEnabled && anyDisabled;
+                BeginChangeCheck();
+                int toggleId = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
+                bool enabledState = EditorGUIInternal.DoToggleForward(toggleRect, toggleId, anyEnabled, GUIContent.none, EditorStyles.toggle);
+                if (EndChangeCheck())
+                    ComponentUtility.SetDataComponentsEnabled(componentIds, enabledState);
+                showMixedValue = false;
+            }
         }
 
         // Draws the enabled-checkbox on an inspector titlebar and services the right-click
@@ -8505,6 +8536,8 @@ namespace UnityEditor
                 case SerializedPropertyType.GUID:
                 case SerializedPropertyType.EntityId:
                 case SerializedPropertyType.LoadableObjectId:
+                    return false;
+                case SerializedPropertyType.Quaternion when isUIElements:
                     return false;
             }
 

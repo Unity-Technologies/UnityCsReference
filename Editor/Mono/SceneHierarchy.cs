@@ -1296,7 +1296,7 @@ namespace UnityEditor
             if (Selection.objects.Length > 0)
                 selectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
 
-            if (Selection.count == 0 && treeView.hoveredItem == null || selectedObject && (selectedObject.name == PrefabUtility.kDummyPrefabStageRootObjectName || PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(selectedObject)))
+            if (Selection.knownCount == 0 && treeView.hoveredItem == null || selectedObject && (selectedObject.name == PrefabUtility.kDummyPrefabStageRootObjectName || PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(selectedObject)))
             {
                 menu.AddDisabledItem(Styles.setOriginLabel);
             }

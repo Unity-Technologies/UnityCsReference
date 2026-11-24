@@ -164,10 +164,6 @@ namespace Unity.Mathematics
         /// </summary>
         public const float k_EpsilonNormal = 1e-30f;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static float3 rcpsafe(float3 x, float epsilon = k_EpsilonRCP) =>
-            math.select(math.rcp(x), float3.zero, math.abs(x) < epsilon);
-
         /// <summary>
         /// Calculates the inverse of a 3x3 matrix using Singular Value Decomposition (SVD).
         /// </summary>
@@ -180,7 +176,7 @@ namespace Unity.Mathematics
             var um = math.float3x3(u);
             var vm = math.float3x3(v);
 
-            return math.mul(vm, math.scaleMul(rcpsafe(e, k_EpsilonDeterminant), math.transpose(um)));
+            return math.mul(vm, math.scaleMul(math.select(math.rcp(e), float3.zero, math.abs(e) < k_EpsilonDeterminant), math.transpose(um)));
         }
         /// <summary>
         /// Calculates the rotation component of a 3x3 matrix using Singular Value Decomposition (SVD).

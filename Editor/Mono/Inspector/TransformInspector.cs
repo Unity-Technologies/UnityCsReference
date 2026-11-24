@@ -70,7 +70,7 @@ namespace UnityEditor
 
             if (saveUndoName)
             {
-                int selection = Selection.count;
+                int selection = Selection.knownCount;
                 if (t.position != pos)
                     Undo.SetCurrentGroupName(string.Format("Set Position to {0} in {1}", t.localPosition, selection == 1 ? target.name : "Selected Objects"));
                 else

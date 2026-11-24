@@ -36,12 +36,14 @@ namespace Unity.Animations
 
     unsafe struct ClipSamplingCacheData
     {
-        const int k_RootCurveCount = 7;
-
         public Allocator Allocator;
         public UnsafeList<StreamedCacheItem> Caches;
         public UnsafeList<float> Output;
         public StreamedClipMemory Memory;
+
+        // Sorted curve indices of a cache initialized for root motion only. The cache item of a curve is at the
+        // position of its index in this list
+        public UnsafeList<int> RootCurveIndices;
 
         // data must point to memory that the caller allocated. The helpers below work on that memory only, so a cache
         // can live inside another allocation, as in ClipSamplerData
@@ -50,12 +52,15 @@ namespace Unity.Animations
             data->Allocator = allocator;
             data->Memory = default;
             data->Memory.owner = data;
+            data->RootCurveIndices = default;
             AllocateLists(data, curveCapacity);
         }
 
         internal static void Free(ClipSamplingCacheData* data)
         {
             DisposeLists(data);
+            if (data->RootCurveIndices.IsCreated)
+                data->RootCurveIndices.Dispose();
         }
 
         // A clip without muscle data has no curves, so the cache stays empty and samples nothing
@@ -118,7 +123,7 @@ namespace Unity.Animations
 
         static void ResetRootMotionState(ref StreamedClipMemory memory)
         {
-            UnsafeUtility.MemSet(memory.caches, 0, UnsafeUtility.SizeOf<StreamedCacheItem>() * k_RootCurveCount);
+            UnsafeUtility.MemSet(memory.caches, 0, UnsafeUtility.SizeOf<StreamedCacheItem>() * memory.rootCurveCount);
             memory.readByteOffset = 0;
             memory.time = -float.MaxValue;
         }
@@ -164,9 +169,42 @@ namespace Unity.Animations
 
         internal static void InitializeRootMotion(ClipSamplingCacheData* data, int rootTranslationIndex, int rootRotationIndex)
         {
+            var curveIndices = stackalloc int[7];
+            var count = 0;
+            for (var i = 0; rootTranslationIndex >= 0 && i < 3; i++)
+                curveIndices[count++] = rootTranslationIndex + i;
+            for (var i = 0; rootRotationIndex >= 0 && i < 4; i++)
+                curveIndices[count++] = rootRotationIndex + i;
+
+            InitializeRootMotion(data, curveIndices, count);
+        }
+
+        // curveIndices can be in any order, have duplicates and contain -1 for missing curves
+        internal static void InitializeRootMotion(ClipSamplingCacheData* data, int* curveIndices, int count)
+        {
+            ref var rootCurveIndices = ref data->RootCurveIndices;
+            if (!rootCurveIndices.IsCreated)
+                rootCurveIndices = new UnsafeList<int>(count, data->Allocator);
+
+            rootCurveIndices.Clear();
+            for (var i = 0; i < count; i++)
+            {
+                if (curveIndices[i] >= 0)
+                    rootCurveIndices.Add(curveIndices[i]);
+            }
+
+            rootCurveIndices.Sort();
+            var uniqueCount = 0;
+            for (var i = 0; i < rootCurveIndices.Length; i++)
+            {
+                if (uniqueCount == 0 || rootCurveIndices[uniqueCount - 1] != rootCurveIndices[i])
+                    rootCurveIndices[uniqueCount++] = rootCurveIndices[i];
+            }
+            rootCurveIndices.Resize(uniqueCount);
+
             ref var caches = ref data->Caches;
-            if (caches.Length < k_RootCurveCount)
-                caches.Resize(k_RootCurveCount, NativeArrayOptions.UninitializedMemory);
+            if (caches.Length < uniqueCount)
+                caches.Resize(uniqueCount, NativeArrayOptions.UninitializedMemory);
 
             ref var memory = ref data->Memory;
             memory = new StreamedClipMemory()
@@ -176,15 +214,14 @@ namespace Unity.Animations
                 cacheCount = 0,
                 discreteCacheCount = 0,
                 rootMotionOnly = true,
-                // -1 would fall inside the (uint) range checks; push missing curves out of range.
-                rootTranslationIndex = rootTranslationIndex >= 0 ? rootTranslationIndex : int.MinValue,
-                rootRotationIndex = rootRotationIndex >= 0 ? rootRotationIndex : int.MinValue,
+                rootCurveIndices = rootCurveIndices.Ptr,
+                rootCurveCount = uniqueCount,
                 output = null,
                 readByteOffset = 0,
                 time = -float.MaxValue
             };
 
-            UnsafeUtility.MemSet(memory.caches, 0, UnsafeUtility.SizeOf<StreamedCacheItem>() * k_RootCurveCount);
+            UnsafeUtility.MemSet(memory.caches, 0, UnsafeUtility.SizeOf<StreamedCacheItem>() * uniqueCount);
         }
 
         static void GrowIfNeeded(ClipSamplingCacheData* data, int requiredCurveCount)
@@ -315,7 +352,7 @@ namespace Unity.Animations
 
         /// <summary>Prepares the cache to sample only the root motion curves of a clip.</summary>
         /// <remarks>
-        /// The cache then holds the sampling state of the 7 root curves only: 3 for the translation and 4 for the
+        /// The cache then holds the sampling state of the root curves only: 3 for the translation and 4 for the
         /// rotation. It cannot sample the full clip:
         /// <see cref="Core.SampleAnimationClipOverwrite(BlobAssetReference{Clip}, BlobAssetReference{ClipInstance}, ref ClipSamplingCache, Unity.IntegerTime.DiscreteTime, ref AnimationStream)"/>
         /// throws an <see cref="InvalidOperationException"/> if safety checks are enabled. Call
@@ -335,6 +372,15 @@ namespace Unity.Animations
             ValidateRootIndices(rootTranslationIndex, rootRotationIndex);
 
             ClipSamplingCacheData.InitializeRootMotion(m_Data, rootTranslationIndex, rootRotationIndex);
+        }
+
+        // Prepares the cache to sample the root motion curves of a clip instance
+        internal void InitializeRootMotion(ref ClipInstance clipInstance)
+        {
+            ValidateIsCreated();
+
+            ref var curveIndices = ref clipInstance.m_RootMotionCurveIndices;
+            ClipSamplingCacheData.InitializeRootMotion(m_Data, (int*)curveIndices.GetUnsafePtr(), curveIndices.Length);
         }
 
         /// <summary>Releases the memory of the cache.</summary>
@@ -410,22 +456,64 @@ namespace Unity.Animations
             if (rootTranslationIndex < 0 && rootRotationIndex < 0)
                 return;
 
+            ValidateRootMotionCacheState(in memory, clip);
+            ValidateRootMotionCurves(in memory, rootTranslationIndex, 3);
+            ValidateRootMotionCurves(in memory, rootRotationIndex, rootRotationCurveCount);
+            ValidateRootMotionCurvesInClip(clip, rootTranslationIndex, 3);
+            ValidateRootMotionCurvesInClip(clip, rootRotationIndex, rootRotationCurveCount);
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        internal static void ValidateRootMotionCacheState(in StreamedClipMemory memory, ClipCurves* clip)
+        {
             if (memory.rootMotionOnly)
+                return;
+            if (memory.clip == null)
+                throw new InvalidOperationException("The ClipSamplingCache is not initialized. Call Initialize or InitializeRootMotion before sampling.");
+            if (memory.clip != clip || memory.curveCount != GetCurveCount(clip))
+                throw new InvalidOperationException("The ClipSamplingCache was initialized for a different clip. Call Initialize with the clip before sampling.");
+        }
+
+        // A cache initialized for root motion only must hold every curve that is sampled
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        internal static void ValidateRootMotionCurves(in StreamedClipMemory memory, int firstCurveIndex, int curveCount)
+        {
+            if (!memory.rootMotionOnly || firstCurveIndex < 0)
+                return;
+
+            for (var i = 0; i < curveCount; i++)
             {
-                var expectedTranslationIndex = rootTranslationIndex >= 0 ? rootTranslationIndex : int.MinValue;
-                var expectedRotationIndex = rootRotationIndex >= 0 ? rootRotationIndex : int.MinValue;
-                if (memory.rootTranslationIndex != expectedTranslationIndex || memory.rootRotationIndex != expectedRotationIndex)
+                if (FindRootCurveSlot(in memory, firstCurveIndex + i) < 0)
                     throw new InvalidOperationException("The root indices do not match the ones passed to InitializeRootMotion.");
             }
-            else if (memory.clip == null)
-                throw new InvalidOperationException("The ClipSamplingCache is not initialized. Call Initialize or InitializeRootMotion before sampling.");
-            else if (memory.clip != clip || memory.curveCount != GetCurveCount(clip))
-                throw new InvalidOperationException("The ClipSamplingCache was initialized for a different clip. Call Initialize with the clip before sampling.");
+        }
 
-            var curveCount = GetCurveCount(clip);
-            if ((rootTranslationIndex >= 0 && rootTranslationIndex + 3 > curveCount) ||
-                (rootRotationIndex >= 0 && rootRotationIndex + rootRotationCurveCount > curveCount))
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        internal static void ValidateRootMotionCurvesInClip(ClipCurves* clip, int firstCurveIndex, int curveCount)
+        {
+            if (firstCurveIndex >= 0 && firstCurveIndex + curveCount > GetCurveCount(clip))
                 throw new IndexOutOfRangeException("The root motion curve indices are outside the curves of the clip.");
+        }
+
+        // The position of the cache item of a curve in a cache initialized for root motion only, or -1
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int FindRootCurveSlot(in StreamedClipMemory memory, int curveIndex)
+        {
+            var low = 0;
+            var high = memory.rootCurveCount - 1;
+            while (low <= high)
+            {
+                var middle = (low + high) >> 1;
+                var value = memory.rootCurveIndices[middle];
+                if (value == curveIndex)
+                    return middle;
+                if (value < curveIndex)
+                    low = middle + 1;
+                else
+                    high = middle - 1;
+            }
+
+            return -1;
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
@@ -447,8 +535,8 @@ namespace Unity.Animations
 
         [MarshalAs(UnmanagedType.U1)]
         public bool               rootMotionOnly;
-        public int                rootTranslationIndex;
-        public int                rootRotationIndex;
+        public int*               rootCurveIndices;
+        public int                rootCurveCount;
 
         public float* output;
 
@@ -632,6 +720,13 @@ namespace Unity.Animations
             (uint)index < (uint)m_PPtrEntityIds.Length ? m_PPtrEntityIds[index] : EntityId.None;
 
         internal Core.ClipRootMotionSamplingData RootMotionSamplingData { get; set; }
+
+        // The transforms whose curves give the root motion: one node for the Motion and Root sources, and for the Bone
+        // source the root motion bone followed by its parents up to the root bone
+        internal BlobArray<RootMotionNode> m_RootMotionNodes;
+
+        // The sorted curve indices of m_RootMotionNodes
+        internal BlobArray<int> m_RootMotionCurveIndices;
 
         // Address of the RigDefinition blob that the instance was built for. Only compared, never dereferenced
         internal ulong RigId;

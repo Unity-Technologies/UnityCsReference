@@ -398,8 +398,12 @@ namespace UnityEngine
         ///<summary>Whether physics queries should hit back-face triangles.</summary>
         ///<remarks>By default, all physics queries such as a raycast or a shape sweep (e.g. SphereCastAll) won't detect hits with back-face triangles.</remarks>
         extern public static bool queriesHitBackfaces { get; set; }
-        ///<summary>Two colliding objects with a relative velocity below this will not bounce (default 2). Must be positive.</summary>
-        ///<remarks>This value is usually changed in <c>Edit-&gt;Project Settings-&gt;Physics</c> inspector instead of from scripts.</remarks>
+        ///<summary>The minimum approach speed, in meters per second, at which colliding objects bounce (default 2). Must be positive.</summary>
+        ///<remarks>The physics system compares this value to the relative velocity of the two objects along the contact normal at the contact point. If the objects approach each other slower than this value, they don't bounce, regardless of the <see cref="PhysicsMaterial.bounciness" /> and <see cref="PhysicsMaterial.bounceCombine" /> values of their materials. Above the threshold, the rebound speed is approximately the approach speed multiplied by the combined bounciness.
+        ///
+        ///The default value of 2 stops slow objects from bouncing. For example, pool balls that roll into a cushion at 0.5 meters per second stick to it instead of rebounding. To make slow objects bounce, lower the threshold, for example to 0.1. A low threshold can make resting objects jitter, because gravity gives a resting object a small approach speed in each physics step. To prevent this, use a combined bounciness of 0 for contacts with floors and other resting surfaces.
+        ///
+        ///This value applies to all physics scenes. You can also change it in <c>Edit-&gt;Project Settings-&gt;Physics-&gt;Settings-&gt;GameObject</c>.</remarks>
         ///<example>
         ///  <code><![CDATA[
         ///using UnityEngine;

@@ -1315,6 +1315,52 @@ namespace Unity.Animations
         }
 
         /// <summary>
+        /// Removes the root motion from the pose by expressing the root motion bone relative to a root transform.
+        /// </summary>
+        /// <remarks>
+        /// To sample a clip without its root motion, use
+        /// <see cref="ClipSampler.SampleExtractingRootMotion(ref AnimationStream, in TimerState)"/>, which calls this
+        /// method for you. Use this method for a pose that you build yourself, for example after you change the pose of
+        /// a clip: pass <see cref="MotionOutput.RootTransform"/> from
+        /// <see cref="ClipSampler.SampleRootMotion(in TimerState)"/> at the same time. Without this call, the pose
+        /// still moves with the curves of the clip, so the character moves twice.
+        ///
+        /// Call it only when the clip animates the translation or rotation of the root motion bone or of one of its
+        /// parent bones. Otherwise the pose doesn't move with the root motion, and this method moves the pose against
+        /// it. This method doesn't handle **Loop Pose**: for a clip with **Loop Time** and **Loop Pose** enabled, the
+        /// pose was already corrected, so the result differs from `SampleExtractingRootMotion`.
+        ///
+        /// The method changes the local to parent channels of the bone at <see cref="RigDefinition.RootMotionBoneIndex"/>
+        /// so that its new transform in character space is its current transform in character space, relative to the
+        /// root transform. The parents of the bone keep their values. The method does nothing if the rig has no
+        /// skeleton.
+        ///
+        /// When a parent of the bone has a non-uniform scale, the result is an approximation, as with
+        /// <see cref="SetLocalToCharacterTRS(int, in float3, in quaternion, in float3)"/>.
+        /// </remarks>
+        /// <param name="rootPosition">The position of the root transform in character space.</param>
+        /// <param name="rootRotation">The rotation of the root transform in character space.</param>
+        public void ExtractRootMotionBone(float3 rootPosition, quaternion rootRotation)
+        {
+            ValidateIsNotNull();
+            ValidateIsWritable();
+            ValidateIsFinite(rootPosition);
+            ValidateIsFinite(rootRotation);
+
+            var index = Rig.RootMotionBoneIndex;
+            if (index < 0)
+                return;
+
+            GetLocalToCharacterTRS(this, index, out var translation, out var rotation, out var scale);
+
+            var inverseRootRotation = math.conjugate(math.normalize(rootRotation));
+            translation = math.mul(inverseRootRotation, translation - rootPosition);
+            rotation = math.normalize(math.mul(inverseRootRotation, rotation));
+
+            SetLocalToCharacterTRS(ref this, index, translation, rotation, scale);
+        }
+
+        /// <summary>
         /// Returns the local to character matrix of the bone at the specified index.
         /// </summary>
         /// <remarks>
@@ -1949,6 +1995,19 @@ namespace Unity.Animations
             m_ChannelFrameMasks.OrBits64(lhs.FrameMask, rhs.FrameMask);
         }
 
+        // Channels has one bit per binding, with the layout of the channel masks
+        internal void OrMasksWhere(in AnimationStream lhs, in AnimationStream rhs, in UnsafeBitArray.ReadOnly channels)
+        {
+            lhs.ValidateIsNotNull();
+            rhs.ValidateIsNotNull();
+            ValidateIsNotNull();
+            ValidateIsWritable();
+            ValidateCompatibility(lhs);
+            ValidateCompatibility(rhs);
+            m_ChannelPassMasks.OrBits64Where(lhs.PassMask.m_Masks, rhs.PassMask.m_Masks, channels);
+            m_ChannelFrameMasks.OrBits64Where(lhs.FrameMask.m_Masks, rhs.FrameMask.m_Masks, channels);
+        }
+
         /// <summary>
         /// AND all channel masks with other AnimationStream channel masks.
         /// </summary>
@@ -2227,7 +2286,7 @@ namespace Unity.Animations
                 var parentRotation = GetLocalToParentRotation(parentIdx);
                 var rotation = GetLocalToParentRotation(i);
 
-                SetLocalToParentRotation(i, math.mul(parentRotation, rotation));
+                SetLocalToParentRotationNoMaskWrite(i, math.mul(parentRotation, rotation));
             }
         }
 
@@ -2242,7 +2301,7 @@ namespace Unity.Animations
                 var parentRotation = GetLocalToCharacterRotation(parentIdx);
                 var rotation = GetLocalToParentRotation(i);
 
-                SetLocalToParentRotation(i, math.mul(math.inverse(parentRotation), rotation));
+                SetLocalToParentRotationNoMaskWrite(i, math.mul(math.inverse(parentRotation), rotation));
             }
         }
     }

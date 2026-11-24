@@ -49,7 +49,8 @@ namespace Unity.Entities
             var instance = ManagedEntityDataAccess.Debugger_GetInstance(store->m_DebugOnlyManagedAccess);
             if (instance.CompanionComponentStore == null)
                 return;
-            if (instance.World.EntityManager.Debugger_GetEntityDataAccess() != store)
+            var access = instance.World.EntityManager.Debugger_GetEntityDataAccess();
+            if (access == null || access->EntityComponentStore != store)
                 return;
 
             ComponentStore = store;

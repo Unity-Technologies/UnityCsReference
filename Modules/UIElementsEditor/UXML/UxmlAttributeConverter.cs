@@ -741,6 +741,28 @@ namespace UnityEditor.UIElements
         public override string ToString(Vector4 value) => UxmlUtility.ValueToString(value);
     }
 
+    internal class QuaternionAttributeConverter : UxmlAttributeConverter<Quaternion>
+    {
+        public override Quaternion FromString(string value)
+        {
+            // Expected format value="x,y,z", euler angles in degrees
+            var items = value.Split(',');
+            if (items.Length != 3)
+                throw new FormatException("Expected 3 comma-separated euler angles for Quaternion");
+
+            var eulerAngles = new Vector3(UxmlUtility.ParseFloat(items[0]), UxmlUtility.ParseFloat(items[1]), UxmlUtility.ParseFloat(items[2]));
+            for (var i = 0; i < 3; i++)
+            {
+                if (float.IsNaN(eulerAngles[i]) || float.IsInfinity(eulerAngles[i]))
+                    throw new FormatException("Expected finite euler angles for Quaternion");
+            }
+
+            return Quaternion.Euler(eulerAngles);
+        }
+
+        public override string ToString(Quaternion value) => UxmlUtility.ValueToString(value);
+    }
+
     internal class UnityObjectConverter<T> : IUxmlAttributeConverter where T : Object
     {
         public object FromString(string value, CreationContext cc)
@@ -1271,13 +1293,13 @@ namespace UnityEditor.UIElements
                 }
                 else
                 {
-                    Enum.TryParse(parts[0], true, out backgroundRepeat.x);
+                    Enum.TryParse(parts[0].Replace("-", ""), true, out backgroundRepeat.x);
                     backgroundRepeat.y = backgroundRepeat.x;
                 }
             }
             else
             {
-                if (Enum.TryParse<Repeat>(parts[0], true, out var x) && Enum.TryParse<Repeat>(parts[1], true, out var y))
+                if (Enum.TryParse<Repeat>(parts[0].Replace("-", ""), true, out var x) && Enum.TryParse<Repeat>(parts[1].Replace("-", ""), true, out var y))
                 {
                     backgroundRepeat.x = x;
                     backgroundRepeat.y = y;
@@ -2026,9 +2048,10 @@ namespace UnityEditor.UIElements
         public override string ToString(TextShadow value)
         {
             // Following the syntax of: "<length>{2,3} && <color>?"
-            return value.offset.x == value.offset.y
-                ? $"{value.offset.x}px {value.blurRadius}px {k_ColorConverter.ToString(value.color)}"
-                : $"{value.offset.x}px {value.offset.y}px {value.blurRadius}px {k_ColorConverter.ToString(value.color)}";
+            var lengths = value.offset.x == value.offset.y
+                ? FormattableString.Invariant($"{value.offset.x}px {value.blurRadius}px")
+                : FormattableString.Invariant($"{value.offset.x}px {value.offset.y}px {value.blurRadius}px");
+            return lengths + " " + k_ColorConverter.ToString(value.color);
         }
     }
 
@@ -2279,7 +2302,8 @@ namespace UnityEditor.UIElements
                         y = Length.ParseString(parts[1]);
                     break;
                 case 3: //X Y Z value
-                    UxmlUtility.TryParseFloat(parts[2], out z);
+                    if (!UxmlUtility.TryParseFloat(parts[2], out z))
+                        z = Length.ParseString(parts[2]).value;
                     goto case 2; //Parse the first 2 parameters
             }
             return new Translate(x, y, z);

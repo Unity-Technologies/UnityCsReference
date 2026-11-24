@@ -532,8 +532,12 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
         }
 
-        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.AIModule", "UnityEngine.TilemapModule", "UnityEngine.EntitiesModule")]
-        internal static void DisposeHandle(ref AtomicSafetyHandle safety)
+        /// <summary>
+        /// Disposes a safety handle, checking first if it's OK to deallocate; works correctly on AtomicSafetyHandles that have IsTempMemoryHandle(h) true, even when
+        /// they have a custom error message from a staticSafetyId.
+        /// </summary>
+        /// <param name="safety">The AtomicSafetyHandle to dispose.</param>
+        public static void DisposeHandle(ref AtomicSafetyHandle safety)
         {
             CheckDeallocateAndThrow(safety);
             // If the safety handle is for a temp allocation, get a new safety handle for this instance which can be marked as invalid

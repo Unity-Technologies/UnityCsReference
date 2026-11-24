@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor
 {
     [global::UnityEngine.NativeClass("DefaultAsset", PersistentTypeId = 1029)]
-    [NativeHeader("Modules/AssetPipelineEditor/Public/DefaultImporter.h")]
+    [NativeHeader("Editor/Modules/AssetPipelineEditor/Public/DefaultImporter.h")]
     // This class is public for users to be able to make custom editors for this type (see case 656580)
     public class DefaultAsset : UnityEngine.Object
     {

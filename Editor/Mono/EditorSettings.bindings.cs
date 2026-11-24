@@ -26,11 +26,15 @@ namespace UnityEditor
     public enum SpritePackerMode
     {
         Disabled = 0,
-        [Obsolete("Sprite Packing Tags are deprecated. Please use Sprite Atlas asset.")]
+        // Values 1 and 2 selected the SpritePacker packing-tag atlasing mode, which has been removed;
+        // the native EditorSettings::SpritePackerMode enumerators are gone. They stay declared so that
+        // 3-6 keep their serialized on-disk numbering and so the API updater can report them.
+        [Obsolete("Sprite Packing Tags and the SpritePacker mode they enabled have been removed. Use a Sprite Atlas asset instead.", true)]
         BuildTimeOnly = 1,
-        [Obsolete("Sprite Packing Tags are deprecated. Please use Sprite Atlas asset.")]
+        [Obsolete("Sprite Packing Tags and the SpritePacker mode they enabled have been removed. Use a Sprite Atlas asset instead.", true)]
         AlwaysOn = 2,
         BuildTimeOnlyAtlas = 3,
+        [Obsolete("SpriteAtlas V1 is Obsolete and will be removed in an upcoming version. Please use V2.", false)]
         AlwaysOnAtlas = 4,
         SpriteAtlasV2 = 5,
         SpriteAtlasV2Build = 6,
@@ -173,6 +177,10 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern SpritePackerMode spritePackerMode { get; set; }
 
+        // The SpritePacker padding power has no effect: nothing in native code reads
+        // EditorSettings::m_SpritePackerPaddingPower any more. The field stays serialized so existing
+        // EditorSettings assets keep their TypeTree. SpriteAtlas padding is set per asset instead.
+        [Obsolete("EditorSettings.spritePackerPaddingPower has no effect. The SpritePacker was removed; set padding on the Sprite Atlas asset instead.", true)]
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern int spritePackerPaddingPower { get; set; }
 

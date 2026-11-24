@@ -393,6 +393,5 @@ namespace UnityEditor
             else
                 return ComponentUtility.MoveComponentsRelativeToComponents(sourceComponents, targetComponents, m_TargetAbove, validateOnly);
         }
-
     }
 }

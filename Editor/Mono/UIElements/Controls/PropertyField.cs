@@ -1335,7 +1335,7 @@ namespace UnityEditor.UIElements
                     return ConfigureField<GradientField, Gradient>(originalField as GradientField, property, () => new GradientField());
 
                 case SerializedPropertyType.Quaternion:
-                    return null;
+                    return ConfigureField<QuaternionEulerField, Quaternion>(originalField as QuaternionEulerField, property, () => new QuaternionEulerField());
                 case SerializedPropertyType.ExposedReference:
                     return null;
 

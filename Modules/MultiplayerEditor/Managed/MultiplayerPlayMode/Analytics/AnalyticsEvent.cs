@@ -24,10 +24,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [AutoStaticsCleanupOnCodeReload] // static event; stale handlers after reload pin old ALC
         public static event Action<IAnalytic.IData> AnalyticSent;
 
-        // Analytics data types typically expose their payload as public fields, which
-        // System.Text.Json skips by default (Newtonsoft included them).
-        [NoAutoStaticsCleanup] // immutable serializer options; safe to persist across reload
-        internal static JsonSerializerOptions DebugSerializerOptions { get; } = new JsonSerializerOptions { IncludeFields = true };
+        // Kept out of this class's static initializer, which Initialize triggers on every
+        // domain reload, so a reload doesn't load System.Text.Json through this class.
+        static class DebugSerializerOptionsHolder
+        {
+            // Analytics data types typically expose their payload as public fields, which
+            // System.Text.Json skips by default (Newtonsoft included them).
+            [NoAutoStaticsCleanup] // immutable serializer options; safe to persist across reload
+            internal static readonly JsonSerializerOptions k_Options = new JsonSerializerOptions { IncludeFields = true };
+        }
+
+        internal static JsonSerializerOptions DebugSerializerOptions => DebugSerializerOptionsHolder.k_Options;
 
         internal static bool IsDebugEnabled() => s_DebugEnabled;
         internal static void InvokeAnalyticSent<E, T>(AnalyticsEvent<E, T> evt)
@@ -51,7 +58,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             EditorAnalytics.SendAnalytic(analytic);
 
             AnalyticsEvent.InvokeAnalyticSent(analytic);
-            DebugAnalytics($"Data Name: {data.GetType()} - Data: {JsonSerializer.Serialize<object>(data, AnalyticsEvent.DebugSerializerOptions)}");
+            if (AnalyticsEvent.IsDebugEnabled())
+                UnityEngine.Debug.Log($"Data Name: {data.GetType()} - Data: {JsonSerializer.Serialize<object>(data, AnalyticsEvent.DebugSerializerOptions)}");
         }
 
         public bool TryGatherData(out IAnalytic.IData data, out Exception error)
@@ -59,14 +67,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             data = m_Data;
             error = null;
             return true;
-        }
-
-        private static void DebugAnalytics(object message)
-        {
-            if (!AnalyticsEvent.IsDebugEnabled())
-                return;
-
-            UnityEngine.Debug.Log(message);
         }
     }
 }

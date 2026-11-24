@@ -1592,26 +1592,31 @@ namespace UnityEngine
 namespace UnityEngine
 {
     [UsedByNativeCode]
+    [Obsolete("ImageEffectTransformsToLDR is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To create custom fullscreen effects in the Universal Render Pipeline (URP), use a ScriptableRenderPass instead.", false)]
     public sealed partial class ImageEffectTransformsToLDR : Attribute
     {
     }
 
+    [Obsolete("ImageEffectAllowedInSceneView is deprecated and will be removed in a future release. It's used only by Built-In Render Pipeline image effects, which are no longer supported. To apply a camera component's settings in the Scene view, check whether the camera being rendered has CameraType.SceneView, and if so read the component from Camera.main instead.", false)]
     public sealed partial class ImageEffectAllowedInSceneView : Attribute
     {
     }
 
     [UsedByNativeCode]
+    [Obsolete("ImageEffectOpaque is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To create custom fullscreen effects in the Universal Render Pipeline (URP), use a ScriptableRenderPass instead.", false)]
     public sealed partial class ImageEffectOpaque : Attribute
     {
     }
 
     [UsedByNativeCode]
+    [Obsolete("ImageEffectAfterScale is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To create custom fullscreen effects in the Universal Render Pipeline (URP), use a ScriptableRenderPass instead.", false)]
     public sealed partial class ImageEffectAfterScale : Attribute
     {
     }
 
     [UsedByNativeCode]
     [AttributeUsage(AttributeTargets.Method)]
+    [Obsolete("ImageEffectUsesCommandBuffer is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To create custom fullscreen effects in the Universal Render Pipeline (URP), use a ScriptableRenderPass instead.", false)]
     public sealed partial class ImageEffectUsesCommandBuffer : Attribute
     {
     }

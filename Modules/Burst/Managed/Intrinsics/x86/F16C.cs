@@ -55,8 +55,11 @@ namespace Unity.Burst.Intrinsics
                     else
                     {
                         var isInfOrNan = exponent == 0x1f;
-                        result |= (uint)(isInfOrNan ? 255 : (127 - 15 + exponent) << 23);
+                        result |= (uint)(isInfOrNan ? 255 << 23 : (127 - 15 + exponent) << 23);
                         result |= mantissa << 13;
+
+                        if (isInfOrNan && mantissa != 0)
+                            result |= 0x400000u;
                     }
                 }
 
@@ -158,6 +161,10 @@ namespace Unity.Burst.Intrinsics
             private static ushort FloatToHalf(uint f, int rounding)
             {
                 var exponentAndSign = f >> 23;
+
+                if ((exponentAndSign & 0xFF) == 0xFF && (f & 0x7FFFFFu) != 0)
+                    return (ushort)(((f >> 16) & 0x8000u) | 0x7E00u | ((f & 0x7FFFFFu) >> 13));
+
                 var shift = ShiftTable[exponentAndSign];
 
                 var result = (uint)(BaseTable[exponentAndSign] + (ushort)((f & 0x7FFFFFu) >> shift));
@@ -168,15 +175,23 @@ namespace Unity.Burst.Intrinsics
 
                 if (rounding == (int)RoundingMode.FROUND_NINT_NOEXC)
                 {
-                    var fWithRoundingBitPreserved = (f & 0x7FFFFFu) >> (shift - 1);
+                    var mantissa = f & 0x7FFFFFu;
 
-                    if ((exponentAndSign & 0xFF) == 102)
+                    if (isFinite)
                     {
-                        result++;
-                    }
-                    if (isFinite && ((fWithRoundingBitPreserved & 0x1u) != 0))
-                    {
-                        result++;
+                        if ((exponentAndSign & 0xFF) == 102)
+                        {
+                            if (mantissa != 0)
+                                result++;
+                        }
+                        else
+                        {
+                            var roundBit = (mantissa >> (shift - 1)) & 0x1u;
+                            var hasStickyBits = (mantissa & ((1u << (shift - 1)) - 1u)) != 0;
+
+                            if (roundBit != 0 && (hasStickyBits || (result & 0x1u) != 0))
+                                result++;
+                        }
                     }
                 }
                 else if (rounding == (int)RoundingMode.FROUND_TRUNC_NOEXC)

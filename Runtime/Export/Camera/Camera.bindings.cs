@@ -60,7 +60,9 @@ namespace UnityEngine
         [NativeProperty("Far")]  extern public float farClipPlane  { get; set; }
         [NativeProperty("VerticalFieldOfView")]  extern public float fieldOfView   { get; set; }
 
+        [Obsolete("Camera.renderingPath is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the rendering path in the Universal Render Pipeline (URP), use the Rendering Path property of the Universal Renderer asset instead.", false)]
         extern public RenderingPath renderingPath { get; set; }
+        [Obsolete("Camera.actualRenderingPath is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the rendering path in the Universal Render Pipeline (URP), use the Rendering Path property of the Universal Renderer asset instead.", false)]
         extern public RenderingPath actualRenderingPath {[NativeName("CalculateRenderingPath")] get;  }
 
         extern public void Reset();
@@ -135,8 +137,16 @@ namespace UnityEngine
         extern public DepthTextureMode depthTextureMode { get; set; }
         extern public bool clearStencilAfterLightingPass { get; set; }
 
+        [Obsolete("Camera.SetReplacementShader is deprecated and will be removed in a future release. Shader replacement is supported only by the Built-In Render Pipeline, which is deprecated. It has no effect when a render pipeline is active. To render objects with a different shader, use a ScriptableRenderPass with DrawingSettings.overrideShader in the Universal Render Pipeline instead. #from(6000.7)", false)]
         extern public void SetReplacementShader(Shader shader, string replacementTag);
+        [Obsolete("Camera.ResetReplacementShader is deprecated and will be removed in a future release. Shader replacement is supported only by the Built-In Render Pipeline, which is deprecated. It has no effect when a render pipeline is active. To render objects with a different shader, use a ScriptableRenderPass with DrawingSettings.overrideShader in the Universal Render Pipeline instead. #from(6000.7)", false)]
         extern public void ResetReplacementShader();
+
+        [NativeConditional("UNITY_EDITOR")]
+        extern internal void SetEditorReplacementShader(Shader shader, string replacementTag);
+        [NativeConditional("UNITY_EDITOR")]
+        [NativeName("ResetReplacementShader")]
+        extern internal void ResetEditorReplacementShader();
 
         internal enum ProjectionMatrixMode{ Explicit, Implicit, PhysicalPropertiesBased }
 
@@ -375,6 +385,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("CameraScripting::Render", HasExplicitThis = true)]            extern public void Render();
+        [Obsolete("Camera.RenderWithShader is deprecated and will be removed in a future release. Shader replacement is supported only by the Built-In Render Pipeline, which is deprecated. When a render pipeline is active, the camera ignores the shader. To render objects with a different shader, use a ScriptableRenderPass with DrawingSettings.overrideShader in the Universal Render Pipeline instead. #from(6000.7)", false)]
         [FreeFunction("CameraScripting::RenderWithShader", HasExplicitThis = true)]  extern public void RenderWithShader(Shader shader, string replacementTag);
         [FreeFunction("CameraScripting::RenderDontRestore", HasExplicitThis = true)] extern public void RenderDontRestore();
 

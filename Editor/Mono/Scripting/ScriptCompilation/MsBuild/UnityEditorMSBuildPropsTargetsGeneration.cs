@@ -107,7 +107,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
         UpdateRoslynAnalyzersProps(globalAnalyzers);
 
         PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath, EditorApplication.applicationBuildPipelinePath, MsBuildProjectCacheSettings.effectiveCacheFolder);
-        PropsGenerator.Instance.UpdateBuildConfigurationProperties(buildTarget.ToString(), CompilationPipeline.codeOptimization == CodeOptimization.Release,
+        PropsGenerator.Instance.UpdateBuildConfigurationProperties(buildTarget.ToString(), CompilationPipeline.codeOptimization == CodeOptimization.Release, PlayerSettings.UseDeterministicCompilation,
             BeeScriptCompilation.GetCompilerMessagesCulture(), GetNoWarnCodes(buildTarget));
     }
 
@@ -205,6 +205,12 @@ class UnityEditorMSBuildPropsTargetsGeneration
             MsBuildProjectCacheSettings.effectiveCacheFolder);
     }
 
+    // Every graph build loads the entry point, and tools that clean *.csproj from the project root delete it too.
+    public static void EnsureEntryPointProject()
+    {
+        ProjectGenerator.Instance.GenerateEntryPointProjectIfMissing("Main");
+    }
+
     public static void UpdateProjectCacheLocation()
     {
         PropsGenerator.Instance.UpdateUnityContentLocation(
@@ -217,7 +223,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
     /// Updates deferrable props (defines, references, plugins, search paths) in parallel.
     /// Uses cached PrecompiledAssemblyProvider results to avoid repeated queries.
     /// </summary>
-    public static void UpdateDeferrablePropsInParallel(BuildTarget buildTarget, MSBuildCompilationOptions compilationOptions, string[] globalAnalyzers, bool buildingForEditor)
+    public static void UpdateDeferrablePropsInParallel(BuildTarget buildTarget, MSBuildCompilationOptions compilationOptions, string[] globalAnalyzers, string[] defineConstraintSymbols, bool buildingForEditor, string[] extraPlayerScriptingDefines = null)
     {
         var cache = GetOrCreateCache(buildTarget);
 
@@ -239,8 +245,8 @@ class UnityEditorMSBuildPropsTargetsGeneration
         // An editor build's options are not a player build's, so its player defines would differ and churn the file.
         var playerAssembliesDefines = buildingForEditor
             ? null
-            : AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
-                scriptCompilationOptions, buildTarget, subtarget, playerApiCompatibility));
+            : AppendExtraDefines(AppendCSharpVersionDefines(InternalEditorUtility.GetCompilationDefines(
+                scriptCompilationOptions, buildTarget, subtarget, playerApiCompatibility)), extraPlayerScriptingDefines);
 
         // Get search paths
         var searchPaths = BuildPlayerDataGenerator.GetStaticSearchPaths(buildTarget);
@@ -250,6 +256,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
             editorOnlyCompatibleDefines,
             editorRuntimeCompatibleDefines,
             playerAssembliesDefines,
+            defineConstraintSymbols,
             cache.EditorModulePaths,
             cache.PlayerModulePaths,
             cache.EditorPluginPaths,
@@ -260,6 +267,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
             globalAnalyzers,
             buildTarget.ToString(),
             CompilationPipeline.codeOptimization == CodeOptimization.Release,
+            PlayerSettings.UseDeterministicCompilation,
             BeeScriptCompilation.GetCompilerMessagesCulture(),
             GetNoWarnCodes(buildTarget));
     }
@@ -488,6 +496,11 @@ class UnityEditorMSBuildPropsTargetsGeneration
     private static HashSet<string> GetTestOnlyPlugins(List<string> playerPluginPaths)
     {
         var testOnlyPlugins = new HashSet<string>();
+
+        // Like TestBuildAssemblyFilter, which keeps nunit in players when the setting is on
+        if (PlayerSettings.playModeTestRunnerEnabled)
+            return testOnlyPlugins;
+
         foreach (var plugin in playerPluginPaths)
         {
             if (string.Equals(Path.GetFileName(plugin), TestRunnerHelpers.NunitAssemblyName, StringComparison.OrdinalIgnoreCase))
@@ -578,6 +591,20 @@ class UnityEditorMSBuildPropsTargetsGeneration
     // Mirrors EditorBuildRules.GetScriptAssemblies, which appends the C# language-version
     // defines to every assembly. The legacy pipeline adds these per-assembly; MSBU emits them
     // into the shared DefineConstants props so all generated projects compile with them.
+    private static string[] AppendExtraDefines(string[] defines, string[] extraDefines)
+    {
+        if (extraDefines == null || extraDefines.Length == 0)
+            return defines;
+
+        var result = new List<string>(defines);
+        foreach (var define in extraDefines)
+        {
+            if (!string.IsNullOrEmpty(define) && !result.Contains(define))
+                result.Add(define);
+        }
+        return result.ToArray();
+    }
+
     private static string[] AppendCSharpVersionDefines(string[] defines)
     {
         var versionDefines = EditorBuildRules.s_CSharpVersionDefines;

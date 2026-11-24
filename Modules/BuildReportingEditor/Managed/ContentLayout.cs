@@ -160,6 +160,13 @@ namespace UnityEditor.Build
         /// <summary>Size in bytes.</summary>
         public ulong Size;
 
+        /// <summary>
+        /// True when the artifact's bytes must be stored unchanged, never compressed or re-encoded. It may sit inside an archive
+        /// or pack file, but its content must stay readable as a plain byte range through the file system. Used for data that
+        /// is already codec-compressed (audio, video) and/or read in place (through ToLocal). Only written to the JSON when true.
+        /// </summary>
+        public bool StoreUncompressed;
+
         /// <summary>Indices into <see cref="ContentLayout.BinaryArtifacts"/> identifying additional artifacts
         /// referenced from this one (e.g. mesh, audio).
         /// Note: this does not track references to other ContentFiles — those are recorded in
@@ -217,7 +224,8 @@ namespace UnityEditor.Build
         //           string it derived from, "cfid-<guid>-<lfid>-<sourceTypeInt>" - identical to
         //           the external-reference pathNames written into built content files. The built-in
         //           entry is an ordinary tuple entry of source type DefaultResources.
-        const int kContentLayoutVersion = 4;
+        // v4 -> v5: BinaryArtifacts entries carry StoreUncompressed, written only when true.
+        const int kContentLayoutVersion = 5;
 
         /// <summary>Schema version of the ContentLayout.json file.</summary>
         public int Version;

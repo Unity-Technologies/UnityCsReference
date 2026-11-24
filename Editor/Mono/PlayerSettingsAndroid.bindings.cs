@@ -400,7 +400,7 @@ namespace UnityEditor
     }
 
     // Keep in sync with AndroidInputEmulationMode in Runtime/Misc/PlayerSettings.h
-    internal enum AndroidInputEmulationMode
+    public enum AndroidInputEmulationMode
     {
         Platform = 0,
         Engine = 1,
@@ -804,7 +804,7 @@ namespace UnityEditor
                 set;
             }
 
-            [Obsolete("ChromeOS is no longer supported.")]
+            [Obsolete("chromeosInputEmulation has no effect. Use PlayerSettings.Android.inputEmulation instead.")]
             [NoAutoStaticsCleanup] // deprecated value-type setting; safe to persist across reload
             public static bool chromeosInputEmulation { get; set; }
 
@@ -1297,7 +1297,7 @@ namespace UnityEditor
 
             // Who turns mouse and touchpad input into touches; anything but Platform adds android.hardware.type.pc to AndroidManifest
             [NativeProperty("AndroidInputEmulation", TargetType.Function)]
-            internal static extern AndroidInputEmulationMode inputEmulation { get; set; }
+            public static extern AndroidInputEmulationMode inputEmulation { get; set; }
 
             [Obsolete("GetAndroidVulkanDenyFilterListImpl is deprecated. Use the androidVulkanDeviceFilterListAsset instead.")]
             internal static extern AndroidDeviceFilterData[] GetAndroidVulkanDenyFilterListImpl();

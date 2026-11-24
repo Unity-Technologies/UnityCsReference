@@ -134,7 +134,7 @@ namespace Unity.Entities
         [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static readonly List<World> s_AllWorlds = new List<World>();
         [VisibleToOtherModules("UnityEngine.CoreModule")]
-        internal static readonly SharedStatic<FixedList512Bytes<WorldUnmanaged>> s_ActiveWorldsStack = SharedStatic<FixedList512Bytes<WorldUnmanaged>>.GetOrCreate<ActiveWorldsStackIdentifier>();
+        internal static readonly SharedStatic<FixedList512Bytes<WorldUnmanaged>> s_ActiveWorldsStack = CreateActiveWorldsStack();
         internal struct ActiveWorldsStackIdentifier { }
 
         /// <summary>
@@ -262,10 +262,6 @@ namespace Unity.Entities
             }
 
             s_ActiveWorldsStack.Data.Add(world.m_Unmanaged);
-
-            var storage = (byte*)s_ActiveWorldsStack.UnsafeDataPointer;
-            var elements = (byte*)UnsafeUtility.AddressOf(ref s_ActiveWorldsStack.Data.ElementAt(0));
-            SetActiveWorldsStackStorage(storage, (int)(elements - storage), sizeof(WorldUnmanaged), WorldUnmanaged.GetImplOffset());
         }
 
         /// <summary>
@@ -427,6 +423,12 @@ namespace Unity.Entities
             Init(flags, backingAllocatorHandle);
         }
 
+        // An owned World is disposed by its owner, not by DisposeAllWorlds or DisposeAll
+        internal World(string name, WorldFlags flags, WorldUnmanaged owner) : this(name, flags)
+        {
+            m_Unmanaged.SetOwner(owner);
+        }
+
         void Init(WorldFlags flags, AllocatorManager.AllocatorHandle backingAllocatorHandle)
         {
             s_NewWorldMarker.Begin();
@@ -483,6 +485,10 @@ namespace Unity.Entities
 
             m_TimeSingletonQuery.Dispose();
             s_AllWorlds.Remove(this);
+            foreach (var world in s_AllWorlds)
+            {
+                world.m_Unmanaged.ReleaseFromOwner(m_Unmanaged);
+            }
 
             m_Unmanaged.Dispose();
 
@@ -491,7 +497,8 @@ namespace Unity.Entities
 
         /// <summary>
         /// Destroys every existing <see cref="World"/> except the one at the bottom of the currently active
-        /// World stack.
+        /// World stack, and the Worlds that World owns, such as the streaming Worlds it loads into. Owned Worlds are
+        /// disposed with their owner.
         /// </summary>
         public static void DisposeAllWorlds()
         {
@@ -504,6 +511,18 @@ namespace Unity.Entities
                 s_ActiveWorldsStack.Data.RemoveAt(s_ActiveWorldsStack.Data.Length - 1);
             }
 
+            DisposeAllExcept(baseWorld);
+        }
+
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
+        internal static void DisposeAll()
+        {
+            s_ActiveWorldsStack.Data.Clear();
+            DisposeAllExcept(null);
+        }
+
+        static void DisposeAllExcept(World keptWorld)
+        {
             // Rescan every time: disposing one World can dispose others - a system's OnDestroy may own
             // child Worlds - so any index cached across a Dispose can point at an already-disposed World.
             while (true)
@@ -511,7 +530,7 @@ namespace Unity.Entities
                 World next = null;
                 for (int i = 0; i < s_AllWorlds.Count; ++i)
                 {
-                    if (s_AllWorlds[i] != baseWorld)
+                    if (s_AllWorlds[i] != keptWorld && !s_AllWorlds[i].m_Unmanaged.HasOwner)
                     {
                         next = s_AllWorlds[i];
                         break;
@@ -522,16 +541,6 @@ namespace Unity.Entities
                     break;
 
                 next.Dispose();
-            }
-        }
-
-        [VisibleToOtherModules("UnityEngine.CoreModule")]
-        internal static void DisposeAll()
-        {
-            s_ActiveWorldsStack.Data.Clear();
-            while (s_AllWorlds.Count != 0)
-            {
-                s_AllWorlds[0].Dispose();
             }
         }
 

@@ -16,6 +16,7 @@ namespace UnityEngine.UIElements
     internal static class UxmlUtility
     {
         const string s_CommaEncoded = "%2C";
+        const int k_EulerAngleDecimals = 3;
 
         public static List<string> ParseStringListAttribute(string itemList)
         {
@@ -178,6 +179,18 @@ namespace UnityEngine.UIElements
         public static string ValueToString(Vector3 value) => FormattableString.Invariant($"{value.x},{value.y},{value.z}");
         public static string ValueToString(Vector3Int value) => FormattableString.Invariant($"{value.x},{value.y},{value.z}");
         public static string ValueToString(Vector4 value) => FormattableString.Invariant($"{value.x},{value.y},{value.z},{value.w}");
+        public static string ValueToString(Quaternion value)
+        {
+            var eulerAngles = QuaternionEulerField.GetInspectorEulerAngles(value);
+            return ValueToString(new Vector3(RoundEulerAngle(eulerAngles.x), RoundEulerAngle(eulerAngles.y), RoundEulerAngle(eulerAngles.z)));
+        }
+
+        // Drops the float noise of the euler decomposition, which would write 10 degrees as 10.000001.
+        static float RoundEulerAngle(float angle)
+        {
+            var rounded = (float)Math.Round(angle, k_EulerAngleDecimals);
+            return rounded == 0f ? 0f : rounded;   // never "-0"
+        }
 
         public static object CloneObject(object value)
         {

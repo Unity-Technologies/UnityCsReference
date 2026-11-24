@@ -339,6 +339,10 @@ namespace UnityEngine
     internal class DerivedScriptableObject : ScriptableObject
     {
         public string Value { get; set;}
+
+        // Target for native-to-managed calls to an instance method on a UnityEngine.Object
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        void InvokeSetValueFromNative(string value) { Value = value; }
     }
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
@@ -1295,6 +1299,39 @@ namespace UnityEngine
         public static extern int TestInvokeChainedIn(int arg);
         public static extern int TestInvokeChainedRef(int arg, int initial);
         public static extern int TestInvokeChainedOut(int arg);
+        public static extern string TestInvokeStringReturn(string arg);
+        public static extern string TestInvokeStringReturnNull();
+        public static extern string TestInvokeStringRef(string initial);
+        public static extern string TestInvokeStringOut(string arg);
+        public static extern string TestInvokeStringOutNull();
+        public static extern float TestInvokeVector3Sum(Vector3 v);
+        public static extern float TestInvokeVector3InWeightedSum(Vector3 v);
+        public static extern Vector3 TestInvokeVector3Scale(Vector3 v, float scale);
+        public static extern Vector3 TestInvokeVector3Out(float x);
+        public static extern EntityId TestInvokeEntityIdNext(EntityId id);
+        public static extern ulong TestInvokeEntityIdIn(EntityId id);
+        public static extern EntityId TestInvokeEntityIdRef(EntityId id);
+        public static extern EntityId TestInvokeEntityIdOut(EntityId id);
+        public static extern string TestInvokeTypeName(Type type);
+        public static extern string TestInvokeTypeReturn();
+        public static extern string TestInvokeTypeOut();
+        public static extern string TestInvokeTypeRef(Type initial);
+        public static extern string TestInvokeMethodInfoName(System.Reflection.MethodInfo method);
+        public static extern string TestInvokeMethodInfoReturn();
+        public static extern string TestInvokeFieldInfoName(System.Reflection.FieldInfo field);
+        public static extern int TestInvokeIntArraySum(int a, int b, int c);
+        public static extern int TestInvokeIntArraySumNull();
+        public static extern int TestInvokeIntArrayReturn(int count, out int length);
+        public static extern int TestInvokeIntArrayOut(int count, out int length);
+        public static extern int TestInvokeIntArrayRef(int a, int b, out int length);
+        public static extern float TestInvokeSpanFill(int length, float start);
+        public static extern int TestInvokeReadOnlySpanSum(int a, int b, int c);
+        public static extern int TestInvokeReadOnlySpanSumEmpty();
+        public static extern int TestInvokeIntPointer(int value, out int updated);
+        public static extern bool TestInvokeIntPointerOut();
+        public static extern void TestInvokeMixedRefOut(ref bool flag, ref long big, ref double real, out int e32);
+        public static extern int TestInvokeInstanceAdd(System.Object target, int amount);
+        public static extern void TestInvokeScriptableObjectInstance(System.Object target, string value);
         // performance tests
         public static extern void TestInvokeObjectNoReturn(int iterations, System.Object arg);
         public static extern void TestInvokeObjectNoReturnAsGcHandle(int iterations, IntPtr handle);
@@ -1525,6 +1562,175 @@ namespace UnityEngine
         static string InvokeOverload(string arg) { return arg + kOverloadStringSuffix; }
 
         static int InvokeOverload() { return -1; }
+
+        public const string kStringSuffix = " (from managed)";
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static string InvokeStringReturn(string arg) { return arg + kStringSuffix; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static string InvokeStringReturnNull() { return null; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeStringRef(ref string value) { value = value + kStringSuffix; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeStringOut(string arg, out string result) { result = arg + kStringSuffix; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeStringOutNull(out string result) { result = null; }
+
+        // Proxies cannot return structs, so the struct cases use in, ref and out
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static float InvokeVector3Sum(Vector3 v) { return v.x + v.y + v.z; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static float InvokeVector3InWeightedSum(in Vector3 v) { return v.x + v.y * 10f + v.z * 100f; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeVector3Scale(ref Vector3 v, float scale) { v *= scale; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeVector3Out(float x, out Vector3 v) { v = new Vector3(x, x + 1f, x + 2f); }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static EntityId InvokeEntityIdNext(EntityId id) { return EntityId.FromULong(EntityId.ToULong(id) + 1); }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static ulong InvokeEntityIdIn(in EntityId id) { return EntityId.ToULong(id); }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeEntityIdRef(ref EntityId id) { id = EntityId.FromULong(EntityId.ToULong(id) * 2); }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeEntityIdOut(EntityId id, out EntityId result) { result = id; }
+
+        public const string kNullTypeName = "<null>";
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static string InvokeTypeName(Type type) { return type == null ? kNullTypeName : type.FullName; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static Type InvokeTypeReturn() { return typeof(InvokeTests); }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeTypeOut(out Type type) { type = typeof(ProxyInstanceTarget); }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeTypeRef(ref Type type)
+        {
+            if (type == typeof(int))
+                type = typeof(string);
+            else if (type == typeof(float))
+                type = null;
+            else
+                type = typeof(object);
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static string InvokeMethodInfoName(System.Reflection.MethodInfo method) { return method.DeclaringType.Name + "." + method.Name; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static System.Reflection.MethodInfo InvokeMethodInfoReturn()
+        {
+            return typeof(InvokeTests).GetMethod(nameof(InvokeBool), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static string InvokeFieldInfoName(System.Reflection.FieldInfo field) { return field.DeclaringType.Name + "." + field.Name; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static int InvokeIntArraySum(int[] values)
+        {
+            if (values == null)
+                return -1;
+            int sum = 0;
+            foreach (var v in values)
+            {
+                sum += v;
+            }
+            return sum;
+        }
+
+        // Returns [10, 20, ..., count * 10]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static int[] InvokeIntArrayReturn(int count)
+        {
+            var result = new int[count];
+            for (int i = 0; i < count; ++i)
+            {
+                result[i] = (i + 1) * 10;
+            }
+            return result;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeIntArrayOut(int count, out int[] values) { values = InvokeIntArrayReturn(count); }
+
+        // Replaces the array with a copy that has 99 appended
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeIntArrayRef(ref int[] values)
+        {
+            var result = new int[values.Length + 1];
+            Array.Copy(values, result, values.Length);
+            result[values.Length] = 99;
+            values = result;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeSpanFill(Span<float> buffer, float start)
+        {
+            for (int i = 0; i < buffer.Length; ++i)
+            {
+                buffer[i] = start + i;
+            }
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static int InvokeReadOnlySpanSum(ReadOnlySpan<int> values)
+        {
+            if (values.Length == 0)
+                return -1;
+            int sum = 0;
+            foreach (var v in values)
+            {
+                sum += v;
+            }
+            return sum;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static unsafe int InvokeIntPointer(int* value)
+        {
+            int previous = *value;
+            *value = previous * 2;
+            return previous + 1;
+        }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static unsafe void InvokeIntPointerOut(int* source, out int* result) { result = source + 1; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        static void InvokeMixedRefOut(ref bool flag, ref long big, ref double real, out SomeEnum e32)
+        {
+            flag = !flag;
+            big *= 3;
+            real /= 2;
+            e32 = SomeEnum.B;
+        }
+    }
+
+    // Target for native-to-managed calls to an instance method on a plain managed object
+    internal class ProxyInstanceTarget
+    {
+        public int value { get; set; }
+
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
+        int InvokeInstanceAdd(int amount)
+        {
+            value += amount;
+            return value;
+        }
     }
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]

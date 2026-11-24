@@ -144,10 +144,10 @@ namespace Unity.Entities
             }
         }
 
-        // Must stay the first field, so a store's address is its EntityDataAccess's address (FromEntityComponentStore).
+        // Must stay the first two fields, so FromEntityComponentStore can find the EntityDataAccess, as native code does
+        [NativeDisableUnsafePtrRestriction] private ComponentDependencyManager m_DependencyManager;
         [NativeDisableUnsafePtrRestriction] private EntityComponentStore m_EntityComponentStore;
         [NativeDisableUnsafePtrRestriction] private EntityQueryManager m_EntityQueryManager;
-        [NativeDisableUnsafePtrRestriction] private ComponentDependencyManager m_DependencyManager;
         [NativeDisableUnsafePtrRestriction] private UnsafeList<int> m_SharedComponentReferenceIndexList;
         [NativeDisableUnsafePtrRestriction] public EntityQuery m_UniversalQuery; // matches all components
         [NativeDisableUnsafePtrRestriction] public EntityQuery m_UniversalQueryWithChunks;
@@ -190,12 +190,28 @@ namespace Unity.Entities
             }
         }
 
+        internal void ResetAllQueryFilters()
+        {
+            var keys = AliveEntityQueries.GetKeyArray(Allocator.Temp);
+            for (var i = 0; i < keys.Length; i++)
+                ((EntityQueryImpl*)keys[i])->ResetFilter();
+        }
+
         internal bool IsInExclusiveTransaction => m_DependencyManager.IsInTransaction;
 
         internal ref StructuralChangesProfiler.Recorder StructuralChangesRecorder => ref m_EntityComponentStore.StructuralChangesRecorder;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EntityDataAccess* FromEntityComponentStore(EntityComponentStore* store) => (EntityDataAccess*)store;
+        internal static EntityDataAccess* FromEntityComponentStore(EntityComponentStore* store) => (EntityDataAccess*)((byte*)store - sizeof(ComponentDependencyManager));
+
+        internal static int GetNativeLayoutForStructMatchCheck(Span<int> values)
+        {
+            EntityDataAccess access = default;
+            var start = (byte*)&access;
+            values[0] = (int)((byte*)&access.m_DependencyManager - start);
+            values[1] = (int)((byte*)&access.m_EntityComponentStore - start);
+            return 2;
+        }
 
         [ExcludeFromBurstCompatTesting("Takes managed World")]
         public static void Initialize(EntityDataAccess* self, World world)

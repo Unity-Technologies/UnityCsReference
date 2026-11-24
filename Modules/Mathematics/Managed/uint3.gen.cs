@@ -1670,13 +1670,13 @@ namespace Unity.Mathematics
             {
                 if ((uint)index >= 3)
                     throw new System.ArgumentException("index must be between[0...2]");
-                fixed (uint3* array = &this) { return ((uint*)array)[index]; }
+                return Unsafe.Add(ref x, index);
             }
             set
             {
                 if ((uint)index >= 3)
                     throw new System.ArgumentException("index must be between[0...2]");
-                fixed (uint* array = &x) { array[index] = value; }
+                Unsafe.Add(ref x, index) = value;
             }
         }
 

@@ -97,6 +97,31 @@ namespace Unity.Animations
         }
 
         /// <summary>
+        /// Store lhs OR (rhs AND channels). Both lhs and rhs parameters are not modified.
+        /// </summary>
+        /// <param name="lhs">Input bits that are always stored.</param>
+        /// <param name="rhs">Input bits. Only the bits that are set in channels are stored.</param>
+        /// <param name="channels">The bits of rhs to store.</param>
+        /// <remarks>
+        /// This method only works with UnsafeBitArray of 64 bit multiples and does not modify lhs or rhs.
+        /// All UnsafeBitArray must be of same size.
+        /// </remarks>
+        internal static void OrBits64Where(this ref UnsafeBitArray bits, in UnsafeBitArray.ReadOnly lhs, in UnsafeBitArray.ReadOnly rhs, in UnsafeBitArray.ReadOnly channels)
+        {
+            ValidateLengthsAreEqual(bits.AsReadOnly(), lhs);
+            ValidateLengthsAreEqual(lhs, rhs);
+            ValidateLengthsAreEqual(lhs, channels);
+            ValidateLengthIsMultipleOf64(lhs);
+
+            var length = lhs.Length;
+            for (int i = 0; i < length; i += k_SizeMultiple)
+            {
+                var value = lhs.GetBits(i, k_SizeMultiple) | (rhs.GetBits(i, k_SizeMultiple) & channels.GetBits(i, k_SizeMultiple));
+                bits.SetBits(i, value, k_SizeMultiple);
+            }
+        }
+
+        /// <summary>
         /// AND with all bits from source.
         /// </summary>
         /// <param name="src">Input bits.</param>

@@ -81,6 +81,7 @@ namespace Unity.UIToolkit.Editor
                 typeof(Vector2Field),
                 typeof(Vector3Field),
                 typeof(Vector4Field),
+                typeof(QuaternionEulerField),
                 typeof(RectField),
                 typeof(BoundsField),
                 typeof(UnsignedIntegerField),

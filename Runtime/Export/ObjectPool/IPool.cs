@@ -9,5 +9,7 @@ namespace UnityEngine.Pool
         int CountInactive { get; }
 
         void Clear();
+
+        void Reset();
     }
 }

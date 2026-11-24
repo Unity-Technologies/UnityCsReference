@@ -174,6 +174,12 @@ namespace UnityEngine.Pool
             CountAll = activeCount;
         }
 
+        void IPool.Reset()
+        {
+            Clear();
+            CountAll = 0;
+        }
+
         public void Dispose()
         {
             // Ensure we do a clear so the destroy action can be called.

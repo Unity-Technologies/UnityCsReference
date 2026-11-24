@@ -47,7 +47,7 @@ namespace UnityEngineInternal.Input
         {
             var inputEvent = new InputFocusEvent
             {
-                baseEvent = new NativeInputEvent(Type, NativeInputEvent.structSize + 4, 0, -1.0),
+                baseEvent = new NativeInputEvent(Type, NativeInputEvent.structSize + 4, NativeInputCapabilities.systemDeviceId, -1.0),
                 focusFlags = flags
             };
             return inputEvent;

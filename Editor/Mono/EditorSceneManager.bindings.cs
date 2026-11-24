@@ -27,7 +27,7 @@ namespace UnityEditor.SceneManagement
     }
 
     [NativeHeader("Runtime/SceneManager/SceneManager.h")]
-    [NativeHeader("Modules/AssetPipelineEditor/Public/DefaultImporter.h")]
+    [NativeHeader("Editor/Modules/AssetPipelineEditor/Public/DefaultImporter.h")]
     [NativeHeader("Editor/Mono/EditorSceneManager.bindings.h")]
     public sealed partial class EditorSceneManager : SceneManager
     {

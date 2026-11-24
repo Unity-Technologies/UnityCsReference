@@ -1116,10 +1116,10 @@ namespace Unity.Burst.Intrinsics
                 long* sptr = &count.SLong0;
                 for (int i = 0; i < 2; ++i)
                 {
-                    int shift = (int)sptr[i];
-                    if (shift >= 0 && shift <= 63)
+                    ulong shift = (ulong)sptr[i];
+                    if (shift <= 63)
                     {
-                        dptr[i] = aptr[i] << shift;
+                        dptr[i] = aptr[i] << (int)shift;
                     }
                     else
                     {
@@ -1209,17 +1209,8 @@ namespace Unity.Burst.Intrinsics
                 int* sptr = &count.SInt0;
                 for (int i = 0; i < 4; ++i)
                 {
-                    // Work around modulo 32 shifts on the general register file
-                    int shift1 = Math.Min(sptr[i] & 0xff, 32);
-                    int shift2 = 0;
-
-                    if (shift1 >= 16)
-                    {
-                        shift1 -= 16;
-                        shift2 += 16;
-                    }
-
-                    dptr[i] = (aptr[i] >> shift1) >> shift2;
+                    int shift = (uint)sptr[i] > 31u ? 31 : sptr[i];
+                    dptr[i] = aptr[i] >> shift;
                 }
                 return dst;
             }
@@ -1374,10 +1365,10 @@ namespace Unity.Burst.Intrinsics
                 long* sptr = &count.SLong0;
                 for (int i = 0; i < 2; ++i)
                 {
-                    int shift = (int)sptr[i];
-                    if (shift >= 0 && shift <= 63)
+                    ulong shift = (ulong)sptr[i];
+                    if (shift <= 63)
                     {
-                        dptr[i] = aptr[i] >> shift;
+                        dptr[i] = aptr[i] >> (int)shift;
                     }
                     else
                     {

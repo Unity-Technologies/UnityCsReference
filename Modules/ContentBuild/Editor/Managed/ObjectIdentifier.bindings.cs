@@ -97,7 +97,7 @@ namespace UnityEditor.Build.Content
                 return m_LocalIdentifierInFile.CompareTo(other.m_LocalIdentifierInFile);
             if (m_FileType != other.m_FileType)
                 return m_FileType.CompareTo(other.m_FileType);
-            return m_FilePath.CompareTo(other.m_FilePath);
+            return string.CompareOrdinal(m_FilePath, other.m_FilePath);
         }
 
         ///<summary>Returns true if the ObjectIdentifiers are the same.</summary>

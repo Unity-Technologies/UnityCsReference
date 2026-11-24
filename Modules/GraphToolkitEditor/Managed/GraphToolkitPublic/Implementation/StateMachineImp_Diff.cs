@@ -151,8 +151,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
             else if (model is PortModel { NodeModel: StateModel ownerState })
             {
-                if (kind == ChangeKind.Topology)
-                    CollectTopologyChange(ownerState);
+                // State ports are not exposed, so their changes are reported on the state. Option values are stored on them.
+                if (kind == ChangeKind.Topology || kind == ChangeKind.Data)
+                    CollectModelChange(ownerState.Guid, ownerState, kind);
             }
         }
 
@@ -161,12 +162,6 @@ namespace Unity.GraphToolkit.Editor.Implementation
             var builder = GetOrAddBuilder(m_VariableBuilders, guid, variable);
             builder.AddChange(kind);
             m_VariableBuilders[guid] = builder;
-        }
-
-        void CollectTopologyChange(StateModel state)
-        {
-            if (state != null)
-                CollectModelChange(state.Guid, state, ChangeKind.Topology);
         }
 
         void CollectStateChange(Hash128 guid, IState state, ChangeKind kind)

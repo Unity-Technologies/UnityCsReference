@@ -10,6 +10,7 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine
 {
+    [Obsolete("RenderingPath is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the rendering path in the Universal Render Pipeline (URP), use the Rendering Path property of the Universal Renderer asset instead.", false)]
     public enum RenderingPath
     {
         UsePlayerSettings = -1,
@@ -89,6 +90,7 @@ namespace UnityEngine
         Box = 2
     }
 
+    [Obsolete("LightRenderMode is deprecated and will be removed in a future release. In the Universal Render Pipeline (URP), it only affects which lights the Forward rendering path prefers when more lights reach an object than Per Object Limit allows.", false)]
     public enum LightRenderMode
     {
         Auto = 0,
@@ -1488,6 +1490,7 @@ namespace UnityEngine.Rendering
         Switch2 = 29,
     }
 
+    [Obsolete("GraphicsTier is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use graphics tiers. To adjust rendering for different devices in URP, assign a different URP asset to each quality level instead.", false)]
     public enum GraphicsTier
     {
         Tier1 = 0,
@@ -1953,6 +1956,7 @@ namespace UnityEngine.Rendering
     }
 
     // Match GraphicsSettings::BuiltinShaderType on C++ side
+    [Obsolete("BuiltinShaderType is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use built-in shader settings.", false)]
     public enum BuiltinShaderType
     {
         DeferredShading = 0,
@@ -1966,6 +1970,7 @@ namespace UnityEngine.Rendering
     }
 
     // Match BuiltinShaderSettings::BuiltinShaderMode on C++ side
+    [Obsolete("BuiltinShaderMode is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use built-in shader settings.", false)]
     public enum BuiltinShaderMode
     {
         Disabled = 0,
@@ -2056,6 +2061,7 @@ namespace UnityEngine.Rendering
         RTToTexture = (1 << 4),
     }
 
+    [Obsolete("CameraHDRMode is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use graphics tiers. To adjust rendering for different devices in URP, assign a different URP asset to each quality level instead.", false)]
     public enum CameraHDRMode
     {
         FP16 = 1,

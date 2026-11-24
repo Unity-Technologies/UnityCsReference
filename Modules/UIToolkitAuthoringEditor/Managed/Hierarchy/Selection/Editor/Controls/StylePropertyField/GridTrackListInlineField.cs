@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEditor;
@@ -12,7 +13,9 @@ using UnityEngine.UIElements.StyleSheets;
 namespace Unity.UIToolkit.Editor
 {
     [UxmlElement]
-    internal partial class GridTrackListInlineField : VisualElement, IPropertyMappedAffordanceField
+    internal partial class GridTrackListInlineField : VisualElement, IPropertyMappedAffordanceField,
+        IStylePropertyDataField<StyleList<GridTrackSize>, List<GridTrackSize>>,
+        INotifyCompositeStylePropertyChanged<StyleList<GridTrackSize>>
     {
         public static readonly BindingId valueProperty = nameof(value);
 
@@ -22,6 +25,9 @@ namespace Unity.UIToolkit.Editor
         readonly HashSet<ITrackablePropertyProvider> m_TrackedProviders = new();
 
         List<GridTrackSize> m_Value = new();
+        readonly List<GridTrackTemplateEntry> m_AuthoredTemplate = new();
+        readonly List<GridTrackSize> m_FlattenedTemplate = new();
+        Action<StyleProperty, StyleSheet, StyleList<GridTrackSize>> m_SetterOverride;
 
         const string k_UssPath = "UIToolkitAuthoring/Inspector/Controls/GridTrackList.uss";
 
@@ -82,11 +88,84 @@ namespace Unity.UIToolkit.Editor
 
         void OnAxisChanged(List<GridTrackSize> list)
         {
-            if (SequenceEqual(m_Value, list))
-                return;
+            var previous = m_Value;
             m_Value = new List<GridTrackSize>(list);
+            // A repeat row can change without changing the expanded list, so always notify.
+            this.NotifyStylePropertyChanged(this, valueProperty, new StyleList<GridTrackSize>(previous), new StyleList<GridTrackSize>(m_Value));
             NotifyPropertyChanged(valueProperty);
         }
+
+        Action<StyleProperty, StyleSheet, StyleList<GridTrackSize>> IStylePropertyDataField<StyleList<GridTrackSize>, List<GridTrackSize>>.setterOverride
+            => m_SetterOverride ??= WriteTracks;
+
+        // The generated setter only knows the expanded list; write the editor's rows so repeat(<count>, …) survives.
+        void WriteTracks(StyleProperty property, StyleSheet sheet, StyleList<GridTrackSize> styleValue)
+        {
+            var template = m_Axis.GetTemplate();
+            GridTrackTemplateEntry.Flatten(template, m_FlattenedTemplate);
+            if (styleValue.keyword == StyleKeyword.Undefined && SequenceEqual(m_FlattenedTemplate, styleValue.value))
+                property.SetGridTrackTemplate(sheet, template);
+            else
+                StylePropertyBinding.SetGridTrackSizeList(property, sheet, styleValue);
+        }
+
+        void IStylePropertyDataField<StyleList<GridTrackSize>, List<GridTrackSize>>.SetValueFromStyleData(
+            in StylePropertyData<StyleList<GridTrackSize>, List<GridTrackSize>> data, VisualElement currentTarget, StyleSheet currentStyleSheet)
+        {
+            var computed = data.computedValue;
+            m_Value = computed != null ? new List<GridTrackSize>(computed) : new List<GridTrackSize>();
+
+            if (TryReadAuthoredTemplate(data, currentStyleSheet))
+            {
+                GridTrackTemplateEntry.Flatten(m_AuthoredTemplate, m_FlattenedTemplate);
+                if (SequenceEqual(m_FlattenedTemplate, m_Value))
+                {
+                    m_Axis.SetTemplate(m_AuthoredTemplate);
+                    return;
+                }
+            }
+            m_Axis.SetTracks(m_Value.ToArray(), preserveRepeatRows: false);
+        }
+
+        // The rule being edited first, else the selector that supplies the computed value.
+        bool TryReadAuthoredTemplate(in StylePropertyData<StyleList<GridTrackSize>, List<GridTrackSize>> data, StyleSheet currentStyleSheet)
+        {
+            if (data.uxmlValue.isInlined)
+                return data.uxmlValue.inlineProperty.TryGetGridTrackTemplate(currentStyleSheet, m_AuthoredTemplate);
+
+            var rule = data.selector.complexSelector?.rule;
+            if (rule == null || data.selector.sheet == null)
+                return false;
+            // A rule keeps duplicate declarations and the last one wins.
+            var properties = rule.properties;
+            for (int i = properties.Length - 1; i >= 0; --i)
+            {
+                if (properties[i].id == data.id)
+                    return properties[i].TryGetGridTrackTemplate(data.selector.sheet, m_AuthoredTemplate);
+            }
+            return false;
+        }
+
+        void INotifyCompositeStylePropertyChanged<StyleList<GridTrackSize>>.SetValue(BindingId id, StyleList<GridTrackSize> v, bool notify)
+        {
+            var previous = m_Value;
+            m_Value = v.value != null ? new List<GridTrackSize>(v.value) : new List<GridTrackSize>();
+
+            // Keep the shown repeat rows when they already expand to the value, so they are what gets written.
+            GridTrackTemplateEntry.Flatten(m_Axis.GetTemplate(), m_FlattenedTemplate);
+            if (!SequenceEqual(m_FlattenedTemplate, m_Value))
+                m_Axis.SetTracks(m_Value.ToArray(), preserveRepeatRows: false);
+
+            // Set as Inline Value writes the value the field already shows, so notify even when nothing changed.
+            if (notify)
+            {
+                this.NotifyStylePropertyChanged(this, valueProperty, new StyleList<GridTrackSize>(previous), new StyleList<GridTrackSize>(m_Value));
+                NotifyPropertyChanged(valueProperty);
+            }
+        }
+
+        void INotifyCompositeStylePropertyChanged<StyleList<GridTrackSize>>.NotifyStylePropertyChanged(BindingId id, StyleList<GridTrackSize> previousValue, StyleList<GridTrackSize> newValue)
+            => this.NotifyStylePropertyChanged(this, id, previousValue, newValue);
 
         void OnTrackProperty(TrackPropertyEvent evt)
         {

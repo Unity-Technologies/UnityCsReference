@@ -42,20 +42,18 @@ namespace UnityEngine.TextCore.Text
 
             for (int i = 0; i < pendingCount; i++)
             {
-                var nativePtr = OSFontFallbackBindings.GetPendingFallbackNativePtr(i);
-                if (s_PtrToManaged.ContainsKey(nativePtr))
-                    continue;
-
+                // The native owner is lost when the font engine is destroyed while the managed copies are kept.
                 var fontRef = OSFontFallbackBindings.GetPendingFallbackFontReference(i);
-                var managed = FontAsset.CreateFontAssetFromFontReference(fontRef);
+                var managed = TextSettings.FindGlobalOSFallback(fontRef) ?? FontAsset.CreateFontAssetFromFontReference(fontRef);
                 if (managed == null)
                     continue;
 
+                var nativePtr = OSFontFallbackBindings.GetPendingFallbackNativePtr(i);
                 s_PtrToManaged[nativePtr] = managed;
 
                 TextSettings.RegisterGlobalOSFallback(managed);
 
-                OSFontFallbackBindings.ReleaseNativeFallback(nativePtr);
+                OSFontFallbackBindings.AdoptNativeFallback(nativePtr, managed.GetEntityId());
             }
 
             OSFontFallbackBindings.ClearPendingFallbacks();

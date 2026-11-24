@@ -472,7 +472,7 @@ namespace UnityEditor
 
             if (Screen.width > 380)
             {
-                var distanceLabel = Selection.count == 1 && newVal > 0 && camera != null ? LODGroupExtensions.RelativeHeightToDistance(camera, heightPercentageProperty.floatValue, m_LODSize.floatValue).ToString("F2") + " m" : "-";
+                var distanceLabel = Selection.knownCount == 1 && newVal > 0 && camera != null ? LODGroupExtensions.RelativeHeightToDistance(camera, heightPercentageProperty.floatValue, m_LODSize.floatValue).ToString("F2") + " m" : "-";
                 LODGUI.GUIStyles.m_DistanceInMetersLabel.text = distanceLabel;
                 GUILayout.Label(LODGUI.GUIStyles.m_DistanceInMetersLabel, GUILayout.Width(60));
             }

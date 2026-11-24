@@ -57,15 +57,6 @@ namespace Unity.Collections
         [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.EntitiesModule")]
         internal AtomicSafetyHandle       m_Safety;
 
-        internal readonly unsafe ref DisposeSentinel.Dummy m_DisposeSentinel
-        {
-            get
-            {
-                void* pointer = UnsafeUtility.Malloc(sizeof(DisposeSentinel.Dummy), 8, Allocator.Temp);
-                return ref UnsafeUtility.AsRef<DisposeSentinel.Dummy>(pointer);
-            }
-        }
-
         // TODO: Use SharedStatic for burst compatible static id once we have typehash intrinsic for unity in burst 1.6.5 and 1.7.0
         [NoAutoStaticsCleanup] // AtomicSafetyHandle static safety id is stable across code reload; re-registering would leak ids
         static int                        s_staticSafetyId;

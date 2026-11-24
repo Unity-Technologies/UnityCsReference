@@ -22,6 +22,7 @@ namespace UnityEditor.SceneManagement
         public delegate void SceneSavingCallback(Scene scene, string path);
         public delegate void SceneSavedCallback(Scene scene);
         public delegate void SceneDirtiedCallback(Scene scene);
+        internal delegate void SceneRenamedCallback(Scene scene, string previousName);
 
         public static event SceneManagerSetupRestoredCallback sceneManagerSetupRestored
         {
@@ -102,6 +103,15 @@ namespace UnityEditor.SceneManagement
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
         private static EventWithPerformanceTracker<SceneDirtiedCallback> m_SceneDirtiedEvent = new EventWithPerformanceTracker<SceneDirtiedCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneDirtied)}");
 
+        // Raised on the next editor update after the rename
+        internal static event SceneRenamedCallback sceneRenamed
+        {
+            add => m_SceneRenamedEvent.Add(value);
+            remove => m_SceneRenamedEvent.Remove(value);
+        }
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
+        private static EventWithPerformanceTracker<SceneRenamedCallback> m_SceneRenamedEvent = new EventWithPerformanceTracker<SceneRenamedCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneRenamed)}");
+
         [RequiredByNativeCode]
         private static void Internal_SceneManagerSetupRestored(ReadOnlySpan<ulong> rawSceneHandles)
         {
@@ -168,6 +178,22 @@ namespace UnityEditor.SceneManagement
         {
             foreach (var evt in m_SceneDirtiedEvent)
                 evt(scene);
+        }
+
+        [RequiredByNativeCode]
+        private static void Internal_SceneRenamed(Scene scene, string previousName)
+        {
+            foreach (var evt in m_SceneRenamedEvent)
+            {
+                try
+                {
+                    evt(scene, previousName);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                }
+            }
         }
 
         [RequiredByNativeCode]

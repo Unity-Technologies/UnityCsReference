@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -10,6 +9,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Assertions;
 using UnityEngine;
 using UnityEngine.LowLevel;
+using UnityEngine.Scripting;
 using Unity.Collections;
 using Unity.Profiling;
 using Unity.Scripting.LifecycleManagement;
@@ -38,8 +38,8 @@ namespace Unity.Entities
 #pragma warning restore 0067 // unused variable
 
         /// <summary>
-        /// Disposes all Worlds when the EntitiesWorld scope exits: on a code reload, at shutdown, and around play
-        /// mode changes in the Editor. Their systems have already been destroyed by <see cref="DestroySystems"/>.
+        /// Disposes all Worlds when the EntitiesWorld scope exits: on a code reload and at shutdown.
+        /// Their systems have already been destroyed by <see cref="DestroySystems"/>.
         /// </summary>
         [EntitiesWorldCleanup]
         static void CleanupWorldBeforeSceneLoad()
@@ -61,12 +61,84 @@ namespace Unity.Entities
             RuntimeApplicationPlayerLoop.UnregisterFrameUpdateToCurrentPlayerLoop();
 
             World.DisposeAll();
+            s_TestWorld = null;
             s_SystemsInitialized = false;
             s_CustomBootstrap = null;
 
             DefaultWorldDestroyed?.Invoke();
         }
 
+
+        [AutoStaticsCleanupOnCodeReload]
+        static World s_PlaymodeBaseWorld;
+        [AutoStaticsCleanupOnCodeReload]
+        static World s_PlaymodeSourceWorld;
+
+        [RequiredByNativeCode]
+        internal static void PrepareBaseWorldForPlaymode(){
+            Assert.IsTrue(World.s_ActiveWorldsStack.Data.Length > 0, "The World stack is empty when entering playmode");
+
+            s_PlaymodeSourceWorld = s_TestWorld is { IsCreated: true } ? s_TestWorld : World.s_ActiveWorldsStack.Data[0].EntityManager.World;
+
+            //Remove systems from editor World
+            ScriptBehaviourUpdateOrder.RemoveWorldFromCurrentPlayerLoop(s_PlaymodeSourceWorld);
+            s_PlaymodeSourceWorld.EntityManager.CompleteAllTrackedJobs();
+            s_PlaymodeSourceWorld.DestroyAllSystemsAndLogException(out _);
+            s_PlaymodeSourceWorld.EntityManager.ResetAllQueryFilters();
+
+            //Create new base World without any systems
+            s_PlaymodeBaseWorld = new World("Default World", WorldFlags.Game);
+            s_SystemsInitialized = false;
+        }
+
+        [RequiredByNativeCode]
+        internal static void SwapInBaseWorldAndAddSystems(){
+            Assert.IsTrue(s_PlaymodeBaseWorld != null, "The playmode base World was not created before adding systems");
+            if (s_PlaymodeBaseWorld == null)
+                return;
+
+            //Destroy the EditorWorld and make the new base world the base
+            var sourceWorld = s_PlaymodeSourceWorld;
+            var sourceIndex = World.s_ActiveWorldsStack.Data.IndexOf(sourceWorld.Unmanaged);
+            World.s_ActiveWorldsStack.Data[sourceIndex] = s_PlaymodeBaseWorld.Unmanaged;
+            if (sourceWorld == s_TestWorld)
+                s_TestWorld = null;
+
+            //Run bootstrap, this might create a world
+            var stackLengthBeforeBootstrap = World.s_ActiveWorldsStack.Data.Length;
+            s_CustomBootstrap = CreateBootStrap();
+            s_BootstrapCreatedDefaultWorld = s_CustomBootstrap != null && s_CustomBootstrap.CreateDefaultWorldWithoutSystems(s_PlaymodeBaseWorld.Name);
+
+            //If both bootstraps returned false, we add systems to the base world
+            InitializeAdditionalWorldsAndSystems();
+
+            var targetWorld = World.s_ActiveWorldsStack.Data.Length > stackLengthBeforeBootstrap ? World.DefaultGameObjectInjectionWorld : s_PlaymodeBaseWorld;
+
+            s_PlaymodeBaseWorld = null;
+            s_PlaymodeSourceWorld = null;
+
+            //Move entities from editor world into base world
+            targetWorld.EntityManager.MoveEntitiesFromWithoutRemapping(sourceWorld.EntityManager);
+            sourceWorld.Dispose();
+        }
+
+        [RequiredByNativeCode]
+        internal static void DestroyAllWorldsBeforeExitingPlaymode(){
+            DestroySystems();
+            DomainUnloadOrPlayModeChangeShutdown();
+        }
+
+        [RequiredByNativeCode]
+        internal static void CreateEditorWorld(){
+            if (World.s_AllWorlds.Count != 0)
+                Debug.LogError($"Expected no Worlds to be alive when creating the Editor World but found {World.s_AllWorlds.Count}");
+
+            InitializeWithoutSystems("Editor World", true);
+            InitializeAdditionalWorldsAndSystems();
+
+            if (s_TestWorldActive)
+                CreateTestWorld(true);
+        }
 
         static void RemoveWorldsFromCurrentPlayerLoop(List<World> worlds)
         {
@@ -113,6 +185,7 @@ namespace Unity.Entities
             DefaultWorldInitializing?.Invoke();
 
             s_CustomBootstrap = null;
+            s_BootstrapCreatedDefaultWorld = false;
             if (!editorWorld)
                 s_CustomBootstrap = CreateBootStrap();
 
@@ -120,7 +193,8 @@ namespace Unity.Entities
             World.PushWorldStack(new World(defaultWorldName, editorWorld ? WorldFlags.Editor : WorldFlags.Game));
 
             int prevWorldStackCount = World.s_ActiveWorldsStack.Data.Length;
-            if (s_CustomBootstrap != null && s_CustomBootstrap.CreateDefaultWorldWithoutSystems(defaultWorldName))
+            s_BootstrapCreatedDefaultWorld = s_CustomBootstrap != null && s_CustomBootstrap.CreateDefaultWorldWithoutSystems(defaultWorldName);
+            if (s_BootstrapCreatedDefaultWorld)
             {
                 Assert.IsTrue(prevWorldStackCount <  World.s_ActiveWorldsStack.Data.Length ,
                     $"{s_CustomBootstrap.GetType()}.CreateDefaultWorldWithoutSystems() returned true, which " +
@@ -135,6 +209,8 @@ namespace Unity.Entities
         static bool s_SystemsInitialized;
         [AutoStaticsCleanupOnCodeReload]
         static ICustomBootstrap s_CustomBootstrap;
+        [AutoStaticsCleanupOnCodeReload]
+        static bool s_BootstrapCreatedDefaultWorld;
 
         [EntitiesWorldInitialize]
         static void InitializeBeforeSceneLoading()
@@ -142,8 +218,6 @@ namespace Unity.Entities
             if (World.DefaultGameObjectInjectionWorld == null)
             {
                 var editorWorld = !Application.isPlaying;
-
-
                 InitializeWithoutSystems(editorWorld ? "Editor World" : "Default World", editorWorld);
             }
         }
@@ -196,16 +270,25 @@ namespace Unity.Entities
             AddSystemToRootLevelSystemGroupsInternal(testWorld, GetAllSystemTypeIndices(WorldSystemFilterFlags.Default, isEditMode));
             ScriptBehaviourUpdateOrder.AppendWorldToCurrentPlayerLoop(testWorld);
             World.PushWorldStack(testWorld);
+            s_TestWorld = testWorld;
+            s_TestWorldActive = true;
 
             return GCHandle.Alloc(testWorld, GCHandleType.Normal);
         }
 
         [AutoStaticsCleanupOnCodeReload]
         static bool s_TestWorldDisplacedWorldFromPlayerLoop;
+        [AutoStaticsCleanupOnCodeReload]
+        static World s_TestWorld;
+        [AutoStaticsCleanupOnCodeReload]
+        static bool s_TestWorldActive;
 
         internal static void DisposeWorld(GCHandle world)
         {
-            if (world.Target is World { IsCreated: true } w)
+            s_TestWorldActive = false;
+            var w = s_TestWorld ?? world.Target as World;
+            s_TestWorld = null;
+            if (w is { IsCreated: true })
             {
                 ScriptBehaviourUpdateOrder.RemoveWorldFromCurrentPlayerLoop(w);
                 w.Dispose();
@@ -214,7 +297,7 @@ namespace Unity.Entities
 
         internal static void PopCurrentlyActiveWorld(GCHandle worldHandle)
         {
-            World world = worldHandle.Target as World;
+            var world = s_TestWorld ?? worldHandle.Target as World;
 
             if (world is { IsCreated: true }
                 && World.s_ActiveWorldsStack.Data.Length > 1
@@ -248,19 +331,20 @@ namespace Unity.Entities
             }
             RuntimeApplicationPlayerLoop.RegisterFrameUpdateToCurrentPlayerLoop();
 
-            //Add the base world to the loop
-            var isEditor = (World.DefaultGameObjectInjectionWorld.Flags & WorldFlags.Editor) == WorldFlags.Editor;
-            AddSystemToRootLevelSystemGroupsInternal(World.DefaultGameObjectInjectionWorld, GetAllSystemTypeIndices(WorldSystemFilterFlags.Default, isEditor));
-            ScriptBehaviourUpdateOrder.AppendWorldToCurrentPlayerLoop(World.DefaultGameObjectInjectionWorld);
-
-            // Allow bootstrap creation on top of the default world
-            if (s_CustomBootstrap != null)
-            {
-                s_CustomBootstrap.Initialize(World.DefaultGameObjectInjectionWorld.Name);
+            var bootstrapHandled = s_BootstrapCreatedDefaultWorld;
+            if(s_CustomBootstrap != null){
+                // Allow bootstrap creation on top of the default world
+                bootstrapHandled |= s_CustomBootstrap.Initialize(World.DefaultGameObjectInjectionWorld.Name);
             }
-
+            if(!bootstrapHandled){
+                //Add the base world to the loop
+                var isEditor = (World.DefaultGameObjectInjectionWorld.Flags & WorldFlags.Editor) == WorldFlags.Editor;
+                AddSystemToRootLevelSystemGroupsInternal(World.DefaultGameObjectInjectionWorld, GetAllSystemTypeIndices(WorldSystemFilterFlags.Default, isEditor));
+                ScriptBehaviourUpdateOrder.AppendWorldToCurrentPlayerLoop(World.DefaultGameObjectInjectionWorld);
+            }
             s_SystemsInitialized = true;
             s_CustomBootstrap = null;
+            s_BootstrapCreatedDefaultWorld = false;
         }
 
         /// <summary>

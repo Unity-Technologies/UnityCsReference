@@ -69,6 +69,11 @@ namespace Unity.Entities
         }
 
 
+        public bool RemoveEntityFromEntitiesWithNames(Entity entity)
+        {
+            return m_EntitiesWithNames.Remove(entity);
+        }
+
         public void RemoveEntitiesFromEntitiesWithNames(Entity* entities, int count)
         {
             for (int i = 0; i < count; ++i)

@@ -753,6 +753,7 @@ namespace UnityEngine
         [FreeFunction] extern private static ColorGamut GetActiveColorGamut();
         public static ColorGamut activeColorGamut { get { return GetActiveColorGamut(); } }
 
+        [Obsolete("Graphics.activeTier is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use graphics tiers. To adjust rendering for different devices in URP, assign a different URP asset to each quality level instead.", false)]
         [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)] extern public static UnityEngine.Rendering.GraphicsTier activeTier { get; set; }
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]

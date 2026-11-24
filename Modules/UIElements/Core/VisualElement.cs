@@ -1725,6 +1725,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// This key is used to save and load the view data from the view data store. If you don't set this key, the persistence is disabled for the associated <see cref="VisualElement"/>.
+        /// An empty string is stored as null.
         /// For more information, refer to [[wiki:UIE-ViewData|View data persistence in the Unity Manual]].
         /// </remarks>
         [CreateProperty]
@@ -1738,15 +1739,18 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (viewDataKey != value)
-                {
-                    GetOrAddViewDataStorage().viewDataKey = value;
+                if (string.IsNullOrEmpty(value))
+                    value = null;
 
-                    if (!string.IsNullOrEmpty(value))
-                        IncrementVersion(VersionChangeType.ViewData);
+                if (viewDataKey == value)
+                    return;
 
-                    NotifyPropertyChanged(viewDataKeyProperty);
-                }
+                GetOrAddViewDataStorage().viewDataKey = value;
+
+                if (value != null)
+                    IncrementVersion(VersionChangeType.ViewData);
+
+                NotifyPropertyChanged(viewDataKeyProperty);
             }
         }
 

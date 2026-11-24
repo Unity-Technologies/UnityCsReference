@@ -128,6 +128,9 @@ class MSBuildCompilationBuildState
         if (UnityBeeDriverProfilerSession.PerformingPlayerBuild)
             return UnityBeeDriverProfilerSession.GetTraceEventsOutputForPlayerBuild().ToString();
 
+        // Like BuildRequestFor, record the bee backend before writing into Library/Bee, or the first Bee build (a
+        // player build) finds no bee_backend.info and clears the directory (UUM-161343).
+        UnityBeeDriver.RecreateDagDirectoryIfNeeded(Path.GetFullPath("Library/Bee"));
         return Path.GetFullPath("Library/Bee/fullprofile.json");
     }
 }

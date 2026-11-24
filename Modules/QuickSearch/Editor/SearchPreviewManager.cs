@@ -105,6 +105,9 @@ namespace UnityEditor.Search
 
         public int poolSize { get; set; }
         public int count => m_PreviewCollections.Count;
+        internal int pendingFetchCount => m_FetchPreviewOffs.Count;
+
+        bool m_Disposed;
 
         public SearchPreviewManager(int poolSize)
         {
@@ -142,6 +145,9 @@ namespace UnityEditor.Search
                 readyCallback?.Invoke(item, context, searchPreview);
                 return () => { };
             }
+
+            if (m_Disposed)
+                return () => { };
 
             return FetchPreviewAsync(item, context, key, fetchCallback, readyCallback, delayInSeconds);
         }
@@ -226,6 +232,12 @@ namespace UnityEditor.Search
                 if (k.searchItemHashCode == itemHash)
                     return true;
             return false;
+        }
+
+        public void Dispose()
+        {
+            m_Disposed = true;
+            Clear();
         }
 
         public void Clear()

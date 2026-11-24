@@ -31,7 +31,7 @@ namespace Unity.Transforms
         private IntPtr mainThreadOnlyTransformPointers;
         internal EntityId* mainThreadOnlyEntityReferences;
 
-        private WorldUnmanaged ecsOwner;
+        internal WorldUnmanaged ecsOwner;
         private uint ecsAccess;
 
         internal int changeDispatchIndex;

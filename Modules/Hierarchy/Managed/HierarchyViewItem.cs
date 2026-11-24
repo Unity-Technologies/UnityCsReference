@@ -331,7 +331,11 @@ namespace Unity.Hierarchy
             var noFilter = !m_View.Filtering;
             var indentWidth = CalculateIndentWidth();
             var oldValue = m_LeftContainer.style.translate.value;
-            m_LeftContainer.style.translate = new Translate(m_LeftContainer.CeilToPanelPixelSize(indentWidth), oldValue.y, oldValue.z);
+            var indent = m_LeftContainer.CeilToPanelPixelSize(indentWidth);
+            m_LeftContainer.style.translate = new Translate(indent, oldValue.y, oldValue.z);
+
+            // Translate does not affect layout, so reserve the indent to keep the shrunk left container inside the cell.
+            m_LeftContainer.style.marginRight = indent;
 
             var showToggle = noFilter && viewModel.HasVisibleChildren(in m_Node);
             m_Toggle.EnableInClassList(k_HierarchyItemToggleHidden, !showToggle);

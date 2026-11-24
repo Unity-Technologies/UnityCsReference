@@ -56,7 +56,9 @@ namespace UnityEditor.Rendering
         public ShaderKeywordSet shaderKeywordSet;
         public PlatformKeywordSet platformKeywordSet; // C++ side is PlatformCapKeywords
         private ShaderRequirements m_ShaderRequirements;
+#pragma warning disable CS0618 // Type or member is obsolete
         private GraphicsTier m_GraphicsTier;
+#pragma warning restore CS0618
         private ShaderCompilerPlatform m_ShaderCompilerPlatform;
         private BuildTarget m_BuildTarget;
 
@@ -65,6 +67,7 @@ namespace UnityEditor.Rendering
             get { return m_ShaderRequirements; }
         }
 
+        [Obsolete("ShaderCompilerData.graphicsTier is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use graphics tiers. To adjust rendering for different devices in URP, assign a different URP asset to each quality level instead.", false)]
         public GraphicsTier graphicsTier
         {
             get { return m_GraphicsTier; }

@@ -11,6 +11,7 @@ using System.Diagnostics;
 using UnityEngine.Internal;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Unity.Burst;
 using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine
@@ -39,6 +40,11 @@ namespace UnityEngine
         Low = 1,
         Medium = 2,
         High = 3
+    }
+
+    internal static class DebugBuildState
+    {
+        internal static readonly bool IsDebugBuild = Debug.isDebugBuildInternal;
     }
 
     [NativeHeader("Runtime/Export/Debug/Debug.bindings.h")]
@@ -278,11 +284,9 @@ namespace UnityEngine
 
         // In the Build Settings dialog there is a check box called "Development Build".
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern bool isDebugBuildInternal { get; }
+        internal static extern bool isDebugBuildInternal { [BurstAuthorizedExternalMethod] get; }
 
-        private static readonly bool k_IsDebugBuild = isDebugBuildInternal;
-
-        public static bool isDebugBuild => k_IsDebugBuild;
+        public static bool isDebugBuild => DebugBuildState.IsDebugBuild;
 
         [NativeMethod(ThrowsException = true)]
         internal static extern DiagnosticSwitch[] diagnosticSwitches { get; }

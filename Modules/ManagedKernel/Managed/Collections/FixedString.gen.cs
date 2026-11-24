@@ -18,6 +18,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System;
@@ -1557,6 +1558,12 @@ namespace Unity.Collections
         [SerializeField] internal ushort utf8LengthInBytes;
         [SerializeField] internal FixedBytes30 bytes;
 
+        internal readonly ref byte BytesRef
+        {
+            [PatchedBody("bytes")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
         /// <summary>
         /// Returns the maximum number of UTF-8 bytes that can be stored in this string.
         /// </summary>
@@ -1615,7 +1622,7 @@ namespace Unity.Collections
                 utf8LengthInBytes = (ushort)value;
                 unsafe
                 {
-                    GetUnsafePtr()[utf8LengthInBytes] = 0;
+                    Unsafe.Add(ref BytesRef, utf8LengthInBytes) = 0;
                 }
             }
         }
@@ -1665,13 +1672,13 @@ namespace Unity.Collections
                 if (clearOptions == NativeArrayOptions.ClearMemory)
                 {
                     if (newLength > utf8LengthInBytes)
-                        UnsafeUtility.MemClear(GetUnsafePtr() + utf8LengthInBytes, newLength - utf8LengthInBytes);
+                        Unsafe.InitBlockUnaligned(ref Unsafe.Add(ref BytesRef, utf8LengthInBytes), 0, (uint)(newLength - utf8LengthInBytes));
                     else
-                        UnsafeUtility.MemClear(GetUnsafePtr() + newLength, utf8LengthInBytes - newLength);
+                        Unsafe.InitBlockUnaligned(ref Unsafe.Add(ref BytesRef, newLength), 0, (uint)(utf8LengthInBytes - newLength));
                 }
                 utf8LengthInBytes = (ushort)newLength;
                 // always null terminate
-                GetUnsafePtr()[utf8LengthInBytes] = 0;
+                Unsafe.Add(ref BytesRef, utf8LengthInBytes) = 0;
             }
             return true;
         }
@@ -1700,7 +1707,7 @@ namespace Unity.Collections
                 unsafe
                 {
                     CheckIndexInRange(index);
-                    return GetUnsafePtr()[index];
+                    return Unsafe.Add(ref BytesRef, index);
                 }
             }
 
@@ -1710,7 +1717,7 @@ namespace Unity.Collections
                 unsafe
                 {
                     CheckIndexInRange(index);
-                    GetUnsafePtr()[index] = value;
+                    Unsafe.Add(ref BytesRef, index) = value;
                 }
             }
         }
@@ -1728,7 +1735,7 @@ namespace Unity.Collections
             unsafe
             {
                 CheckIndexInRange(index);
-                return ref GetUnsafePtr()[index];
+                return ref Unsafe.Add(ref BytesRef, index);
             }
         }
 
@@ -1798,7 +1805,10 @@ namespace Unity.Collections
 
                 unsafe
                 {
-                    Unicode.Utf8ToUcs(out current, target.GetUnsafePtr(), ref offset, target.Length);
+                    fixed (byte* ptr = &target.BytesRef)
+                    {
+                        Unicode.Utf8ToUcs(out current, ptr, ref offset, target.Length);
+                    }
                 }
 
                 return true;
@@ -1883,7 +1893,7 @@ namespace Unity.Collections
         /// <returns>A ref to a FixedListByte32 representation of the FixedString32Bytes.</returns>
         public unsafe ref FixedList32Bytes<byte> AsFixedList()
         {
-            return ref UnsafeUtility.AsRef<FixedList32Bytes<byte>>(UnsafeUtility.AddressOf(ref this));
+            return ref Unsafe.As<byte, FixedList32Bytes<byte>>(ref Unsafe.Subtract(ref BytesRef, 2));
         }
 
         /// <summary>
@@ -1945,8 +1955,11 @@ namespace Unity.Collections
             utf8LengthInBytes = 0;
             unsafe {
                 int len = 0;
-                byte* dstBytes = GetUnsafePtr();
-                var error = UTF8ArrayUnsafeUtility.AppendUTF8Bytes(dstBytes, ref len, utf8MaxLengthInBytes, srcBytes, srcLength);
+                FormatError error;
+                fixed (byte* dstBytes = &BytesRef)
+                {
+                    error = UTF8ArrayUnsafeUtility.AppendUTF8Bytes(dstBytes, ref len, utf8MaxLengthInBytes, srcBytes, srcLength);
+                }
                 if(error != FormatError.None)
                     return error;
                 this.Length = len;
@@ -2493,7 +2506,10 @@ namespace Unity.Collections
         /// <returns>The hash code of this string.</returns>
         public override readonly unsafe int GetHashCode()
         {
-            return (int)CollectionHelper.Hash(GetUnsafePtr(), Length);
+            fixed (byte* ptr = &BytesRef)
+            {
+                return (int)CollectionHelper.Hash(ptr, Length);
+            }
         }
 
         /// <summary>
@@ -2696,6 +2712,12 @@ namespace Unity.Collections
         [SerializeField] internal ushort utf8LengthInBytes;
         [SerializeField] internal FixedBytes62 bytes;
 
+        internal readonly ref byte BytesRef
+        {
+            [PatchedBody("bytes")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
         /// <summary>
         /// Returns the maximum number of UTF-8 bytes that can be stored in this string.
         /// </summary>
@@ -2754,7 +2776,7 @@ namespace Unity.Collections
                 utf8LengthInBytes = (ushort)value;
                 unsafe
                 {
-                    GetUnsafePtr()[utf8LengthInBytes] = 0;
+                    Unsafe.Add(ref BytesRef, utf8LengthInBytes) = 0;
                 }
             }
         }
@@ -2804,13 +2826,13 @@ namespace Unity.Collections
                 if (clearOptions == NativeArrayOptions.ClearMemory)
                 {
                     if (newLength > utf8LengthInBytes)
-                        UnsafeUtility.MemClear(GetUnsafePtr() + utf8LengthInBytes, newLength - utf8LengthInBytes);
+                        Unsafe.InitBlockUnaligned(ref Unsafe.Add(ref BytesRef, utf8LengthInBytes), 0, (uint)(newLength - utf8LengthInBytes));
                     else
-                        UnsafeUtility.MemClear(GetUnsafePtr() + newLength, utf8LengthInBytes - newLength);
+                        Unsafe.InitBlockUnaligned(ref Unsafe.Add(ref BytesRef, newLength), 0, (uint)(utf8LengthInBytes - newLength));
                 }
                 utf8LengthInBytes = (ushort)newLength;
                 // always null terminate
-                GetUnsafePtr()[utf8LengthInBytes] = 0;
+                Unsafe.Add(ref BytesRef, utf8LengthInBytes) = 0;
             }
             return true;
         }
@@ -2839,7 +2861,7 @@ namespace Unity.Collections
                 unsafe
                 {
                     CheckIndexInRange(index);
-                    return GetUnsafePtr()[index];
+                    return Unsafe.Add(ref BytesRef, index);
                 }
             }
 
@@ -2849,7 +2871,7 @@ namespace Unity.Collections
                 unsafe
                 {
                     CheckIndexInRange(index);
-                    GetUnsafePtr()[index] = value;
+                    Unsafe.Add(ref BytesRef, index) = value;
                 }
             }
         }
@@ -2867,7 +2889,7 @@ namespace Unity.Collections
             unsafe
             {
                 CheckIndexInRange(index);
-                return ref GetUnsafePtr()[index];
+                return ref Unsafe.Add(ref BytesRef, index);
             }
         }
 
@@ -2937,7 +2959,10 @@ namespace Unity.Collections
 
                 unsafe
                 {
-                    Unicode.Utf8ToUcs(out current, target.GetUnsafePtr(), ref offset, target.Length);
+                    fixed (byte* ptr = &target.BytesRef)
+                    {
+                        Unicode.Utf8ToUcs(out current, ptr, ref offset, target.Length);
+                    }
                 }
 
                 return true;
@@ -3022,7 +3047,7 @@ namespace Unity.Collections
         /// <returns>A ref to a FixedListByte64 representation of the FixedString64Bytes.</returns>
         public unsafe ref FixedList64Bytes<byte> AsFixedList()
         {
-            return ref UnsafeUtility.AsRef<FixedList64Bytes<byte>>(UnsafeUtility.AddressOf(ref this));
+            return ref Unsafe.As<byte, FixedList64Bytes<byte>>(ref Unsafe.Subtract(ref BytesRef, 2));
         }
 
         /// <summary>
@@ -3084,8 +3109,11 @@ namespace Unity.Collections
             utf8LengthInBytes = 0;
             unsafe {
                 int len = 0;
-                byte* dstBytes = GetUnsafePtr();
-                var error = UTF8ArrayUnsafeUtility.AppendUTF8Bytes(dstBytes, ref len, utf8MaxLengthInBytes, srcBytes, srcLength);
+                FormatError error;
+                fixed (byte* dstBytes = &BytesRef)
+                {
+                    error = UTF8ArrayUnsafeUtility.AppendUTF8Bytes(dstBytes, ref len, utf8MaxLengthInBytes, srcBytes, srcLength);
+                }
                 if(error != FormatError.None)
                     return error;
                 this.Length = len;
@@ -3624,7 +3652,10 @@ namespace Unity.Collections
         /// <returns>The hash code of this string.</returns>
         public override readonly unsafe int GetHashCode()
         {
-            return (int)CollectionHelper.Hash(GetUnsafePtr(), Length);
+            fixed (byte* ptr = &BytesRef)
+            {
+                return (int)CollectionHelper.Hash(ptr, Length);
+            }
         }
 
         /// <summary>
@@ -3847,6 +3878,12 @@ namespace Unity.Collections
         [SerializeField] internal ushort utf8LengthInBytes;
         [SerializeField] internal FixedBytes126 bytes;
 
+        internal readonly ref byte BytesRef
+        {
+            [PatchedBody("bytes")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
         /// <summary>
         /// Returns the maximum number of UTF-8 bytes that can be stored in this string.
         /// </summary>
@@ -3905,7 +3942,7 @@ namespace Unity.Collections
                 utf8LengthInBytes = (ushort)value;
                 unsafe
                 {
-                    GetUnsafePtr()[utf8LengthInBytes] = 0;
+                    Unsafe.Add(ref BytesRef, utf8LengthInBytes) = 0;
                 }
             }
         }
@@ -3955,13 +3992,13 @@ namespace Unity.Collections
                 if (clearOptions == NativeArrayOptions.ClearMemory)
                 {
                     if (newLength > utf8LengthInBytes)
-                        UnsafeUtility.MemClear(GetUnsafePtr() + utf8LengthInBytes, newLength - utf8LengthInBytes);
+                        Unsafe.InitBlockUnaligned(ref Unsafe.Add(ref BytesRef, utf8LengthInBytes), 0, (uint)(newLength - utf8LengthInBytes));
                     else
-                        UnsafeUtility.MemClear(GetUnsafePtr() + newLength, utf8LengthInBytes - newLength);
+                        Unsafe.InitBlockUnaligned(ref Unsafe.Add(ref BytesRef, newLength), 0, (uint)(utf8LengthInBytes - newLength));
                 }
                 utf8LengthInBytes = (ushort)newLength;
                 // always null terminate
-                GetUnsafePtr()[utf8LengthInBytes] = 0;
+                Unsafe.Add(ref BytesRef, utf8LengthInBytes) = 0;
             }
             return true;
         }
@@ -3990,7 +4027,7 @@ namespace Unity.Collections
                 unsafe
                 {
                     CheckIndexInRange(index);
-                    return GetUnsafePtr()[index];
+                    return Unsafe.Add(ref BytesRef, index);
                 }
             }
 
@@ -4000,7 +4037,7 @@ namespace Unity.Collections
                 unsafe
                 {
                     CheckIndexInRange(index);
-                    GetUnsafePtr()[index] = value;
+                    Unsafe.Add(ref BytesRef, index) = value;
                 }
             }
         }
@@ -4018,7 +4055,7 @@ namespace Unity.Collections
             unsafe
             {
                 CheckIndexInRange(index);
-                return ref GetUnsafePtr()[index];
+                return ref Unsafe.Add(ref BytesRef, index);
             }
         }
 
@@ -4088,7 +4125,10 @@ namespace Unity.Collections
 
                 unsafe
                 {
-                    Unicode.Utf8ToUcs(out current, target.GetUnsafePtr(), ref offset, target.Length);
+                    fixed (byte* ptr = &target.BytesRef)
+                    {
+                        Unicode.Utf8ToUcs(out current, ptr, ref offset, target.Length);
+                    }
                 }
 
                 return true;
@@ -4173,7 +4213,7 @@ namespace Unity.Collections
         /// <returns>A ref to a FixedListByte128 representation of the FixedString128Bytes.</returns>
         public unsafe ref FixedList128Bytes<byte> AsFixedList()
         {
-            return ref UnsafeUtility.AsRef<FixedList128Bytes<byte>>(UnsafeUtility.AddressOf(ref this));
+            return ref Unsafe.As<byte, FixedList128Bytes<byte>>(ref Unsafe.Subtract(ref BytesRef, 2));
         }
 
         /// <summary>
@@ -4235,8 +4275,11 @@ namespace Unity.Collections
             utf8LengthInBytes = 0;
             unsafe {
                 int len = 0;
-                byte* dstBytes = GetUnsafePtr();
-                var error = UTF8ArrayUnsafeUtility.AppendUTF8Bytes(dstBytes, ref len, utf8MaxLengthInBytes, srcBytes, srcLength);
+                FormatError error;
+                fixed (byte* dstBytes = &BytesRef)
+                {
+                    error = UTF8ArrayUnsafeUtility.AppendUTF8Bytes(dstBytes, ref len, utf8MaxLengthInBytes, srcBytes, srcLength);
+                }
                 if(error != FormatError.None)
                     return error;
                 this.Length = len;
@@ -4767,7 +4810,10 @@ namespace Unity.Collections
         /// <returns>The hash code of this string.</returns>
         public override readonly unsafe int GetHashCode()
         {
-            return (int)CollectionHelper.Hash(GetUnsafePtr(), Length);
+            fixed (byte* ptr = &BytesRef)
+            {
+                return (int)CollectionHelper.Hash(ptr, Length);
+            }
         }
 
         /// <summary>
@@ -5110,6 +5156,12 @@ namespace Unity.Collections
         [SerializeField] internal ushort utf8LengthInBytes;
         [SerializeField] internal FixedBytes510 bytes;
 
+        internal readonly ref byte BytesRef
+        {
+            [PatchedBody("bytes")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
         /// <summary>
         /// Returns the maximum number of UTF-8 bytes that can be stored in this string.
         /// </summary>
@@ -5168,7 +5220,7 @@ namespace Unity.Collections
                 utf8LengthInBytes = (ushort)value;
                 unsafe
                 {
-                    GetUnsafePtr()[utf8LengthInBytes] = 0;
+                    Unsafe.Add(ref BytesRef, utf8LengthInBytes) = 0;
                 }
             }
         }
@@ -5218,13 +5270,13 @@ namespace Unity.Collections
                 if (clearOptions == NativeArrayOptions.ClearMemory)
                 {
                     if (newLength > utf8LengthInBytes)
-                        UnsafeUtility.MemClear(GetUnsafePtr() + utf8LengthInBytes, newLength - utf8LengthInBytes);
+                        Unsafe.InitBlockUnaligned(ref Unsafe.Add(ref BytesRef, utf8LengthInBytes), 0, (uint)(newLength - utf8LengthInBytes));
                     else
-                        UnsafeUtility.MemClear(GetUnsafePtr() + newLength, utf8LengthInBytes - newLength);
+                        Unsafe.InitBlockUnaligned(ref Unsafe.Add(ref BytesRef, newLength), 0, (uint)(utf8LengthInBytes - newLength));
                 }
                 utf8LengthInBytes = (ushort)newLength;
                 // always null terminate
-                GetUnsafePtr()[utf8LengthInBytes] = 0;
+                Unsafe.Add(ref BytesRef, utf8LengthInBytes) = 0;
             }
             return true;
         }
@@ -5253,7 +5305,7 @@ namespace Unity.Collections
                 unsafe
                 {
                     CheckIndexInRange(index);
-                    return GetUnsafePtr()[index];
+                    return Unsafe.Add(ref BytesRef, index);
                 }
             }
 
@@ -5263,7 +5315,7 @@ namespace Unity.Collections
                 unsafe
                 {
                     CheckIndexInRange(index);
-                    GetUnsafePtr()[index] = value;
+                    Unsafe.Add(ref BytesRef, index) = value;
                 }
             }
         }
@@ -5281,7 +5333,7 @@ namespace Unity.Collections
             unsafe
             {
                 CheckIndexInRange(index);
-                return ref GetUnsafePtr()[index];
+                return ref Unsafe.Add(ref BytesRef, index);
             }
         }
 
@@ -5351,7 +5403,10 @@ namespace Unity.Collections
 
                 unsafe
                 {
-                    Unicode.Utf8ToUcs(out current, target.GetUnsafePtr(), ref offset, target.Length);
+                    fixed (byte* ptr = &target.BytesRef)
+                    {
+                        Unicode.Utf8ToUcs(out current, ptr, ref offset, target.Length);
+                    }
                 }
 
                 return true;
@@ -5436,7 +5491,7 @@ namespace Unity.Collections
         /// <returns>A ref to a FixedListByte512 representation of the FixedString512Bytes.</returns>
         public unsafe ref FixedList512Bytes<byte> AsFixedList()
         {
-            return ref UnsafeUtility.AsRef<FixedList512Bytes<byte>>(UnsafeUtility.AddressOf(ref this));
+            return ref Unsafe.As<byte, FixedList512Bytes<byte>>(ref Unsafe.Subtract(ref BytesRef, 2));
         }
 
         /// <summary>
@@ -5498,8 +5553,11 @@ namespace Unity.Collections
             utf8LengthInBytes = 0;
             unsafe {
                 int len = 0;
-                byte* dstBytes = GetUnsafePtr();
-                var error = UTF8ArrayUnsafeUtility.AppendUTF8Bytes(dstBytes, ref len, utf8MaxLengthInBytes, srcBytes, srcLength);
+                FormatError error;
+                fixed (byte* dstBytes = &BytesRef)
+                {
+                    error = UTF8ArrayUnsafeUtility.AppendUTF8Bytes(dstBytes, ref len, utf8MaxLengthInBytes, srcBytes, srcLength);
+                }
                 if(error != FormatError.None)
                     return error;
                 this.Length = len;
@@ -6022,7 +6080,10 @@ namespace Unity.Collections
         /// <returns>The hash code of this string.</returns>
         public override readonly unsafe int GetHashCode()
         {
-            return (int)CollectionHelper.Hash(GetUnsafePtr(), Length);
+            fixed (byte* ptr = &BytesRef)
+            {
+                return (int)CollectionHelper.Hash(ptr, Length);
+            }
         }
 
         /// <summary>
@@ -7485,6 +7546,12 @@ namespace Unity.Collections
         [SerializeField] internal ushort utf8LengthInBytes;
         [SerializeField] internal FixedBytes4094 bytes;
 
+        internal readonly ref byte BytesRef
+        {
+            [PatchedBody("bytes")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
         /// <summary>
         /// Returns the maximum number of UTF-8 bytes that can be stored in this string.
         /// </summary>
@@ -7543,7 +7610,7 @@ namespace Unity.Collections
                 utf8LengthInBytes = (ushort)value;
                 unsafe
                 {
-                    GetUnsafePtr()[utf8LengthInBytes] = 0;
+                    Unsafe.Add(ref BytesRef, utf8LengthInBytes) = 0;
                 }
             }
         }
@@ -7593,13 +7660,13 @@ namespace Unity.Collections
                 if (clearOptions == NativeArrayOptions.ClearMemory)
                 {
                     if (newLength > utf8LengthInBytes)
-                        UnsafeUtility.MemClear(GetUnsafePtr() + utf8LengthInBytes, newLength - utf8LengthInBytes);
+                        Unsafe.InitBlockUnaligned(ref Unsafe.Add(ref BytesRef, utf8LengthInBytes), 0, (uint)(newLength - utf8LengthInBytes));
                     else
-                        UnsafeUtility.MemClear(GetUnsafePtr() + newLength, utf8LengthInBytes - newLength);
+                        Unsafe.InitBlockUnaligned(ref Unsafe.Add(ref BytesRef, newLength), 0, (uint)(utf8LengthInBytes - newLength));
                 }
                 utf8LengthInBytes = (ushort)newLength;
                 // always null terminate
-                GetUnsafePtr()[utf8LengthInBytes] = 0;
+                Unsafe.Add(ref BytesRef, utf8LengthInBytes) = 0;
             }
             return true;
         }
@@ -7628,7 +7695,7 @@ namespace Unity.Collections
                 unsafe
                 {
                     CheckIndexInRange(index);
-                    return GetUnsafePtr()[index];
+                    return Unsafe.Add(ref BytesRef, index);
                 }
             }
 
@@ -7638,7 +7705,7 @@ namespace Unity.Collections
                 unsafe
                 {
                     CheckIndexInRange(index);
-                    GetUnsafePtr()[index] = value;
+                    Unsafe.Add(ref BytesRef, index) = value;
                 }
             }
         }
@@ -7656,7 +7723,7 @@ namespace Unity.Collections
             unsafe
             {
                 CheckIndexInRange(index);
-                return ref GetUnsafePtr()[index];
+                return ref Unsafe.Add(ref BytesRef, index);
             }
         }
 
@@ -7726,7 +7793,10 @@ namespace Unity.Collections
 
                 unsafe
                 {
-                    Unicode.Utf8ToUcs(out current, target.GetUnsafePtr(), ref offset, target.Length);
+                    fixed (byte* ptr = &target.BytesRef)
+                    {
+                        Unicode.Utf8ToUcs(out current, ptr, ref offset, target.Length);
+                    }
                 }
 
                 return true;
@@ -7811,7 +7881,7 @@ namespace Unity.Collections
         /// <returns>A ref to a FixedListByte4096 representation of the FixedString4096Bytes.</returns>
         public unsafe ref FixedList4096Bytes<byte> AsFixedList()
         {
-            return ref UnsafeUtility.AsRef<FixedList4096Bytes<byte>>(UnsafeUtility.AddressOf(ref this));
+            return ref Unsafe.As<byte, FixedList4096Bytes<byte>>(ref Unsafe.Subtract(ref BytesRef, 2));
         }
 
         /// <summary>
@@ -7873,8 +7943,11 @@ namespace Unity.Collections
             utf8LengthInBytes = 0;
             unsafe {
                 int len = 0;
-                byte* dstBytes = GetUnsafePtr();
-                var error = UTF8ArrayUnsafeUtility.AppendUTF8Bytes(dstBytes, ref len, utf8MaxLengthInBytes, srcBytes, srcLength);
+                FormatError error;
+                fixed (byte* dstBytes = &BytesRef)
+                {
+                    error = UTF8ArrayUnsafeUtility.AppendUTF8Bytes(dstBytes, ref len, utf8MaxLengthInBytes, srcBytes, srcLength);
+                }
                 if(error != FormatError.None)
                     return error;
                 this.Length = len;
@@ -8389,7 +8462,10 @@ namespace Unity.Collections
         /// <returns>The hash code of this string.</returns>
         public override readonly unsafe int GetHashCode()
         {
-            return (int)CollectionHelper.Hash(GetUnsafePtr(), Length);
+            fixed (byte* ptr = &BytesRef)
+            {
+                return (int)CollectionHelper.Hash(ptr, Length);
+            }
         }
 
         /// <summary>

@@ -16,6 +16,8 @@ namespace UnityEditor
 
         VisualElement m_previewElement;
 
+        bool m_IsEnabled;
+
         VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement?.Q(className: "unity-inspector-preview"));
 
         internal bool IsFloatingWindow => parent is { window.rootView: not null, window.showMode: not ShowMode.MainWindow };
@@ -76,10 +78,12 @@ namespace UnityEditor
             rootVisualElement.AddStyleSheetPath("StyleSheets/InspectorWindow/PreviewWindow.uss");
 
             EditorApplication.update += RebuildContentsContainers;
+            m_IsEnabled = true;
         }
 
         protected override void OnDisable()
         {
+            m_IsEnabled = false;
             // Safeguard if the window is closed before the callback has been unregistered
             EditorApplication.update -= RebuildContentsContainers;
             base.OnDisable();
@@ -115,6 +119,10 @@ namespace UnityEditor
         internal override void RebuildContentsContainers()
         {
             EditorApplication.update -= RebuildContentsContainers;
+
+            // EditorApplication.update can still invoke this in the same tick after OnDisable unregistered it.
+            if (!m_IsEnabled)
+                return;
 
             ClearPreviewables();
             InitPreview();

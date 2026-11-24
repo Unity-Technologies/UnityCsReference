@@ -189,7 +189,7 @@ namespace UnityEditor.TextCore.Text
             if (sourceFont == null || string.IsNullOrEmpty(ranges))
                 return string.Empty;
 
-            if (FontEngine.LoadFontFace(sourceFont, 90, faceIndex, out FontFaceHandle faceHandle) != FontEngineError.Success)
+            if (FontEngine.LoadFontFace(sourceFont, 90, faceIndex, sourceFont.GetEntityId(), out FontFaceHandle faceHandle) != FontEngineError.Success)
                 return string.Empty;
 
             try

@@ -121,7 +121,7 @@ namespace Unity.Entities
         }
 
         // Moves the entries of srcEntities, in srcStore, to dstEntities in this store
-        void MoveComponentObjectStates(EntityComponentStore* srcStore, Entity* srcEntities, Entity* dstEntities, int count, Archetype* srcArchetype)
+        internal void MoveComponentObjectStates(EntityComponentStore* srcStore, Entity* srcEntities, Entity* dstEntities, int count, Archetype* srcArchetype)
         {
             if (srcStore->m_ComponentObjectStates.IsEmpty)
                 return;

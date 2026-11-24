@@ -335,6 +335,7 @@ namespace Unity.Burst
 
                     // Store the option directly into BurstCompiler.IsEnabled
                     BurstCompiler._IsEnabled = value;
+                    Unity.Burst.LowLevel.BurstCompilerService.SetCompilationEnabled(value);
                 }
 
                 if (changed)

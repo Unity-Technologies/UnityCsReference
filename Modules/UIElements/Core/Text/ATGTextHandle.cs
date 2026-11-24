@@ -355,6 +355,7 @@ namespace UnityEngine.UIElements
             nativeSettings.textSettings = textSettings.nativeTextSettings;
             nativeSettings.disableAdvancedFontFeatures = m_TextElement.panel?.contextType == ContextType.Editor;
             nativeSettings.richTextEnabled = m_TextElement.enableRichText;
+            nativeSettings.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
             nativeSettings.hoveredTag = (HoveredTag)m_HoveredTag;
             nativeSettings.pixelsPerPointFixed64 = (int)Math.Round(GetPixelsPerPoint() * 64.0f);
 

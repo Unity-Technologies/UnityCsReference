@@ -101,9 +101,10 @@ namespace UnityEditor.TextCore.Text
 
             // Create new Font Asset
             FontAsset fontAsset = ScriptableObject.CreateInstance<FontAsset>();
+            // Stamp before CreateAsset; an unversioned static asset is upgraded to Persistent.
+            fontAsset.version = FontAsset.k_Version;
             AssetDatabase.CreateAsset(fontAsset, newAssetFilePathWithName);
 
-            fontAsset.version = FontAsset.k_Version;
             fontAsset.faceInfo = FontEngine.GetFaceInfo();
 
             // Set font reference and GUID

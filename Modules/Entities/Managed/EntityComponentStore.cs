@@ -239,6 +239,9 @@ namespace Unity.Entities
 
     internal unsafe partial struct EntityComponentStore
     {
+        // Must stay the first field, as native code reads it (EntityComponentStore.h)
+        uint m_GlobalSystemVersion;
+
         private const int kUnmanagedSharedComponentIndexFlag = 1 << 31;
 
         internal const int kDefaultAllocatorBudgetInBytes = 16 * 1024 * 1024;
@@ -287,7 +290,6 @@ namespace Unity.Entities
         ulong m_NextChunkSequenceNumber;
 
 
-        uint m_GlobalSystemVersion;
         int  m_IntentionallyInconsistent;
         uint m_ArchetypeTrackingVersion;
 
@@ -395,6 +397,12 @@ namespace Unity.Entities
 
         public int EntityOrderVersion => GetComponentTypeOrderVersion(m_EntityType);
         public uint GlobalSystemVersion => m_GlobalSystemVersion;
+
+        internal static int GetGlobalSystemVersionOffsetForStructMatchCheck()
+        {
+            EntityComponentStore store = default;
+            return (int)((byte*)&store.m_GlobalSystemVersion - (byte*)&store);
+        }
 
         public void IncrementGlobalSystemVersion(in SystemHandle handle = default)
         {
@@ -635,33 +643,30 @@ namespace Unity.Entities
             m_HashLookup.Clear();
         }
 
-        public void FreeAllEntities(
-            )
+        // Entity names live in the global name map. Each world only tracks which of its entities have one,
+        // so moving entities between worlds moves that tracking and leaves the names untouched.
+        public void MoveAllEntitiesWithNamesFrom(EntityComponentStore* srcEntityComponentStore)
         {
-            var archetypes = m_Archetypes;
-
-            for (int archetypeIndex = 0, archetypeCount = archetypes.Length;
-                 archetypeIndex < archetypeCount;
-                 archetypeIndex++)
+            var moved = new NativeList<Entity>(Allocator.Temp);
+            foreach (var e in srcEntityComponentStore->m_NameStoreAccess.GetEntitiesWithNamesRO())
             {
-                var archetype = m_Archetypes.Ptr[archetypeIndex];
-
-                for (int chunkIndex = 0, chunkCount = archetype->Chunks.Count; chunkIndex < chunkCount; chunkIndex++)
-                {
-                    var chunk = archetype->Chunks[chunkIndex];
-                    var entities = (Entity*)chunk.Buffer;
-                    var entityCount = chunk.Count;
-                    s_entityStore.Data.DeallocateEntities(entities, entityCount);
-                }
-                var entitiesWithNames = m_NameStoreAccess.GetEntitiesWithNamesRO();
-                foreach (var e in entitiesWithNames)
-                {
-                    EntityNameStorage.RemoveEntitiesFromNameMap(&e, 1);
-                }
+                if (srcEntityComponentStore->GetArchetype(e)->HasSystemInstanceComponents)
+                    continue;
+                m_NameStoreAccess.AddEntityToEntitiesWithNames(e);
+                moved.Add(e);
             }
+            srcEntityComponentStore->m_NameStoreAccess.RemoveEntitiesFromEntitiesWithNames(moved.GetUnsafePtr(), moved.Length);
+            moved.Dispose();
+        }
 
-            m_NameStoreAccess.ResetEntitiesWithNames();
-            m_ComponentObjectStates.Clear();
+        public void MoveEntitiesWithNamesFrom(EntityComponentStore* srcEntityComponentStore, ChunkIndex chunk)
+        {
+            var entities = (Entity*)chunk.Buffer;
+            for (int i = 0, count = chunk.Count; i < count; ++i)
+            {
+                if (srcEntityComponentStore->m_NameStoreAccess.RemoveEntityFromEntitiesWithNames(entities[i]))
+                    m_NameStoreAccess.AddEntityToEntitiesWithNames(entities[i]);
+            }
         }
 
         public void FreeEntities(ChunkIndex chunk)
@@ -1109,61 +1114,6 @@ namespace Unity.Entities
 
                 s_entityStore.Data.SetEntityInChunk(*entity, new EntityInChunk { Chunk = chunk, IndexInChunk = iEntity });
                 s_entityStore.Data.SetEntityVersion(*entity, entity->Version);
-            }
-        }
-
-        public void AllocateEntitiesForRemapping(EntityComponentStore* srcEntityComponentStore, ref NativeArray<EntityRemapUtility.EntityRemapInfo> entityRemapping)
-        {
-            var archetypes = srcEntityComponentStore->m_Archetypes;
-
-            for (int archetypeIndex = 0, archetypeCount = archetypes.Length; archetypeIndex < archetypeCount; archetypeIndex++)
-            {
-                var archetype = archetypes.Ptr[archetypeIndex];
-
-                for (int chunkIndex = 0, chunkCount = archetype->Chunks.Count; chunkIndex < chunkCount; chunkIndex++)
-                {
-                    var chunk = archetype->Chunks[chunkIndex];
-                    AllocateEntitiesForRemapping(chunk, srcEntityComponentStore, ref entityRemapping);
-                }
-            }
-        }
-
-        public void AllocateEntitiesForRemapping(ChunkIndex chunk, EntityComponentStore* srcComponentStore, ref NativeArray<EntityRemapUtility.EntityRemapInfo> entityRemapping)
-        {
-            var srcEntities = (Entity*)chunk.Buffer;
-            var entityCount = chunk.Count;
-            var dstEntities = stackalloc Entity[TypeManager.MaximumChunkCapacity];
-
-            s_entityStore.Data.AllocateEntitiesDirect(dstEntities, entityCount, ChunkIndex.Null, 0);
-
-            for (int entityIndex = 0; entityIndex < entityCount; entityIndex++)
-            {
-                EntityRemapUtility.AddEntityRemapping(ref entityRemapping,
-                    srcEntities[entityIndex],
-                    dstEntities[entityIndex]);
-
-                CopyName(dstEntities[entityIndex], srcEntities[entityIndex]);
-            }
-
-            MoveComponentObjectStates(srcComponentStore, srcEntities, dstEntities, entityCount, srcComponentStore->GetArchetype(chunk));
-        }
-
-        public void RemapChunk(ChunkIndex chunk, int count, ref NativeArray<EntityRemapUtility.EntityRemapInfo> entityRemapping)
-        {
-            var entityInChunkStart = (Entity*)chunk.Buffer;
-
-            for (var i = 0; i != count; i++)
-            {
-                var entityInChunk = entityInChunkStart + i;
-                var target = EntityRemapUtility.RemapEntity(ref entityRemapping, *entityInChunk);
-
-                *entityInChunk = target;
-                SetEntityInChunk(target, new EntityInChunk { Chunk = chunk, IndexInChunk = i });
-            }
-
-            if (chunk.MetaChunkEntity != Entity.Null)
-            {
-                chunk.MetaChunkEntity = EntityRemapUtility.RemapEntity(ref entityRemapping, chunk.MetaChunkEntity);
             }
         }
 

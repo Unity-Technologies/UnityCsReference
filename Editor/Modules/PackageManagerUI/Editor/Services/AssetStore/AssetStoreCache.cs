@@ -1,0 +1,286 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace UnityEditor.PackageManager.UI.Internal
+{
+    internal interface IAssetStoreCache : IService
+    {
+        event Action<IReadOnlyCollection<AssetStoreLocalInfo> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
+        event Action<AssetStoreProductInfo> onProductInfoChanged;
+        event Action<IReadOnlyList<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        event Action<IReadOnlyList<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        event Action<IReadOnlyCollection<AssetStoreImportedPackage> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
+
+        IReadOnlyCollection<AssetStoreLocalInfo> localInfos { get; }
+        IReadOnlyCollection<AssetStoreImportedPackage> importedPackages { get; }
+        IReadOnlyCollection<Asset> importedAssets { get; }
+
+        void SetCategory(string category, long count);
+        void ClearOnlineCache();
+        AssetStorePurchaseInfo GetPurchaseInfo(long? productId);
+        AssetStoreProductInfo GetProductInfo(long? productId);
+        AssetStoreLocalInfo GetLocalInfo(long? productId);
+        AssetStoreUpdateInfo GetUpdateInfo(long? productId);
+        AssetStoreImportedPackage GetImportedPackage(long? productId);
+        void SetPurchaseInfos(IEnumerable<AssetStorePurchaseInfo> purchaseInfos);
+        void SetProductInfo(AssetStoreProductInfo productInfo);
+        void SetLocalInfos(IReadOnlyList<AssetStoreLocalInfo> newLocalInfos);
+        void SetLocalInfo(AssetStoreLocalInfo localInfo);
+        void SetUpdateInfos(IEnumerable<AssetStoreUpdateInfo> updateInfos);
+        void UpdateImportedAssets(IEnumerable<Asset> addedOrUpdatedAssets, IEnumerable<string> removedAssetPaths);
+    }
+
+    [Serializable]
+    internal class AssetStoreCache : BaseService<IAssetStoreCache>, IAssetStoreCache, ISerializationCallbackReceiver
+    {
+        [SerializeField]
+        private Dictionary<string, long> m_Categories = new();
+
+        [SerializeField]
+        private Dictionary<long, AssetStorePurchaseInfo> m_PurchaseInfos = new();
+
+        [SerializeField]
+        private Dictionary<long, AssetStoreProductInfo> m_ProductInfos = new();
+
+        [SerializeField]
+        private Dictionary<long, AssetStoreLocalInfo> m_LocalInfos = new();
+
+        [SerializeField]
+        private Dictionary<long, AssetStoreUpdateInfo> m_UpdateInfos = new();
+
+        // We use the path string as the key for each imported asset
+        [SerializeField]
+        private Dictionary<string, Asset> m_ImportedAssets = new();
+
+		// We don't serialize imported packages, because the list of imported packages can be constructed from imported assets
+        private readonly Dictionary<long, AssetStoreImportedPackage> m_ImportedPackages = new();
+
+        public event Action<IReadOnlyCollection<AssetStoreLocalInfo> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
+        public event Action<AssetStoreProductInfo> onProductInfoChanged;
+        public event Action<IReadOnlyList<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        public event Action<IReadOnlyList<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        public event Action<IReadOnlyCollection<AssetStoreImportedPackage> /*addedOrUpdated*/, IReadOnlyCollection<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
+
+        public IReadOnlyCollection<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
+
+        public IReadOnlyCollection<AssetStoreImportedPackage> importedPackages => m_ImportedPackages.Values;
+        public IReadOnlyCollection<Asset> importedAssets => m_ImportedAssets.Values;
+
+        public void OnBeforeSerialize() {}
+
+        public void OnAfterDeserialize()
+        {
+            m_ImportedPackages.Clear();
+            foreach (var asset in m_ImportedAssets.Values)
+            {
+                if (m_ImportedPackages.TryGetValue(asset.origin.productId, out var importedPackage))
+                {
+                    importedPackage.AddImportedAsset(asset);
+                    continue;
+                }
+
+                m_ImportedPackages[asset.origin.productId] = new AssetStoreImportedPackage(asset);
+            }
+        }
+
+        public void SetCategory(string category, long count)
+        {
+            m_Categories[category] = count;
+        }
+
+        public void ClearOnlineCache()
+        {
+            m_Categories.Clear();
+            m_PurchaseInfos.Clear();
+            m_ProductInfos.Clear();
+            m_UpdateInfos.Clear();
+        }
+
+        public AssetStorePurchaseInfo GetPurchaseInfo(long? productId)
+        {
+            return productId > 0 ? m_PurchaseInfos.Get(productId.Value) : null;
+        }
+
+        public AssetStoreProductInfo GetProductInfo(long? productId)
+        {
+            return productId > 0 ? m_ProductInfos.Get(productId.Value) : null;
+        }
+
+        public AssetStoreLocalInfo GetLocalInfo(long? productId)
+        {
+            return productId > 0 ? m_LocalInfos.Get(productId.Value) : null;
+        }
+
+        public AssetStoreUpdateInfo GetUpdateInfo(long? productId)
+        {
+            return productId > 0 ? m_UpdateInfos.Get(productId.Value) : null;
+        }
+
+        public AssetStoreImportedPackage GetImportedPackage(long? productId)
+        {
+            return productId > 0 ? m_ImportedPackages.Get(productId.Value) : null;
+        }
+
+        public void SetPurchaseInfos(IEnumerable<AssetStorePurchaseInfo> purchaseInfos)
+        {
+            var updatedPurchaseInfos = new List<AssetStorePurchaseInfo>();
+            foreach (var purchaseInfo in purchaseInfos)
+            {
+                var oldPurchaseInfo = GetPurchaseInfo(purchaseInfo.productId);
+                m_PurchaseInfos[purchaseInfo.productId] = purchaseInfo;
+                if (!purchaseInfo.Equals(oldPurchaseInfo))
+                    updatedPurchaseInfos.Add(purchaseInfo);
+            }
+            if (updatedPurchaseInfos.Count > 0)
+                onPurchaseInfosChanged?.Invoke(updatedPurchaseInfos);
+        }
+
+        public void SetProductInfo(AssetStoreProductInfo productInfo)
+        {
+            var oldProductInfo = GetProductInfo(productInfo.productId);
+            m_ProductInfos[productInfo.productId] = productInfo;
+            if (!productInfo.Equals(oldProductInfo))
+                onProductInfoChanged?.Invoke(productInfo);
+        }
+
+        public void SetLocalInfos(IReadOnlyList<AssetStoreLocalInfo> newLocalInfos)
+        {
+            var oldLocalInfos = m_LocalInfos;
+            m_LocalInfos = new Dictionary<long, AssetStoreLocalInfo>();
+            foreach (var info in newLocalInfos)
+            {
+                var productId = info?.productId ?? 0;
+                if (productId <= 0)
+                    continue;
+
+                if (m_LocalInfos.TryGetValue(productId, out var existingInfo))
+                {
+                    try
+                    {
+                        if (existingInfo.versionId >= info.versionId)
+                            continue;
+                    }
+                    catch (Exception)
+                    {
+                        var warningMessage = L10n.Tr("Multiple versions of the same package found on disk and we could not determine which one to take. Please remove one of the following files:\n", null);
+                        Debug.LogWarning($"{warningMessage}{existingInfo.packagePath}\n{info.packagePath}");
+                        continue;
+                    }
+                }
+                m_LocalInfos[productId] = info;
+            }
+
+            var addedOrUpdatedLocalInfos = new List<AssetStoreLocalInfo>();
+            foreach (var info in m_LocalInfos.Values)
+            {
+                var oldInfo = oldLocalInfos.Get(info.productId);
+                if (oldInfo != null)
+                    oldLocalInfos.Remove(info.productId);
+
+                if (!IsLocalInfoUpdated(oldInfo, info))
+                    continue;
+
+                addedOrUpdatedLocalInfos.Add(info);
+                // When local info gets updated, we want to remove the cached update info so that we check update for the new local info
+                m_UpdateInfos.Remove(info.productId);
+            }
+            if (addedOrUpdatedLocalInfos.Count > 0 || oldLocalInfos.Count > 0)
+                onLocalInfosChanged?.Invoke(addedOrUpdatedLocalInfos, oldLocalInfos.Values);
+        }
+
+        public void SetLocalInfo(AssetStoreLocalInfo localInfo)
+        {
+            var productId = localInfo?.productId ?? 0;
+            if (productId <= 0)
+                return;
+            var oldInfo = m_LocalInfos.Get(productId);
+            m_LocalInfos[productId] = localInfo;
+            if (IsLocalInfoUpdated(oldInfo, localInfo))
+                onLocalInfosChanged?.Invoke([localInfo], Array.Empty<AssetStoreLocalInfo>());
+        }
+
+        private static bool IsLocalInfoUpdated(AssetStoreLocalInfo oldInfo, AssetStoreLocalInfo newInfo)
+        {
+            return oldInfo == null
+                   || oldInfo.versionId != newInfo.versionId
+                   || oldInfo.uploadId != newInfo.uploadId
+                   || oldInfo.versionString != newInfo.versionString
+                   || oldInfo.packagePath != newInfo.packagePath;
+        }
+
+        public void SetUpdateInfos(IEnumerable<AssetStoreUpdateInfo> updateInfos)
+        {
+            var updateInfosChanged = new List<AssetStoreUpdateInfo>();
+            foreach (var info in updateInfos)
+            {
+                m_UpdateInfos.TryGetValue(info.productId, out var cachedUpdateInfo);
+                if (info.recommendedUploadId != cachedUpdateInfo?.recommendedUploadId)
+                    updateInfosChanged.Add(info);
+                m_UpdateInfos[info.productId] = info;
+            }
+
+            if (updateInfosChanged.Count > 0)
+                onUpdateInfosChanged?.Invoke(updateInfosChanged);
+        }
+
+        public void UpdateImportedAssets(IEnumerable<Asset> addedOrUpdatedAssets, IEnumerable<string> removedAssetPaths)
+        {
+            var modifiedProductIds = new HashSet<long>();
+            foreach (var path in removedAssetPaths ?? Array.Empty<string>())
+            {
+                if (!m_ImportedAssets.TryGetValue(path, out var asset))
+                    continue;
+
+                modifiedProductIds.Add(asset.origin.productId);
+                m_ImportedAssets.Remove(path);
+            }
+            foreach (var asset in addedOrUpdatedAssets ?? Array.Empty<Asset>())
+            {
+                modifiedProductIds.Add(asset.origin.productId);
+                m_ImportedAssets[asset.importedPath] = asset;
+            }
+
+            if (modifiedProductIds.Count > 0)
+                RefreshImportedPackageList(modifiedProductIds);
+        }
+
+        private void RefreshImportedPackageList(HashSet<long> modifiedProductIds)
+        {
+            var addedOrUpdatedPackages = new Dictionary<long, AssetStoreImportedPackage>();
+            foreach (var asset in m_ImportedAssets.Values)
+            {
+                var productId = asset.origin.productId;
+                if (!modifiedProductIds.Contains(productId))
+                    continue;
+
+                if (addedOrUpdatedPackages.TryGetValue(asset.origin.productId, out var package))
+                {
+                    package.AddImportedAsset(asset);
+                    continue;
+                }
+                addedOrUpdatedPackages[asset.origin.productId] = new AssetStoreImportedPackage(asset);
+            }
+
+            var removedPackages = new List<AssetStoreImportedPackage>();
+            foreach (var productId in modifiedProductIds)
+            {
+                if (addedOrUpdatedPackages.TryGetValue(productId, out var package))
+                {
+                    m_ImportedPackages[productId] = package;
+                    continue;
+                }
+
+                if (m_ImportedPackages.Remove(productId, out var removedPackage))
+                    removedPackages.Add(removedPackage);
+            }
+
+            if (addedOrUpdatedPackages.Count > 0 || removedPackages.Count > 0)
+                onImportedPackagesChanged?.Invoke(addedOrUpdatedPackages.Values, removedPackages);
+        }
+    }
+}

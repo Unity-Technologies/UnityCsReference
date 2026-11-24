@@ -346,9 +346,9 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern void ClearPendingFallbacks();
 
-        [FreeFunction("OSFontFallback::ReleaseNativeFallback")]
+        [FreeFunction("OSFontFallback::AdoptNativeFallback")]
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static extern void ReleaseNativeFallback(IntPtr nativePtr);
+        internal static extern void AdoptNativeFallback(IntPtr nativePtr, EntityId owner);
 
         [FreeFunction("OSFontFallback::TryGetFontReferenceForUnicode")]
         internal static extern bool TryGetFontReferenceForUnicode(long unicode, out FontReference fontRef);

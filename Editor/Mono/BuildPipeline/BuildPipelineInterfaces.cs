@@ -572,7 +572,7 @@ namespace UnityEditor.Build
         ///<param name="snippet">Details about the specific shader code being compiled.</param>
         ///<param name="data">List of variants that Unity is about to compile for the shader.</param>
         ///<example nocheck="true">
-        ///  <code><![CDATA[{code Modules/ShaderCompilationEditor/Tests/UTFTests/ShaderCompilation/Playmode/Assets/DocumentationExamples/Editor/Build/IPreprocessShaders/ShaderDebugBuildPreprocessor.cs}]]></code>
+        ///  <code><![CDATA[{code Editor/Modules/ShaderCompilationEditor/Tests/UTFTests/ShaderCompilation/Playmode/Assets/DocumentationExamples/Editor/Build/IPreprocessShaders/ShaderDebugBuildPreprocessor.cs}]]></code>
         ///</example>
         ///<example>
         ///  <code><![CDATA[

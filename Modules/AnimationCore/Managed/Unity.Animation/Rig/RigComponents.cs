@@ -274,6 +274,12 @@ namespace Unity.Animations
         /// <summary>
         /// Parent <see cref="SkeletonNode"/> index.
         /// </summary>
+        /// <remarks>
+        /// The root node is the first node of a skeleton and has a parent index of `-1`. Each other node must have a
+        /// parent index that is lower than its own index, which means that you add a parent to a
+        /// <see cref="RigBuilder"/> before its children. To get the index of a node from its identifier, use
+        /// <see cref="RigBuilder.GetBoneIndex"/>.
+        /// </remarks>
         public int        ParentIndex;
 
         /// <summary>
@@ -386,8 +392,9 @@ namespace Unity.Animations
     /// a buffer of default values for each animation channel.
     /// </summary>
     /// <remarks>
-    /// Build a rig definition with <see cref="RigBuilder"/> or <see cref="Create"/>. An Avatar also stores a rig
-    /// definition with a bone for each of its transforms. Read it with
+    /// Build a rig definition with <see cref="RigBuilder.ToRigDefinition"/>. To get a builder with the bones and
+    /// channels that clips animate, use <see cref="RigBuilder.Create(Transform, AnimationClip[], Allocator)"/>. An
+    /// Avatar also stores a rig definition with a bone for each of its transforms. Read it with
     /// <see cref="AvatarExtensions.ToRigReference(Avatar)"/>.
     ///
     /// The following example uses the `Unity.Animation`, `Unity.Collections`, `Unity.Entities`, `Unity.IntegerTime`,
@@ -401,7 +408,7 @@ namespace Unity.Animations
     public partial struct RigDefinition
     {
         // Version of the blob layout that an Avatar stores in builds. Increase it when the layout changes
-        internal const int BlobVersion = 1;
+        internal const int BlobVersion = 2;
 
         /// <summary>
         /// The skeleton topology.
@@ -426,5 +433,19 @@ namespace Unity.Animations
         /// Buffer of static socket offsets relative to their bone parent.
         /// </summary>
         public BlobArray<SocketNode>  SocketValues;
+
+        /// <summary>
+        /// The index of the bone whose motion gives the root motion of a clip.
+        /// </summary>
+        /// <remarks>
+        /// The value is an index in <see cref="Skeleton.Ids"/>. <see cref="RigBuilder.ToRigDefinition"/> sets it to the
+        /// bone that you set in <see cref="RigBuilder.RootMotionBoneId"/>, or to 0, the root bone, if you
+        /// don't choose one. The value is `-1` if the rig has no skeleton.
+        ///
+        /// <see cref="ClipSampler.SampleRootMotion(in TimerState)"/> uses this bone when the clip has no root motion
+        /// curves, and <see cref="ClipSampler.SampleExtractingRootMotion(ref AnimationStream, in TimerState)"/> removes
+        /// the root motion from this bone.
+        /// </remarks>
+        public int RootMotionBoneIndex;
     }
 }

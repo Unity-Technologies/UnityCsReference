@@ -1422,6 +1422,162 @@ namespace Unity.Mathematics
         public static double4 remap(double4 srcStart, double4 srcEnd, double4 dstStart, double4 dstEnd, double4 x) { return lerp(dstStart, dstEnd, unlerp(srcStart, srcEnd, x)); }
 
 
+        /// <summary>Returns the angle x wrapped to the range -PI to PI.</summary>
+        /// <remarks>The result is congruent to x modulo 2 * PI and lies in the half-open range [-PI, PI).</remarks>
+        /// <param name="x">Angle in radians.</param>
+        /// <returns>The equivalent angle in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float unwind(float x)
+        {
+            x = fmod(x + PI, PI2);
+            return select(x - PI, x + PI, x < 0.0f);
+        }
+
+        /// <summary>Returns the componentwise angles of a float2 vector wrapped to the range -PI to PI.</summary>
+        /// <remarks>Each component of the result is congruent to the input component modulo 2 * PI and lies in the half-open range [-PI, PI).</remarks>
+        /// <param name="x">Angles in radians.</param>
+        /// <returns>The componentwise equivalent angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 unwind(float2 x)
+        {
+            x = (x + PI) % PI2;
+            return select(x - PI, x + PI, x < 0.0f);
+        }
+
+        /// <summary>Returns the componentwise angles of a float3 vector wrapped to the range -PI to PI.</summary>
+        /// <remarks>Each component of the result is congruent to the input component modulo 2 * PI and lies in the half-open range [-PI, PI).</remarks>
+        /// <param name="x">Angles in radians.</param>
+        /// <returns>The componentwise equivalent angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 unwind(float3 x)
+        {
+            x = (x + PI) % PI2;
+            return select(x - PI, x + PI, x < 0.0f);
+        }
+
+        /// <summary>Returns the componentwise angles of a float4 vector wrapped to the range -PI to PI.</summary>
+        /// <remarks>Each component of the result is congruent to the input component modulo 2 * PI and lies in the half-open range [-PI, PI).</remarks>
+        /// <param name="x">Angles in radians.</param>
+        /// <returns>The componentwise equivalent angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 unwind(float4 x)
+        {
+            x = (x + PI) % PI2;
+            return select(x - PI, x + PI, x < 0.0f);
+        }
+
+
+        /// <summary>Returns the angle x wrapped to the range -PI to PI.</summary>
+        /// <remarks>The result is congruent to x modulo 2 * PI and lies in the half-open range [-PI, PI).</remarks>
+        /// <param name="x">Angle in radians.</param>
+        /// <returns>The equivalent angle in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double unwind(double x)
+        {
+            x = fmod(x + PI_DBL, PI2_DBL);
+            return select(x - PI_DBL, x + PI_DBL, x < 0.0);
+        }
+
+        /// <summary>Returns the componentwise angles of a double2 vector wrapped to the range -PI to PI.</summary>
+        /// <remarks>Each component of the result is congruent to the input component modulo 2 * PI and lies in the half-open range [-PI, PI).</remarks>
+        /// <param name="x">Angles in radians.</param>
+        /// <returns>The componentwise equivalent angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 unwind(double2 x)
+        {
+            x = (x + PI_DBL) % PI2_DBL;
+            return select(x - PI_DBL, x + PI_DBL, x < 0.0);
+        }
+
+        /// <summary>Returns the componentwise angles of a double3 vector wrapped to the range -PI to PI.</summary>
+        /// <remarks>Each component of the result is congruent to the input component modulo 2 * PI and lies in the half-open range [-PI, PI).</remarks>
+        /// <param name="x">Angles in radians.</param>
+        /// <returns>The componentwise equivalent angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 unwind(double3 x)
+        {
+            x = (x + PI_DBL) % PI2_DBL;
+            return select(x - PI_DBL, x + PI_DBL, x < 0.0);
+        }
+
+        /// <summary>Returns the componentwise angles of a double4 vector wrapped to the range -PI to PI.</summary>
+        /// <remarks>Each component of the result is congruent to the input component modulo 2 * PI and lies in the half-open range [-PI, PI).</remarks>
+        /// <param name="x">Angles in radians.</param>
+        /// <returns>The componentwise equivalent angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 unwind(double4 x)
+        {
+            x = (x + PI_DBL) % PI2_DBL;
+            return select(x - PI_DBL, x + PI_DBL, x < 0.0);
+        }
+
+
+        /// <summary>Returns the smallest signed angle in radians that rotates from one angle to another.</summary>
+        /// <remarks>The result lies in the half-open range [-PI, PI), and from + deltaangle(from, to) is congruent to to modulo 2 * PI.</remarks>
+        /// <param name="from">The start angle in radians.</param>
+        /// <param name="to">The end angle in radians.</param>
+        /// <returns>The signed difference between the two angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float deltaangle(float from, float to) { return unwind(to - from); }
+
+        /// <summary>Returns the componentwise smallest signed angles in radians that rotate from one float2 vector of angles to another.</summary>
+        /// <remarks>Each component of the result lies in the half-open range [-PI, PI), and from + deltaangle(from, to) is componentwise congruent to to modulo 2 * PI.</remarks>
+        /// <param name="from">The start angles in radians.</param>
+        /// <param name="to">The end angles in radians.</param>
+        /// <returns>The componentwise signed differences between the angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 deltaangle(float2 from, float2 to) { return unwind(to - from); }
+
+        /// <summary>Returns the componentwise smallest signed angles in radians that rotate from one float3 vector of angles to another.</summary>
+        /// <remarks>Each component of the result lies in the half-open range [-PI, PI), and from + deltaangle(from, to) is componentwise congruent to to modulo 2 * PI.</remarks>
+        /// <param name="from">The start angles in radians.</param>
+        /// <param name="to">The end angles in radians.</param>
+        /// <returns>The componentwise signed differences between the angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 deltaangle(float3 from, float3 to) { return unwind(to - from); }
+
+        /// <summary>Returns the componentwise smallest signed angles in radians that rotate from one float4 vector of angles to another.</summary>
+        /// <remarks>Each component of the result lies in the half-open range [-PI, PI), and from + deltaangle(from, to) is componentwise congruent to to modulo 2 * PI.</remarks>
+        /// <param name="from">The start angles in radians.</param>
+        /// <param name="to">The end angles in radians.</param>
+        /// <returns>The componentwise signed differences between the angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 deltaangle(float4 from, float4 to) { return unwind(to - from); }
+
+
+        /// <summary>Returns the smallest signed angle in radians that rotates from one angle to another.</summary>
+        /// <remarks>The result lies in the half-open range [-PI, PI), and from + deltaangle(from, to) is congruent to to modulo 2 * PI.</remarks>
+        /// <param name="from">The start angle in radians.</param>
+        /// <param name="to">The end angle in radians.</param>
+        /// <returns>The signed difference between the two angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double deltaangle(double from, double to) { return unwind(to - from); }
+
+        /// <summary>Returns the componentwise smallest signed angles in radians that rotate from one double2 vector of angles to another.</summary>
+        /// <remarks>Each component of the result lies in the half-open range [-PI, PI), and from + deltaangle(from, to) is componentwise congruent to to modulo 2 * PI.</remarks>
+        /// <param name="from">The start angles in radians.</param>
+        /// <param name="to">The end angles in radians.</param>
+        /// <returns>The componentwise signed differences between the angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 deltaangle(double2 from, double2 to) { return unwind(to - from); }
+
+        /// <summary>Returns the componentwise smallest signed angles in radians that rotate from one double3 vector of angles to another.</summary>
+        /// <remarks>Each component of the result lies in the half-open range [-PI, PI), and from + deltaangle(from, to) is componentwise congruent to to modulo 2 * PI.</remarks>
+        /// <param name="from">The start angles in radians.</param>
+        /// <param name="to">The end angles in radians.</param>
+        /// <returns>The componentwise signed differences between the angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 deltaangle(double3 from, double3 to) { return unwind(to - from); }
+
+        /// <summary>Returns the componentwise smallest signed angles in radians that rotate from one double4 vector of angles to another.</summary>
+        /// <remarks>Each component of the result lies in the half-open range [-PI, PI), and from + deltaangle(from, to) is componentwise congruent to to modulo 2 * PI.</remarks>
+        /// <param name="from">The start angles in radians.</param>
+        /// <param name="to">The end angles in radians.</param>
+        /// <returns>The componentwise signed differences between the angles in the range -PI to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 deltaangle(double4 from, double4 to) { return unwind(to - from); }
+
+
         /// <summary>Returns the result of a multiply-add operation (a * b + c) on 3 int values.</summary>
         /// <param name="mulA">First value to multiply.</param>
         /// <param name="mulB">Second value to multiply.</param>
@@ -2815,6 +2971,72 @@ namespace Unity.Mathematics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double4 rcp(double4 x) { return 1.0 / x; }
 
+
+        /// <summary>Returns the reciprocal of a float value, or zero if the magnitude of the value isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rcp(float)"/>, this function never divides by zero. Inputs with a magnitude that isn't greater than epsilon, including NaN, return zero.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold magnitude. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The reciprocal of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float rcpsafe(float x, float epsilon = FLT_MIN_NORMAL) { return select(0.0f, rcp(x), abs(x) > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal of a float2 vector, or zero for each component whose magnitude isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rcp(Unity.Mathematics.float2)"/>, this function never divides by zero. Components with a magnitude that isn't greater than epsilon, including NaN, return zero.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold magnitude. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 rcpsafe(float2 x, float epsilon = FLT_MIN_NORMAL) { return select(new float2(), rcp(x), abs(x) > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal of a float3 vector, or zero for each component whose magnitude isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rcp(Unity.Mathematics.float3)"/>, this function never divides by zero. Components with a magnitude that isn't greater than epsilon, including NaN, return zero.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold magnitude. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 rcpsafe(float3 x, float epsilon = FLT_MIN_NORMAL) { return select(new float3(), rcp(x), abs(x) > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal of a float4 vector, or zero for each component whose magnitude isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rcp(Unity.Mathematics.float4)"/>, this function never divides by zero. Components with a magnitude that isn't greater than epsilon, including NaN, return zero.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold magnitude. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 rcpsafe(float4 x, float epsilon = FLT_MIN_NORMAL) { return select(new float4(), rcp(x), abs(x) > epsilon); }
+
+
+        /// <summary>Returns the reciprocal of a double value, or zero if the magnitude of the value isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rcp(double)"/>, this function never divides by zero. Inputs with a magnitude that isn't greater than epsilon, including NaN, return zero.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold magnitude. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The reciprocal of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double rcpsafe(double x, double epsilon = DBL_MIN_NORMAL) { return select(0.0, rcp(x), abs(x) > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal of a double2 vector, or zero for each component whose magnitude isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rcp(Unity.Mathematics.double2)"/>, this function never divides by zero. Components with a magnitude that isn't greater than epsilon, including NaN, return zero.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold magnitude. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 rcpsafe(double2 x, double epsilon = DBL_MIN_NORMAL) { return select(new double2(), rcp(x), abs(x) > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal of a double3 vector, or zero for each component whose magnitude isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rcp(Unity.Mathematics.double3)"/>, this function never divides by zero. Components with a magnitude that isn't greater than epsilon, including NaN, return zero.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold magnitude. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 rcpsafe(double3 x, double epsilon = DBL_MIN_NORMAL) { return select(new double3(), rcp(x), abs(x) > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal of a double4 vector, or zero for each component whose magnitude isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rcp(Unity.Mathematics.double4)"/>, this function never divides by zero. Components with a magnitude that isn't greater than epsilon, including NaN, return zero.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold magnitude. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 rcpsafe(double4 x, double epsilon = DBL_MIN_NORMAL) { return select(new double4(), rcp(x), abs(x) > epsilon); }
+
         /// <summary>Returns the sign of a int value. -1 if it is less than zero, 0 if it is zero and 1 if it greater than zero.</summary>
         /// <param name="x">Input value.</param>
         /// <returns>The sign of the input.</returns>
@@ -3147,6 +3369,72 @@ namespace Unity.Mathematics
         public static double4 log(double4 x) { return new double4(log(x.x), log(x.y), log(x.z), log(x.w)); }
 
 
+        /// <summary>Returns the natural logarithm of a float value, or zero if the value isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log(float)"/>, inputs that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The natural logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float logsafe(float x, float epsilon = FLT_MIN_NORMAL) { return select(0.0f, log(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise natural logarithm of a float2 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log(Unity.Mathematics.float2)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise natural logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 logsafe(float2 x, float epsilon = FLT_MIN_NORMAL) { return select(new float2(), log(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise natural logarithm of a float3 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log(Unity.Mathematics.float3)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise natural logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 logsafe(float3 x, float epsilon = FLT_MIN_NORMAL) { return select(new float3(), log(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise natural logarithm of a float4 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log(Unity.Mathematics.float4)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise natural logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 logsafe(float4 x, float epsilon = FLT_MIN_NORMAL) { return select(new float4(), log(x), x > epsilon); }
+
+
+        /// <summary>Returns the natural logarithm of a double value, or zero if the value isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log(double)"/>, inputs that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The natural logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double logsafe(double x, double epsilon = DBL_MIN_NORMAL) { return select(0.0, log(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise natural logarithm of a double2 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log(Unity.Mathematics.double2)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise natural logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 logsafe(double2 x, double epsilon = DBL_MIN_NORMAL) { return select(new double2(), log(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise natural logarithm of a double3 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log(Unity.Mathematics.double3)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise natural logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 logsafe(double3 x, double epsilon = DBL_MIN_NORMAL) { return select(new double3(), log(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise natural logarithm of a double4 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log(Unity.Mathematics.double4)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise natural logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 logsafe(double4 x, double epsilon = DBL_MIN_NORMAL) { return select(new double4(), log(x), x > epsilon); }
+
+
         /// <summary>Returns the base-2 logarithm of a float value.</summary>
         /// <param name="x">Input value.</param>
         /// <returns>The base-2 logarithm of the input.</returns>
@@ -3196,6 +3484,72 @@ namespace Unity.Mathematics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double4 log2(double4 x) { return new double4(log2(x.x), log2(x.y), log2(x.z), log2(x.w)); }
 
+
+        /// <summary>Returns the base-2 logarithm of a float value, or zero if the value isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log2(float)"/>, inputs that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The base-2 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float log2safe(float x, float epsilon = FLT_MIN_NORMAL) { return select(0.0f, log2(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-2 logarithm of a float2 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log2(Unity.Mathematics.float2)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-2 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 log2safe(float2 x, float epsilon = FLT_MIN_NORMAL) { return select(new float2(), log2(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-2 logarithm of a float3 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log2(Unity.Mathematics.float3)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-2 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 log2safe(float3 x, float epsilon = FLT_MIN_NORMAL) { return select(new float3(), log2(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-2 logarithm of a float4 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log2(Unity.Mathematics.float4)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-2 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 log2safe(float4 x, float epsilon = FLT_MIN_NORMAL) { return select(new float4(), log2(x), x > epsilon); }
+
+
+        /// <summary>Returns the base-2 logarithm of a double value, or zero if the value isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log2(double)"/>, inputs that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The base-2 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double log2safe(double x, double epsilon = DBL_MIN_NORMAL) { return select(0.0, log2(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-2 logarithm of a double2 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log2(Unity.Mathematics.double2)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-2 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 log2safe(double2 x, double epsilon = DBL_MIN_NORMAL) { return select(new double2(), log2(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-2 logarithm of a double3 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log2(Unity.Mathematics.double3)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-2 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 log2safe(double3 x, double epsilon = DBL_MIN_NORMAL) { return select(new double3(), log2(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-2 logarithm of a double4 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log2(Unity.Mathematics.double4)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-2 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 log2safe(double4 x, double epsilon = DBL_MIN_NORMAL) { return select(new double4(), log2(x), x > epsilon); }
+
         /// <summary>Returns the base-10 logarithm of a float value.</summary>
         /// <param name="x">Input value.</param>
         /// <returns>The base-10 logarithm of the input.</returns>
@@ -3244,6 +3598,72 @@ namespace Unity.Mathematics
         /// <returns>The componentwise base-10 logarithm of the input.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double4 log10(double4 x) { return new double4(log10(x.x), log10(x.y), log10(x.z), log10(x.w)); }
+
+
+        /// <summary>Returns the base-10 logarithm of a float value, or zero if the value isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log10(float)"/>, inputs that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The base-10 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float log10safe(float x, float epsilon = FLT_MIN_NORMAL) { return select(0.0f, log10(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-10 logarithm of a float2 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log10(Unity.Mathematics.float2)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-10 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 log10safe(float2 x, float epsilon = FLT_MIN_NORMAL) { return select(new float2(), log10(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-10 logarithm of a float3 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log10(Unity.Mathematics.float3)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-10 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 log10safe(float3 x, float epsilon = FLT_MIN_NORMAL) { return select(new float3(), log10(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-10 logarithm of a float4 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log10(Unity.Mathematics.float4)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-10 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 log10safe(float4 x, float epsilon = FLT_MIN_NORMAL) { return select(new float4(), log10(x), x > epsilon); }
+
+
+        /// <summary>Returns the base-10 logarithm of a double value, or zero if the value isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log10(double)"/>, inputs that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The base-10 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double log10safe(double x, double epsilon = DBL_MIN_NORMAL) { return select(0.0, log10(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-10 logarithm of a double2 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log10(Unity.Mathematics.double2)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-10 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 log10safe(double2 x, double epsilon = DBL_MIN_NORMAL) { return select(new double2(), log10(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-10 logarithm of a double3 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log10(Unity.Mathematics.double3)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-10 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 log10safe(double3 x, double epsilon = DBL_MIN_NORMAL) { return select(new double3(), log10(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise base-10 logarithm of a double4 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="log10(Unity.Mathematics.double4)"/>, components that aren't greater than epsilon, including zero, negative values and NaN, return zero instead of negative infinity or NaN.</remarks>
+        /// <param name="x">Input value.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise base-10 logarithm of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 log10safe(double4 x, double epsilon = DBL_MIN_NORMAL) { return select(new double4(), log10(x), x > epsilon); }
 
 
         /// <summary>Returns the floating point remainder of x/y.</summary>
@@ -3302,6 +3722,72 @@ namespace Unity.Mathematics
         /// <returns>The componentwise remainder of x/y.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double4 fmod(double4 x, double4 y) { return new double4(x.x % y.x, x.y % y.y, x.z % y.z, x.w % y.w); }
+
+
+        /// <summary>Returns the floating point remainder of x/y, or zero if y is zero.</summary>
+        /// <remarks>Unlike <see cref="fmod(float, float)"/>, a zero or NaN divisor returns zero instead of NaN.</remarks>
+        /// <param name="x">The dividend in x/y.</param>
+        /// <param name="y">The divisor in x/y.</param>
+        /// <returns>The remainder of x/y, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float fmodsafe(float x, float y) { return select(0.0f, fmod(x, y), abs(y) > 0.0f); }
+
+        /// <summary>Returns the componentwise floating point remainder of x/y, or zero for each component where y is zero.</summary>
+        /// <remarks>Unlike <see cref="fmod(Unity.Mathematics.float2, Unity.Mathematics.float2)"/>, a zero or NaN divisor component returns zero instead of NaN.</remarks>
+        /// <param name="x">The dividend in x/y.</param>
+        /// <param name="y">The divisor in x/y.</param>
+        /// <returns>The componentwise remainder of x/y, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 fmodsafe(float2 x, float2 y) { return select(new float2(), fmod(x, y), abs(y) > 0.0f); }
+
+        /// <summary>Returns the componentwise floating point remainder of x/y, or zero for each component where y is zero.</summary>
+        /// <remarks>Unlike <see cref="fmod(Unity.Mathematics.float3, Unity.Mathematics.float3)"/>, a zero or NaN divisor component returns zero instead of NaN.</remarks>
+        /// <param name="x">The dividend in x/y.</param>
+        /// <param name="y">The divisor in x/y.</param>
+        /// <returns>The componentwise remainder of x/y, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 fmodsafe(float3 x, float3 y) { return select(new float3(), fmod(x, y), abs(y) > 0.0f); }
+
+        /// <summary>Returns the componentwise floating point remainder of x/y, or zero for each component where y is zero.</summary>
+        /// <remarks>Unlike <see cref="fmod(Unity.Mathematics.float4, Unity.Mathematics.float4)"/>, a zero or NaN divisor component returns zero instead of NaN.</remarks>
+        /// <param name="x">The dividend in x/y.</param>
+        /// <param name="y">The divisor in x/y.</param>
+        /// <returns>The componentwise remainder of x/y, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 fmodsafe(float4 x, float4 y) { return select(new float4(), fmod(x, y), abs(y) > 0.0f); }
+
+
+        /// <summary>Returns the double precision floating point remainder of x/y, or zero if y is zero.</summary>
+        /// <remarks>Unlike <see cref="fmod(double, double)"/>, a zero or NaN divisor returns zero instead of NaN.</remarks>
+        /// <param name="x">The dividend in x/y.</param>
+        /// <param name="y">The divisor in x/y.</param>
+        /// <returns>The remainder of x/y, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double fmodsafe(double x, double y) { return select(0.0, fmod(x, y), abs(y) > 0.0); }
+
+        /// <summary>Returns the componentwise double precision floating point remainder of x/y, or zero for each component where y is zero.</summary>
+        /// <remarks>Unlike <see cref="fmod(Unity.Mathematics.double2, Unity.Mathematics.double2)"/>, a zero or NaN divisor component returns zero instead of NaN.</remarks>
+        /// <param name="x">The dividend in x/y.</param>
+        /// <param name="y">The divisor in x/y.</param>
+        /// <returns>The componentwise remainder of x/y, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 fmodsafe(double2 x, double2 y) { return select(new double2(), fmod(x, y), abs(y) > 0.0); }
+
+        /// <summary>Returns the componentwise double precision floating point remainder of x/y, or zero for each component where y is zero.</summary>
+        /// <remarks>Unlike <see cref="fmod(Unity.Mathematics.double3, Unity.Mathematics.double3)"/>, a zero or NaN divisor component returns zero instead of NaN.</remarks>
+        /// <param name="x">The dividend in x/y.</param>
+        /// <param name="y">The divisor in x/y.</param>
+        /// <returns>The componentwise remainder of x/y, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 fmodsafe(double3 x, double3 y) { return select(new double3(), fmod(x, y), abs(y) > 0.0); }
+
+        /// <summary>Returns the componentwise double precision floating point remainder of x/y, or zero for each component where y is zero.</summary>
+        /// <remarks>Unlike <see cref="fmod(Unity.Mathematics.double4, Unity.Mathematics.double4)"/>, a zero or NaN divisor component returns zero instead of NaN.</remarks>
+        /// <param name="x">The dividend in x/y.</param>
+        /// <param name="y">The divisor in x/y.</param>
+        /// <returns>The componentwise remainder of x/y, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 fmodsafe(double4 x, double4 y) { return select(new double4(), fmod(x, y), abs(y) > 0.0); }
 
 
         /// <summary>Splits a float value into an integral part i and a fractional part that gets returned. Both parts take the sign of the input.</summary>
@@ -3430,6 +3916,64 @@ namespace Unity.Mathematics
         public static double4 sqrt(double4 x) { return new double4(sqrt(x.x), sqrt(x.y), sqrt(x.z), sqrt(x.w)); }
 
 
+        /// <summary>Returns the square root of a float value, or zero if the value isn't greater than zero.</summary>
+        /// <remarks>Unlike <see cref="sqrt(float)"/>, negative and NaN inputs return zero instead of NaN.</remarks>
+        /// <param name="x">Value to use when computing square root.</param>
+        /// <returns>The square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float sqrtsafe(float x) { return select(0.0f, sqrt(x), x > 0.0f); }
+
+        /// <summary>Returns the componentwise square root of a float2 vector, or zero for each component that isn't greater than zero.</summary>
+        /// <remarks>Unlike <see cref="sqrt(Unity.Mathematics.float2)"/>, negative and NaN components return zero instead of NaN.</remarks>
+        /// <param name="x">Value to use when computing square root.</param>
+        /// <returns>The componentwise square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 sqrtsafe(float2 x) { return select(new float2(), sqrt(x), x > 0.0f); }
+
+        /// <summary>Returns the componentwise square root of a float3 vector, or zero for each component that isn't greater than zero.</summary>
+        /// <remarks>Unlike <see cref="sqrt(Unity.Mathematics.float3)"/>, negative and NaN components return zero instead of NaN.</remarks>
+        /// <param name="x">Value to use when computing square root.</param>
+        /// <returns>The componentwise square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 sqrtsafe(float3 x) { return select(new float3(), sqrt(x), x > 0.0f); }
+
+        /// <summary>Returns the componentwise square root of a float4 vector, or zero for each component that isn't greater than zero.</summary>
+        /// <remarks>Unlike <see cref="sqrt(Unity.Mathematics.float4)"/>, negative and NaN components return zero instead of NaN.</remarks>
+        /// <param name="x">Value to use when computing square root.</param>
+        /// <returns>The componentwise square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 sqrtsafe(float4 x) { return select(new float4(), sqrt(x), x > 0.0f); }
+
+
+        /// <summary>Returns the square root of a double value, or zero if the value isn't greater than zero.</summary>
+        /// <remarks>Unlike <see cref="sqrt(double)"/>, negative and NaN inputs return zero instead of NaN.</remarks>
+        /// <param name="x">Value to use when computing square root.</param>
+        /// <returns>The square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double sqrtsafe(double x) { return select(0.0, sqrt(x), x > 0.0); }
+
+        /// <summary>Returns the componentwise square root of a double2 vector, or zero for each component that isn't greater than zero.</summary>
+        /// <remarks>Unlike <see cref="sqrt(Unity.Mathematics.double2)"/>, negative and NaN components return zero instead of NaN.</remarks>
+        /// <param name="x">Value to use when computing square root.</param>
+        /// <returns>The componentwise square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 sqrtsafe(double2 x) { return select(new double2(), sqrt(x), x > 0.0); }
+
+        /// <summary>Returns the componentwise square root of a double3 vector, or zero for each component that isn't greater than zero.</summary>
+        /// <remarks>Unlike <see cref="sqrt(Unity.Mathematics.double3)"/>, negative and NaN components return zero instead of NaN.</remarks>
+        /// <param name="x">Value to use when computing square root.</param>
+        /// <returns>The componentwise square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 sqrtsafe(double3 x) { return select(new double3(), sqrt(x), x > 0.0); }
+
+        /// <summary>Returns the componentwise square root of a double4 vector, or zero for each component that isn't greater than zero.</summary>
+        /// <remarks>Unlike <see cref="sqrt(Unity.Mathematics.double4)"/>, negative and NaN components return zero instead of NaN.</remarks>
+        /// <param name="x">Value to use when computing square root.</param>
+        /// <returns>The componentwise square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 sqrtsafe(double4 x) { return select(new double4(), sqrt(x), x > 0.0); }
+
+
         /// <summary>Returns the reciprocal square root of a float value.</summary>
         /// <param name="x">Value to use when computing reciprocal square root.</param>
         /// <returns>The reciprocal square root.</returns>
@@ -3478,6 +4022,72 @@ namespace Unity.Mathematics
         /// <returns>The componentwise reciprocal square root.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double4 rsqrt(double4 x) { return 1.0 / sqrt(x); }
+
+
+        /// <summary>Returns the reciprocal square root of a float value, or zero if the value isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rsqrt(float)"/>, this function never divides by zero. Inputs that aren't greater than epsilon, including negative values and NaN, return zero.</remarks>
+        /// <param name="x">Value to use when computing reciprocal square root.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The reciprocal square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float rsqrtsafe(float x, float epsilon = FLT_MIN_NORMAL) { return select(0.0f, rsqrt(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal square root of a float2 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rsqrt(Unity.Mathematics.float2)"/>, this function never divides by zero. Components that aren't greater than epsilon, including negative values and NaN, return zero.</remarks>
+        /// <param name="x">Value to use when computing reciprocal square root.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 rsqrtsafe(float2 x, float epsilon = FLT_MIN_NORMAL) { return select(new float2(), rsqrt(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal square root of a float3 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rsqrt(Unity.Mathematics.float3)"/>, this function never divides by zero. Components that aren't greater than epsilon, including negative values and NaN, return zero.</remarks>
+        /// <param name="x">Value to use when computing reciprocal square root.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 rsqrtsafe(float3 x, float epsilon = FLT_MIN_NORMAL) { return select(new float3(), rsqrt(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal square root of a float4 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rsqrt(Unity.Mathematics.float4)"/>, this function never divides by zero. Components that aren't greater than epsilon, including negative values and NaN, return zero.</remarks>
+        /// <param name="x">Value to use when computing reciprocal square root.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="FLT_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 rsqrtsafe(float4 x, float epsilon = FLT_MIN_NORMAL) { return select(new float4(), rsqrt(x), x > epsilon); }
+
+
+        /// <summary>Returns the reciprocal square root of a double value, or zero if the value isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rsqrt(double)"/>, this function never divides by zero. Inputs that aren't greater than epsilon, including negative values and NaN, return zero.</remarks>
+        /// <param name="x">Value to use when computing reciprocal square root.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The reciprocal square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double rsqrtsafe(double x, double epsilon = DBL_MIN_NORMAL) { return select(0.0, rsqrt(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal square root of a double2 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rsqrt(Unity.Mathematics.double2)"/>, this function never divides by zero. Components that aren't greater than epsilon, including negative values and NaN, return zero.</remarks>
+        /// <param name="x">Value to use when computing reciprocal square root.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 rsqrtsafe(double2 x, double epsilon = DBL_MIN_NORMAL) { return select(new double2(), rsqrt(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal square root of a double3 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rsqrt(Unity.Mathematics.double3)"/>, this function never divides by zero. Components that aren't greater than epsilon, including negative values and NaN, return zero.</remarks>
+        /// <param name="x">Value to use when computing reciprocal square root.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 rsqrtsafe(double3 x, double epsilon = DBL_MIN_NORMAL) { return select(new double3(), rsqrt(x), x > epsilon); }
+
+        /// <summary>Returns the componentwise reciprocal square root of a double4 vector, or zero for each component that isn't greater than epsilon.</summary>
+        /// <remarks>Unlike <see cref="rsqrt(Unity.Mathematics.double4)"/>, this function never divides by zero. Components that aren't greater than epsilon, including negative values and NaN, return zero.</remarks>
+        /// <param name="x">Value to use when computing reciprocal square root.</param>
+        /// <param name="epsilon">Threshold value. Defaults to <see cref="DBL_MIN_NORMAL"/>.</param>
+        /// <returns>The componentwise reciprocal square root of the input, or zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 rsqrtsafe(double4 x, double epsilon = DBL_MIN_NORMAL) { return select(new double4(), rsqrt(x), x > epsilon); }
 
 
         /// <summary>Returns a normalized version of the float2 vector x by scaling it by 1 / length(x).</summary>
@@ -4889,6 +5499,236 @@ namespace Unity.Mathematics
             return select(defaultValue, proj, all(isfinite(proj)));
         }
 
+        /// <summary>Returns the projection of a onto the line through the origin that is perpendicular to planeNormal.</summary>
+        /// <remarks>
+        /// planeNormal doesn't need to be unit length but must not be zero. Some finite inputs could generate a non-finite result,
+        /// most likely when a's components are very large or planeNormal's components are very small. In these cases, you can call
+        /// <see cref="projectonplanesafe(Unity.Mathematics.float2,Unity.Mathematics.float2,Unity.Mathematics.float2)"/> which will use a given default value if the result is not finite.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the line to project onto.</param>
+        /// <returns>The projection of a onto the line perpendicular to planeNormal.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 projectonplane(float2 a, float2 planeNormal) { return a - project(a, planeNormal); }
+
+        /// <summary>Returns the projection of a onto the plane through the origin with normal planeNormal.</summary>
+        /// <remarks>
+        /// planeNormal doesn't need to be unit length but must not be zero. Some finite inputs could generate a non-finite result,
+        /// most likely when a's components are very large or planeNormal's components are very small. In these cases, you can call
+        /// <see cref="projectonplanesafe(Unity.Mathematics.float3,Unity.Mathematics.float3,Unity.Mathematics.float3)"/> which will use a given default value if the result is not finite.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the plane to project onto.</param>
+        /// <returns>The projection of a onto the plane.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 projectonplane(float3 a, float3 planeNormal) { return a - project(a, planeNormal); }
+
+        /// <summary>Returns the projection of a onto the hyperplane through the origin with normal planeNormal.</summary>
+        /// <remarks>
+        /// planeNormal doesn't need to be unit length but must not be zero. Some finite inputs could generate a non-finite result,
+        /// most likely when a's components are very large or planeNormal's components are very small. In these cases, you can call
+        /// <see cref="projectonplanesafe(Unity.Mathematics.float4,Unity.Mathematics.float4,Unity.Mathematics.float4)"/> which will use a given default value if the result is not finite.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the hyperplane to project onto.</param>
+        /// <returns>The projection of a onto the hyperplane.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 projectonplane(float4 a, float4 planeNormal) { return a - project(a, planeNormal); }
+
+        /// <summary>Returns the projection of a onto the line through the origin that is perpendicular to planeNormal.</summary>
+        /// <remarks>
+        /// planeNormal doesn't need to be unit length but must not be zero. Some finite inputs could generate a non-finite result,
+        /// most likely when a's components are very large or planeNormal's components are very small. In these cases, you can call
+        /// <see cref="projectonplanesafe(Unity.Mathematics.double2,Unity.Mathematics.double2,Unity.Mathematics.double2)"/> which will use a given default value if the result is not finite.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the line to project onto.</param>
+        /// <returns>The projection of a onto the line perpendicular to planeNormal.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 projectonplane(double2 a, double2 planeNormal) { return a - project(a, planeNormal); }
+
+        /// <summary>Returns the projection of a onto the plane through the origin with normal planeNormal.</summary>
+        /// <remarks>
+        /// planeNormal doesn't need to be unit length but must not be zero. Some finite inputs could generate a non-finite result,
+        /// most likely when a's components are very large or planeNormal's components are very small. In these cases, you can call
+        /// <see cref="projectonplanesafe(Unity.Mathematics.double3,Unity.Mathematics.double3,Unity.Mathematics.double3)"/> which will use a given default value if the result is not finite.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the plane to project onto.</param>
+        /// <returns>The projection of a onto the plane.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 projectonplane(double3 a, double3 planeNormal) { return a - project(a, planeNormal); }
+
+        /// <summary>Returns the projection of a onto the hyperplane through the origin with normal planeNormal.</summary>
+        /// <remarks>
+        /// planeNormal doesn't need to be unit length but must not be zero. Some finite inputs could generate a non-finite result,
+        /// most likely when a's components are very large or planeNormal's components are very small. In these cases, you can call
+        /// <see cref="projectonplanesafe(Unity.Mathematics.double4,Unity.Mathematics.double4,Unity.Mathematics.double4)"/> which will use a given default value if the result is not finite.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the hyperplane to project onto.</param>
+        /// <returns>The projection of a onto the hyperplane.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 projectonplane(double4 a, double4 planeNormal) { return a - project(a, planeNormal); }
+
+        /// <summary>Returns the projection of a onto the line through the origin that is perpendicular to planeNormal. If the result is not finite, returns the default value instead.</summary>
+        /// <remarks>
+        /// This function performs extra checks to see if the result is finite. If you know that your inputs will generate a finite result
+        /// or you don't care if the result is finite, then you can call <see cref="projectonplane(Unity.Mathematics.float2,Unity.Mathematics.float2)"/> instead which is faster than this function.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the line to project onto.</param>
+        /// <param name="defaultValue">Default value to return if the projection is not finite.</param>
+        /// <returns>The projection of a onto the line perpendicular to planeNormal, or the default value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 projectonplanesafe(float2 a, float2 planeNormal, float2 defaultValue = new float2())
+        {
+            var proj = projectonplane(a, planeNormal);
+
+            return select(defaultValue, proj, all(isfinite(proj)));
+        }
+
+        /// <summary>Returns the projection of a onto the plane through the origin with normal planeNormal. If the result is not finite, returns the default value instead.</summary>
+        /// <remarks>
+        /// This function performs extra checks to see if the result is finite. If you know that your inputs will generate a finite result
+        /// or you don't care if the result is finite, then you can call <see cref="projectonplane(Unity.Mathematics.float3,Unity.Mathematics.float3)"/> instead which is faster than this function.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the plane to project onto.</param>
+        /// <param name="defaultValue">Default value to return if the projection is not finite.</param>
+        /// <returns>The projection of a onto the plane, or the default value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 projectonplanesafe(float3 a, float3 planeNormal, float3 defaultValue = new float3())
+        {
+            var proj = projectonplane(a, planeNormal);
+
+            return select(defaultValue, proj, all(isfinite(proj)));
+        }
+
+        /// <summary>Returns the projection of a onto the hyperplane through the origin with normal planeNormal. If the result is not finite, returns the default value instead.</summary>
+        /// <remarks>
+        /// This function performs extra checks to see if the result is finite. If you know that your inputs will generate a finite result
+        /// or you don't care if the result is finite, then you can call <see cref="projectonplane(Unity.Mathematics.float4,Unity.Mathematics.float4)"/> instead which is faster than this function.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the hyperplane to project onto.</param>
+        /// <param name="defaultValue">Default value to return if the projection is not finite.</param>
+        /// <returns>The projection of a onto the hyperplane, or the default value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 projectonplanesafe(float4 a, float4 planeNormal, float4 defaultValue = new float4())
+        {
+            var proj = projectonplane(a, planeNormal);
+
+            return select(defaultValue, proj, all(isfinite(proj)));
+        }
+
+        /// <summary>Returns the projection of a onto the line through the origin that is perpendicular to planeNormal. If the result is not finite, returns the default value instead.</summary>
+        /// <remarks>
+        /// This function performs extra checks to see if the result is finite. If you know that your inputs will generate a finite result
+        /// or you don't care if the result is finite, then you can call <see cref="projectonplane(Unity.Mathematics.double2,Unity.Mathematics.double2)"/> instead which is faster than this function.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the line to project onto.</param>
+        /// <param name="defaultValue">Default value to return if the projection is not finite.</param>
+        /// <returns>The projection of a onto the line perpendicular to planeNormal, or the default value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double2 projectonplanesafe(double2 a, double2 planeNormal, double2 defaultValue = new double2())
+        {
+            var proj = projectonplane(a, planeNormal);
+
+            return select(defaultValue, proj, all(isfinite(proj)));
+        }
+
+        /// <summary>Returns the projection of a onto the plane through the origin with normal planeNormal. If the result is not finite, returns the default value instead.</summary>
+        /// <remarks>
+        /// This function performs extra checks to see if the result is finite. If you know that your inputs will generate a finite result
+        /// or you don't care if the result is finite, then you can call <see cref="projectonplane(Unity.Mathematics.double3,Unity.Mathematics.double3)"/> instead which is faster than this function.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the plane to project onto.</param>
+        /// <param name="defaultValue">Default value to return if the projection is not finite.</param>
+        /// <returns>The projection of a onto the plane, or the default value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double3 projectonplanesafe(double3 a, double3 planeNormal, double3 defaultValue = new double3())
+        {
+            var proj = projectonplane(a, planeNormal);
+
+            return select(defaultValue, proj, all(isfinite(proj)));
+        }
+
+        /// <summary>Returns the projection of a onto the hyperplane through the origin with normal planeNormal. If the result is not finite, returns the default value instead.</summary>
+        /// <remarks>
+        /// This function performs extra checks to see if the result is finite. If you know that your inputs will generate a finite result
+        /// or you don't care if the result is finite, then you can call <see cref="projectonplane(Unity.Mathematics.double4,Unity.Mathematics.double4)"/> instead which is faster than this function.
+        /// </remarks>
+        /// <param name="a">Vector to project.</param>
+        /// <param name="planeNormal">Non-zero normal of the hyperplane to project onto.</param>
+        /// <param name="defaultValue">Default value to return if the projection is not finite.</param>
+        /// <returns>The projection of a onto the hyperplane, or the default value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double4 projectonplanesafe(double4 a, double4 planeNormal, double4 defaultValue = new double4())
+        {
+            var proj = projectonplane(a, planeNormal);
+
+            return select(defaultValue, proj, all(isfinite(proj)));
+        }
+
+        /// <summary>Returns the angle in radians between two float2 vectors.</summary>
+        /// <remarks>The vectors don't need to be unit length. Returns zero if either vector is zero length or not finite, or if its squared length overflows, which happens for components larger than about 1e19 in magnitude. Components smaller than about 1e-19 in magnitude lose precision as the squared length underflows.</remarks>
+        /// <param name="a">The first vector.</param>
+        /// <param name="b">The second vector.</param>
+        /// <returns>The angle between the two vectors in radians, in the range 0 to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float angle(float2 a, float2 b)
+        {
+            float lengthsqA = lengthsq(a);
+            float lengthsqB = lengthsq(b);
+            float cosine = dot(a, b) * rsqrt(lengthsqA) * rsqrt(lengthsqB);
+            return select(0.0f, acos(clamp(cosine, -1.0f, 1.0f)), isfinite(cosine) & isfinite(lengthsqA) & isfinite(lengthsqB));
+        }
+
+        /// <summary>Returns the angle in radians between two float3 vectors.</summary>
+        /// <remarks>The vectors don't need to be unit length. Returns zero if either vector is zero length or not finite, or if its squared length overflows, which happens for components larger than about 1e19 in magnitude. Components smaller than about 1e-19 in magnitude lose precision as the squared length underflows.</remarks>
+        /// <param name="a">The first vector.</param>
+        /// <param name="b">The second vector.</param>
+        /// <returns>The angle between the two vectors in radians, in the range 0 to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float angle(float3 a, float3 b)
+        {
+            float lengthsqA = lengthsq(a);
+            float lengthsqB = lengthsq(b);
+            float cosine = dot(a, b) * rsqrt(lengthsqA) * rsqrt(lengthsqB);
+            return select(0.0f, acos(clamp(cosine, -1.0f, 1.0f)), isfinite(cosine) & isfinite(lengthsqA) & isfinite(lengthsqB));
+        }
+
+        /// <summary>Returns the angle in radians between two double2 vectors.</summary>
+        /// <remarks>The vectors don't need to be unit length. Returns zero if either vector is zero length or not finite, or if its squared length overflows, which happens for components larger than about 1e154 in magnitude. Components smaller than about 1e-154 in magnitude lose precision as the squared length underflows.</remarks>
+        /// <param name="a">The first vector.</param>
+        /// <param name="b">The second vector.</param>
+        /// <returns>The angle between the two vectors in radians, in the range 0 to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double angle(double2 a, double2 b)
+        {
+            double lengthsqA = lengthsq(a);
+            double lengthsqB = lengthsq(b);
+            double cosine = dot(a, b) * rsqrt(lengthsqA) * rsqrt(lengthsqB);
+            return select(0.0, acos(clamp(cosine, -1.0, 1.0)), isfinite(cosine) & isfinite(lengthsqA) & isfinite(lengthsqB));
+        }
+
+        /// <summary>Returns the angle in radians between two double3 vectors.</summary>
+        /// <remarks>The vectors don't need to be unit length. Returns zero if either vector is zero length or not finite, or if its squared length overflows, which happens for components larger than about 1e154 in magnitude. Components smaller than about 1e-154 in magnitude lose precision as the squared length underflows.</remarks>
+        /// <param name="a">The first vector.</param>
+        /// <param name="b">The second vector.</param>
+        /// <returns>The angle between the two vectors in radians, in the range 0 to PI.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double angle(double3 a, double3 b)
+        {
+            double lengthsqA = lengthsq(a);
+            double lengthsqB = lengthsq(b);
+            double cosine = dot(a, b) * rsqrt(lengthsqA) * rsqrt(lengthsqB);
+            return select(0.0, acos(clamp(cosine, -1.0, 1.0)), isfinite(cosine) & isfinite(lengthsqA) & isfinite(lengthsqB));
+        }
+
         /// <summary>Conditionally flips a vector n if two vectors i and ng are pointing in the same direction. Returns n if dot(i, ng) &lt; 0, -n otherwise.</summary>
         /// <param name="n">Vector to conditionally flip.</param>
         /// <param name="i">First vector in direction comparison.</param>
@@ -5003,6 +5843,139 @@ namespace Unity.Mathematics
         /// <param name="c">Output vector containing the componentwise cosine of the input.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void sincos(double4 x, out double4 s, out double4 c) { s = sin(x); c = cos(x); }
+
+
+        const float k_RcpTwoPI = 0.15915494309189533577f;
+        const float k_PolySinCosC0 = 6.283185005f;
+        const float k_PolySinCosC1 = -41.341659546f;
+        const float k_PolySinCosC2 = 81.601821899f;
+        const float k_PolySinCosC3 = -76.568618774f;
+        const float k_PolySinCosC4 = 39.657032013f;
+
+        /// <summary>Returns a fast approximation of the sine of a float value.</summary>
+        /// <remarks>Uses a polynomial approximation that is faster than <see cref="sin(float)"/> in Burst-compiled code, but less accurate. The maximum absolute error is below 1e-5 for inputs with a magnitude up to 10 * PI, and grows with the magnitude of the input.</remarks>
+        /// <param name="x">Input angle in radians.</param>
+        /// <returns>The approximate sine of the input.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float fastsin(float x)
+        {
+            x = mad(x, k_RcpTwoPI, -0.25f);
+            x = 0.25f - abs(x - round(x));
+            return polysincos(x);
+        }
+
+        /// <summary>Returns a fast componentwise approximation of the sine of a float2 vector.</summary>
+        /// <remarks>Uses a polynomial approximation that is faster than <see cref="sin(Unity.Mathematics.float2)"/> in Burst-compiled code, but less accurate. The maximum absolute error is below 1e-5 for inputs with a magnitude up to 10 * PI, and grows with the magnitude of the input.</remarks>
+        /// <param name="x">Input angles in radians.</param>
+        /// <returns>The componentwise approximate sine of the input.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 fastsin(float2 x)
+        {
+            x = mad(x, k_RcpTwoPI, -0.25f);
+            x = 0.25f - abs(x - round(x));
+            return polysincos(x);
+        }
+
+        /// <summary>Returns a fast componentwise approximation of the sine of a float3 vector.</summary>
+        /// <remarks>Uses a polynomial approximation that is faster than <see cref="sin(Unity.Mathematics.float3)"/> in Burst-compiled code, but less accurate. The maximum absolute error is below 1e-5 for inputs with a magnitude up to 10 * PI, and grows with the magnitude of the input.</remarks>
+        /// <param name="x">Input angles in radians.</param>
+        /// <returns>The componentwise approximate sine of the input.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 fastsin(float3 x)
+        {
+            x = mad(x, k_RcpTwoPI, -0.25f);
+            x = 0.25f - abs(x - round(x));
+            return polysincos(x);
+        }
+
+        /// <summary>Returns a fast componentwise approximation of the sine of a float4 vector.</summary>
+        /// <remarks>Uses a polynomial approximation that is faster than <see cref="sin(Unity.Mathematics.float4)"/> in Burst-compiled code, but less accurate. The maximum absolute error is below 1e-5 for inputs with a magnitude up to 10 * PI, and grows with the magnitude of the input.</remarks>
+        /// <param name="x">Input angles in radians.</param>
+        /// <returns>The componentwise approximate sine of the input.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 fastsin(float4 x)
+        {
+            x = mad(x, k_RcpTwoPI, -0.25f);
+            x = 0.25f - abs(x - round(x));
+            return polysincos(x);
+        }
+
+        /// <summary>Returns a fast approximation of the cosine of a float value.</summary>
+        /// <remarks>Uses a polynomial approximation that is faster than <see cref="cos(float)"/> in Burst-compiled code, but less accurate. The maximum absolute error is below 1e-5 for inputs with a magnitude up to 10 * PI, and grows with the magnitude of the input.</remarks>
+        /// <param name="x">Input angle in radians.</param>
+        /// <returns>The approximate cosine of the input.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float fastcos(float x)
+        {
+            x *= k_RcpTwoPI;
+            x = 0.25f - abs(x - round(x));
+            return polysincos(x);
+        }
+
+        /// <summary>Returns a fast componentwise approximation of the cosine of a float2 vector.</summary>
+        /// <remarks>Uses a polynomial approximation that is faster than <see cref="cos(Unity.Mathematics.float2)"/> in Burst-compiled code, but less accurate. The maximum absolute error is below 1e-5 for inputs with a magnitude up to 10 * PI, and grows with the magnitude of the input.</remarks>
+        /// <param name="x">Input angles in radians.</param>
+        /// <returns>The componentwise approximate cosine of the input.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 fastcos(float2 x)
+        {
+            x *= k_RcpTwoPI;
+            x = 0.25f - abs(x - round(x));
+            return polysincos(x);
+        }
+
+        /// <summary>Returns a fast componentwise approximation of the cosine of a float3 vector.</summary>
+        /// <remarks>Uses a polynomial approximation that is faster than <see cref="cos(Unity.Mathematics.float3)"/> in Burst-compiled code, but less accurate. The maximum absolute error is below 1e-5 for inputs with a magnitude up to 10 * PI, and grows with the magnitude of the input.</remarks>
+        /// <param name="x">Input angles in radians.</param>
+        /// <returns>The componentwise approximate cosine of the input.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 fastcos(float3 x)
+        {
+            x *= k_RcpTwoPI;
+            x = 0.25f - abs(x - round(x));
+            return polysincos(x);
+        }
+
+        /// <summary>Returns a fast componentwise approximation of the cosine of a float4 vector.</summary>
+        /// <remarks>Uses a polynomial approximation that is faster than <see cref="cos(Unity.Mathematics.float4)"/> in Burst-compiled code, but less accurate. The maximum absolute error is below 1e-5 for inputs with a magnitude up to 10 * PI, and grows with the magnitude of the input.</remarks>
+        /// <param name="x">Input angles in radians.</param>
+        /// <returns>The componentwise approximate cosine of the input.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 fastcos(float4 x)
+        {
+            x *= k_RcpTwoPI;
+            x = 0.25f - abs(x - round(x));
+            return polysincos(x);
+        }
+
+        // Odd polynomial approximation of sin(2 * PI * x) for x in [-0.25, 0.25].
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static float polysincos(float x)
+        {
+            float x2 = x * x;
+            return x * mad(x2, mad(x2, mad(x2, mad(x2, k_PolySinCosC4, k_PolySinCosC3), k_PolySinCosC2), k_PolySinCosC1), k_PolySinCosC0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static float2 polysincos(float2 x)
+        {
+            float2 x2 = x * x;
+            return x * mad(x2, mad(x2, mad(x2, mad(x2, k_PolySinCosC4, k_PolySinCosC3), k_PolySinCosC2), k_PolySinCosC1), k_PolySinCosC0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static float3 polysincos(float3 x)
+        {
+            float3 x2 = x * x;
+            return x * mad(x2, mad(x2, mad(x2, mad(x2, k_PolySinCosC4, k_PolySinCosC3), k_PolySinCosC2), k_PolySinCosC1), k_PolySinCosC0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static float4 polysincos(float4 x)
+        {
+            float4 x2 = x * x;
+            return x * mad(x2, mad(x2, mad(x2, mad(x2, k_PolySinCosC4, k_PolySinCosC3), k_PolySinCosC2), k_PolySinCosC1), k_PolySinCosC0);
+        }
 
 
         /// <summary>Returns number of 1-bits in the binary representation of an int value. Also known as the Hamming weight, popcnt on x86, and vcnt on ARM.</summary>

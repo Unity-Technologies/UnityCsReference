@@ -703,6 +703,9 @@
     <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Clip\ClipSampler.cs">
       <Link>Modules\AnimationCore\Managed\Unity.Animation\Clip\ClipSampler.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Clip\MotionOutput.cs">
+      <Link>Modules\AnimationCore\Managed\Unity.Animation\Clip\MotionOutput.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStream.cs">
       <Link>Modules\AnimationCore\Managed\Unity.Animation\Core\AnimationStream.cs</Link>
     </Compile>
@@ -801,9 +804,6 @@
     </Compile>
     <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigComponents.cs">
       <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigComponents.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigComponentsCreate.cs">
-      <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigComponentsCreate.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AnimationCore\Managed\Unity.Animation\Rig\RigDebugView.cs">
       <Link>Modules\AnimationCore\Managed\Unity.Animation\Rig\RigDebugView.cs</Link>
@@ -1723,6 +1723,9 @@
     <Compile Include="..\..\Modules\Entities\Managed\ExclusiveEntityTransaction.cs">
       <Link>Modules\Entities\Managed\ExclusiveEntityTransaction.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\ExclusiveEntityTransactionNativeBridge.cs">
+      <Link>Modules\Entities\Managed\ExclusiveEntityTransactionNativeBridge.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\ForeachQueryEnumerable.cs">
       <Link>Modules\Entities\Managed\ForeachQueryEnumerable.cs</Link>
     </Compile>
@@ -1842,6 +1845,12 @@
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\Iterators\UnsafeUntypedDynamicBuffer.cs">
       <Link>Modules\Entities\Managed\Iterators\UnsafeUntypedDynamicBuffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\LoadingWorldNativeBridge.cs">
+      <Link>Modules\Entities\Managed\LoadingWorldNativeBridge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Entities\Managed\LoadingWorldSystem.cs">
+      <Link>Modules\Entities\Managed\LoadingWorldSystem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\LowLevel\SpinLock.cs">
       <Link>Modules\Entities\Managed\LowLevel\SpinLock.cs</Link>
@@ -2097,9 +2106,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\WorldUnmanagedImpl.Memory.cs">
       <Link>Modules\Entities\Managed\WorldUnmanagedImpl.Memory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Entities\Managed\WorldUnmanagedNativeBridge.cs">
-      <Link>Modules\Entities\Managed\WorldUnmanagedNativeBridge.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Entities\Managed\WorldUpdateAllocator.cs">
       <Link>Modules\Entities\Managed\WorldUpdateAllocator.cs</Link>
@@ -3898,14 +3904,14 @@
     <Compile Include="..\..\Modules\Properties\Managed\Runtime\Utility\TypeUtility.cs">
       <Link>Modules\Properties\Managed\Runtime\Utility\TypeUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\RenderAs2D\AssemblyInfo.cs">
-      <Link>Modules\RenderAs2D\AssemblyInfo.cs</Link>
+    <Compile Include="..\..\Modules\RenderAs2D\Managed\AssemblyInfo.cs">
+      <Link>Modules\RenderAs2D\Managed\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\RenderAs2D\Public\ScriptBindings\RenderAs2D.bindings.cs">
-      <Link>Modules\RenderAs2D\Public\ScriptBindings\RenderAs2D.bindings.cs</Link>
+    <Compile Include="..\..\Modules\RenderAs2D\Managed\ScriptBindings\RenderAs2D.bindings.cs">
+      <Link>Modules\RenderAs2D\Managed\ScriptBindings\RenderAs2D.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\RenderAs2D\Public\ScriptBindings\RenderAs2DUtil.bindings.cs">
-      <Link>Modules\RenderAs2D\Public\ScriptBindings\RenderAs2DUtil.bindings.cs</Link>
+    <Compile Include="..\..\Modules\RenderAs2D\Managed\ScriptBindings\RenderAs2DUtil.bindings.cs">
+      <Link>Modules\RenderAs2D\Managed\ScriptBindings\RenderAs2DUtil.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ScreenCapture\AssemblyInfo.cs">
       <Link>Modules\ScreenCapture\AssemblyInfo.cs</Link>
@@ -4050,6 +4056,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\RuntimeInitializeOnLoadAttribute.cs">
       <Link>Modules\Scripting\Scripting\RuntimeInitializeOnLoadAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\Unsafe\PatchedBodyAttribute.cs">
+      <Link>Modules\Scripting\Scripting\Unsafe\PatchedBodyAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\Unsafe\UnsafeUtilityPatched.cs">
       <Link>Modules\Scripting\Scripting\Unsafe\UnsafeUtilityPatched.cs</Link>
@@ -5683,6 +5692,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Controls\ProgressBar.cs">
       <Link>Modules\UIElements\Core\Controls\ProgressBar.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\QuaternionEulerField.cs">
+      <Link>Modules\UIElements\Core\Controls\QuaternionEulerField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\RadioButton.cs">
       <Link>Modules\UIElements\Core\Controls\RadioButton.cs</Link>
     </Compile>
@@ -6820,6 +6832,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\GridTrackSize.cs">
       <Link>Modules\UIElements\Core\Style\GridTrackSize.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\GridTrackTemplateEntry.cs">
+      <Link>Modules\UIElements\Core\Style\GridTrackTemplateEntry.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\IResolvedStyle.cs">
       <Link>Modules\UIElements\Core\Style\IResolvedStyle.cs</Link>
     </Compile>
@@ -7414,6 +7429,9 @@
     <Compile Include="..\..\Modules\UnityWebRequest\Public\DownloadHandler\DownloadHandler.bindings.cs">
       <Link>Modules\UnityWebRequest\Public\DownloadHandler\DownloadHandler.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UnityWebRequest\Public\HttpClientProfilerListener.cs">
+      <Link>Modules\UnityWebRequest\Public\HttpClientProfilerListener.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UnityWebRequest\Public\MultipartFormHelper.cs">
       <Link>Modules\UnityWebRequest\Public\MultipartFormHelper.cs</Link>
     </Compile>
@@ -7431,6 +7449,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UnityWebRequest\Public\WebRequestExtensions.cs">
       <Link>Modules\UnityWebRequest\Public\WebRequestExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityWebRequest\Public\WebRequestProfilerCapture.bindings.cs">
+      <Link>Modules\UnityWebRequest\Public\WebRequestProfilerCapture.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityWebRequest\Public\WebRequestProfilerCounters.bindings.cs">
+      <Link>Modules\UnityWebRequest\Public\WebRequestProfilerCounters.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityWebRequest\Public\WebRequestUtils.cs">
       <Link>Modules\UnityWebRequest\Public\WebRequestUtils.cs</Link>

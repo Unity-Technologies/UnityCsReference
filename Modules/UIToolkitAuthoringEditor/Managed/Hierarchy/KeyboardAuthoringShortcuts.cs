@@ -113,7 +113,7 @@ static partial class KeyboardAuthoringShortcuts
             item => MenuUtility.AddAsLastChild(context, item));
     }
 
-    [Shortcut(ReplaceId, typeof(ShortcutContext), KeyCode.R, ShortcutModifiers.Action)]
+    [Shortcut(ReplaceId, typeof(ShortcutContext), KeyCode.R, ShortcutModifiers.Alt | ShortcutModifiers.Shift)]
     static void Replace() => Replace(ResolveContext());
 
     static void Replace(AuthoringContext context)

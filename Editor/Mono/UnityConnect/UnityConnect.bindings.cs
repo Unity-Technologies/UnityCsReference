@@ -576,6 +576,12 @@ namespace UnityEditor.Connect
             await RequestNewServiceTokenAsync(GetUserId_Internal, GetServiceTokenWhenOnline, SetServiceToken_Internal);
         }
 
+        [RequiredByNativeCode]
+        static void ForgetRejectedServiceToken(string serviceToken)
+        {
+            ServiceToken.Instance.ForgetRejectedToken(serviceToken);
+        }
+
         static async Task<string> GetServiceTokenWhenOnline()
         {
             if (Online() && !WorkingOffline())
@@ -627,7 +633,7 @@ namespace UnityEditor.Connect
         }
 
         [RequiredByNativeCode]
-        static async void FetchMissingProjectInfos(string genesisOrganizationId, ulong requestId)
+        static async void FetchMissingProjectInfos(string genesisOrganizationId, ulong requestId, bool reportFailure)
         {
             OrganizationRequestResponse organization = new("", "", "", "");
 
@@ -637,7 +643,8 @@ namespace UnityEditor.Connect
             }
             catch (Exception e)
             {
-                await AsyncUtils.RunNextActionOnMainThread(() => Debug.LogError(e.Message));
+                if (reportFailure)
+                    await AsyncUtils.RunNextActionOnMainThread(() => Debug.LogError(e.Message));
             }
             finally
             {

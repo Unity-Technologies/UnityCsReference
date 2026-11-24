@@ -72,7 +72,7 @@ namespace Unity.Animations
         /// The result is the delta that blending the root poses of both clips gives, when both clips start the frame
         /// from the same pose, such as the clips of a blend space that move the same character.
         /// </remarks>
-        /// <param name="delta1">The first delta, for example from <see cref="ClipSampler.SampleRootMotion"/>.</param>
+        /// <param name="delta1">The first delta, for example <see cref="MotionOutput.RootMotion"/> from <see cref="ClipSampler.SampleRootMotion"/>.</param>
         /// <param name="delta2">The second delta.</param>
         /// <param name="weight">The weight of <paramref name="delta2"/> in the blend.</param>
         /// <returns>The blended delta.</returns>
@@ -185,7 +185,7 @@ namespace Unity.Animations
             /// <summary>
             /// Adds a weighted root motion delta to the mix.
             /// </summary>
-            /// <param name="delta">The delta to add, for example from <see cref="ClipSampler.SampleRootMotion"/>.</param>
+            /// <param name="delta">The delta to add, for example <see cref="MotionOutput.RootMotion"/> from <see cref="ClipSampler.SampleRootMotion"/>.</param>
             /// <param name="weight">The weight of the delta in the mix. The mixer doesn't normalize weights.</param>
             public void Add(RigidTransform delta, float weight)
             {

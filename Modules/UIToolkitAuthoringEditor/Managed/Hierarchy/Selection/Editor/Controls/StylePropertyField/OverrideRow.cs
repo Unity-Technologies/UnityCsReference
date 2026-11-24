@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
 
@@ -67,7 +66,7 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        internal HashSet<string> trackedProperties;
+        internal readonly HashSet<string> trackedProperties = new HashSet<string>();
 
         protected internal virtual string GetIsOverriddenClassName() => isOverriddenUssClassName;
 
@@ -75,48 +74,12 @@ namespace Unity.UIToolkit.Editor
 
         public OverrideRow()
         {
-            trackedProperties = HashSetPool<string>.Get();
             RegisterCallback<TrackPropertyEvent>(Callback, TrickleDown.NoTrickleDown);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             m_OverrideBarManipulator = new OverrideBarManipulator();
             overrideContainer = this;
             m_OverrideBarColor = EditorGUIUtility.isProSkin ? Color.white : Color.black;
             UpdateManipulatorColor();
-        }
-
-        [EventInterest(typeof(AttachToPanelEvent), typeof(DetachFromPanelEvent))]
-        protected override void HandleEventBubbleUp(EventBase evt)
-        {
-            switch (evt)
-            {
-                case AttachToPanelEvent attachToPanelEvent:
-                {
-                    if (attachToPanelEvent.destinationPanel == null)
-                        return;
-
-                    trackedProperties ??= HashSetPool<string>.Get();
-
-                    break;
-                }
-                case DetachFromPanelEvent detachFromPanelEvent:
-                {
-                    if (detachFromPanelEvent.originPanel == null)
-                        return;
-
-                    if (trackedProperties != null)
-                    {
-                        HashSetPool<string>.Release(trackedProperties);
-                        trackedProperties = null;
-                    }
-                    break;
-                }
-            }
-            base.HandleEventBubbleUp(evt);
-        }
-
-        void EnsureTrackedPropertiesAllocated()
-        {
-            trackedProperties ??= HashSetPool<string>.Get();
         }
 
         private void OnCustomStyleResolved(CustomStyleResolvedEvent e)
@@ -135,7 +98,6 @@ namespace Unity.UIToolkit.Editor
         {
             if (propertyName != null)
             {
-                EnsureTrackedPropertiesAllocated();
                 trackedProperties.Add(propertyName);
             }
 
@@ -146,7 +108,7 @@ namespace Unity.UIToolkit.Editor
         private void Untrack(ITrackablePropertyProvider provider, string propertyName = null)
         {
             if (propertyName != null)
-                trackedProperties?.Remove(propertyName);
+                trackedProperties.Remove(propertyName);
             RemoveFromTrackedProperties(provider, propertyName);
             provider.OnTrackedPropertyChanged -= OnTrackedPropertyChanged;
             provider.OnTrackedPropertySourceChanged -= OnTrackedPropertySourceChanged;
@@ -193,7 +155,6 @@ namespace Unity.UIToolkit.Editor
         {
             if (!string.IsNullOrEmpty(propertyName))
             {
-                EnsureTrackedPropertiesAllocated();
                 trackedProperties.Add(propertyName);
             }
         }
@@ -209,12 +170,12 @@ namespace Unity.UIToolkit.Editor
 
         internal void ClearPropertyOverride(ITrackablePropertyProvider provider, string propertyName)
         {
-            // Only drop it from the search set once this was the last provider still claiming it.
-            if (m_TrackedProviders.TryGetValue(propertyName, out var providerSet) &&
-                providerSet.Count == 1 && providerSet.Contains(provider))
-                trackedProperties?.Remove(propertyName);
-
+            var wasTracked = m_TrackedProviders.ContainsKey(propertyName);
             RemoveFromTrackedProperties(provider, propertyName);
+
+            // Only drop it from the search set once no provider still claims it.
+            if (wasTracked && !m_TrackedProviders.ContainsKey(propertyName))
+                trackedProperties.Remove(propertyName);
         }
 
         void AddToTrackedProperties(ITrackablePropertyProvider provider, string propertyName)
@@ -264,9 +225,6 @@ namespace Unity.UIToolkit.Editor
 
         internal bool HasMatchingOverriddenProperty(string searchText)
         {
-            if (trackedProperties == null)
-                return false;
-
             foreach (var property in trackedProperties)
             {
                 if (property.Contains(searchText, StringComparison.OrdinalIgnoreCase) &&

@@ -48,12 +48,12 @@ namespace UnityEditor
         }
 
         // Represents the Profiler Out-Of-Process is launched by the MainEditorProcess and connects to its EventServer at startup.
-        static partial class ProfilerProcess
+        internal static partial class ProfilerProcess
         {
             [NoAutoStaticsCleanup] // Fixed default value, safe to persist
             static bool s_ProfilerDriverSetup = false;
             [AutoStaticsCleanupOnCodeReload]
-            static ProfilerWindow s_OOPProfilerWindow;
+            internal static ProfilerWindow s_OOPProfilerWindow;
             static readonly string userPrefProfilerLayoutPath = Path.Combine(WindowLayout.layoutsDefaultModePreferencesPath, "Profiler.dwlt");
             static readonly string systemProfilerLayoutPath = Path.Combine(EditorApplication.applicationContentsPath, "Resources/Layouts/Profiler.dwlt");
 
@@ -133,6 +133,20 @@ namespace UnityEditor
                 }
 
                 return s_OOPProfilerWindow;
+            }
+
+            // Called from ProfilerWindow.OnEnable() for every ProfilerWindow instance that gets
+            // created, including replacements. Destroying and recreating the window instance - which is
+            // what toggling "UI Toolkit Live Reload" does for any EditorWindow - would otherwise leave
+            // s_OOPProfilerWindow (and every menu command, shortcut and title update keyed off it)
+            // pointing at the destroyed instance.
+            internal static void RefreshProfilerWindow(ProfilerWindow window)
+            {
+                if (!SessionState.GetBool("OOPP.Initialized", false))
+                    return;
+
+                s_OOPProfilerWindow = window;
+                SetupProfilerWindow(window);
             }
 
             static void SetupProfilerDriver()

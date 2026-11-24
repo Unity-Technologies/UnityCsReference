@@ -42,7 +42,7 @@ namespace UnityEditor.Connect
 
             var nextRefreshTime = m_GenesisAndServiceTokenCaching.GetNextRefreshTime(cachedTokens.GatewayToken);
 
-            if (genesisToken == cachedTokens.GenesisToken && DateTime.UtcNow < nextRefreshTime)
+            if (genesisToken == cachedTokens.GenesisToken && !string.IsNullOrEmpty(cachedTokens.GatewayToken) && DateTime.UtcNow < nextRefreshTime)
                 return cachedTokens.GatewayToken;
 
             if (string.IsNullOrEmpty(genesisToken))
@@ -68,6 +68,20 @@ namespace UnityEditor.Connect
             }
 
             return await WaitForExchangeAsync(exchange, cancellationToken);
+        }
+
+        // A token the server refused is exchanged again before its renewal is due; a newer cached token is kept
+        public void ForgetRejectedToken(string rejectedGatewayToken)
+        {
+            if (string.IsNullOrEmpty(rejectedGatewayToken))
+                return;
+
+            lock (m_ExchangeLock)
+            {
+                var cachedTokens = m_GenesisAndServiceTokenCaching.LoadCache();
+                if (cachedTokens.GatewayToken == rejectedGatewayToken)
+                    m_GenesisAndServiceTokenCaching.SaveCache(new Tokens { GenesisToken = cachedTokens.GenesisToken });
+            }
         }
 
         // Callers share the exchange, so none of them can cancel it; the request timeout ends it

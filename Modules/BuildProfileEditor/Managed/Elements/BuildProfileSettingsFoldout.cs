@@ -19,7 +19,7 @@ namespace UnityEditor.Build.Profile.Elements
         static readonly GUIContent s_ResetContent = L10n.TextContent("Reset", null, null, null);
         static readonly GUIContent s_RemoveContent = L10n.TextContent("Remove", null, null, null);
         static readonly GUIContent s_Copy = L10n.TextContent("Copy", null, null, null);
-        static readonly GUIContent s_Paste = L10n.TextContent("Paste", null, null, null);
+        internal static readonly GUIContent s_Paste = L10n.TextContent("Paste", null, null, null);
 
         readonly string m_Tooltip;
         Vector2 m_TooltipPosVector;

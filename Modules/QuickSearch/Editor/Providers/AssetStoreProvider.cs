@@ -205,49 +205,6 @@ namespace UnityEditor.Search.Providers
         }
 
         [Serializable]
-        class AccessToken
-        {
-            public string access_token;
-            public string expires_in;
-
-            public long expiration;
-            public double expirationStarts;
-
-            // public string token_type;
-            // public string refresh_token;
-            // public string user;
-            // public string display_name;
-        }
-
-        [Serializable]
-        class TokenInfo
-        {
-            public string sub;
-            public string access_token;
-            public string expires_in;
-
-            public long expiration;
-            public double expirationStarts;
-            // public string scopes;
-            // public string client_id;
-            // public string ip_address;
-        }
-
-        [Serializable]
-        class UserInfoName
-        {
-            public string fillName;
-        }
-
-        [Serializable]
-        class UserInfo
-        {
-            public string id;
-            public string username;
-            public UserInfoName name;
-        }
-
-        [Serializable]
         class PurchaseInfo
         {
             public int packageId;
@@ -437,19 +394,11 @@ namespace UnityEditor.Search.Providers
         [AutoStaticsCleanupOnCodeReload]
         private static bool s_StartPurchaseRequest;
         [AutoStaticsCleanupOnCodeReload]
+        private static int s_PurchaseRequestId;
+        [AutoStaticsCleanupOnCodeReload]
         private static readonly List<PurchaseInfo> s_Purchases = new List<PurchaseInfo>();
         [AutoStaticsCleanupOnCodeReload]
         private static HashSet<string> purchasePackageIds;
-        [AutoStaticsCleanupOnCodeReload]
-        private static string s_PackagesKey;
-        [AutoStaticsCleanupOnCodeReload]
-        private static string s_AuthCode;
-        [AutoStaticsCleanupOnCodeReload]
-        private static AccessToken s_AccessTokenData;
-        [AutoStaticsCleanupOnCodeReload]
-        private static TokenInfo s_TokenInfo;
-        [AutoStaticsCleanupOnCodeReload]
-        private static UserInfo s_UserInfo;
         const string k_MultiValueQueryParameter = "multivalue";
         [AutoStaticsCleanupOnCodeReload]
         private static QueryEngine<QueryDescriptor> s_QueryEngine;
@@ -1002,14 +951,6 @@ namespace UnityEditor.Search.Providers
                 return;
             }
 
-            if (string.IsNullOrEmpty(s_PackagesKey))
-                s_PackagesKey = Utils.GetPackagesKey();
-            if (string.IsNullOrEmpty(s_PackagesKey))
-            {
-                done?.Invoke();
-                return;
-            }
-
             s_RequestCheckPurchases = false;
             if (s_StartPurchaseRequest)
             {
@@ -1018,9 +959,14 @@ namespace UnityEditor.Search.Providers
             }
 
             s_StartPurchaseRequest = true;
+            var requestId = ++s_PurchaseRequestId;
             var startRequest = System.Diagnostics.Stopwatch.StartNew();
             GetAllPurchases((purchases, error) =>
             {
+                if (requestId != s_PurchaseRequestId)
+                {
+                    return;
+                }
                 s_StartPurchaseRequest = false;
                 if (error != null)
                 {
@@ -1040,9 +986,12 @@ namespace UnityEditor.Search.Providers
                 done?.Invoke();
             }, () =>
             {
+                if (requestId != s_PurchaseRequestId)
+                {
+                    return;
+                }
                 startRequest.Stop();
-                s_StartPurchaseRequest = false;
-                s_RequestCheckPurchases = true;
+                ClearUserInfo();
             });
         }
 
@@ -1218,7 +1167,7 @@ namespace UnityEditor.Search.Providers
                 return null;
 
             var doc = (AssetDocument)item.data;
-            if (doc != null && s_PackagesKey != null)
+            if (doc != null)
             {
                 if (doc.productDetail == null)
                 {
@@ -1423,251 +1372,71 @@ namespace UnityEditor.Search.Providers
             return url;
         }
 
-        static void GetAuthCode(Action<string, Exception> done)
-        {
-            if (s_AuthCode != null)
-            {
-                done(s_AuthCode, null);
-                return;
-            }
-
-            UnityOAuth.GetAuthorizationCodeAsync("packman", response =>
-            {
-                if (response.Exception != null)
-                {
-                    done(null, response.Exception);
-                    return;
-                }
-                s_AuthCode = response.AuthCode;
-                done(response.AuthCode, null);
-            });
-        }
-
-        static double GetEpochSeconds()
-        {
-            return (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-        }
-
-        static bool IsTokenValid(double expirationStart, long expiresIn)
-        {
-            const long accessTokenBuffer = 15;
-            return (GetEpochSeconds() - expirationStart) < (expiresIn - accessTokenBuffer);
-        }
-
-        static void GetAccessToken(Action<AccessToken, string> done)
-        {
-            if (s_AccessTokenData != null && IsTokenValid(s_AccessTokenData.expirationStarts, s_AccessTokenData.expiration))
-            {
-                done(s_AccessTokenData, null);
-                return;
-            }
-
-            GetAuthCode((authCode, exception) =>
-            {
-                if (exception != null)
-                {
-                    done(null, exception.ToString());
-                    return;
-                }
-                RequestAccessToken(authCode, (accessTokenData, error) =>
-                {
-                    if (accessTokenData == null)
-                    {
-                        done(null, "Failed to get access token.");
-                        return;
-                    }
-                    s_AccessTokenData = accessTokenData;
-                    s_AccessTokenData.expiration = long.Parse(s_AccessTokenData.expires_in);
-                    s_AccessTokenData.expirationStarts = GetEpochSeconds();
-                    done(accessTokenData, error);
-                });
-            });
-        }
-
-        static void GetAccessTokenInfo(Action<TokenInfo, string> done)
-        {
-            if (s_TokenInfo != null && IsTokenValid(s_AccessTokenData.expirationStarts, s_AccessTokenData.expiration))
-            {
-                done(s_TokenInfo, null);
-                return;
-            }
-
-            GetAccessToken((accessTokenData, error) =>
-            {
-                if (error != null)
-                {
-                    done(null, error);
-                    return;
-                }
-                RequestAccessTokenInfo(accessTokenData.access_token, (tokenInfo, tokenInfoError) =>
-                {
-                    s_TokenInfo = tokenInfo;
-                    s_TokenInfo.expiration = long.Parse(s_TokenInfo.expires_in);
-                    s_TokenInfo.expirationStarts = GetEpochSeconds();
-                    done(tokenInfo, tokenInfoError);
-                });
-            });
-        }
-
-        static void GetUserInfo(Action<UserInfo, string> done)
-        {
-            GetAccessTokenInfo((accessTokenInfo, error) =>
-            {
-                if (error != null)
-                {
-                    done(null, error);
-                    return;
-                }
-
-                if (s_UserInfo != null)
-                {
-                    done(s_UserInfo, null);
-                    return;
-                }
-
-                RequestUserInfo(accessTokenInfo.access_token, accessTokenInfo.sub, (userInfo, userInfoError) =>
-                {
-                    s_UserInfo = userInfo;
-                    done(userInfo, userInfoError);
-                });
-            });
-        }
-
         static void GetAllPurchases(Action<List<PurchaseInfo>, string> done, Action cancel)
         {
-            GetUserInfo((userInfo, userInfoError) =>
+            var accessToken = Utils.GetConnectAccessToken();
+            if (string.IsNullOrEmpty(accessToken))
             {
-                if (userInfoError != null)
+                cancel();
+                return;
+            }
+
+            const int kLimit = 50;
+            RequestPurchases(accessToken, (purchases, errPurchases) =>
+            {
+                if (errPurchases != null)
                 {
-                    done(null, userInfoError);
+                    done(null, errPurchases);
                     return;
                 }
 
-                if (s_TokenInfo == null)
+                if (accessToken != Utils.GetConnectAccessToken())
                 {
                     cancel();
                     return;
                 }
 
-                const int kLimit = 50;
-                RequestPurchases(s_TokenInfo.access_token, (purchases, errPurchases) =>
+                if (s_Purchases.Count == purchases.total)
                 {
-                    if (errPurchases != null)
-                    {
-                        done(null, errPurchases);
-                        return;
-                    }
+                    done(s_Purchases, null);
+                    return;
+                }
 
-                    if (s_TokenInfo == null)
+                s_Purchases.Clear();
+                s_Purchases.AddRange(purchases.results);
+                if (purchases.total <= purchases.results.Length)
+                {
+                    done(s_Purchases, null);
+                    return;
+                }
+                var restOfPurchases = purchases.total - purchases.results.Length;
+                var nbRequests = (restOfPurchases / kLimit) + ((restOfPurchases % kLimit) > 0 ? 1 : 0);
+                var requestsFulfilled = 0;
+                for (var i = 0; i < nbRequests; ++i)
+                {
+                    RequestPurchases(accessToken, (purchasesBatch, errPurchasesBatch) =>
                     {
-                        cancel();
-                        return;
-                    }
-
-                    if (s_Purchases.Count == purchases.total)
-                    {
-                        done(s_Purchases, null);
-                        return;
-                    }
-
-                    s_Purchases.Clear();
-                    s_Purchases.AddRange(purchases.results);
-                    if (purchases.total <= purchases.results.Length)
-                    {
-                        done(s_Purchases, null);
-                        return;
-                    }
-                    var restOfPurchases = purchases.total - purchases.results.Length;
-                    var nbRequests = (restOfPurchases / kLimit) + ((restOfPurchases % kLimit) > 0 ? 1 : 0);
-                    var requestsFulfilled = 0;
-                    for (var i = 0; i < nbRequests; ++i)
-                    {
-                        RequestPurchases(s_TokenInfo.access_token, (purchasesBatch, errPurchasesBatch) =>
+                        if (accessToken != Utils.GetConnectAccessToken())
                         {
-                            if (purchasesBatch != null)
-                            {
-                                s_Purchases.AddRange(purchasesBatch.results);
-                            }
-                            requestsFulfilled++;
-                            if (requestsFulfilled == nbRequests)
-                            {
-                                done(s_Purchases, null);
-                            }
-                        }, purchases.results.Length + (i * kLimit), kLimit);
-                    }
-                }, 0, kLimit);
-            });
+                            cancel();
+                            return;
+                        }
+
+                        if (purchasesBatch != null)
+                        {
+                            s_Purchases.AddRange(purchasesBatch.results);
+                        }
+                        requestsFulfilled++;
+                        if (requestsFulfilled == nbRequests)
+                        {
+                            done(s_Purchases, null);
+                        }
+                    }, purchases.results.Length + (i * kLimit), kLimit);
+                }
+            }, 0, kLimit);
         }
 
 #region Requests
-        static void RequestUserInfo(string accessToken, string userId, Action<UserInfo, string> done)
-        {
-            var url = $"https://api.unity.com/v1/users/{userId}";
-            var request = UnityWebRequest.Get(url);
-            request.SetRequestHeader("Authorization", $"Bearer {accessToken}");
-            var asyncOp = request.SendWebRequest();
-            asyncOp.completed += op =>
-            {
-                if (request.result != UnityWebRequest.Result.Success)
-                {
-                    done(null, request.error);
-                }
-                else
-                {
-                    var text = request.downloadHandler.text;
-                    var userInfo = JsonUtility.FromJson<UserInfo>(text);
-                    done(userInfo, null);
-                }
-            };
-        }
-
-        static void RequestAccessTokenInfo(string accessToken, Action<TokenInfo, string> done)
-        {
-            var url = $"https://api.unity.com/v1/oauth2/tokeninfo?access_token={accessToken}";
-            var request = UnityWebRequest.Get(url);
-            var asyncOp = request.SendWebRequest();
-            asyncOp.completed += op =>
-            {
-                if (request.result != UnityWebRequest.Result.Success)
-                {
-                    done(null, request.error);
-                }
-                else
-                {
-                    var text = request.downloadHandler.text;
-                    var tokenInfo = JsonUtility.FromJson<TokenInfo>(text);
-                    done(tokenInfo, null);
-                }
-            };
-        }
-
-        static void RequestAccessToken(string authCode, Action<AccessToken, string> done)
-        {
-            var url = $"https://api.unity.com/v1/oauth2/token";
-            var form = new WWWForm();
-            form.AddField("grant_type", "authorization_code");
-            form.AddField("code", authCode);
-            form.AddField("client_id", "packman");
-            form.AddField("client_secret", s_PackagesKey);
-            form.AddField("redirect_uri", "packman://unity");
-            var request = UnityWebRequest.Post(url, form);
-            var asyncOp = request.SendWebRequest();
-            asyncOp.completed += op =>
-            {
-                if (request.result != UnityWebRequest.Result.Success)
-                {
-                    done(null, request.error);
-                }
-                else
-                {
-                    var text = request.downloadHandler.text;
-                    s_AccessTokenData = JsonUtility.FromJson<AccessToken>(text);
-                    done(s_AccessTokenData, null);
-                }
-                request.Dispose();
-            };
-        }
-
         static void RequestProductDetailsInfo(int[] productIds, Action<ProductListResponse, string> done)
         {
             var requestStr = Utils.JsonSerialize(productIds);
@@ -1761,13 +1530,9 @@ namespace UnityEditor.Search.Providers
 
         static void ClearUserInfo()
         {
-            s_UserInfo = null;
-            s_TokenInfo = null;
-            s_AccessTokenData = null;
-            s_AuthCode = null;
             s_Purchases?.Clear();
             purchasePackageIds?.Clear();
-            s_PackagesKey = null;
+            ++s_PurchaseRequestId;
             s_StartPurchaseRequest = false;
             s_RequestCheckPurchases = true;
         }

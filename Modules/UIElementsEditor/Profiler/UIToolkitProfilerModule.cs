@@ -28,7 +28,7 @@ namespace UnityEditor.UIElements
         internal static readonly ProfilerCounterDescriptor[] k_ChartCounters = new ProfilerCounterDescriptor[]
         {
             new ProfilerCounterDescriptor("Pick All", "Time spent identifying the element under the pointer or being hovered.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Bindings", "Time spent updating bindings, including Editor bindings.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Runtime Bindings", "Time spent updating bindings, including Editor bindings.", ProfilerCategory.UIToolkit, L10n.Tr("Bindings", null)),
             new ProfilerCounterDescriptor("Update Style", "Time spent applying style sheets and computing the resolved style of elements.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Update Layout", "Time spent computing and updating the layout of elements.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Update Animation", "Time spent updating animations.", ProfilerCategory.UIToolkit),

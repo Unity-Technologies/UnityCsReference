@@ -23,13 +23,6 @@ namespace Unity.Entities
     // The native side is Modules/Entities/Public/EntitiesTransformDependency.h; it identifies a World by its owner value.
     internal static unsafe class TransformDependencyBridge
     {
-        internal static void Initialize()
-        {
-            ComponentDependencyManager.CheckNativeTransformDependencyLayout();
-            EntitiesTransformDependencyBindings.SetTransformTypeIndices(TypeManager.GetTypeIndex<TransformRef>(),
-                TypeManager.GetTypeIndex<EntityJobsOnGameObjectTransforms>(), TypeManager.GetTypeIndex<NativeJobsOnGameObjectTransforms>());
-        }
-
         internal static WorldUnmanaged GetOwner(EntityComponentStore* store) =>
             EntityDataAccess.FromEntityComponentStore(store)->m_WorldUnmanaged;
 

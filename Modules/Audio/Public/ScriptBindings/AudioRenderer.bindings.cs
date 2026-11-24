@@ -68,14 +68,16 @@ namespace UnityEngine
     {
         ///<summary>Enters audio recording mode. After this Unity will output silence until <see cref="AudioRenderer.Stop" /> is called.</summary>
         ///<returns>Returns `true` if the engine was switched into output recording mode. It returns `false` if the engine is already recording, or if the platform doesn't support this API.</returns>
-        ///<remarks>While recording, Unity performs audio rendering on the main thread instead of the audio thread, which can increase frame times.</remarks>
+        ///<remarks>While recording, Unity performs audio rendering on the main thread instead of the audio thread, which can increase frame times.
+        ///
+        ///Recording stops automatically if the audio system is reinitialized, for example when you change the audio settings in Project Settings, call <see cref="AudioSettings.Reset" />, or the output device changes. Unity logs a warning when this happens. Call <see cref="AudioRenderer.Start" /> again to resume recording.</remarks>
         public static bool Start()
         {
             return Internal_AudioRenderer_Start();
         }
 
         ///<summary>Exits audio recording mode. After this audio output will be audible again.</summary>
-        ///<returns>Returns `true` if the engine was recording when this method is called. Returns `false` if the engine wasn't recording, in which case Unity logs an error.</returns>
+        ///<returns>Returns `true` if the engine was recording when this method is called. Returns `false` if the engine wasn't recording, in which case Unity logs an error. This includes the case where an audio system reinitialization already stopped the recording.</returns>
         ///<remarks>This returns audio rendering to the audio thread, which <see cref="AudioRenderer.Start" /> moves onto the main thread.</remarks>
         public static bool Stop()
         {

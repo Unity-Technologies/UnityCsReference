@@ -59,6 +59,7 @@ namespace Unity.UIToolkit.Editor
                     StyleSheet);
 
             m_FilterListView = this.Q<ListView>(k_FilterListViewName);
+            m_FilterListView.showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly;
             m_FilterListView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
             m_FilterListView.selectionType = SelectionType.Multiple;
             m_FilterListView.makeNoneElement =

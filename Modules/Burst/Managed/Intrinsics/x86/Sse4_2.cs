@@ -221,8 +221,19 @@ namespace Unity.Burst.Intrinsics
                 return max;
             }
 
+            private static int SaturateExplicitLength(int length, int len)
+            {
+                if (length == int.MinValue)
+                    return len;
+
+                return Math.Min(Math.Abs(length), len);
+            }
+
             private static int ComputeStrCmpIntRes2<T>(T* a, int alen, T* b, int blen, int len, int imm8, int allOnes) where T : unmanaged, IComparable<T>, IEquatable<T>
             {
+                alen = SaturateExplicitLength(alen, len);
+                blen = SaturateExplicitLength(blen, len);
+
                 bool aInvalid = false;
                 bool bInvalid = false;
                 StrBoolArray boolRes = default;
@@ -346,19 +357,13 @@ namespace Unity.Burst.Intrinsics
                 intRes2 = 0;
 
                 // optionally negate results
-                bInvalid = false;
                 for (i = 0; i < len; ++i)
                 {
                     if ((imm8 & (1 << 4)) != 0)
                     {
                         if ((imm8 & (1 << 5)) != 0) // only negate valid
                         {
-                            if (EqualityComparer<T>.Default.Equals(b[i], default(T)))
-                            {
-                                bInvalid = true;
-                            }
-
-                            if (bInvalid) // invalid, don't negate
+                            if (i >= blen) // invalid, don't negate
                                 intRes2 |= intRes1 & (1 << i);
                             else // valid, negate
                                 intRes2 |= (~intRes1) & (1 << i);

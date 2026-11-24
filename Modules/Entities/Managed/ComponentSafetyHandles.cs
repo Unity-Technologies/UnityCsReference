@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Text;
 using UnityEngine.Assertions;
 using Unity.Burst;
@@ -445,17 +446,29 @@ namespace Unity.Entities
 
         // Native code checks these handles before it reads or writes component data (Modules/Entities/Public/ComponentDependencies.h).
         // Both arrays are allocated once and keep their address until the World is destroyed.
-        internal ushort* TypeArrayIndices => m_TypeArrayIndices;
-        internal void* ComponentSafetyHandlesPtr => m_ComponentSafetyHandles;
-
-        internal static void GetComponentSafetyHandleLayout(out int size, out int safetyHandleOffset, out int bufferHandleOffset, out int typeIndexOffset)
+        internal static int GetNativeLayoutForStructMatchCheck(Span<int> values)
         {
+            var i = 0;
+            values[i++] = sizeof(AtomicSafetyHandle);
+
             ComponentSafetyHandle handle = default;
-            var start = (byte*)&handle;
-            size = sizeof(ComponentSafetyHandle);
-            safetyHandleOffset = (int)((byte*)&handle.SafetyHandle - start);
-            bufferHandleOffset = (int)((byte*)&handle.BufferHandle - start);
-            typeIndexOffset = (int)((byte*)&handle.TypeIndex - start);
+            var handleStart = (byte*)&handle;
+            values[i++] = sizeof(ComponentSafetyHandle);
+            values[i++] = (int)((byte*)&handle.SafetyHandle - handleStart);
+            values[i++] = (int)((byte*)&handle.BufferHandle - handleStart);
+            values[i++] = (int)((byte*)&handle.TypeIndex - handleStart);
+
+            ComponentSafetyHandles handles = default;
+            var start = (byte*)&handles;
+            values[i++] = sizeof(ComponentSafetyHandles);
+            values[i++] = (int)((byte*)&handles.m_ComponentSafetyHandles - start);
+            values[i++] = (int)((byte*)&handles.m_ComponentSafetyHandlesCount - start);
+            values[i++] = (int)((byte*)&handles.EntityTypeIndex - start);
+            values[i++] = (int)((byte*)&handles.m_TypeArrayIndices - start);
+            values[i++] = (int)((byte*)&handles.ExclusiveTransactionSafety - start);
+            values[i++] = (int)((byte*)&handles.m_InvalidateArraysMarker - start);
+            values[i++] = (int)((byte*)&handles.m_TempSafety - start);
+            return i;
         }
 
         AtomicSafetyHandle m_TempSafety;

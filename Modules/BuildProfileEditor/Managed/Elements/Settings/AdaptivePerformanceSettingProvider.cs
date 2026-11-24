@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.AdaptivePerformance.Editor.Metadata;
 using UnityEditor.AdaptivePerformance.UI.Editor;
+using UnityEditor.Build.Profile.Elements;
 using UnityEngine;
 using UnityEngine.AdaptivePerformance;
 using UnityEngine.UIElements;
@@ -156,10 +157,18 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
 
     internal static void OnPasteProfile(BuildProfile profile)
     {
-        ApplyPayload(profile, GUIUtility.systemCopyBuffer);
+        ApplyPayload(profile, GUIUtility.systemCopyBuffer, ConfirmReplaceExistingSettings);
     }
 
-    internal static void ApplyPayload(BuildProfile profile, string clipboard)
+    static bool ConfirmReplaceExistingSettings()
+    {
+        return EditorUtility.DisplayDialog(
+            TrText.pasteSettings,
+            TrText.adaptivePerformancePasteMessage,
+            BuildProfileSettingsFoldout.s_Paste.text, TrText.cancelButtonText);
+    }
+
+    internal static void ApplyPayload(BuildProfile profile, string clipboard, Func<bool> confirmReplace = null)
     {
         if (profile == null) return;
         if (string.IsNullOrEmpty(clipboard)) return;
@@ -225,6 +234,13 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
             }
         }
 
+        if (confirmReplace != null &&
+            HasAdaptivePerformanceSubAssets(profile) &&
+            !confirmReplace())
+        {
+            return;
+        }
+
         // Build every replacement instance BEFORE touching the profile since CreateInstance can still return null
         var newInstances = new ScriptableObject[payload.entries.Count];
         for (int i = 0; i < payload.entries.Count; i++)
@@ -288,6 +304,12 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
         Undo.CollapseUndoOperations(undoGroup);
         EditorUtility.SetDirty(profile);
         AssetDatabase.SaveAssetIfDirty(profile);
+    }
+
+    static bool HasAdaptivePerformanceSubAssets(BuildProfile profile)
+    {
+        using var subAssets = BuildProfileAdaptivePerformanceToggle.EnumerateAdaptivePerformanceSubAssets(profile).GetEnumerator();
+        return subAssets.MoveNext();
     }
 
     // The non-loader, non-provider types EnumerateAdaptivePerformanceSubAssets can yield.

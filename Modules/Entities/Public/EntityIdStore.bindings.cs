@@ -175,8 +175,8 @@ namespace UnityEngine
         // Layout fields that Burst-compiled code must be able to read are stored in a
         // SharedStatic so the Burst JIT never needs to call (or analyse) the class
         // initializer, which contains extern calls that Burst cannot compile.
-        // Populated by Initialize() on every code reload, which UnityEngine.CoreInitializer calls eagerly under
-        // [OnAssemblyLoaded] so wrapper creation and Burst-compiled callers always see a valid context
+        // Populated by Initialize() on every code reload, which UnityEngine.CoreInitializer calls eagerly (under
+        // [OnAssemblyLoaded] at startup, natively on reloads) so wrapper creation and Burst-compiled callers always see a valid context
         // (Burst cannot execute the P/Invoke calls inside Initialize() itself).
         internal struct ContextData
         {
@@ -218,8 +218,8 @@ namespace UnityEngine
         // Populates the SharedStatic layout from native; a no-op if IsInitialized is already set.
         // Runs on every code reload: BurstCompilerService::ClearSharedMemory zeroes the backing store on
         // each one, whatever ALC declares this type.
-        // Called explicitly by UnityEngine.CoreInitializer under [OnAssemblyLoaded] (the earliest managed
-        // hook) so the store is ready before the first scripting wrapper is created and before any
+        // Called explicitly by UnityEngine.CoreInitializer (under [OnAssemblyLoaded], the earliest managed
+        // hook, at startup; natively on reloads) so the store is ready before the first scripting wrapper is created and before any
         // Burst-compiled caller can reach AllocateEntityIds. Burst cannot execute the P/Invoke calls here,
         // so eager managed-side initialization is required, mirroring the C++ side's
         // RegisterRuntimeInitializeAndCleanup for InitializeEntityIdStore.

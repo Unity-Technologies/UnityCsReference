@@ -94,6 +94,7 @@ namespace UnityEditor.AssetImporters
         [NativeName("assetPath")]
         private string m_AssetPath;
         [NativeName("qualifyForSpritePacking")]
+        [Obsolete("m_QualifyForSpritePacking is no longer supported. Please use SpriteAtlas V2 to pack Sprites.", false)]
         private bool m_QualifyForSpritePacking;
         [NativeName("enablePostProcessor")]
         private bool m_EnablePostProcessor;
@@ -105,8 +106,6 @@ namespace UnityEditor.AssetImporters
         private SourceTextureInformation m_SourceTextureInformation;
         [NativeName("spriteSheetData")]
         private SpriteImportData[] m_SpriteImportData;
-        [NativeName("spritePackingTag")]
-        private string m_SpritePackingTag;
         [NativeName("secondarySpriteTextures")]
         private SecondarySpriteTexture[] m_SecondarySpriteTextures;
 
@@ -114,8 +113,6 @@ namespace UnityEditor.AssetImporters
         {
             m_EnablePostProcessor = true;
             m_AssetPath = "";
-            m_QualifyForSpritePacking = false;
-            m_SpritePackingTag = "";
             m_SpriteImportData = null;
             m_SecondarySpriteTextures = null;
 
@@ -235,14 +232,17 @@ namespace UnityEditor.AssetImporters
         }
 
         public string assetPath { get { return m_AssetPath; } set { m_AssetPath = value; } }
+
+        [Obsolete("qualifyForSpritePacking is no longer supported. Please use SpriteAtlas V2 to pack Sprites.", false)]
         public bool qualifyForSpritePacking { get { return m_QualifyForSpritePacking; } set { m_QualifyForSpritePacking = value; } }
         public bool enablePostProcessor { get { return m_EnablePostProcessor; } set { m_EnablePostProcessor = value; } }
         public TextureImporterSettings textureImporterSettings { get { return m_Settings; } set { m_Settings = value; } }
         public TextureImporterPlatformSettings platformSettings { get { return m_PlatformSettings; } set { m_PlatformSettings = value; } }
         public SourceTextureInformation sourceTextureInformation { get { return m_SourceTextureInformation; } set { m_SourceTextureInformation = value; } }
         public SpriteImportData[] spriteImportData { get { return m_SpriteImportData; } set { m_SpriteImportData = value; } }
-        public string spritePackingTag { get { return m_SpritePackingTag; } set { m_SpritePackingTag = value; } }
         public SecondarySpriteTexture[] secondarySpriteTextures { get { return m_SecondarySpriteTextures; } set { m_SecondarySpriteTextures = value; } }
+        [Obsolete("Sprite Packing Tags have been removed along with the SpritePacker in Unity 6.0. Use a Sprite Atlas asset instead.", true)]
+        public string spritePackingTag { get { return ""; } set { } }
     }
 
 

@@ -164,13 +164,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="index">The index of the breadcrumb.</param>
         protected virtual void OnBreadcrumbClick(int index)
         {
-            if (GraphTool.ToolState.SubgraphStack.Count <= index)
-                return;
-
-            var graphModel = GraphTool.ToolState.ResolveSubGraph(index);
-            if (graphModel != null)
-                GraphTool?.Dispatch(new LoadGraphCommand(graphModel,
-                    LoadGraphCommand.LoadStrategies.KeepHistory, index, GraphTool.ToolState.GetSubgraphLabel(index), GraphTool.ToolState.GetSubgraphNodeGuid(index)));
+            (containerWindow as GraphViewEditorWindow)?.NavigateToBreadcrumb(index);
         }
     }
 }

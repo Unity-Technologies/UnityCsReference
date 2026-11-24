@@ -2062,7 +2062,7 @@ namespace Unity.Burst.Intrinsics
             public static v128 max_sd(v128 a, v128 b)
             {
                 v128 dst = default(v128);
-                dst.Double0 = Math.Max(a.Double0, b.Double0);
+                dst.Double0 = a.Double0 > b.Double0 ? a.Double0 : b.Double0;
                 dst.Double1 = a.Double1;
                 return dst;
             }
@@ -2076,8 +2076,8 @@ namespace Unity.Burst.Intrinsics
             public static v128 max_pd(v128 a, v128 b)
             {
                 v128 dst = default(v128);
-                dst.Double0 = Math.Max(a.Double0, b.Double0);
-                dst.Double1 = Math.Max(a.Double1, b.Double1);
+                dst.Double0 = a.Double0 > b.Double0 ? a.Double0 : b.Double0;
+                dst.Double1 = a.Double1 > b.Double1 ? a.Double1 : b.Double1;
                 return dst;
             }
 
@@ -2090,7 +2090,7 @@ namespace Unity.Burst.Intrinsics
             public static v128 min_sd(v128 a, v128 b)
             {
                 v128 dst = default(v128);
-                dst.Double0 = Math.Min(a.Double0, b.Double0);
+                dst.Double0 = a.Double0 < b.Double0 ? a.Double0 : b.Double0;
                 dst.Double1 = a.Double1;
                 return dst;
             }
@@ -2104,8 +2104,8 @@ namespace Unity.Burst.Intrinsics
             public static v128 min_pd(v128 a, v128 b)
             {
                 v128 dst = default(v128);
-                dst.Double0 = Math.Min(a.Double0, b.Double0);
-                dst.Double1 = Math.Min(a.Double1, b.Double1);
+                dst.Double0 = a.Double0 < b.Double0 ? a.Double0 : b.Double0;
+                dst.Double1 = a.Double1 < b.Double1 ? a.Double1 : b.Double1;
                 return dst;
             }
 
@@ -2299,7 +2299,10 @@ namespace Unity.Burst.Intrinsics
             [BurstTargetCpu(BurstTargetCpu.X64_SSE2)]
             public static v128 cmpgt_sd(v128 a, v128 b)
             {
-                return cmple_sd(b, a);
+                v128 dst = default(v128);
+                dst.ULong0 = a.Double0 > b.Double0 ? ~0ul : 0;
+                dst.ULong1 = a.ULong1;
+                return dst;
             }
 
             // _mm_cmpge_sd
@@ -2311,7 +2314,10 @@ namespace Unity.Burst.Intrinsics
             [BurstTargetCpu(BurstTargetCpu.X64_SSE2)]
             public static v128 cmpge_sd(v128 a, v128 b)
             {
-                return cmplt_sd(b, a);
+                v128 dst = default(v128);
+                dst.ULong0 = a.Double0 >= b.Double0 ? ~0ul : 0;
+                dst.ULong1 = a.ULong1;
+                return dst;
             }
 
             // _mm_cmpord_sd
@@ -2393,7 +2399,10 @@ namespace Unity.Burst.Intrinsics
             [BurstTargetCpu(BurstTargetCpu.X64_SSE2)]
             public static v128 cmpngt_sd(v128 a, v128 b)
             {
-                return cmpnlt_sd(b, a);
+                v128 dst = default(v128);
+                dst.ULong0 = !(a.Double0 > b.Double0) ? ~0ul : 0;
+                dst.ULong1 = a.ULong1;
+                return dst;
             }
 
             // _mm_cmpnge_sd
@@ -2405,7 +2414,10 @@ namespace Unity.Burst.Intrinsics
             [BurstTargetCpu(BurstTargetCpu.X64_SSE2)]
             public static v128 cmpnge_sd(v128 a, v128 b)
             {
-                return cmpnle_sd(b, a);
+                v128 dst = default(v128);
+                dst.ULong0 = !(a.Double0 >= b.Double0) ? ~0ul : 0;
+                dst.ULong1 = a.ULong1;
+                return dst;
             }
 
             // _mm_cmpeq_pd

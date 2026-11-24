@@ -69,6 +69,12 @@ namespace UnityEditor.Search
             return string.Equals(id, "expression", System.StringComparison.Ordinal);
         }
 
+        internal override string FormatUIValue(string originalValue)
+        {
+            // Provider names are already display names, nicifying them splits acronyms (e.g. "UXMLs" becomes "UXM Ls").
+            return string.IsNullOrEmpty(filterId) ? base.FormatUIValue(originalValue) : originalValue;
+        }
+
         internal override Color GetBackgroundColor()
         {
             return QueryColors.area;

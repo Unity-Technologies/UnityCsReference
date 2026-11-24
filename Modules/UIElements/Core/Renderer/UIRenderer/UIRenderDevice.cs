@@ -137,7 +137,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_TextCorePagePosID = Shader.PropertyToID("_TextCorePagePos");
         static readonly int s_ElementInfoPagePosID = Shader.PropertyToID("_ElementInfoPagePos");
         static readonly int s_SkipGammaConversionID = Shader.PropertyToID("_SkipGammaConversion");
-        static readonly int s_FlatPanelID = Shader.PropertyToID("_UIEFlatPanel");
+        static readonly int s_FlattenDepthID = Shader.PropertyToID("_UIEFlattenDepth");
         static readonly int s_PageTablesID = Shader.PropertyToID("UIE_PageTables");
 
         static readonly ProfilerMarker s_MarkerFree = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Free");
@@ -729,7 +729,7 @@ namespace UnityEngine.UIElements.UIR
             else
             {
                 st.constantProps = m_ConstantProps;
-                InitializeConstantProperties(st.constantProps, gradientSettings, shaderInfoAllocator);
+                InitializeConstantProperties(st.constantProps, gradientSettings, shaderInfoAllocator, FlattensDepth(st.flags));
                 st.batchProps = m_BatchProps;
                 st.batchProps.Clear();
             }
@@ -1165,9 +1165,17 @@ namespace UnityEngine.UIElements.UIR
             m_ScreenSpaceAlteredMaterials.Clear();
         }
 
-        private void InitializeConstantProperties(MaterialPropertyBlock constantProps, Texture gradientSettings, ShaderInfoAllocator shaderInfoAllocator)
+        // True when the target is projected into the 2D slice of RenderSingleTree rather than the camera's depth range.
+        // A nested tree is always drawn into that slice, even on a world-space panel: its texture is composited flat,
+        // so a Z kept as geometry would only fall outside the slice and be clipped.
+        bool FlattensDepth(EvaluationFlags flags)
         {
-            constantProps.SetFloat(s_FlatPanelID, isFlat ? 1.0f : 0.0f);
+            return isFlat || (flags & EvaluationFlags.IsRenderingNestedTreeRT) != 0;
+        }
+
+        private void InitializeConstantProperties(MaterialPropertyBlock constantProps, Texture gradientSettings, ShaderInfoAllocator shaderInfoAllocator, bool flattenDepth)
+        {
+            constantProps.SetFloat(s_FlattenDepthID, flattenDepth ? 1.0f : 0.0f);
             if (gradientSettings != null)
                 constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
             if (shaderInfoAllocator != null)
@@ -1202,7 +1210,7 @@ namespace UnityEngine.UIElements.UIR
                 return;
 
             CommandList cmdList = m_CommandListManager.GetOrCreateCommandList(st.commandListOwner, st.material, commandFlags);
-            InitializeConstantProperties(cmdList.constantProps, gradientSettings, shaderInfoAllocator);
+            InitializeConstantProperties(cmdList.constantProps, gradientSettings, shaderInfoAllocator, FlattensDepth(st.flags));
 
             st.activeCommandList = cmdList;
 

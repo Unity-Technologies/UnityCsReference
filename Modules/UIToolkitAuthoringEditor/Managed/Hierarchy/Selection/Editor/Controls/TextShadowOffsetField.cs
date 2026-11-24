@@ -18,6 +18,16 @@ namespace Unity.UIToolkit.Editor;
         /// </summary>
         public new static readonly string ussClassName = "unity-text-shadow-offset-field";
 
+        /// <summary>
+        /// USS class name of the horizontal offset field in elements of this type.
+        /// </summary>
+        public static readonly string offsetXFieldUssClassName = ussClassName + "__x-field";
+
+        /// <summary>
+        /// USS class name of the vertical offset field in elements of this type.
+        /// </summary>
+        public static readonly string offsetYFieldUssClassName = ussClassName + "__y-field";
+
         StyleLengthField m_OffsetXField;
         StyleLengthField m_OffsetYField;
 
@@ -32,7 +42,9 @@ namespace Unity.UIToolkit.Editor;
             AddToClassList(ussClassName);
 
             m_OffsetXField = new StyleLengthField("Horizontal") { tooltip = "Move text shadow horizontally (left and right)", containsAffordance = false };
+            m_OffsetXField.AddToClassList(offsetXFieldUssClassName);
             m_OffsetYField = new StyleLengthField("Vertical") { tooltip= "Move text shadow vertically (up and down)", containsAffordance = false };
+            m_OffsetYField.AddToClassList(offsetYFieldUssClassName);
 
             Add(m_OffsetXField);
             Add(m_OffsetYField);

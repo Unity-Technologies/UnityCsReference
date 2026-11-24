@@ -59,9 +59,21 @@ namespace UnityEngine
         ///<param name="rect">The rectangle outside of which geometry is clipped.</param>
         ///<seealso cref="CanvasRenderer.DisableRectClipping" />
         public extern void EnableRectClipping(Rect rect);
+        ///<summary>The clipping softness to apply to each edge of the renderer's clip rect.</summary>
+        ///<remarks>X is the left edge, Y the bottom, Z the right and W the top. Each edge fades linearly over half that many pixels, as with clippingSoftness. The value is passed to the shader through the _UIMaskSoftness property.</remarks>
+        public extern Vector4 clippingEdgeSoftness { get; set; }
         ///<summary>The clipping softness to apply to the renderer.</summary>
-        ///<remarks>Clipping softness is a linear alpha fade of clippingSoftness pixels. It gets passed to the shader through the _MaskSoftnessX and _MaskSoftnessY properties.</remarks>
-        public extern Vector2 clippingSoftness { get; set; }
+        ///<remarks>Setting it applies X to the left and right edges and Y to the bottom and top edges. Getting it returns the larger of the left and right edges, and of the bottom and top edges.</remarks>
+        [Obsolete("clippingSoftness is deprecated. Use clippingEdgeSoftness instead.", false)]
+        public Vector2 clippingSoftness
+        {
+            get
+            {
+                var edges = clippingEdgeSoftness;
+                return new Vector2(Mathf.Max(edges.x, edges.z), Mathf.Max(edges.y, edges.w));
+            }
+            set { clippingEdgeSoftness = new Vector4(value.x, value.y, value.x, value.y); }
+        }
         ///<summary>Disables rectangle clipping for this CanvasRenderer.</summary>
         ///<seealso cref="CanvasRenderer.EnableRectClipping" />
         public extern void DisableRectClipping();

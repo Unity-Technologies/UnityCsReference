@@ -61,6 +61,9 @@ namespace UnityEngine
         extern private static EntityId Internal_CreateDynamicsMaterial(string name);
 
         ///<summary>How bouncy is the surface? A value of 0 will not bounce. A value of 1 will bounce without any loss of energy.</summary>
+        ///<remarks>The value is clamped between 0 and 1. The physics system combines the bounciness of both colliders in a contact according to <see cref="PhysicsMaterial.bounceCombine" />.
+        ///
+        ///Bounciness only applies when the colliders approach each other along the contact normal faster than <see cref="Physics.bounceThreshold" />, which is 2 meters per second by default. Slower contacts don't bounce, whatever the bounciness value. To make slow objects bounce, such as pool balls that roll into a cushion, lower <see cref="Physics.bounceThreshold" />.</remarks>
         extern public float bounciness { get; set; }
         ///<summary>The friction used when already moving.  This value is usually between 0 and 1.</summary>
         ///<remarks>A value of 0 feels like ice, 1 feels like rubber.</remarks>
@@ -74,7 +77,9 @@ namespace UnityEngine
         extern public PhysicsMaterialCombine frictionCombine { get; set; }
         ///<summary>Determines how the bounciness is combined.</summary>
         ///<remarks>Traditionally bounciness properties are dependent on the combination of the two materials in contact.
-        ///This is however impractical in a game. Instead you can use the combine mode to tune how the bounciness values of two materials are combined.</remarks>
+        ///This is however impractical in a game. Instead you can use the combine mode to tune how the bounciness values of two materials are combined.
+        ///
+        ///The combine mode determines the bounciness value used for a contact. If the combined value is 0, the contact doesn't bounce. For example, <see cref="PhysicsMaterialCombine.Minimum" /> or <see cref="PhysicsMaterialCombine.Multiply" /> with a material whose bounciness is 0 disables bouncing. Regardless of the combine mode, contacts that approach slower than <see cref="Physics.bounceThreshold" /> don't bounce.</remarks>
         extern public PhysicsMaterialCombine bounceCombine { get; set; }
     }
 }

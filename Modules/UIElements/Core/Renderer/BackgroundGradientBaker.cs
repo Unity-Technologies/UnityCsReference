@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.UIR;
@@ -17,7 +18,7 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class BackgroundGradientBaker : IDisposable
     {
-        const int k_AtlasWidth = 64;
+        internal const int k_AtlasWidth = 64;
 
         // Keyed by BackgroundGradient itself (not just its hash) so hash collisions on the
         // 32-bit GetHashCode land in different buckets rather than aliasing the cache.
@@ -166,7 +167,7 @@ namespace UnityEngine.UIElements
             public static Color32 SampleBakedLinearOnElement(in BackgroundGradient gradient, Vector2 rectSize, Vector2 frac)
             {
                 var baked = BackgroundGradientBaker.ResolveForElement(gradient, rectSize, new BackgroundGradientStop[gradient.stops.Length], out _);
-                float u = Mathf.Clamp(Mathf.Clamp01(UVOnElement(gradient, rectSize, frac).x) * k_AtlasWidth - 0.5f, 0f, k_AtlasWidth - 1);
+                float u = Mathf.Clamp01(UVOnElement(gradient, rectSize, frac).x) * (k_AtlasWidth - 1);
                 int i = Mathf.Min((int)u, k_AtlasWidth - 2);
                 return Color32.Lerp(RampTexel(baked, i), RampTexel(baked, i + 1), u - i);
             }
@@ -315,7 +316,9 @@ namespace UnityEngine.UIElements
             };
             var pixels = atlas.GetRawTextureData<Color32>();
             for (int i = 0; i < k_AtlasWidth; ++i)
+            {
                 pixels[i] = RampTexel(gradient, i);
+            }
             atlas.Apply(false, true);
             return atlas;
         }
@@ -473,7 +476,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        static Color32 RampTexel(in BackgroundGradient gradient, int i) => SampleStops(gradient, (i + 0.5f) / k_AtlasWidth);
+        // GradientSettingsAtlas maps t=0..1 onto the centers of the first and last texels.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Color32 RampTexel(in BackgroundGradient gradient, int i) => SampleStops(gradient, i / (k_AtlasWidth - 1f));
 
         static Color32 SampleStops(in BackgroundGradient gradient, float t)
         {
@@ -510,7 +515,42 @@ namespace UnityEngine.UIElements
 
             float span = nextT - prevT;
             float localT = span > 1e-6f ? Mathf.Clamp01((t - prevT) / span) : 0f;
-            return Color.Lerp(stops[prev].color, stops[next].color, localT);
+            return LerpPremultiplied(stops, prev, next, localT);
         }
+
+        // CSS interpolates color stops in premultiplied alpha; the ramp stores the result straight.
+        static Color LerpPremultiplied(BackgroundGradientStop[] stops, int prev, int next, float t)
+        {
+            Color a = stops[prev].color;
+            Color b = stops[next].color;
+            float weightA = a.a * (1f - t);
+            float weightB = b.a * t;
+            float alpha = weightA + weightB;
+            if (alpha <= 0f)
+                return TransparentNearVisibleStop(stops, prev, next);
+
+            float invAlpha = 1f / alpha;
+            return new Color(
+                (a.r * weightA + b.r * weightB) * invAlpha,
+                (a.g * weightA + b.g * weightB) * invAlpha,
+                (a.b * weightA + b.b * weightB) * invAlpha,
+                alpha);
+        }
+
+        // Bilinear filtering blends ramp texels straight, so a transparent texel takes the color of
+        // the nearest visible stop to keep its rgb out of the neighboring texels.
+        static Color TransparentNearVisibleStop(BackgroundGradientStop[] stops, int prev, int next)
+        {
+            for (int offset = 0; prev - offset >= 0 || next + offset < stops.Length; ++offset)
+            {
+                if (prev - offset >= 0 && stops[prev - offset].color.a > 0f)
+                    return WithoutAlpha(stops[prev - offset].color);
+                if (next + offset < stops.Length && stops[next + offset].color.a > 0f)
+                    return WithoutAlpha(stops[next + offset].color);
+            }
+            return Color.clear;
+        }
+
+        static Color WithoutAlpha(Color color) => new Color(color.r, color.g, color.b, 0f);
     }
 }

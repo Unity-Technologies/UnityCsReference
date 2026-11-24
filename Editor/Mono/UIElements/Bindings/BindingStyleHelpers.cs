@@ -82,6 +82,15 @@ namespace UnityEditor.UIElements
                 // We only want to apply override styles onto the Foldout header, not the entire contents.
                 elementToUpdate = foldout.toggle;
             }
+            else if (element is QuaternionEulerField quaternionField)
+            {
+                // Each euler angle depends on every quaternion component, so it is styled from the whole rotation.
+                elementToUpdate = quaternionField.labelElement;
+                foreach (var angleField in quaternionField.fields)
+                {
+                    updateCallback(angleField, prop);
+                }
+            }
             else if (element.ClassListContains(BaseCompositeField<int, IntegerField, int>.ussClassName)
                      || element is BoundsField || element is BoundsIntField)
             {
@@ -163,6 +172,18 @@ namespace UnityEditor.UIElements
                 return;
             }
 
+            var drivenState = GetDrivenPropertyState(prop);
+            inputElement.EnableInClassList(BindingExtensions.drivenUssClassName, drivenState == DrivenPropertyState.CustomDriven);
+            inputElement.EnableInClassList(BindingExtensions.animationAnimatedUssClassName, drivenState == DrivenPropertyState.AnimationAnimated);
+            inputElement.EnableInClassList(BindingExtensions.animationRecordedUssClassName, drivenState == DrivenPropertyState.AnimationRecording);
+            inputElement.EnableInClassList(BindingExtensions.animationCandidateUssClassName, drivenState == DrivenPropertyState.AnimationCandidate);
+        }
+
+        static DrivenPropertyState GetDrivenPropertyState(SerializedProperty prop)
+        {
+            if (prop.propertyType == SerializedPropertyType.Quaternion)
+                return GetDrivenComponentState(prop);
+
             var drivenState = DrivenPropertyState.NotDriven;
             if (DrivenPropertyManagerInternal.IsDriven(prop.serializedObject.targetObject, prop.propertyPath))
             {
@@ -181,10 +202,24 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            inputElement.EnableInClassList(BindingExtensions.drivenUssClassName, drivenState == DrivenPropertyState.CustomDriven);
-            inputElement.EnableInClassList(BindingExtensions.animationAnimatedUssClassName, drivenState == DrivenPropertyState.AnimationAnimated);
-            inputElement.EnableInClassList(BindingExtensions.animationRecordedUssClassName, drivenState == DrivenPropertyState.AnimationRecording);
-            inputElement.EnableInClassList(BindingExtensions.animationCandidateUssClassName, drivenState == DrivenPropertyState.AnimationCandidate);
+            return drivenState;
+        }
+
+        // Drivers register leaf paths, so a Quaternion is driven through its x, y, z and w components.
+        static DrivenPropertyState GetDrivenComponentState(SerializedProperty prop)
+        {
+            var component = prop.Copy();
+            var endProperty = prop.GetEndProperty();
+            component.Next(true);
+            do
+            {
+                var drivenState = GetDrivenPropertyState(component);
+                if (drivenState != DrivenPropertyState.NotDriven)
+                    return drivenState;
+            }
+            while (component.Next(false) && !SerializedProperty.EqualContents(component, endProperty));
+
+            return DrivenPropertyState.NotDriven;
         }
 
         internal static void UpdateLivePropertyStyleFromProperty(VisualElement element, SerializedProperty prop)

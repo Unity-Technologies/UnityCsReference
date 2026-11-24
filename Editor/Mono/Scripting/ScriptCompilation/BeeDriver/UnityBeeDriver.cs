@@ -82,7 +82,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         // script compilation when UnityVersion here matches the running Editor
         // (ArtifactService::WasLastScriptBuildByThisUnityVersion, Modules/AssetDatabase/Editor/V2/ArtifactService/ArtifactServiceMode.cpp).
         // Keep the file name and the UnityVersion field, or update that code too.
-        private static void RecreateDagDirectoryIfNeeded(NPath dagDirectory)
+        internal static void RecreateDagDirectoryIfNeeded(NPath dagDirectory)
         {
             var beeBackendInfoPath = dagDirectory.Combine("bee_backend.info");
             var currentInfo = new BeeBackendInfo()

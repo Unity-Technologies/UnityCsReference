@@ -479,6 +479,9 @@ namespace Unity.Mathematics
 
 
 
+        [Unity.Collections.LowLevel.Unsafe.PatchedBody("c0")]
+        readonly ref float2 FirstColumnRef() { throw new NotImplementedException("Patching this method failed"); }
+
         /// <summary>Returns the float2 element at a specified index.</summary>
         unsafe public ref float2 this[int index]
         {
@@ -486,7 +489,7 @@ namespace Unity.Mathematics
             {
                 if ((uint)index >= 3)
                     throw new System.ArgumentException("index must be between[0...2]");
-                fixed (float2x3* array = &this) { return ref ((float2*)array)[index]; }
+                return ref Unsafe.Add(ref FirstColumnRef(), index);
             }
         }
 

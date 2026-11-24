@@ -482,10 +482,7 @@ namespace Unity.UIToolkit.Editor
                 if (candidatePptrs == null || candidatePptrs.Length == 0)
                     continue;
 
-                var existing = AnimationUtility.GetObjectReferenceCurve(animClip, binding) ?? Array.Empty<ObjectReferenceKeyframe>();
-                Object candidateRef = candidatePptrs[0].value;
-                var merged = AnimationClipKeyEditing.ReplaceObjectReferenceKey(existing, m_Time, candidateRef);
-                AnimationUtility.SetObjectReferenceCurve(animClip, binding, merged);
+                AnimationClipKeyEditing.AddOrReplaceObjectReferenceKey(animClip, binding, m_Time, candidatePptrs[0].value);
             }
 
             foreach (var binding in discreteBindings)
@@ -494,11 +491,7 @@ namespace Unity.UIToolkit.Editor
                 if (candidateKeys == null || candidateKeys.Length == 0)
                     continue;
 
-                var existing = AnimationUtility.GetDiscreteCurve(animClip, binding) ??
-                               Array.Empty<DiscreteKeyframe>();
-                int candidateValue = candidateKeys[0].value;
-                AnimationClipKeyEditing.AddOrReplaceDiscreteKey(existing, m_Time, candidateValue);
-                AnimationUtility.SetDiscreteCurve(animClip, binding, existing);
+                AnimationClipKeyEditing.AddOrReplaceDiscreteKey(animClip, binding, m_Time, candidateKeys[0].value);
             }
 
             ClearCandidates();

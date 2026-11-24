@@ -64,9 +64,9 @@ namespace UnityEditor.Scripting.ScriptCompilation.MsBuild
 
         [RequiredByNativeCode]
         // Blocking call to Compile
-        public static EditorCompilation.CompileStatus CompileMsBuild(BuildTarget buildTarget, CompileTarget compileTarget, MSBuildCompilationOptions compilationOptions)
+        public static EditorCompilation.CompileStatus CompileMsBuild(BuildTarget buildTarget, CompileTarget compileTarget, MSBuildCompilationOptions compilationOptions, string[] extraScriptingDefines)
         {
-            return Instance.Compile(buildTarget, compileTarget, compilationOptions);
+            return Instance.Compile(buildTarget, compileTarget, compilationOptions, extraScriptingDefines);
         }
 
         [RequiredByNativeCode]

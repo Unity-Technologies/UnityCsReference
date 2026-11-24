@@ -17,6 +17,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System;
@@ -38,27 +39,25 @@ namespace Unity.Collections
     {
         [SerializeField] internal U data;
 
+        internal readonly ref byte dataRef
+        {
+            [PatchedBody("data")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
+        internal readonly ref byte BufferRef
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()));
+        }
+
         internal ushort length
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                unsafe
-                {
-                    fixed(void* ptr = &data)
-                        return *((ushort*)ptr);
-                }
-            }
+            readonly get => Unsafe.As<byte, ushort>(ref dataRef);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                unsafe
-                {
-                    fixed (void* ptr = &data)
-                        *((ushort*)ptr) = value;
-                }
-            }
+            set => Unsafe.As<byte, ushort>(ref dataRef) = value;
         }
 
         internal readonly unsafe byte* buffer
@@ -140,17 +139,25 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for write access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
-        public readonly T* GetUnsafePtr() => (T*)buffer;
+        public readonly T* GetUnsafePtr() => (T*)Buffer;
 
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for read-only access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for read-only access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
-        public readonly T* GetUnsafeReadOnlyPtr() => (T*)buffer;
+        public readonly T* GetUnsafeReadOnlyPtr() => (T*)Buffer;
 
         /// <summary>
         /// Implicit cast to Span&lt;T&gt;.
@@ -194,7 +201,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    return UnsafeUtility.ReadArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index));
+                    return Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index));
                 }
             }
 
@@ -204,7 +211,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    UnsafeUtility.WriteArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index), value);
+                    Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index)) = value;
                 }
             }
         }
@@ -220,7 +227,7 @@ namespace Unity.Collections
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
             {
-                return ref UnsafeUtility.ArrayElementAsRef<T>(Buffer, index);
+                return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()))), index);
             }
         }
 
@@ -234,7 +241,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                return (int)CollectionHelper.Hash(Buffer, LengthInBytes);
+                fixed (byte* ptr = &BufferRef)
+                {
+                    return (int)CollectionHelper.Hash(ptr, LengthInBytes);
+                }
             }
         }
 
@@ -295,7 +305,10 @@ namespace Unity.Collections
         {
             var idx = Length;
             Length += length;
-            UnsafeUtility.MemCpy((T*)Buffer + idx, ptr, sizeof(T) * length);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpy((T*)dst + idx, ptr, sizeof(T) * length);
+            }
         }
 
         /// <summary>
@@ -329,7 +342,10 @@ namespace Unity.Collections
             var idx = Length;
             Length += count;
             fixed (T* ptr = &value)
-                UnsafeUtility.MemCpyReplicate((T*)Buffer + idx, ptr, sizeof(T), count);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpyReplicate((T*)dst + idx, ptr, sizeof(T), count);
+            }
         }
 
         /// <summary>
@@ -370,10 +386,12 @@ namespace Unity.Collections
             int bytesToCopy = itemsToCopy * sizeof(T);
             unsafe
             {
-                byte *b = Buffer;
-                byte *dest = b + end * sizeof(T);
-                byte *src = b + begin * sizeof(T);
-                UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                fixed (byte* b = &BufferRef)
+                {
+                    byte* dest = b + end * sizeof(T);
+                    byte* src = b + begin * sizeof(T);
+                    UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                }
             }
         }
 
@@ -442,9 +460,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -482,9 +503,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -501,9 +525,11 @@ namespace Unity.Collections
             var result = new T[Length];
             unsafe
             {
-                byte* s = Buffer;
-                fixed(T* d = result)
+                fixed (byte* s = &BufferRef)
+                fixed (T* d = result)
+                {
                     UnsafeUtility.MemCpy(d, s, LengthInBytes);
+                }
             }
             return result;
         }
@@ -518,7 +544,10 @@ namespace Unity.Collections
             unsafe
             {
                 var copy = CollectionHelper.CreateNativeArray<T>(Length, allocator, NativeArrayOptions.UninitializedMemory);
-                UnsafeUtility.MemCpy(copy.GetUnsafePtr(), Buffer, LengthInBytes);
+                fixed (byte* s = &BufferRef)
+                {
+                    UnsafeUtility.MemCpy(copy.GetUnsafePtr(), s, LengthInBytes);
+                }
                 return copy;
             }
         }
@@ -582,27 +611,25 @@ namespace Unity.Collections
     {
         [SerializeField] internal FixedBytes32Align8 data;
 
+        internal readonly ref byte dataRef
+        {
+            [PatchedBody("data")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
+        internal readonly ref byte BufferRef
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()));
+        }
+
         internal ushort length
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                unsafe
-                {
-                    fixed(void* ptr = &data)
-                        return *((ushort*)ptr);
-                }
-            }
+            readonly get => Unsafe.As<byte, ushort>(ref dataRef);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                unsafe
-                {
-                    fixed (void* ptr = &data)
-                        *((ushort*)ptr) = value;
-                }
-            }
+            set => Unsafe.As<byte, ushort>(ref dataRef) = value;
         }
 
         internal readonly unsafe byte* buffer
@@ -693,7 +720,11 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for write access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
         public readonly T* GetUnsafePtr() => (T*)Buffer;
@@ -701,7 +732,11 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for read-only access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for read-only access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         public readonly T* GetUnsafeReadOnlyPtr() => (T*)Buffer;
 
@@ -747,7 +782,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    return UnsafeUtility.ReadArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index));
+                    return Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index));
                 }
             }
 
@@ -757,7 +792,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    UnsafeUtility.WriteArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index), value);
+                    Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index)) = value;
                 }
             }
         }
@@ -773,7 +808,7 @@ namespace Unity.Collections
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
             {
-                return ref UnsafeUtility.ArrayElementAsRef<T>(Buffer, index);
+                return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()))), index);
             }
         }
 
@@ -787,7 +822,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                return (int)CollectionHelper.Hash(Buffer, LengthInBytes);
+                fixed (byte* ptr = &BufferRef)
+                {
+                    return (int)CollectionHelper.Hash(ptr, LengthInBytes);
+                }
             }
         }
 
@@ -848,7 +886,10 @@ namespace Unity.Collections
         {
             var idx = Length;
             Length += length;
-            UnsafeUtility.MemCpy((T*)Buffer + idx, ptr, sizeof(T) * length);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpy((T*)dst + idx, ptr, sizeof(T) * length);
+            }
         }
 
         /// <summary>
@@ -879,7 +920,10 @@ namespace Unity.Collections
             var idx = Length;
             Length += count;
             fixed (T* ptr = &value)
-                UnsafeUtility.MemCpyReplicate((T*)Buffer + idx, ptr, sizeof(T), count);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpyReplicate((T*)dst + idx, ptr, sizeof(T), count);
+            }
         }
 
         /// <summary>
@@ -920,10 +964,12 @@ namespace Unity.Collections
             int bytesToCopy = itemsToCopy * sizeof(T);
             unsafe
             {
-                byte *b = Buffer;
-                byte *dest = b + end * sizeof(T);
-                byte *src = b + begin * sizeof(T);
-                UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                fixed (byte* b = &BufferRef)
+                {
+                    byte* dest = b + end * sizeof(T);
+                    byte* src = b + begin * sizeof(T);
+                    UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                }
             }
         }
 
@@ -992,9 +1038,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -1032,9 +1081,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -1051,9 +1103,11 @@ namespace Unity.Collections
             var result = new T[Length];
             unsafe
             {
-                byte* s = Buffer;
-                fixed(T* d = result)
+                fixed (byte* s = &BufferRef)
+                fixed (T* d = result)
+                {
                     UnsafeUtility.MemCpy(d, s, LengthInBytes);
+                }
             }
             return result;
         }
@@ -1068,7 +1122,10 @@ namespace Unity.Collections
             unsafe
             {
                 var copy = CollectionHelper.CreateNativeArray<T>(Length, allocator, NativeArrayOptions.UninitializedMemory);
-                UnsafeUtility.MemCpy(copy.GetUnsafePtr(), Buffer, LengthInBytes);
+                fixed (byte* s = &BufferRef)
+                {
+                    UnsafeUtility.MemCpy(copy.GetUnsafePtr(), s, LengthInBytes);
+                }
                 return copy;
             }
         }
@@ -1087,7 +1144,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -1117,16 +1178,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -1157,7 +1218,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -1187,16 +1252,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -1239,7 +1304,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -1268,7 +1337,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -1298,16 +1371,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -1350,7 +1423,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -1379,7 +1456,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -1409,16 +1490,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -1461,7 +1542,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -1490,7 +1575,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -1520,16 +1609,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -1572,7 +1661,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -1824,27 +1917,25 @@ namespace Unity.Collections
     {
         [SerializeField] internal FixedBytes64Align8 data;
 
+        internal readonly ref byte dataRef
+        {
+            [PatchedBody("data")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
+        internal readonly ref byte BufferRef
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()));
+        }
+
         internal ushort length
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                unsafe
-                {
-                    fixed(void* ptr = &data)
-                        return *((ushort*)ptr);
-                }
-            }
+            readonly get => Unsafe.As<byte, ushort>(ref dataRef);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                unsafe
-                {
-                    fixed (void* ptr = &data)
-                        *((ushort*)ptr) = value;
-                }
-            }
+            set => Unsafe.As<byte, ushort>(ref dataRef) = value;
         }
 
         internal readonly unsafe byte* buffer
@@ -1935,7 +2026,11 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for write access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
         public readonly T* GetUnsafePtr() => (T*)Buffer;
@@ -1943,7 +2038,11 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for read-only access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for read-only access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         public readonly T* GetUnsafeReadOnlyPtr() => (T*)Buffer;
 
@@ -1989,7 +2088,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    return UnsafeUtility.ReadArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index));
+                    return Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index));
                 }
             }
 
@@ -1999,7 +2098,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    UnsafeUtility.WriteArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index), value);
+                    Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index)) = value;
                 }
             }
         }
@@ -2015,7 +2114,7 @@ namespace Unity.Collections
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
             {
-                return ref UnsafeUtility.ArrayElementAsRef<T>(Buffer, index);
+                return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()))), index);
             }
         }
 
@@ -2029,7 +2128,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                return (int)CollectionHelper.Hash(Buffer, LengthInBytes);
+                fixed (byte* ptr = &BufferRef)
+                {
+                    return (int)CollectionHelper.Hash(ptr, LengthInBytes);
+                }
             }
         }
 
@@ -2090,7 +2192,10 @@ namespace Unity.Collections
         {
             var idx = Length;
             Length += length;
-            UnsafeUtility.MemCpy((T*)Buffer + idx, ptr, sizeof(T) * length);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpy((T*)dst + idx, ptr, sizeof(T) * length);
+            }
         }
 
         /// <summary>
@@ -2121,7 +2226,10 @@ namespace Unity.Collections
             var idx = Length;
             Length += count;
             fixed (T* ptr = &value)
-                UnsafeUtility.MemCpyReplicate((T*)Buffer + idx, ptr, sizeof(T), count);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpyReplicate((T*)dst + idx, ptr, sizeof(T), count);
+            }
         }
 
         /// <summary>
@@ -2162,10 +2270,12 @@ namespace Unity.Collections
             int bytesToCopy = itemsToCopy * sizeof(T);
             unsafe
             {
-                byte *b = Buffer;
-                byte *dest = b + end * sizeof(T);
-                byte *src = b + begin * sizeof(T);
-                UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                fixed (byte* b = &BufferRef)
+                {
+                    byte* dest = b + end * sizeof(T);
+                    byte* src = b + begin * sizeof(T);
+                    UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                }
             }
         }
 
@@ -2234,9 +2344,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -2274,9 +2387,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -2293,9 +2409,11 @@ namespace Unity.Collections
             var result = new T[Length];
             unsafe
             {
-                byte* s = Buffer;
-                fixed(T* d = result)
+                fixed (byte* s = &BufferRef)
+                fixed (T* d = result)
+                {
                     UnsafeUtility.MemCpy(d, s, LengthInBytes);
+                }
             }
             return result;
         }
@@ -2310,7 +2428,10 @@ namespace Unity.Collections
             unsafe
             {
                 var copy = CollectionHelper.CreateNativeArray<T>(Length, allocator, NativeArrayOptions.UninitializedMemory);
-                UnsafeUtility.MemCpy(copy.GetUnsafePtr(), Buffer, LengthInBytes);
+                fixed (byte* s = &BufferRef)
+                {
+                    UnsafeUtility.MemCpy(copy.GetUnsafePtr(), s, LengthInBytes);
+                }
                 return copy;
             }
         }
@@ -2329,7 +2450,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -2359,16 +2484,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -2411,7 +2536,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -2440,7 +2569,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -2470,16 +2603,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -2510,7 +2643,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -2540,16 +2677,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -2592,7 +2729,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -2621,7 +2762,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -2651,16 +2796,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -2703,7 +2848,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -2732,7 +2881,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -2762,16 +2915,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -2814,7 +2967,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -3066,27 +3223,25 @@ namespace Unity.Collections
     {
         [SerializeField] internal FixedBytes128Align8 data;
 
+        internal readonly ref byte dataRef
+        {
+            [PatchedBody("data")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
+        internal readonly ref byte BufferRef
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()));
+        }
+
         internal ushort length
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                unsafe
-                {
-                    fixed(void* ptr = &data)
-                        return *((ushort*)ptr);
-                }
-            }
+            readonly get => Unsafe.As<byte, ushort>(ref dataRef);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                unsafe
-                {
-                    fixed (void* ptr = &data)
-                        *((ushort*)ptr) = value;
-                }
-            }
+            set => Unsafe.As<byte, ushort>(ref dataRef) = value;
         }
 
         internal readonly unsafe byte* buffer
@@ -3177,7 +3332,11 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for write access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
         public readonly T* GetUnsafePtr() => (T*)Buffer;
@@ -3185,7 +3344,11 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for read-only access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for read-only access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         public readonly T* GetUnsafeReadOnlyPtr() => (T*)Buffer;
 
@@ -3231,7 +3394,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    return UnsafeUtility.ReadArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index));
+                    return Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index));
                 }
             }
 
@@ -3241,7 +3404,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    UnsafeUtility.WriteArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index), value);
+                    Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index)) = value;
                 }
             }
         }
@@ -3257,7 +3420,7 @@ namespace Unity.Collections
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
             {
-                return ref UnsafeUtility.ArrayElementAsRef<T>(Buffer, index);
+                return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()))), index);
             }
         }
 
@@ -3271,7 +3434,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                return (int)CollectionHelper.Hash(Buffer, LengthInBytes);
+                fixed (byte* ptr = &BufferRef)
+                {
+                    return (int)CollectionHelper.Hash(ptr, LengthInBytes);
+                }
             }
         }
 
@@ -3332,7 +3498,10 @@ namespace Unity.Collections
         {
             var idx = Length;
             Length += length;
-            UnsafeUtility.MemCpy((T*)Buffer + idx, ptr, sizeof(T) * length);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpy((T*)dst + idx, ptr, sizeof(T) * length);
+            }
         }
 
         /// <summary>
@@ -3363,7 +3532,10 @@ namespace Unity.Collections
             var idx = Length;
             Length += count;
             fixed (T* ptr = &value)
-                UnsafeUtility.MemCpyReplicate((T*)Buffer + idx, ptr, sizeof(T), count);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpyReplicate((T*)dst + idx, ptr, sizeof(T), count);
+            }
         }
 
         /// <summary>
@@ -3404,10 +3576,12 @@ namespace Unity.Collections
             int bytesToCopy = itemsToCopy * sizeof(T);
             unsafe
             {
-                byte *b = Buffer;
-                byte *dest = b + end * sizeof(T);
-                byte *src = b + begin * sizeof(T);
-                UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                fixed (byte* b = &BufferRef)
+                {
+                    byte* dest = b + end * sizeof(T);
+                    byte* src = b + begin * sizeof(T);
+                    UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                }
             }
         }
 
@@ -3476,9 +3650,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -3516,9 +3693,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -3535,9 +3715,11 @@ namespace Unity.Collections
             var result = new T[Length];
             unsafe
             {
-                byte* s = Buffer;
-                fixed(T* d = result)
+                fixed (byte* s = &BufferRef)
+                fixed (T* d = result)
+                {
                     UnsafeUtility.MemCpy(d, s, LengthInBytes);
+                }
             }
             return result;
         }
@@ -3552,7 +3734,10 @@ namespace Unity.Collections
             unsafe
             {
                 var copy = CollectionHelper.CreateNativeArray<T>(Length, allocator, NativeArrayOptions.UninitializedMemory);
-                UnsafeUtility.MemCpy(copy.GetUnsafePtr(), Buffer, LengthInBytes);
+                fixed (byte* s = &BufferRef)
+                {
+                    UnsafeUtility.MemCpy(copy.GetUnsafePtr(), s, LengthInBytes);
+                }
                 return copy;
             }
         }
@@ -3571,7 +3756,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -3601,16 +3790,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -3653,7 +3842,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -3682,7 +3875,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -3712,16 +3909,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -3764,7 +3961,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -3793,7 +3994,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -3823,16 +4028,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -3863,7 +4068,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -3893,16 +4102,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -3945,7 +4154,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -3974,7 +4187,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -4004,16 +4221,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -4056,7 +4273,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -4308,27 +4529,25 @@ namespace Unity.Collections
     {
         [SerializeField] internal FixedBytes512Align8 data;
 
+        internal readonly ref byte dataRef
+        {
+            [PatchedBody("data")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
+        internal readonly ref byte BufferRef
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()));
+        }
+
         internal ushort length
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                unsafe
-                {
-                    fixed(void* ptr = &data)
-                        return *((ushort*)ptr);
-                }
-            }
+            readonly get => Unsafe.As<byte, ushort>(ref dataRef);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                unsafe
-                {
-                    fixed (void* ptr = &data)
-                        *((ushort*)ptr) = value;
-                }
-            }
+            set => Unsafe.As<byte, ushort>(ref dataRef) = value;
         }
 
         internal readonly unsafe byte* buffer
@@ -4419,7 +4638,11 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for write access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
         public readonly T* GetUnsafePtr() => (T*)Buffer;
@@ -4427,7 +4650,11 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for read-only access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for read-only access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         public readonly T* GetUnsafeReadOnlyPtr() => (T*)Buffer;
 
@@ -4473,7 +4700,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    return UnsafeUtility.ReadArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index));
+                    return Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index));
                 }
             }
 
@@ -4483,7 +4710,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    UnsafeUtility.WriteArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index), value);
+                    Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index)) = value;
                 }
             }
         }
@@ -4499,7 +4726,7 @@ namespace Unity.Collections
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
             {
-                return ref UnsafeUtility.ArrayElementAsRef<T>(Buffer, index);
+                return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()))), index);
             }
         }
 
@@ -4513,7 +4740,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                return (int)CollectionHelper.Hash(Buffer, LengthInBytes);
+                fixed (byte* ptr = &BufferRef)
+                {
+                    return (int)CollectionHelper.Hash(ptr, LengthInBytes);
+                }
             }
         }
 
@@ -4574,7 +4804,10 @@ namespace Unity.Collections
         {
             var idx = Length;
             Length += length;
-            UnsafeUtility.MemCpy((T*)Buffer + idx, ptr, sizeof(T) * length);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpy((T*)dst + idx, ptr, sizeof(T) * length);
+            }
         }
 
         /// <summary>
@@ -4605,7 +4838,10 @@ namespace Unity.Collections
             var idx = Length;
             Length += count;
             fixed (T* ptr = &value)
-                UnsafeUtility.MemCpyReplicate((T*)Buffer + idx, ptr, sizeof(T), count);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpyReplicate((T*)dst + idx, ptr, sizeof(T), count);
+            }
         }
 
         /// <summary>
@@ -4646,10 +4882,12 @@ namespace Unity.Collections
             int bytesToCopy = itemsToCopy * sizeof(T);
             unsafe
             {
-                byte *b = Buffer;
-                byte *dest = b + end * sizeof(T);
-                byte *src = b + begin * sizeof(T);
-                UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                fixed (byte* b = &BufferRef)
+                {
+                    byte* dest = b + end * sizeof(T);
+                    byte* src = b + begin * sizeof(T);
+                    UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                }
             }
         }
 
@@ -4718,9 +4956,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -4758,9 +4999,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -4777,9 +5021,11 @@ namespace Unity.Collections
             var result = new T[Length];
             unsafe
             {
-                byte* s = Buffer;
-                fixed(T* d = result)
+                fixed (byte* s = &BufferRef)
+                fixed (T* d = result)
+                {
                     UnsafeUtility.MemCpy(d, s, LengthInBytes);
+                }
             }
             return result;
         }
@@ -4794,7 +5040,10 @@ namespace Unity.Collections
             unsafe
             {
                 var copy = CollectionHelper.CreateNativeArray<T>(Length, allocator, NativeArrayOptions.UninitializedMemory);
-                UnsafeUtility.MemCpy(copy.GetUnsafePtr(), Buffer, LengthInBytes);
+                fixed (byte* s = &BufferRef)
+                {
+                    UnsafeUtility.MemCpy(copy.GetUnsafePtr(), s, LengthInBytes);
+                }
                 return copy;
             }
         }
@@ -4813,7 +5062,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -4843,16 +5096,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -4895,7 +5148,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -4924,7 +5181,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -4954,16 +5215,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -5006,7 +5267,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -5035,7 +5300,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -5065,16 +5334,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -5117,7 +5386,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -5146,7 +5419,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -5176,16 +5453,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -5216,7 +5493,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -5246,16 +5527,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -5298,7 +5579,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -5550,27 +5835,25 @@ namespace Unity.Collections
     {
         [SerializeField] internal FixedBytes4096Align8 data;
 
+        internal readonly ref byte dataRef
+        {
+            [PatchedBody("data")]
+            get => throw new NotImplementedException("Patching this method failed");
+        }
+
+        internal readonly ref byte BufferRef
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()));
+        }
+
         internal ushort length
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                unsafe
-                {
-                    fixed(void* ptr = &data)
-                        return *((ushort*)ptr);
-                }
-            }
+            readonly get => Unsafe.As<byte, ushort>(ref dataRef);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                unsafe
-                {
-                    fixed (void* ptr = &data)
-                        *((ushort*)ptr) = value;
-                }
-            }
+            set => Unsafe.As<byte, ushort>(ref dataRef) = value;
         }
 
         internal readonly unsafe byte* buffer
@@ -5661,7 +5944,11 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for write access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for write access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         [WriteAccessRequired]
         public readonly T* GetUnsafePtr() => (T*)Buffer;
@@ -5669,7 +5956,11 @@ namespace Unity.Collections
         /// <summary>
         /// Get a pointer to the data.
         /// </summary>
-        /// <remarks>When container has safety checks enabled it performs a job safety check for read-only access.</remarks>
+        /// <remarks>
+        /// When container has safety checks enabled it performs a job safety check for read-only access.
+        ///
+        /// WARNING: Not only does this method require you to managed lifetimes correctly, but also it is fundamentally not possible to use safely when the FixedList lives on a GC-managed object in CoreCLR. The parent object may move during a garbage collection, which will move the FixedList, and the pointer will be stale and potentially crash. Make sure that whenever you use this, the FixedList where you got it from is never living on a GC-managed object.
+        /// </remarks>
         /// <returns>A pointer to the data.</returns>
         public readonly T* GetUnsafeReadOnlyPtr() => (T*)Buffer;
 
@@ -5715,7 +6006,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    return UnsafeUtility.ReadArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index));
+                    return Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index));
                 }
             }
 
@@ -5725,7 +6016,7 @@ namespace Unity.Collections
                 CollectionHelper.CheckIndexInRange(index, length);
                 unsafe
                 {
-                    UnsafeUtility.WriteArrayElement<T>(Buffer, CollectionHelper.AssumePositive(index), value);
+                    Unsafe.Add(ref Unsafe.As<byte, T>(ref BufferRef), CollectionHelper.AssumePositive(index)) = value;
                 }
             }
         }
@@ -5741,7 +6032,7 @@ namespace Unity.Collections
             CollectionHelper.CheckIndexInRange(index, length);
             unsafe
             {
-                return ref UnsafeUtility.ArrayElementAsRef<T>(Buffer, index);
+                return ref Unsafe.Add(ref Unsafe.As<byte, T>(ref Unsafe.AddByteOffset(ref dataRef, (nint)(sizeof(ushort) + FixedList.PaddingBytes<T>()))), index);
             }
         }
 
@@ -5755,7 +6046,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                return (int)CollectionHelper.Hash(Buffer, LengthInBytes);
+                fixed (byte* ptr = &BufferRef)
+                {
+                    return (int)CollectionHelper.Hash(ptr, LengthInBytes);
+                }
             }
         }
 
@@ -5816,7 +6110,10 @@ namespace Unity.Collections
         {
             var idx = Length;
             Length += length;
-            UnsafeUtility.MemCpy((T*)Buffer + idx, ptr, sizeof(T) * length);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpy((T*)dst + idx, ptr, sizeof(T) * length);
+            }
         }
 
         /// <summary>
@@ -5847,7 +6144,10 @@ namespace Unity.Collections
             var idx = Length;
             Length += count;
             fixed (T* ptr = &value)
-                UnsafeUtility.MemCpyReplicate((T*)Buffer + idx, ptr, sizeof(T), count);
+            fixed (byte* dst = &BufferRef)
+            {
+                UnsafeUtility.MemCpyReplicate((T*)dst + idx, ptr, sizeof(T), count);
+            }
         }
 
         /// <summary>
@@ -5888,10 +6188,12 @@ namespace Unity.Collections
             int bytesToCopy = itemsToCopy * sizeof(T);
             unsafe
             {
-                byte *b = Buffer;
-                byte *dest = b + end * sizeof(T);
-                byte *src = b + begin * sizeof(T);
-                UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                fixed (byte* b = &BufferRef)
+                {
+                    byte* dest = b + end * sizeof(T);
+                    byte* src = b + begin * sizeof(T);
+                    UnsafeUtility.MemMove(dest, src, bytesToCopy);
+                }
             }
         }
 
@@ -5960,9 +6262,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemCpy(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -6000,9 +6305,12 @@ namespace Unity.Collections
                 unsafe
                 {
                     var sizeOf = sizeof(T);
-                    void* dst = Buffer + index * sizeOf;
-                    void* src = Buffer + copyFrom * sizeOf;
-                    UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    fixed (byte* b = &BufferRef)
+                    {
+                        void* dst = b + index * sizeOf;
+                        void* src = b + copyFrom * sizeOf;
+                        UnsafeUtility.MemMove(dst, src, (Length - copyFrom) * sizeOf);
+                    }
                 }
 
                 Length -= count;
@@ -6019,9 +6327,11 @@ namespace Unity.Collections
             var result = new T[Length];
             unsafe
             {
-                byte* s = Buffer;
-                fixed(T* d = result)
+                fixed (byte* s = &BufferRef)
+                fixed (T* d = result)
+                {
                     UnsafeUtility.MemCpy(d, s, LengthInBytes);
+                }
             }
             return result;
         }
@@ -6036,7 +6346,10 @@ namespace Unity.Collections
             unsafe
             {
                 var copy = CollectionHelper.CreateNativeArray<T>(Length, allocator, NativeArrayOptions.UninitializedMemory);
-                UnsafeUtility.MemCpy(copy.GetUnsafePtr(), Buffer, LengthInBytes);
+                fixed (byte* s = &BufferRef)
+                {
+                    UnsafeUtility.MemCpy(copy.GetUnsafePtr(), s, LengthInBytes);
+                }
                 return copy;
             }
         }
@@ -6055,7 +6368,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -6085,16 +6402,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -6137,7 +6454,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -6166,7 +6487,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -6196,16 +6521,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -6248,7 +6573,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -6277,7 +6606,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -6307,16 +6640,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -6359,7 +6692,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -6388,7 +6725,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -6418,16 +6759,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -6470,7 +6811,11 @@ namespace Unity.Collections
             length = other.length;
             unsafe
             {
-                UnsafeUtility.MemCpy(Buffer, other.Buffer, LengthInBytes);
+                fixed (byte* dst = &BufferRef)
+                fixed (byte* src = &other.BufferRef)
+                {
+                    UnsafeUtility.MemCpy(dst, src, LengthInBytes);
+                }
             }
             return 0;
         }
@@ -6499,7 +6844,11 @@ namespace Unity.Collections
             {
                 if(a.length != b.length)
                     return false;
-                return UnsafeUtility.MemCmp(a.Buffer, b.Buffer, a.LengthInBytes) == 0;
+                fixed (byte* pa = &a.BufferRef)
+                fixed (byte* pb = &b.BufferRef)
+                {
+                    return UnsafeUtility.MemCmp(pa, pb, a.LengthInBytes) == 0;
+                }
             }
         }
 
@@ -6529,16 +6878,16 @@ namespace Unity.Collections
         {
             unsafe
             {
-                byte* a = buffer;
-                byte* b = other.buffer;
-                var aa = a + FixedList.PaddingBytes<T>();
-                var bb = b + FixedList.PaddingBytes<T>();
                 var mini = math.min(Length, other.Length);
-                for(var i = 0; i < mini; ++i)
+                fixed (byte* aa = &BufferRef)
+                fixed (byte* bb = &other.BufferRef)
                 {
-                    var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
-                    if(j != 0)
-                        return j;
+                    for(var i = 0; i < mini; ++i)
+                    {
+                        var j = UnsafeUtility.MemCmp(aa + sizeof(T) * i, bb + sizeof(T) * i, sizeof(T));
+                        if(j != 0)
+                            return j;
+                    }
                 }
                 return Length.CompareTo(other.Length);
             }
@@ -6816,8 +7165,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                var c = list.buffer + FixedList.PaddingBytes<T>();
-                NativeSortExtension.Sort((T*)c, list.Length);
+                fixed (byte* c = &list.BufferRef)
+                {
+                    NativeSortExtension.Sort((T*)c, list.Length);
+                }
             }
         }
 
@@ -6835,8 +7186,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                var c = list.buffer + FixedList.PaddingBytes<T>();
-                NativeSortExtension.Sort((T*)c, list.Length, comp);
+                fixed (byte* c = &list.BufferRef)
+                {
+                    NativeSortExtension.Sort((T*)c, list.Length, comp);
+                }
             }
         }
 
@@ -6852,8 +7205,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                var c = list.buffer + FixedList.PaddingBytes<T>();
-                NativeSortExtension.Sort((T*)c, list.Length);
+                fixed (byte* c = &list.BufferRef)
+                {
+                    NativeSortExtension.Sort((T*)c, list.Length);
+                }
             }
         }
 
@@ -6871,8 +7226,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                var c = list.buffer + FixedList.PaddingBytes<T>();
-                NativeSortExtension.Sort((T*)c, list.Length, comp);
+                fixed (byte* c = &list.BufferRef)
+                {
+                    NativeSortExtension.Sort((T*)c, list.Length, comp);
+                }
             }
         }
 
@@ -6888,8 +7245,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                var c = list.buffer + FixedList.PaddingBytes<T>();
-                NativeSortExtension.Sort((T*)c, list.Length);
+                fixed (byte* c = &list.BufferRef)
+                {
+                    NativeSortExtension.Sort((T*)c, list.Length);
+                }
             }
         }
 
@@ -6907,8 +7266,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                var c = list.buffer + FixedList.PaddingBytes<T>();
-                NativeSortExtension.Sort((T*)c, list.Length, comp);
+                fixed (byte* c = &list.BufferRef)
+                {
+                    NativeSortExtension.Sort((T*)c, list.Length, comp);
+                }
             }
         }
 
@@ -6924,8 +7285,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                var c = list.buffer + FixedList.PaddingBytes<T>();
-                NativeSortExtension.Sort((T*)c, list.Length);
+                fixed (byte* c = &list.BufferRef)
+                {
+                    NativeSortExtension.Sort((T*)c, list.Length);
+                }
             }
         }
 
@@ -6943,8 +7306,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                var c = list.buffer + FixedList.PaddingBytes<T>();
-                NativeSortExtension.Sort((T*)c, list.Length, comp);
+                fixed (byte* c = &list.BufferRef)
+                {
+                    NativeSortExtension.Sort((T*)c, list.Length, comp);
+                }
             }
         }
 
@@ -6960,8 +7325,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                var c = list.buffer + FixedList.PaddingBytes<T>();
-                NativeSortExtension.Sort((T*)c, list.Length);
+                fixed (byte* c = &list.BufferRef)
+                {
+                    NativeSortExtension.Sort((T*)c, list.Length);
+                }
             }
         }
 
@@ -6979,8 +7346,10 @@ namespace Unity.Collections
         {
             unsafe
             {
-                var c = list.buffer + FixedList.PaddingBytes<T>();
-                NativeSortExtension.Sort((T*)c, list.Length, comp);
+                fixed (byte* c = &list.BufferRef)
+                {
+                    NativeSortExtension.Sort((T*)c, list.Length, comp);
+                }
             }
         }
 

@@ -87,14 +87,18 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             public static readonly GUIContent[] renderingPathName =
                 { L10n.TextContent("Forward", null, null, null), L10n.TextContent("Deferred", null, null, null), L10n.TextContent("Legacy Vertex Lit", null, null, null) };
 
+#pragma warning disable CS0618 // Type or member is obsolete
             public static readonly int[] renderingPathValue =
                 { (int)RenderingPath.Forward, (int)RenderingPath.DeferredShading, (int)RenderingPath.VertexLit };
+#pragma warning restore CS0618
 
             public static readonly GUIContent[] hdrModeName =
                 { L10n.TextContent("FP16", null, null, null), L10n.TextContent("R11G11B10", null, null, null) };
 
+#pragma warning disable CS0618 // Type or member is obsolete
             public static readonly int[] hdrModeValue =
                 { (int)CameraHDRMode.FP16, (int)CameraHDRMode.R11G11B10 };
+#pragma warning restore CS0618
 
             public static readonly GUIContent[] realtimeGICPUUsageName =
                 { L10n.TextContent("Low", null, null, null), L10n.TextContent("Medium", null, null, null), L10n.TextContent("High", null, null, null), L10n.TextContent("Unlimited", null, null, null) };
@@ -276,19 +280,27 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         ShaderQuality ShaderQualityPopup(ShaderQuality sq) =>
             (ShaderQuality)EditorGUILayout.IntPopup((int)sq, Styles.shaderQualityName, Styles.shaderQualityValue);
 
+#pragma warning disable CS0618 // Type or member is obsolete
         RenderingPath RenderingPathPopup(RenderingPath rp) =>
             (RenderingPath)EditorGUILayout.IntPopup((int)rp, Styles.renderingPathName, Styles.renderingPathValue);
+#pragma warning restore CS0618
 
+#pragma warning disable CS0618 // Type or member is obsolete
         CameraHDRMode HDRModePopup(CameraHDRMode mode) =>
             (CameraHDRMode)EditorGUILayout.IntPopup((int)mode, Styles.hdrModeName, Styles.hdrModeValue);
+#pragma warning restore CS0618
 
         RealtimeGICPUUsage RealtimeGICPUUsagePopup(RealtimeGICPUUsage usage) =>
             (RealtimeGICPUUsage)EditorGUILayout.IntPopup((int)usage, Styles.realtimeGICPUUsageName, Styles.realtimeGICPUUsageValue);
 
 
+#pragma warning disable CS0618 // Type or member is obsolete
         void OnTierGUI(BuildPlatform platform, GraphicsTier tier, bool vertical)
+#pragma warning restore CS0618
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             var ts = EditorGraphicsSettings.GetTierSettings(platform.namedBuildTarget, tier);
+#pragma warning restore CS0618
 
             EditorGUI.BeginChangeCheck();
 
@@ -325,7 +337,9 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             {
                 // TODO: it should be doable in c# now as we "expose" GraphicsSettings anyway
                 EditorGraphicsSettings.RegisterUndo();
+#pragma warning disable CS0618 // Type or member is obsolete
                 EditorGraphicsSettings.SetTierSettings(platform.namedBuildTarget, tier, ts);
+#pragma warning restore CS0618
             }
         }
 
@@ -342,7 +356,9 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             EditorGUILayout.EndVertical();
 
             EditorGUIUtility.labelWidth = 50;
+#pragma warning disable CS0618 // Type or member is obsolete
             foreach (GraphicsTier tier in Enum.GetValues(typeof(GraphicsTier)))
+#pragma warning restore CS0618
             {
                 bool autoSettings = EditorGraphicsSettings.AreTierSettingsAutomatic(platform.namedBuildTarget.ToBuildTargetGroup(), tier);
 
@@ -372,7 +388,9 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         void OnGuiVertical(BuildPlatform platform)
         {
             EditorGUILayout.BeginVertical();
+#pragma warning disable CS0618 // Type or member is obsolete
             foreach (GraphicsTier tier in Enum.GetValues(typeof(GraphicsTier)))
+#pragma warning restore CS0618
             {
                 var autoSettings = EditorGraphicsSettings.AreTierSettingsAutomatic(platform.namedBuildTarget.ToBuildTargetGroup(), tier);
                 EditorGUI.BeginChangeCheck();

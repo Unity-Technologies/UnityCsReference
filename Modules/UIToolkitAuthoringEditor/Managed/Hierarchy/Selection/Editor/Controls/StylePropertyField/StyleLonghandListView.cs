@@ -256,10 +256,12 @@ internal abstract class StyleLonghandListView<TData> : BindableElement, IPropert
             makeItem = MakeRow,
             bindItem = BindRow,
             unbindItem = UnbindRow,
+            showBorder = true,
             allowAdd = true,
             allowRemove = true,
             showAddRemoveFooter = true,
-            selectionType = SelectionType.Multiple
+            selectionType = SelectionType.Multiple,
+            showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly,
         };
         m_ListView.onAdd += _ => OnAdded();
         m_ListView.onRemove += OnRemoved;

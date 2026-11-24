@@ -219,7 +219,9 @@ namespace UnityEditor
             {
                 int selectionCount = 1;
                 bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
+#pragma warning disable CS0618 // Type or member is obsolete
                 bool isDeferredReflections = isDeferredRenderingPath && (UnityEngine.Rendering.GraphicsSettings.GetShaderMode(BuiltinShaderType.DeferredReflections) != BuiltinShaderMode.Disabled);
+#pragma warning restore CS0618
                 bool areLightProbesAllowed = true;
 
                 if (selection != null)
@@ -864,7 +866,9 @@ namespace UnityEditor
         protected void RenderCommonProbeFields(bool useMiniStyle)
         {
             bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
+#pragma warning disable CS0618 // Type or member is obsolete
             bool isDeferredReflections = isDeferredRenderingPath && (GraphicsSettings.GetShaderMode(BuiltinShaderType.DeferredReflections) != BuiltinShaderMode.Disabled);
+#pragma warning restore CS0618
             m_Probes.RenderReflectionProbeUsage(useMiniStyle, isDeferredRenderingPath, isDeferredReflections);
             m_Probes.RenderProbeAnchor(useMiniStyle);
         }

@@ -1799,7 +1799,6 @@ namespace Unity.Entities
                 InitializeSharedStatics();
 
                 EntityNameStorage.Initialize();
-                TransformDependencyBridge.Initialize();
                 GameObjectComponentStoreBridge.RegisterGameObjectEntityTypes();
             }
             catch

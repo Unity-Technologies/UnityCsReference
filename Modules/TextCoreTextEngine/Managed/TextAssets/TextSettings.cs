@@ -99,10 +99,9 @@ namespace UnityEngine.TextCore.Text
         List<FontAsset> m_FallbackOSFontAssets;
         bool m_FallbackOSFontAssetsInitialized;
 
+        // Keeps the managed OS fallback copies alive so they can be reused when the font engine is recreated.
         [AutoStaticsCleanupOnCodeReload]
         static List<FontAsset> s_GlobalOSFallbackFontAssets;
-        [NoAutoStaticsCleanup] // Monotonic version counter for the global OS fallback list; value type, safe to persist across reload
-        static int s_GlobalOSFallbackVersion;
 
         internal static void RegisterGlobalOSFallback(FontAsset fontAsset)
         {
@@ -110,10 +109,21 @@ namespace UnityEngine.TextCore.Text
                 return;
             s_GlobalOSFallbackFontAssets ??= new List<FontAsset>();
             if (!s_GlobalOSFallbackFontAssets.Contains(fontAsset))
-            {
                 s_GlobalOSFallbackFontAssets.Add(fontAsset);
-                s_GlobalOSFallbackVersion++;
+        }
+
+        internal static FontAsset FindGlobalOSFallback(LowLevel.FontReference fontRef)
+        {
+            if (s_GlobalOSFallbackFontAssets == null)
+                return null;
+
+            foreach (var fontAsset in s_GlobalOSFallbackFontAssets)
+            {
+                if (fontAsset != null && fontAsset.faceInfo.faceIndex == fontRef.faceIndex && string.Equals(fontAsset.m_SourceFontFilePath, fontRef.filePath, StringComparison.Ordinal))
+                    return fontAsset;
             }
+
+            return null;
         }
 
         internal static void SetGlobalOSFallbackStore(List<FontAsset> store)
@@ -121,7 +131,6 @@ namespace UnityEngine.TextCore.Text
             if (store == null)
                 return;
             s_GlobalOSFallbackFontAssets = store;
-            s_GlobalOSFallbackVersion++;
         }
 
         internal bool isFallbackOSFontAssetsInitialized
@@ -534,16 +543,6 @@ namespace UnityEngine.TextCore.Text
                 }
             }
 
-            if (s_GlobalOSFallbackFontAssets != null)
-            {
-                foreach (var fallback in s_GlobalOSFallbackFontAssets)
-                {
-                    if (fallback == null)
-                        continue;
-                    AddNativeFallback(fallback);
-                }
-            }
-
             return globalFontAssetFallbacks.ToArray();
         }
 
@@ -554,8 +553,6 @@ namespace UnityEngine.TextCore.Text
             m_IsNativeTextSettingsDirty = true;
         }
 
-        int m_GlobalOSFallbackVersionUploaded = -1;
-
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void UpdateNativeTextSettings()
         {
@@ -563,13 +560,11 @@ namespace UnityEngine.TextCore.Text
             {
                 m_NativeTextSettings = CreateNativeObject(GetGlobalFallbacks(), MarshalledUnityObject.MarshalNotNull(this), GetEntityId());
                 m_IsNativeTextSettingsDirty = false;
-                m_GlobalOSFallbackVersionUploaded = s_GlobalOSFallbackVersion;
             }
-            else if ((m_IsNativeTextSettingsDirty || m_GlobalOSFallbackVersionUploaded != s_GlobalOSFallbackVersion) && m_NativeTextSettings != IntPtr.Zero)
+            else if (m_IsNativeTextSettingsDirty && m_NativeTextSettings != IntPtr.Zero)
             {
                 UpdateFallbacks(m_NativeTextSettings, GetGlobalFallbacks());
                 m_IsNativeTextSettingsDirty = false;
-                m_GlobalOSFallbackVersionUploaded = s_GlobalOSFallbackVersion;
             }
         }
 

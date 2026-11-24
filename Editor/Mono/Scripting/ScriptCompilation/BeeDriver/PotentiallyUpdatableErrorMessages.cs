@@ -3,13 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
-using System.Text.RegularExpressions;
 using Bee.BinLog;
 using Bee.Serialization;
 using NiceIO;
 using UnityEditor.Scripting.Compilers;
 using UnityEngine;
 using Unity.Collections;
+using Unity.ScriptUpdater.Common;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -22,17 +22,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var matches = messages
 #pragma warning restore UAC2001
                                     .Select(m => MicrosoftCSharpCompilerOutputParser.sCompilerOutput.Match(m.message))
-                                    .Where(m => m.Success && IsPotentiallyUpdatableDiagnostic(m))
+                                    .Where(m => m.Success && UpdatableDiagnosticClassifier.IsPotentiallyUpdatableDiagnosticId(m.Groups["id"].Value))
                                     .ToArray();
 
             if (matches.Length == 0)
                 return false;
 
-            var localizedCompilerMessages = Helpers.LocalizeCompilerMessages(dataFromBuildProgram);
-            var compilerMessageParser = GetCompilerMessageParser();
+            var language = CompilerMessageLanguageFor(Helpers.LocalizeCompilerMessages(dataFromBuildProgram));
 
 #pragma warning disable UAC2001 // Avoid Linq
-            var typeNames = matches.Select(m => MissingTypeNameFor(m, compilerMessageParser));
+            var typeNames = matches.Select(m => UpdatableDiagnosticClassifier.TryGetMissingTypeName(m.Groups["id"].Value, m.Groups["message"].Value, language));
 #pragma warning restore UAC2001
 
             var assemblyData = Helpers.FindOutputDataAssemblyInfoFor(nodeResult, dataFromBuildProgram);
@@ -43,62 +42,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return typeNames.Any(t => lines.Contains(t));
 #pragma warning restore UAC2001
 #pragma warning restore UAC2006
+        }
 
-            CompilerMessageParser GetCompilerMessageParser()
+        static CompilerMessageLanguage CompilerMessageLanguageFor(bool localizedCompilerMessages)
+        {
+            if (!localizedCompilerMessages)
+                return CompilerMessageLanguage.English;
+
+            switch (LocalizationDatabase.currentEditorLanguage)
             {
-                if (!localizedCompilerMessages) return EnglishMessageParser;
-
-                return System.Array.Exists(AlternativeLanguageMessageParser.TargetLanguages, l => l == LocalizationDatabase.currentEditorLanguage)
-                    ? AlternativeLanguageMessageParser
-                    : EnglishMessageParser;
+                case SystemLanguage.ChineseTraditional:
+                    return CompilerMessageLanguage.ChineseTraditional;
+                case SystemLanguage.ChineseSimplified:
+                    return CompilerMessageLanguage.ChineseSimplified;
+                case SystemLanguage.Korean:
+                    return CompilerMessageLanguage.Korean;
+                default:
+                    return CompilerMessageLanguage.English;
             }
-
-            static bool IsPotentiallyUpdatableDiagnostic(Match match) => EnglishMessageParser.For(match.Groups["id"].Value) != null;
-        }
-
-        private static string MissingTypeNameFor(Match match, CompilerMessageParser compilerMessageParser)
-        {
-            var typeNameParser = compilerMessageParser.For(match.Groups["id"].Value);
-            if (typeNameParser == null)
-                return null;
-
-            var matchedMessage = typeNameParser.Match(match.Groups["message"].Value);
-            return !matchedMessage.Success ? null : matchedMessage.Groups["type_name"].Value;
-        }
-
-        private static readonly CompilerMessageParser EnglishMessageParser = new(
-            //error CS0117: 'type_name' does not contain a definition for 'member_name'
-            new Regex("[^'`“]*['`“](?<type_name>[^'`”]+)['`”][^'`“]+['`“](?<member_name>[^'`”]+)['`”]", RegexOptions.ExplicitCapture | RegexOptions.Compiled),
-
-            //error CS0234: The type or namespace name 'type_name' does not exist in the namespace 'namespace' (are you missing an assembly reference?)
-            new Regex("[^'`]*['`](?<type_name>[^']+)'[^'`]+['`](?<namespace>[^']+)'",RegexOptions.ExplicitCapture | RegexOptions.Compiled),
-
-            //error CS0246: The type or namespace name 'type_name' could not be found (are you missing a using directive or an assembly reference?)
-            //error CS0103: The name 'type_name' does not exist in the current context
-            new Regex("[^'`“]*['`“](?<type_name>[^'`”]+)['`”].*", RegexOptions.ExplicitCapture | RegexOptions.Compiled),
-            new[] { SystemLanguage.English }
-        );
-
-        // Parses compilers messages for languages that reports CS0234 in the format: text `name space name` text `type name` (for instance, simplified chinese)
-        private static readonly CompilerMessageParser AlternativeLanguageMessageParser = EnglishMessageParser with
-        {
-            MissingType = new Regex("([^'`“]*['`“](?<namespace>[^'`”]+)['`”][^'`“]+['`“](?<type_name>[^'`”]+)['`”])", RegexOptions.ExplicitCapture | RegexOptions.Compiled),
-            TargetLanguages = new[] { SystemLanguage.ChineseTraditional, SystemLanguage.ChineseSimplified, SystemLanguage.Korean }
-        };
-
-        // We have a `CompilerMessageParser` for each language that produces the errors listed in the `EnglishMessageParser` one above
-        // in a different format. For now we only have the `AlternativeLanguageMessageParser` that covers Simplified Chinese,
-        // Traditional Chinese and Korean
-        private record struct CompilerMessageParser(Regex MissingMember, Regex MissingType, Regex UnknownTypeOrNamespace, params SystemLanguage[] TargetLanguages)
-        {
-            public Regex For(string diagnosticId) => diagnosticId switch
-            {
-                "CS0117" => MissingMember,
-                "CS0246" => UnknownTypeOrNamespace,
-                "CS0103" => UnknownTypeOrNamespace,
-                "CS0234" => MissingType,
-                _ => null
-            };
         }
     }
 }

@@ -23,6 +23,7 @@ namespace Unity.UIToolkit.Editor
     {
         static readonly string FieldClassName = "unity-background-position-style-field";
         static readonly string UxmlPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundPositionStyleField.uxml";
+        static readonly string UssPath = "UIToolkitAuthoring/Inspector/Controls/BackgroundPositionStyleField.uss";
         static readonly string UssPathDark = "UIToolkitAuthoring/Inspector/Controls/BackgroundPositionStyleFieldDark.uss";
         static readonly string UssPathLight = "UIToolkitAuthoring/Inspector/Controls/BackgroundPositionStyleFieldLight.uss";
         public static readonly string BackgroundPositionFieldName = "position";
@@ -59,6 +60,8 @@ namespace Unity.UIToolkit.Editor
         {
             AddToClassList(InspectorContainerClassName);
             AddToClassList(FieldClassName);
+
+            styleSheets.Add(EditorGUIUtility.Load(UssPath) as StyleSheet);
 
             var ussPath = EditorGUIUtility.isProSkin ? UssPathDark : UssPathLight;
             styleSheets.Add(EditorGUIUtility.Load(ussPath) as StyleSheet);

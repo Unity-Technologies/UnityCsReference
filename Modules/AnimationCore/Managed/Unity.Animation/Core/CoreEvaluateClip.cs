@@ -56,10 +56,28 @@ namespace Unity.Animations
             SampleAnimationClipOverwrite(clip, clipInstance, ref cache.Memory, in timer, ref stream);
         }
 
+        // Returns false if the clip has no curve data or the cache is too small, and then writes nothing to the stream
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static void SampleAnimationClipOverwrite(BlobAssetReference<Clip> clip, BlobAssetReference<ClipInstance> clipInstance,
+        internal unsafe static bool SampleAnimationClipOverwrite(BlobAssetReference<Clip> clip, BlobAssetReference<ClipInstance> clipInstance,
             ref StreamedClipMemory memory,
             in TimerState timer, ref AnimationStream stream)
+        {
+            return SampleAnimationClipOverwrite(clip, clipInstance, ref memory, in timer, ref stream, false);
+        }
+
+        // Removes the root motion from the root motion bone before Loop Pose, as AnimationClipPlayable::EvaluateValues
+        // calls ComputeRootMotionValues before ValueArrayLoop
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe static void SampleAnimationClipExtractingRootMotion(BlobAssetReference<Clip> clip, BlobAssetReference<ClipInstance> clipInstance,
+            ref StreamedClipMemory memory,
+            in TimerState timer, ref AnimationStream stream)
+        {
+            SampleAnimationClipOverwrite(clip, clipInstance, ref memory, in timer, ref stream, true);
+        }
+
+        static unsafe bool SampleAnimationClipOverwrite(BlobAssetReference<Clip> clip, BlobAssetReference<ClipInstance> clipInstance,
+            ref StreamedClipMemory memory,
+            in TimerState timer, ref AnimationStream stream, bool extractRootMotionBone)
         {
             stream.ValidateIsNotNull();
             stream.ValidateIsWritable();
@@ -68,7 +86,7 @@ namespace Unity.Animations
             // Resolve the ClipCurves* via the blob's OffsetPtr — zero copy.
             var muscleClipPtr = (Clip*)clip.GetUnsafePtr();
             if (muscleClipPtr->m_Clip.IsNull)
-                return;
+                return false;
 
             var curves = (ClipCurves*)muscleClipPtr->m_Clip.Get();
 
@@ -79,7 +97,7 @@ namespace Unity.Animations
             if (!ClipSamplingCache.HasOutputCapacity(in memory, curves))
             {
                 ClipSamplingCacheData.LogOutputCapacityErrorOnce(ref memory);
-                return;
+                return false;
             }
 
             var duration = (float)timer.Range.Duration;
@@ -89,7 +107,29 @@ namespace Unity.Animations
                 (ValueDelta*)muscleClipPtr->m_ValueArrayDelta.Get() :
                 null;
 
-            SampleAnimationClip(curves, ref clipInstance.Value, (float)timer.Time, loopDeltas, normalizedTime, ref memory, ref stream);
+            if (!extractRootMotionBone || clipInstance.Value.RootMotionSamplingData.ExtractsBone == 0)
+            {
+                SampleAnimationClip(curves, ref clipInstance.Value, (float)timer.Time, loopDeltas, normalizedTime, ref memory, ref stream);
+                return true;
+            }
+
+            // The previous extraction rewrote the whole bone. Its channels that the clip doesn't animate restart from the
+            // rig default, which the root transform assumes, or each sample would move the bone further
+            var boneIndex = stream.Rig.RootMotionBoneIndex;
+            var defaults = AnimationStream.FromDefaultValues(stream.RigDefinition);
+            stream.SetLocalToParentTranslation(boneIndex, defaults.GetLocalToParentTranslation(boneIndex));
+            stream.SetLocalToParentRotation(boneIndex, defaults.GetLocalToParentRotation(boneIndex));
+            stream.SetLocalToParentScale(boneIndex, defaults.GetLocalToParentScale(boneIndex));
+
+            SampleAnimationClip(curves, ref clipInstance.Value, (float)timer.Time, null, normalizedTime, ref memory, ref stream);
+
+            var rootX = SampleRootMotionTransform(ref *muscleClipPtr, ref clipInstance.Value, ref memory, (float)timer.Time);
+            stream.ExtractRootMotionBone(rootX.pos, rootX.rot);
+
+            if (loopDeltas != null)
+                ApplyLoopPose(ref clipInstance.Value, loopDeltas, normalizedTime, ref stream);
+
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -165,9 +205,9 @@ namespace Unity.Animations
             WrapMode wrapMode,
             int loopCount)
         {
-            var rootMotion = RigidTransform.identity;
-            SampleAnimationClipRootMotionBursted(ref clip.Value, ref clipInstance.Value, ref prevSamplingCache.Memory, ref curSamplingCache.Memory, ref previousTime, ref currentTime, wrapMode, loopCount, ref rootMotion);
-            return rootMotion;
+            var output = MotionOutput.Identity;
+            SampleAnimationClipRootMotionBursted(ref clip.Value, ref clipInstance.Value, ref prevSamplingCache.Memory, ref curSamplingCache.Memory, ref previousTime, ref currentTime, wrapMode, loopCount, ref output);
+            return output.RootMotion;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -178,7 +218,7 @@ namespace Unity.Animations
             ref ClipSamplingCache curSamplingCache,
             in TimerState timer)
         {
-            return SampleAnimationClipRootMotion(clip, clipInstance, ref prevSamplingCache.Memory, ref curSamplingCache.Memory, in timer);
+            return SampleAnimationClipMotion(clip, clipInstance, ref prevSamplingCache.Memory, ref curSamplingCache.Memory, in timer).RootMotion;
         }
 
         // TimerState.PreviousTime and TimerState.Time are sampled as they are, because a clip timer from
@@ -186,17 +226,17 @@ namespace Unity.Animations
         // difference between LoopCount and PreviousLoopCount. The previous memory samples PreviousTime, the current
         // one samples Time. Each only reads forward, so they can't share one.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static RigidTransform SampleAnimationClipRootMotion(
+        internal unsafe static MotionOutput SampleAnimationClipMotion(
             BlobAssetReference<Clip> clip,
             BlobAssetReference<ClipInstance> clipInstance,
             ref StreamedClipMemory prevMemory,
             ref StreamedClipMemory curMemory,
             in TimerState timer)
         {
-            var rootMotion = RigidTransform.identity;
+            var output = MotionOutput.Identity;
             var timerCopy = timer;
-            SampleAnimationClipRootMotionTimerBursted(ref clip.Value, ref clipInstance.Value, ref prevMemory, ref curMemory, ref timerCopy, ref rootMotion);
-            return rootMotion;
+            SampleAnimationClipRootMotionTimerBursted(ref clip.Value, ref clipInstance.Value, ref prevMemory, ref curMemory, ref timerCopy, ref output);
+            return output;
         }
 
         [BurstCompile]
@@ -209,10 +249,10 @@ namespace Unity.Animations
             ref DiscreteTime currentTime,
             WrapMode wrapMode,
             int loopCount,
-            ref RigidTransform rootMotion)
+            ref MotionOutput output)
         {
             var timer = ToRootMotionTimer(ref clip, previousTime, currentTime, wrapMode, loopCount);
-            SampleAnimationClipRootMotionTimerBursted(ref clip, ref clipInstance, ref prevMemory, ref curMemory, ref timer, ref rootMotion);
+            SampleAnimationClipRootMotionTimerBursted(ref clip, ref clipInstance, ref prevMemory, ref curMemory, ref timer, ref output);
         }
 
         [BurstCompile]
@@ -222,29 +262,112 @@ namespace Unity.Animations
             ref StreamedClipMemory prevMemory,
             ref StreamedClipMemory curMemory,
             ref TimerState timer,
-            ref RigidTransform rootMotion)
+            ref MotionOutput output)
         {
             var samplingData = clipInstance.RootMotionSamplingData;
+            if (!samplingData.HasRootMotion)
+            {
+                output = MotionOutput.Identity;
+                return;
+            }
 
-            var curX = RigidTransform.identity;
-            SampleAnimationClipRootTransformBursted(ref clip,
-                samplingData.RootTranslationIndex,
-                samplingData.RootRotationIndex,
-                samplingData.RootRotationEulerOrder,
-                ref curMemory,
-                (float)timer.Time,
-                ref curX);
+            var curX = SampleRootMotionTransform(ref clip, ref clipInstance, ref curMemory, (float)timer.Time);
+            var prevX = SampleRootMotionTransform(ref clip, ref clipInstance, ref prevMemory, (float)timer.PreviousTime);
 
-            var prevX = curX;
-            SampleAnimationClipRootTransformBursted(ref clip,
-                samplingData.RootTranslationIndex,
-                samplingData.RootRotationIndex,
-                samplingData.RootRotationEulerOrder,
-                ref prevMemory,
-                (float)timer.PreviousTime,
-                ref prevX);
+            output.RootMotion = ComputeRootMotionDelta(in samplingData, prevX, curX, timer.WrapMode, timer.LoopCount - timer.PreviousLoopCount);
+            output.RootTransform = curX;
+        }
 
-            rootMotion = ComputeRootMotionDelta(in samplingData, prevX, curX, timer.WrapMode, timer.LoopCount - timer.PreviousLoopCount);
+        // Returns the transform whose motion is the root motion, at a time on the clip curves
+        internal static RigidTransform SampleRootMotionTransform(ref Clip clip, ref ClipInstance clipInstance, ref StreamedClipMemory memory, float time)
+        {
+            var x = SampleRootMotionSourceTransform(ref clip, ref clipInstance, ref memory, time);
+            return ProcessRootMotionTransform(clipInstance.RootMotionSamplingData, x);
+        }
+
+        // Returns the transform of the root motion curves, before the settings of their source
+        internal unsafe static RigidTransform SampleRootMotionSourceTransform(ref Clip clip, ref ClipInstance clipInstance, ref StreamedClipMemory memory, float time)
+        {
+            var muscleClipPtr = (Clip*)UnsafeUtility.AddressOf(ref clip);
+            var curves = (ClipCurves*)muscleClipPtr->m_Clip.Get();
+
+            ClipSamplingCacheData.ReinitializeRootMotionIfClipChanged(ref memory, curves);
+            ValidateRootMotionCache(in memory, curves, ref clipInstance);
+
+            ref var nodes = ref clipInstance.m_RootMotionNodes;
+            var bone = SampleRootMotionNode(curves, ref memory, ref nodes[0], time);
+            var translation = bone.t;
+            var rotation = bone.r;
+            for (var i = 1; i < nodes.Length; i++)
+            {
+                var parent = SampleRootMotionNode(curves, ref memory, ref nodes[i], time);
+                translation = MathUtility.transform(parent, translation);
+                rotation = math.mul(parent.r, MathUtility.scaleMulQuat(parent.s, rotation));
+            }
+
+            return new RigidTransform(math.normalizesafe(rotation, quaternion.identity), translation);
+        }
+
+        // Missing curves keep the default value of their component, as in mecanim::animation::GetClipX
+        static unsafe TRS SampleRootMotionNode(ClipCurves* curves, ref StreamedClipMemory memory, ref RootMotionNode node, float time)
+        {
+            var translation = node.DefaultTranslation;
+            for (var i = 0; i < 3; i++)
+            {
+                var curveIndex = node.TranslationCurves[i];
+                if (curveIndex >= 0)
+                    translation[i] = EvaluateClipAtIndex(curves, ref memory, curveIndex, time);
+            }
+
+            quaternion rotation;
+            if (node.RotationEulerOrder >= 0)
+            {
+                var euler = float3.zero;
+                for (var i = 0; i < 3; i++)
+                {
+                    var curveIndex = node.RotationCurves[i];
+                    if (curveIndex >= 0)
+                        euler[i] = EvaluateClipAtIndex(curves, ref memory, curveIndex, time);
+                }
+
+                // Euler curves are in degrees, as in the pose sampling of SampleAnimationClip
+                rotation = quaternion.Euler(math.radians(euler), (math.RotationOrder)node.RotationEulerOrder);
+            }
+            else
+            {
+                var value = node.DefaultRotation.value;
+                for (var i = 0; i < 4; i++)
+                {
+                    var curveIndex = node.RotationCurves[i];
+                    if (curveIndex >= 0)
+                        value[i] = EvaluateClipAtIndex(curves, ref memory, curveIndex, time);
+                }
+
+                rotation = math.normalizesafe(new quaternion(value), quaternion.identity);
+            }
+
+            var scale = node.DefaultScale;
+            for (var i = 0; i < 3; i++)
+            {
+                var curveIndex = node.ScaleCurves[i];
+                if (curveIndex >= 0)
+                    scale[i] = EvaluateClipAtIndex(curves, ref memory, curveIndex, time);
+            }
+
+            return new TRS(translation, rotation, scale);
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        static unsafe void ValidateRootMotionCache(in StreamedClipMemory memory, ClipCurves* curves, ref ClipInstance clipInstance)
+        {
+            ClipSamplingCache.ValidateRootMotionCacheState(in memory, curves);
+
+            ref var curveIndices = ref clipInstance.m_RootMotionCurveIndices;
+            for (var i = 0; i < curveIndices.Length; i++)
+            {
+                ClipSamplingCache.ValidateRootMotionCurves(in memory, curveIndices[i], 1);
+                ClipSamplingCache.ValidateRootMotionCurvesInClip(curves, curveIndices[i], 1);
+            }
         }
 
         // Maps the playback times of a timer that runs over the clip length from 0 to a clip timer. The cycle offset
@@ -395,19 +518,7 @@ namespace Unity.Animations
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static int RootMotionCacheSlot(int curveIndex, int rootTranslationIndex, int rootRotationIndex)
-        {
-            if ((uint)(curveIndex - rootTranslationIndex) < 3)
-                return curveIndex - rootTranslationIndex;
-
-            if ((uint)(curveIndex - rootRotationIndex) < 4)
-                return 3 + curveIndex - rootRotationIndex;
-
-            return -1;
-        }
-
-        static unsafe void ConsumeCurveTimeDataRootMotion(CurveTimeData* curveData, StreamedCacheItem* caches, int rootTranslationIndex, int rootRotationIndex)
+        static unsafe void ConsumeCurveTimeDataRootMotion(CurveTimeData* curveData, in StreamedClipMemory memory)
         {
             float time = curveData->time;
             var keys = (CurveKey*)(curveData + 1);
@@ -415,11 +526,11 @@ namespace Unity.Animations
 
             for (int i = 0; i < count; i++)
             {
-                var slot = RootMotionCacheSlot(keys[i].curveIndex, rootTranslationIndex, rootRotationIndex);
+                var slot = ClipSamplingCache.FindRootCurveSlot(in memory, keys[i].curveIndex);
                 if (slot < 0)
                     continue;
 
-                ref StreamedCacheItem activeCache = ref caches[slot];
+                ref StreamedCacheItem activeCache = ref memory.caches[slot];
                 activeCache.time = time;
                 activeCache.coeff = keys[i].coeff;
             }
@@ -434,7 +545,7 @@ namespace Unity.Animations
             {
                 // Consume the data and apply it to the cache
                 if (cache.rootMotionOnly)
-                    ConsumeCurveTimeDataRootMotion(data, cache.caches, cache.rootTranslationIndex, cache.rootRotationIndex);
+                    ConsumeCurveTimeDataRootMotion(data, in cache);
                 else
                     ConsumeCurveTimeData(data, cache.caches);
 
@@ -552,7 +663,7 @@ namespace Unity.Animations
 
             if (cache.rootMotionOnly)
             {
-                index = RootMotionCacheSlot(index, cache.rootTranslationIndex, cache.rootRotationIndex);
+                index = ClipSamplingCache.FindRootCurveSlot(in cache, index);
                 ValidateRootMotionSlot(index);
             }
 
@@ -629,6 +740,179 @@ namespace Unity.Animations
 
         static quaternion LoopRotation(quaternion rotation, quaternion start, quaternion stop, float normalizedTime) =>
             math.normalize(math.mul(rotation, MathUtility.quatWeight(math.mul(math.conjugate(stop), start), normalizedTime)));
+
+        static unsafe float LoadReference(float* reference, int stride, int index) => reference[index * stride];
+
+        static unsafe float3 LoadReference3(float* reference, int stride, int index) =>
+            new float3(
+                LoadReference(reference, stride, index),
+                LoadReference(reference, stride, index + 1),
+                LoadReference(reference, stride, index + 2));
+
+        static bool HasQuaternionBinding(ref ClipInstance clipInstance, int rigIndex)
+        {
+            var rotationBindings = clipInstance.RotationBindingMap;
+            for (var i = 0; i < rotationBindings.Length; ++i)
+            {
+                if (rotationBindings[i].RigIndex == rigIndex)
+                    return true;
+            }
+
+            return false;
+        }
+
+        // Subtracts the reference pose of the clip from the channels that the clip animates, as ValueArraySub in
+        // valuearray.cpp does for an additive layer. The reference is the additive reference pose of the clip if it has
+        // one, and the start values of the clip otherwise, as DeltasFromClip in avatar.cpp. Discrete ints and object
+        // references are not subtracted.
+        [BurstCompile]
+        internal static unsafe void SubtractAdditiveReference(
+            Clip* clip,
+            ref ClipInstance clipInstance,
+            ref AnimationStream stream)
+        {
+            var deltas = (ValueDelta*)clip->m_ValueArrayDelta.Get();
+            if (deltas == null)
+                return;
+
+            var hasReferencePose = !clip->m_ValueArrayReferencePose.IsNull &&
+                clip->m_ValueArrayReferencePoseCount == clip->m_ValueArrayCount;
+
+            // Without a reference pose, the reference is the start values of the clip, as DeltasFromClip in avatar.cpp
+            var reference = hasReferencePose ? (float*)clip->m_ValueArrayReferencePose.Get() : &deltas->m_Start;
+            var stride = hasReferencePose ? 1 : 2;
+
+            var translationBindings = clipInstance.TranslationBindingMap;
+            for (var i = 0; i < translationBindings.Length; ++i)
+            {
+                var binding = translationBindings[i];
+                var translation = stream.GetLocalToParentTranslation(binding.RigIndex);
+                translation -= LoadReference3(reference, stride, binding.ClipIndex);
+                stream.SetLocalToParentTranslation(binding.RigIndex, translation);
+            }
+
+            // Euler curves are in degrees. A quaternion curve of the same channel wins when sampling, so its reference
+            // wins too.
+            var eulerBindings = clipInstance.EulerBindingMap;
+            for (var i = 0; i < eulerBindings.Length; ++i)
+            {
+                var binding = eulerBindings[i];
+                if (HasQuaternionBinding(ref clipInstance, binding.RigIndex))
+                    continue;
+
+                var euler = LoadReference3(reference, stride, binding.ClipIndex);
+                var referenceRotation = quaternion.Euler(math.radians(euler), clipInstance.m_EulerRotationOrders[i]);
+                SubtractRotation(ref stream, binding.RigIndex, referenceRotation);
+            }
+
+            // A reference pose that doesn't animate the rotation holds zeros, which normalizesafe turns into the
+            // identity
+            var rotationBindings = clipInstance.RotationBindingMap;
+            for (var i = 0; i < rotationBindings.Length; ++i)
+            {
+                var binding = rotationBindings[i];
+                var index = binding.ClipIndex;
+                var referenceRotation = new quaternion(new float4(
+                    LoadReference3(reference, stride, index),
+                    LoadReference(reference, stride, index + 3)));
+                SubtractRotation(ref stream, binding.RigIndex, math.normalizesafe(referenceRotation, quaternion.identity));
+            }
+
+            var scaleBindings = clipInstance.ScaleBindingMap;
+            for (var i = 0; i < scaleBindings.Length; ++i)
+            {
+                var binding = scaleBindings[i];
+                var scale = stream.GetLocalToParentScale(binding.RigIndex);
+                scale -= LoadReference3(reference, stride, binding.ClipIndex);
+                stream.SetLocalToParentScale(binding.RigIndex, scale);
+            }
+
+            var floatBindings = clipInstance.FloatBindingMap;
+            for (var i = 0; i < floatBindings.Length; ++i)
+            {
+                var binding = floatBindings[i];
+                var value = stream.GetFloat(binding.RigIndex) - LoadReference(reference, stride, binding.ClipIndex);
+                stream.SetFloat(binding.RigIndex, value);
+            }
+        }
+
+        // The rotation from the reference rotation to the sampled rotation, as ValueArraySub in valuearray.cpp
+        static void SubtractRotation(ref AnimationStream stream, int rigIndex, quaternion reference)
+        {
+            var rotation = stream.GetLocalToParentRotation(rigIndex);
+            stream.SetLocalToParentRotation(rigIndex, math.normalize(math.mul(math.conjugate(reference), rotation)));
+        }
+
+        // The Loop Pose correction of SampleAnimationClip, applied to the stream after the root motion bone was extracted.
+        // The root motion bone uses its extracted start and stop values, as ValueArrayLoop runs after AdjustPoseForMotion.
+        static unsafe void ApplyLoopPose(ref ClipInstance clipInstance, ValueDelta* loopDeltas, float normalizedTime, ref AnimationStream stream)
+        {
+            var samplingData = clipInstance.RootMotionSamplingData;
+            var startBone = samplingData.LoopStartBone;
+            var stopBone = samplingData.LoopStopBone;
+            var boneIndex = stream.Rig.RootMotionBoneIndex;
+
+            var translationBindings = clipInstance.TranslationBindingMap;
+            for (var i = 0; i < translationBindings.Length; ++i)
+            {
+                var binding = translationBindings[i];
+                var offset = binding.RigIndex == boneIndex ?
+                    (startBone.t - stopBone.t) * normalizedTime :
+                    LoopOffset(loopDeltas, binding.ClipIndex, normalizedTime);
+                stream.SetLocalToParentTranslation(binding.RigIndex, stream.GetLocalToParentTranslation(binding.RigIndex) + offset);
+            }
+
+            // A quaternion curve wins over Euler curves of the same bone when sampling, so only its correction applies
+            var eulerBindingMap = clipInstance.EulerBindingMap;
+            for (var i = 0; i < eulerBindingMap.Length; ++i)
+            {
+                var binding = eulerBindingMap[i];
+                if (HasQuaternionBinding(ref clipInstance, binding.RigIndex))
+                    continue;
+
+                var rotation = stream.GetLocalToParentRotation(binding.RigIndex);
+                if (binding.RigIndex == boneIndex)
+                    rotation = LoopRotation(rotation, startBone.r, stopBone.r, normalizedTime);
+                else
+                {
+                    var order = clipInstance.m_EulerRotationOrders[i];
+                    var start = quaternion.Euler(math.radians(LoadStart(loopDeltas, binding.ClipIndex)), order);
+                    var stop = quaternion.Euler(math.radians(LoadStop(loopDeltas, binding.ClipIndex)), order);
+                    rotation = LoopRotation(rotation, start, stop, normalizedTime);
+                }
+
+                stream.SetLocalToParentRotation(binding.RigIndex, rotation);
+            }
+
+            var rotationBindings = clipInstance.RotationBindingMap;
+            for (var i = 0; i < rotationBindings.Length; ++i)
+            {
+                var binding = rotationBindings[i];
+                var rotation = stream.GetLocalToParentRotation(binding.RigIndex);
+                rotation = binding.RigIndex == boneIndex ?
+                    LoopRotation(rotation, startBone.r, stopBone.r, normalizedTime) :
+                    LoopRotation(rotation, LoadStartRotation(loopDeltas, binding.ClipIndex), LoadStopRotation(loopDeltas, binding.ClipIndex), normalizedTime);
+                stream.SetLocalToParentRotation(binding.RigIndex, rotation);
+            }
+
+            var scaleBindings = clipInstance.ScaleBindingMap;
+            for (var i = 0; i < scaleBindings.Length; ++i)
+            {
+                var binding = scaleBindings[i];
+                var offset = binding.RigIndex == boneIndex ?
+                    (startBone.s - stopBone.s) * normalizedTime :
+                    LoopOffset(loopDeltas, binding.ClipIndex, normalizedTime);
+                stream.SetLocalToParentScale(binding.RigIndex, stream.GetLocalToParentScale(binding.RigIndex) + offset);
+            }
+
+            var floatBindings = clipInstance.FloatBindingMap;
+            for (var i = 0; i < floatBindings.Length; ++i)
+            {
+                var binding = floatBindings[i];
+                var offset = (loopDeltas[binding.ClipIndex].m_Start - loopDeltas[binding.ClipIndex].m_Stop) * normalizedTime;
+                stream.SetFloat(binding.RigIndex, stream.GetFloat(binding.RigIndex) + offset);
+            }
+        }
 
         // loopDeltas is null unless Loop Pose is on. It then adds the difference between the first and last frames,
         // weighted by the normalized time, as ValueArrayLoop in valuearray.cpp

@@ -640,7 +640,7 @@ namespace UnityEngine.UIElements.UIR
             richText = true,
         };
 
-        NativeTextGenerationSettings m_NativeSettings;
+        NativeTextGenerationSettings m_NativeSettings = NativeTextGenerationSettings.Default;
         NativeTextBuffer m_NativeTextBuffer;
 
         [NoAutoStaticsCleanup] // lazily initialized text library; infrastructure singleton

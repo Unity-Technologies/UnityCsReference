@@ -108,18 +108,16 @@ namespace Unity.Burst.Intrinsics
             {
                 var dst = default(v128);
                 byte* dptr = &dst.Byte0;
-                byte* aptr = &a.Byte0 + count;
+                byte* aptr = &a.Byte0;
                 byte* bptr = &b.Byte0;
 
-                int i;
-                for (i = 0; i < 16 - count; ++i)
+                for (int i = 0; i < 16; ++i)
                 {
-                    *dptr++ = *aptr++;
-                }
-
-                for (; i < 16; ++i)
-                {
-                    *dptr++ = *bptr++;
+                    int index = i + (count & 0xff);
+                    if (index < 16)
+                        dptr[i] = aptr[index];
+                    else if (index < 32)
+                        dptr[i] = bptr[index - 16];
                 }
 
                 return dst;

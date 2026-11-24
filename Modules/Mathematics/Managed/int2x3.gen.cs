@@ -566,6 +566,9 @@ namespace Unity.Mathematics
 
 
 
+        [Unity.Collections.LowLevel.Unsafe.PatchedBody("c0")]
+        readonly ref int2 FirstColumnRef() { throw new NotImplementedException("Patching this method failed"); }
+
         /// <summary>Returns the int2 element at a specified index.</summary>
         unsafe public ref int2 this[int index]
         {
@@ -573,7 +576,7 @@ namespace Unity.Mathematics
             {
                 if ((uint)index >= 3)
                     throw new System.ArgumentException("index must be between[0...2]");
-                fixed (int2x3* array = &this) { return ref ((int2*)array)[index]; }
+                return ref Unsafe.Add(ref FirstColumnRef(), index);
             }
         }
 

@@ -425,6 +425,60 @@ namespace Unity.Mathematics
             return quaternion(select(float4(0.0f, 0.0f, 0.0f, 1.0f), quaternion(float3x3(t, cross(forward, t),forward)).value, accept));
         }
 
+        /// <summary>
+        /// Returns a quaternion that rotates the direction from onto the direction to.
+        /// The two input vectors are not assumed to be unit length, but must not be zero length, point in opposite
+        /// directions, or be of such extreme magnitude that squaring their length overflows.
+        /// If these assumptions are not met use quaternion.FromToRotationSafe instead.
+        /// </summary>
+        /// <param name="from">The direction to rotate from.</param>
+        /// <param name="to">The direction to rotate to.</param>
+        /// <returns>The unit quaternion that rotates from onto to.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static quaternion FromToRotation(float3 from, float3 to)
+        {
+            from *= rsqrt(dot(from, from));
+            to *= rsqrt(dot(to, to));
+
+            return normalize(quaternion(float4(cross(from, to), 1.0f + dot(from, to))));
+        }
+
+        // rsqrt normalisation perturbs the dot of two opposite directions by up to ~3e-7, so EPSILON cannot separate them from noise.
+        const float k_OppositeDirectionsTolerance = 1e-6f;
+
+        /// <summary>
+        /// Returns a quaternion that rotates the direction from onto the direction to.
+        /// The two input vectors are not assumed to be unit length.
+        /// If the magnitude of either of the vectors is so extreme that the calculation cannot be carried out reliably,
+        /// the identity will be returned instead. If the vectors are within about 1.4e-3 radians of pointing in opposite
+        /// directions, the result is a half turn around an axis perpendicular to from.
+        /// </summary>
+        /// <param name="from">The direction to rotate from.</param>
+        /// <param name="to">The direction to rotate to.</param>
+        /// <returns>The unit quaternion that rotates from onto to, or the identity quaternion.</returns>
+        public static quaternion FromToRotationSafe(float3 from, float3 to)
+        {
+            float fromLengthSq = dot(from, from);
+            float toLengthSq = dot(to, to);
+
+            from *= rsqrt(fromLengthSq);
+            to *= rsqrt(toLengthSq);
+
+            float cosAngle = dot(from, to);
+            float4 q = float4(cross(from, to), 1.0f + cosAngle);
+
+            // Opposite directions: the cross product vanishes, so build the half turn from an axis known to be perpendicular to from.
+            float3 basis = select(float3(1.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f), abs(from.x) > abs(from.y));
+            float4 halfTurn = float4(normalize(cross(from, basis)), 0.0f);
+            q = select(q, halfTurn, cosAngle < -1.0f + k_OppositeDirectionsTolerance);
+
+            float mn = min(fromLengthSq, toLengthSq);
+            float mx = max(fromLengthSq, toLengthSq);
+
+            bool accept = mn > 1e-35f && mx < 1e35f && isfinite(fromLengthSq) && isfinite(toLengthSq);
+            return quaternion(select(float4(0.0f, 0.0f, 0.0f, 1.0f), normalize(q), accept));
+        }
+
         /// <summary>Returns true if the quaternion is equal to a given quaternion, false otherwise.</summary>
         /// <param name="x">The quaternion to compare with.</param>
         /// <returns>True if the quaternion is equal to the input, false otherwise.</returns>
@@ -509,6 +563,18 @@ namespace Unity.Mathematics
             return quaternion(rcp(dot(x, x)) * x * float4(-1.0f, -1.0f, -1.0f, 1.0f));
         }
 
+        /// <summary>Returns the inverse of a quaternion value, or the identity if the quaternion has zero length.</summary>
+        /// <remarks>Unlike <see cref="inverse(Unity.Mathematics.quaternion)"/>, this function never divides by zero. A quaternion whose squared length isn't greater than <see cref="FLT_MIN_NORMAL"/> returns the identity.</remarks>
+        /// <param name="q">The quaternion to invert.</param>
+        /// <returns>The quaternion inverse of the input quaternion, or the identity quaternion.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static quaternion inversesafe(quaternion q)
+        {
+            float4 x = q.value;
+            float len = math.dot(x, x);
+            return quaternion(math.select(Mathematics.quaternion.identity.value, math.rcp(len) * x * float4(-1.0f, -1.0f, -1.0f, 1.0f), len > FLT_MIN_NORMAL));
+        }
+
         /// <summary>Returns the dot product of two quaternions.</summary>
         /// <param name="a">The first quaternion.</param>
         /// <param name="b">The second quaternion.</param>
@@ -575,6 +641,14 @@ namespace Unity.Mathematics
             float len = math.dot(x, x);
             return quaternion(math.select(defaultvalue.value, x * math.rsqrt(len), len > FLT_MIN_NORMAL));
         }
+
+        /// <summary>Returns trueValue if test is true, falseValue otherwise.</summary>
+        /// <param name="falseValue">Value to use if test is false.</param>
+        /// <param name="trueValue">Value to use if test is true.</param>
+        /// <param name="test">Bool value to choose between falseValue and trueValue.</param>
+        /// <returns>The selection between falseValue and trueValue according to bool test.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static quaternion select(quaternion falseValue, quaternion trueValue, bool test) { return quaternion(select(falseValue.value, trueValue.value, test)); }
 
         /// <summary>Returns the natural exponent of a quaternion. Assumes w is zero.</summary>
         /// <param name="q">The quaternion with w component equal to zero.</param>
@@ -719,6 +793,54 @@ namespace Unity.Mathematics
         {
             float diff = asin(length(normalize(mul(conjugate(q1), q2)).value.xyz));
             return diff + diff;
+        }
+
+        /// <summary>Returns the angle in radians that a unit quaternion rotates by.</summary>
+        /// <remarks>The result is the angle of the axis-angle representation of q, in the range 0 to 2 * PI. Use <see cref="axis(Unity.Mathematics.quaternion)"/> to get the corresponding rotation axis. Because w is close to 1 for small rotations, angles smaller than about 5e-4 radians (0.03 degrees) return zero. For better precision near zero, use <see cref="angle(Unity.Mathematics.quaternion, Unity.Mathematics.quaternion)"/> with <see cref="quaternion.identity"/>.</remarks>
+        /// <param name="q">The unit quaternion.</param>
+        /// <returns>The rotation angle of the input quaternion, in radians.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float angle(quaternion q)
+        {
+            return 2.0f * acos(clamp(q.value.w, -1.0f, 1.0f));
+        }
+
+        /// <summary>Returns the axis that a unit quaternion rotates around.</summary>
+        /// <remarks>The result is the unit axis of the axis-angle representation of q. If q doesn't rotate, the axis is arbitrary and this function returns the x-axis. Use <see cref="angle(Unity.Mathematics.quaternion)"/> to get the corresponding rotation angle.</remarks>
+        /// <param name="q">The unit quaternion.</param>
+        /// <returns>The unit rotation axis of the input quaternion, or the x-axis if the quaternion is the identity.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float3 axis(quaternion q)
+        {
+            return normalizesafe(q.value.xyz, float3(1.0f, 0.0f, 0.0f));
+        }
+
+        /// <summary>Decomposes a unit quaternion into a swing rotation and a twist rotation around the given axis, so that q equals mul(swing, twist).</summary>
+        /// <remarks>The twist is the part of q that rotates around twistAxis and the swing is the remaining rotation, whose axis is perpendicular to twistAxis. Use <see cref="twistswing"/> to decompose in the other order.</remarks>
+        /// <param name="q">The unit quaternion to decompose.</param>
+        /// <param name="twistAxis">The axis to twist around. It doesn't need to be unit length.</param>
+        /// <param name="swing">The swing rotation.</param>
+        /// <param name="twist">The twist rotation around twistAxis.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void swingtwist(quaternion q, float3 twistAxis, out quaternion swing, out quaternion twist)
+        {
+            twistAxis = normalizesafe(twistAxis);
+            twist = normalizesafe(quaternion(float4(dot(twistAxis, q.value.xyz) * twistAxis, q.value.w)), Mathematics.quaternion.identity);
+            swing = mul(q, conjugate(twist));
+        }
+
+        /// <summary>Decomposes a unit quaternion into a twist rotation around the given axis and a swing rotation, so that q equals mul(twist, swing).</summary>
+        /// <remarks>The twist is the part of q that rotates around twistAxis and the swing is the remaining rotation, whose axis is perpendicular to twistAxis. Use <see cref="swingtwist"/> to decompose in the other order.</remarks>
+        /// <param name="q">The unit quaternion to decompose.</param>
+        /// <param name="twistAxis">The axis to twist around. It doesn't need to be unit length.</param>
+        /// <param name="twist">The twist rotation around twistAxis.</param>
+        /// <param name="swing">The swing rotation.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void twistswing(quaternion q, float3 twistAxis, out quaternion twist, out quaternion swing)
+        {
+            twistAxis = normalizesafe(twistAxis);
+            twist = normalizesafe(quaternion(float4(dot(twistAxis, q.value.xyz) * twistAxis, q.value.w)), Mathematics.quaternion.identity);
+            swing = mul(conjugate(twist), q);
         }
 
         /// <summary>

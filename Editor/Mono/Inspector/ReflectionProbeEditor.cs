@@ -527,7 +527,9 @@ namespace UnityEditor
                 }
 
                 bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
+#pragma warning disable CS0618 // Type or member is obsolete
                 bool isDeferredReflections = isDeferredRenderingPath && (UnityEngine.Rendering.GraphicsSettings.GetShaderMode(BuiltinShaderType.DeferredReflections) != BuiltinShaderMode.Disabled);
+#pragma warning restore CS0618
                 using (new EditorGUI.DisabledScope(!isDeferredReflections && !SupportedRenderingFeatures.active.reflectionProbesBlendDistance))
                 {
                     EditorGUILayout.PropertyField(m_BlendDistance, Styles.blendDistanceText);

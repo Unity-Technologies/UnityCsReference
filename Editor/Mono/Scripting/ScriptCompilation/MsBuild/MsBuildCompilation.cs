@@ -68,6 +68,7 @@ partial class MsBuildCompilation
     private MSBuildCompilationBuildState _analysisBuildState;
     private bool _shouldRestore = false;
     private bool _requestedBuild = false;
+    private string[] _playerExtraScriptingDefines = Array.Empty<string>();
     private bool _clearConsolePending;
 
     private bool _editorAssembliesMightBeDirty = false;
@@ -89,6 +90,9 @@ partial class MsBuildCompilation
 
     // Computed by the converter during SetAllScripts; written into the shared analyzers props at build start.
     private string[] _globalAnalyzers = Array.Empty<string>();
+
+    // From the same conversion; null until it ran this session.
+    private string[] _defineConstraintSymbols;
 
     private readonly IncrementalAsmDefConverter _converter = new IncrementalAsmDefConverter(Path.Combine("Library", "MSBuild", "AsmDefConverterState.json"));
 
@@ -197,14 +201,24 @@ partial class MsBuildCompilation
         return _requestedBuild || _currentBuildState is not null || _analysisBuildState is not null;
     }
 
+    // Like EditorCompilation.IsScriptCompilationRequested: editor assemblies that are not built and loaded yet.
+    // An analysis build does not change them.
+    public bool IsScriptCompilationPending()
+    {
+        return _requestedBuild || _currentBuildState is not null;
+    }
+
     // Blocks until the requested target is built. The native caller treats every status but CompilationFailed as success.
-    public EditorCompilation.CompileStatus Compile(BuildTarget buildTarget, CompileTarget target, MSBuildCompilationOptions compilationOptions)
+    public EditorCompilation.CompileStatus Compile(BuildTarget buildTarget, CompileTarget target, MSBuildCompilationOptions compilationOptions, string[] extraScriptingDefines = null)
     {
         if (_currentBuildTask != null && !IsInflightBuildFor(buildTarget, target, compilationOptions))
         {
             PumpCurrentBuild();
             CompleteInflightBuild();
         }
+
+        // BuildPlayerOptions.extraScriptingDefines: player builds only, like EditorCompilation (UUM-161128)
+        _playerExtraScriptingDefines = IsEditorTarget(target) ? Array.Empty<string>() : extraScriptingDefines ?? Array.Empty<string>();
 
         if (_currentBuildTask == null)
             _requestedBuild = true;
@@ -369,10 +383,13 @@ partial class MsBuildCompilation
         // Update deferrable props in parallel before build (defines, references, plugins, search paths, analyzers).
         // If a Build runs before any SetAllScripts populated _globalAnalyzers, fall back to the built-in
         // set so the shared analyzers props isn't written with the built-ins missing.
+        RegenerateMissingProjects();
         var globalAnalyzers = _globalAnalyzers.Length > 0
             ? _globalAnalyzers
             : UnityEditorMSBuildPropsTargetsGeneration.GetBuiltinRoslynAnalyzerPaths();
-        UnityEditorMSBuildPropsTargetsGeneration.UpdateDeferrablePropsInParallel(buildTarget, compilationOptions, globalAnalyzers, IsEditorTarget(target));
+        UnityEditorMSBuildPropsTargetsGeneration.EnsureEntryPointProject();
+        UnityEditorMSBuildPropsTargetsGeneration.UpdateDeferrablePropsInParallel(buildTarget, compilationOptions, globalAnalyzers, _defineConstraintSymbols, IsEditorTarget(target),
+            IsEditorTarget(target) ? null : _playerExtraScriptingDefines);
 
         var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value || Application.HasARGV("generate-binlog");
         var disableNugetRestore = Application.HasARGV("disable-nuget-restore");
@@ -412,6 +429,7 @@ partial class MsBuildCompilation
         }
 
         var buildResult = buildTask.Result;
+        TranslateCircularDependencyErrors(buildResult);
         if (isEditorTarget)
             _editorAssembliesMightBeDirty = true;
 
@@ -458,11 +476,13 @@ partial class MsBuildCompilation
             var assemblyName = Path.GetFileNameWithoutExtension(path);
 
             ProjectResultMessage projectResult = null;
+            string projectFile = null;
             foreach (var kv in projectResults)
             {
                 if (kv.Value.AssemblyName == assemblyName)
                 {
                     projectResult = kv.Value;
+                    projectFile = kv.Key;
                     break;
                 }
             }
@@ -481,9 +501,9 @@ partial class MsBuildCompilation
                 Filename = Path.GetFileName(path),
                 OutputDirectory = Path.GetDirectoryName(path),
                 Defines = defines,
-                HasCompileErrors = !buildResult.Success,
+                HasCompileErrors = projectResult.Result == ProjectBuildResultType.Failed,
             };
-            perAssembly.Add((scriptAssembly, ConvertLogMessagesToCompilerMessages(projectResult.GetLogMessages())));
+            perAssembly.Add((scriptAssembly, ConvertLogMessagesToCompilerMessages(projectResult.GetLogMessages(), projectFile)));
         }
 
         if (perAssembly.Count == 0)
@@ -507,7 +527,7 @@ partial class MsBuildCompilation
         catch (Exception e) { UnityEngine.Debug.LogException(e); }
     }
 
-    private static UnityEditor.Compilation.CompilerMessage[] ConvertLogMessagesToCompilerMessages(IReadOnlyList<LogMessage> logMessages)
+    private static UnityEditor.Compilation.CompilerMessage[] ConvertLogMessagesToCompilerMessages(IReadOnlyList<LogMessage> logMessages, string projectFile)
     {
         if (logMessages == null || logMessages.Count == 0)
             return Array.Empty<UnityEditor.Compilation.CompilerMessage>();
@@ -519,7 +539,7 @@ partial class MsBuildCompilation
             result[i] = new UnityEditor.Compilation.CompilerMessage
             {
                 message = m.Message,
-                file = m.File,
+                file = UnityMSBuildLogger.GetReportedFilePath(m.File, projectFile),
                 line = m.LineNumber,
                 column = m.ColumnNumber,
                 type = m.MessageType switch
@@ -597,6 +617,7 @@ partial class MsBuildCompilation
     private string[] m_AllAssemblyJsonContents;
     private string[] m_AllAssemblyJsonGuids;
     private bool m_ProjectFolderHasAnyScripts;
+    private string[] m_LastAllScripts;
 
     // Parsed once per inventory; asmdef-by-name lookups run per postprocessor callback after every reload.
     private CustomScriptAssemblyData[] m_AsmdefData;
@@ -624,6 +645,67 @@ partial class MsBuildCompilation
         m_AsmdefIndexByDllName = null;
         m_CustomScriptAssemblies = null;
         m_CustomScriptAssemblyReferences = null;
+
+        ReportAsmdefSetupErrors();
+    }
+
+    // The legacy pipeline reports these from LoadingAssemblyDefinition, which MSBU does not run.
+    void ReportAsmdefSetupErrors()
+    {
+        var tracker = EditorCompilationInterface.Instance.CompilationSetupErrorsTracker;
+        tracker.ClearCompilationSetupErrors(CompilationSetupErrors.LoadError);
+
+        if (m_AllAssemblyJsonPaths == null || m_AllAssemblyJsonContents == null)
+            return;
+
+        EnsureAsmdefIndex();
+
+        var nameByGuid = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (m_AllAssemblyJsonGuids != null)
+        {
+            for (int i = 0; i < m_AsmdefData.Length && i < m_AllAssemblyJsonGuids.Length; i++)
+            {
+                if (m_AsmdefData[i]?.name != null)
+                    nameByGuid[m_AllAssemblyJsonGuids[i]] = m_AsmdefData[i].name;
+            }
+        }
+
+        for (int i = 0; i < m_AsmdefData.Length; i++)
+        {
+            var references = m_AsmdefData[i]?.references;
+            if (references == null || references.Length < 2)
+                continue;
+
+            var names = new string[references.Length];
+            for (int j = 0; j < references.Length; j++)
+            {
+                names[j] = GUIDReference.IsGUIDReference(references[j])
+                    ? nameByGuid.GetValueOrDefault(GUIDReference.GUIDReferenceToGUID(references[j]), string.Empty)
+                    : references[j];
+            }
+
+            var exception = LoadingAssemblyDefinition.CreateDuplicateReferencesException(names, m_AllAssemblyJsonPaths[i]);
+            if (exception == null)
+                continue;
+
+            tracker.SetCompilationSetupErrors(CompilationSetupErrors.LoadError);
+            tracker.ProcessException(exception);
+        }
+    }
+
+    // Name and asmdef path of every assembly definition, for AssemblyValidation under MSBU.
+    public IEnumerable<(string name, string path)> GetAssemblyDefinitionNamesAndPaths()
+    {
+        if (m_AllAssemblyJsonPaths == null || m_AllAssemblyJsonContents == null)
+            yield break;
+
+        EnsureAsmdefIndex();
+        for (int i = 0; i < m_AsmdefData.Length; i++)
+        {
+            var name = m_AsmdefData[i]?.name;
+            if (!string.IsNullOrEmpty(name))
+                yield return (name, m_AllAssemblyJsonPaths[i]);
+        }
     }
 
     private void EnsureAsmdefIndex()
@@ -664,6 +746,14 @@ partial class MsBuildCompilation
         // No-op ?
     }
 
+    // The Package Manager can extract a package into the same folder again, which drops its generated projects
+    // without the script change that would call SetAllScripts.
+    private void RegenerateMissingProjects()
+    {
+        if (m_LastAllScripts != null && !_converter.AreGeneratedFilesUnchanged())
+            SetAllScripts(m_LastAllScripts);
+    }
+
     public bool DoesProjectFolderHaveAnyScripts()
     {
         return m_ProjectFolderHasAnyScripts;
@@ -671,6 +761,7 @@ partial class MsBuildCompilation
 
     public void SetAllScripts(string[] allScripts)
     {
+        m_LastAllScripts = allScripts;
         m_ProjectFolderHasAnyScripts = allScripts != null && allScripts.Length > 0;
 
         var allAssemblyReferenceJsons = new string[m_AllAssemblyReferenceJsons.Length];
@@ -708,10 +799,12 @@ partial class MsBuildCompilation
             // .meta files, and invalidates its incremental cache when analyzers/labels change.
             roslynAnalyzerPaths = new PrecompiledAssemblyProvider().GetRoslynAnalyzerPaths(),
             designTimeExtensions = GetDesignTimeExtensions(),
+            playModeTestRunnerEnabled = PlayerSettings.playModeTestRunnerEnabled,
         };
 
         var conversionResult = _converter.Convert(context);
         _globalAnalyzers = conversionResult.GlobalAnalyzers;
+        _defineConstraintSymbols = conversionResult.DefineConstraintSymbols;
 
         foreach (var error in context.errors)
         {
@@ -799,10 +892,12 @@ partial class MsBuildCompilation
 
         // Mirror the regular compilation path (TickCompilationPipeline): refresh the deferrable
         // props (defines, references, plugins, search paths, analyzers) before building.
+        RegenerateMissingProjects();
         var globalAnalyzers = _globalAnalyzers.Length > 0
             ? _globalAnalyzers
             : UnityEditorMSBuildPropsTargetsGeneration.GetBuiltinRoslynAnalyzerPaths();
-        UnityEditorMSBuildPropsTargetsGeneration.UpdateDeferrablePropsInParallel(buildTarget, GetAnalysisCompilationOptions(configuration, buildTarget), globalAnalyzers,
+        UnityEditorMSBuildPropsTargetsGeneration.EnsureEntryPointProject();
+        UnityEditorMSBuildPropsTargetsGeneration.UpdateDeferrablePropsInParallel(buildTarget, GetAnalysisCompilationOptions(configuration, buildTarget), globalAnalyzers, _defineConstraintSymbols,
             !configuration.EndsWith("+Analysis", StringComparison.Ordinal));
 
         var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value
@@ -815,7 +910,7 @@ partial class MsBuildCompilation
             useNugetRestore: false);
 
         var buildResult = await buildTask;
-        UnityMSBuildLogger.LogProjectCacheSummary(buildResult);
+        UnityMSBuildLogger.LogBuildSummary(buildResult);
         return BuildScriptCompilationMessages(buildResult, configuration);
     }
 
@@ -1139,12 +1234,7 @@ partial class MsBuildCompilation
             return Array.Empty<string>();
 
         var rspFileProvider = new UnityEditor.Scripting.Compilers.MicrosoftCSharpResponseFileProvider();
-        string rspFile = null;
-        foreach (var candidate in rspFileProvider.Get(pathPrefix))
-        {
-            rspFile = candidate;
-            break;
-        }
+        var rspFile = rspFileProvider.GetCompilerSpecific(pathPrefix) ?? rspFileProvider.GetCompilerSpecific("Assets");
         if (string.IsNullOrEmpty(rspFile))
             return Array.Empty<string>();
 

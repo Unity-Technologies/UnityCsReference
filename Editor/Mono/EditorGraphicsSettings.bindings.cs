@@ -20,15 +20,21 @@ namespace UnityEditor.Rendering
     [StaticAccessor("EditorGraphicsSettingsScripting", StaticAccessorType.DoubleColon)]
     public sealed partial class EditorGraphicsSettings
     {
+#pragma warning disable CS0618 // Type or member is obsolete
         [NativeName("SetTierSettings")] extern internal static void SetTierSettingsImpl(BuildTargetGroup target, GraphicsTier tier, TierSettings settings);
+#pragma warning restore CS0618
 
+        [Obsolete("EditorGraphicsSettings.GetTierSettings is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use graphics tiers. To adjust rendering for different devices in URP, assign a different URP asset to each quality level instead.", false)]
         extern public static TierSettings GetTierSettings(BuildTargetGroup target, GraphicsTier tier);
+        [Obsolete("EditorGraphicsSettings.GetTierSettings is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use graphics tiers. To adjust rendering for different devices in URP, assign a different URP asset to each quality level instead.", false)]
         public static TierSettings GetTierSettings(NamedBuildTarget target, GraphicsTier tier) => GetTierSettings(target.ToBuildTargetGroup(), tier);
 
+#pragma warning disable CS0618 // Type or member is obsolete
         extern internal static TierSettings GetCurrentTierSettings();
 
         extern internal static bool AreTierSettingsAutomatic(BuildTargetGroup target, GraphicsTier tier);
         extern internal static void MakeTierSettingsAutomatic(BuildTargetGroup target, GraphicsTier tier, bool automatic);
+#pragma warning restore CS0618
 
         extern internal static void OnUpdateTierSettings(BuildTargetGroup target, bool shouldReloadShaders);
 

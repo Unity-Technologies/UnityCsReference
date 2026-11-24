@@ -67,7 +67,7 @@ namespace Unity.Animations
                 outputRot[i] = input1Rot[i].Nlerp(input2Rot[i], wMasks[wIdx] * weight);
             }
 
-            output.OrMasks(input1, input2);
+            MergeMasks(ref output, input1, input2, weight, mask);
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace Unity.Animations
                 outputRot[i] = inputRot1[i].Nlerp(inputRot2[i], weight);
             }
 
-            output.OrMasks(input1, input2);
+            MergeMasks(ref output, input1, input2, weight);
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace Unity.Animations
                 outputRot[i] = outputRot[i].Nlerp(inputRot[i], wMasks[wIdx] * weight);
             }
 
-            output.OrMasks(input);
+            MergeMasks(ref output, input, weight, mask);
         }
 
         /// <summary>
@@ -208,10 +208,10 @@ namespace Unity.Animations
             {
                 // Blend root
                 var w = wRotationMasks[0] * weight;
-                output.SetLocalToParentRotation(0,
+                output.SetLocalToParentRotationNoMaskWrite(0,
                     math.nlerp(output.GetLocalToParentRotation(0), input.GetLocalToParentRotation(0), w));
                 // Input gets progressively set to the global space rotations of A
-                input.SetLocalToParentRotation(0, output.GetLocalToParentRotation(0));
+                input.SetLocalToParentRotationNoMaskWrite(0, output.GetLocalToParentRotation(0));
             }
             for (int i = 1; i < input.RotationCount; ++i)
             {
@@ -220,11 +220,11 @@ namespace Unity.Animations
 
                 var newLocal = math.nlerp(output.GetLocalToParentRotation(i),
                     math.mul(math.conjugate(parentGlobal), input.GetLocalToParentRotation(i)), w);
-                output.SetLocalToParentRotation(i, newLocal);
-                input.SetLocalToParentRotation(i, math.mul(parentGlobal, newLocal));
+                output.SetLocalToParentRotationNoMaskWrite(i, newLocal);
+                input.SetLocalToParentRotationNoMaskWrite(i, math.mul(parentGlobal, newLocal));
             }
 
-            output.OrMasks(input);
+            MergeMasks(ref output, input, weight, mask);
         }
 
         /// <summary>
@@ -266,7 +266,7 @@ namespace Unity.Animations
                 outputRot[i] = outputRot[i].Nlerp(inputRot[i], weight);
             }
 
-            output.OrMasks(input);
+            MergeMasks(ref output, input, weight);
         }
 
         /// <summary>
@@ -327,7 +327,7 @@ namespace Unity.Animations
                 outputRot[i] = inputRot[i].Mul(additiveRot[i].QuatWeight(wMasks[wIdx] * weight));
             }
 
-            output.OrMasks(input, additive);
+            MergeMasks(ref output, input, additive, weight, mask);
         }
 
         /// <summary>
@@ -384,7 +384,7 @@ namespace Unity.Animations
                 outputRot[i] = inputRot[i].Mul(addRot[i].QuatWeight(weight));
             }
 
-            output.OrMasks(input, additive);
+            MergeMasks(ref output, input, additive, weight);
         }
 
         /// <summary>
@@ -439,7 +439,7 @@ namespace Unity.Animations
                 outputRot[i] = outputRot[i].Mul(additiveRot[i].QuatWeight(wMasks[wIdx] * weight));
             }
 
-            output.OrMasks(additive);
+            MergeMasks(ref output, additive, weight, mask);
         }
 
         /// <summary>
@@ -517,7 +517,7 @@ namespace Unity.Animations
                 outputRot[i] = characterSpaceDelta.Mul(outputRot[i]);
             }
 
-            output.OrMasks(additive);
+            MergeMasks(ref output, additive, weight, mask);
         }
 
         /// <summary>
@@ -590,7 +590,7 @@ namespace Unity.Animations
                 outputRot[i] = (characterSpaceDelta.QuatWeight(weight)).Mul(outputRot[i]);
             }
 
-            output.OrMasks(additive);
+            MergeMasks(ref output, additive, weight);
         }
 
         /// <summary>
@@ -641,7 +641,7 @@ namespace Unity.Animations
                 outputRot[i] = outputRot[i].Mul(addRot[i].QuatWeight(weight));
             }
 
-            output.OrMasks(additive);
+            MergeMasks(ref output, additive, weight);
         }
 
         /// <summary>
@@ -1040,6 +1040,73 @@ namespace Unity.Animations
             }
         }
 
+        // Flags merge for blends: a channel takes the flags of the blended input only if its effective weight is above 0.
+        // The flags of the stream that is blended onto (input1, input, or the output of in-place overloads) are kept.
+
+        static void MergeMasks(ref AnimationStream output, in AnimationStream input1, in AnimationStream input2, float weight)
+        {
+            // Overwrites the output flags with the flags of input1. OrMasks(input1) would keep stale output flags, and the
+            // MemCpy of CopyMasksFrom can't take an output that aliases input1.
+            if (weight > 0f)
+                output.OrMasks(input1, input2);
+            else
+                output.OrMasks(input1, input1);
+        }
+
+        static void MergeMasks(ref AnimationStream output, in AnimationStream input, float weight)
+        {
+            if (weight > 0f)
+                output.OrMasks(input);
+        }
+
+        static unsafe void MergeMasks(ref AnimationStream output, in AnimationStream input1, in AnimationStream input2, float weight, in AnimationStreamMask mask)
+        {
+            if (!(weight > 0f))
+            {
+                output.OrMasks(input1, input1);
+                return;
+            }
+
+            var words = AlignUp(mask.Rig.Bindings.BindingCount, 64) / 64;
+            var ptr = stackalloc ulong[words];
+            var channels = new UnsafeBitArray(ptr, words * 8, AllocatorManager.None);
+            FillEffectiveWeightBits(mask, ref channels);
+            output.OrMasksWhere(input1, input2, channels.AsReadOnly());
+        }
+
+        // OrMasksWhere works word by word, so the output can alias input1
+        static void MergeMasks(ref AnimationStream output, in AnimationStream input, float weight, in AnimationStreamMask mask)
+        {
+            if (weight > 0f)
+                MergeMasks(ref output, output, input, weight, mask);
+        }
+
+        // Sets the bit of each channel whose mask weight is above 0. Callers only use it for a blend weight above 0, so
+        // the effective weight is above 0 exactly when the mask weight is. Bits follow the channel mask layout.
+        static void FillEffectiveWeightBits(in AnimationStreamMask mask, ref UnsafeBitArray channels)
+        {
+            ref var bindings = ref mask.Rig.Bindings;
+            channels.Clear();
+
+            for (int i = 0, count = bindings.TranslationBindings.Length, first = bindings.TranslationBindingIndex; i < count; ++i)
+                channels.Set(first + i, mask.m_TranslationMasks.GetRO(i).x > 0f);
+
+            for (int i = 0, count = bindings.RotationBindings.Length, first = bindings.RotationBindingIndex; i < count; ++i)
+                channels.Set(first + i, mask.m_RotationMasks.GetRO(i) > 0f);
+
+            for (int i = 0, count = bindings.ScaleBindings.Length, first = bindings.ScaleBindingIndex; i < count; ++i)
+                channels.Set(first + i, mask.m_ScaleMasks.GetRO(i).x > 0f);
+
+            for (int i = 0, count = bindings.FloatBindings.Length, first = bindings.FloatBindingIndex; i < count; ++i)
+                channels.Set(first + i, mask.m_FloatMasks.GetRO(i) > 0f);
+
+            for (int i = 0, count = bindings.IntBindings.Length, first = bindings.IntBindingIndex; i < count; ++i)
+                channels.Set(first + i, mask.m_IntMasks.GetRO(i) > 0f);
+
+            for (int i = 0, count = bindings.EntityIdBindings.Length, first = bindings.EntityIdBindingIndex; i < count; ++i)
+                channels.Set(first + i, mask.m_EntityIdMasks.GetRO(i).x > 0f);
+        }
+
         /// <summary>
         /// Returns true if the weight of a mixer contributes to the resulting final pose. Otherwise, returns false.
         /// This function is used during graph queries, setting branch culling and mixer kernel operations
@@ -1072,6 +1139,11 @@ namespace Unity.Animations
         /// <summary>
         /// Blends an input stream with the current stream using a blending value.
         /// </summary>
+        /// <remarks>
+        /// If <paramref name="weight"/> is greater than 0, the method sets the pass and frame flags of the channels
+        /// that <paramref name="input"/> sets. If <paramref name="weight"/> is 0 or less, the flags of the stream don't
+        /// change. Flags that are already set in the stream stay set.
+        /// </remarks>
         /// <param name="stream">The stream to modify. The method stores the result in this stream.</param>
         /// <param name="input">The stream to blend.</param>
         /// <param name="weight">The weight of the input stream in the blend.</param>
@@ -1082,6 +1154,11 @@ namespace Unity.Animations
         /// <summary>
         /// Blends an input stream with the current stream using a blending value and weight masks.
         /// </summary>
+        /// <remarks>
+        /// The method sets the pass and frame flags of a channel that <paramref name="input"/> sets only if the weight
+        /// of the channel in <paramref name="mask"/>, multiplied by <paramref name="weight"/>, is greater than 0.
+        /// Channels with a combined weight of 0 keep their flags. Flags that are already set in the stream stay set.
+        /// </remarks>
         /// <param name="stream">The stream to modify. The method stores the result in this stream.</param>
         /// <param name="input">The stream to blend.</param>
         /// <param name="weight">The weight of the input stream in the blend.</param>
@@ -1093,6 +1170,11 @@ namespace Unity.Animations
         /// <summary>
         /// Blends two input streams using a blending weight value and stores the result in the animation stream.
         /// </summary>
+        /// <remarks>
+        /// The pass and frame flags of the stream are the flags of <paramref name="input1"/>, plus the flags of
+        /// <paramref name="input2"/> if <paramref name="weight"/> is greater than 0. Because the method always keeps
+        /// the flags of <paramref name="input1"/>, a channel stays flagged even when <paramref name="weight"/> is 1.
+        /// </remarks>
         /// <param name="stream">The stream that receives the result. The method overwrites its previous
         /// contents.</param>
         /// <param name="input1">The first stream to blend.</param>
@@ -1106,6 +1188,13 @@ namespace Unity.Animations
         /// Blends two input streams using a blending weight value and weight masks.
         /// The result is stored in the animation stream.
         /// </summary>
+        /// <remarks>
+        /// The pass and frame flags of the stream are the flags of <paramref name="input1"/>, plus the flags of
+        /// <paramref name="input2"/> for the channels where the weight of the channel in <paramref name="mask"/>,
+        /// multiplied by <paramref name="weight"/>, is greater than 0. Channels with a combined weight of 0 get only the
+        /// flags of <paramref name="input1"/>. The method always keeps the flags of <paramref name="input1"/>, so a
+        /// channel stays flagged even when its combined weight is 1.
+        /// </remarks>
         /// <param name="stream">The stream that receives the result. The method overwrites its previous
         /// contents.</param>
         /// <param name="input1">The first stream to blend.</param>
@@ -1119,6 +1208,11 @@ namespace Unity.Animations
         /// <summary>
         /// Blend stream with an additive stream using a blend weight value.
         /// </summary>
+        /// <remarks>
+        /// If <paramref name="weight"/> is greater than 0, the method sets the pass and frame flags of the channels
+        /// that <paramref name="additive"/> sets. If <paramref name="weight"/> is 0 or less, the flags of the stream
+        /// don't change. Flags that are already set in the stream stay set.
+        /// </remarks>
         /// <param name="stream">The stream to modify. The method stores the result in this stream.</param>
         /// <param name="additive">The additive stream to blend.</param>
         /// <param name="weight">The weight of the additive stream in the blend.</param>
@@ -1129,6 +1223,11 @@ namespace Unity.Animations
         /// <summary>
         /// Blend stream with an additive stream using a blend weight value and stream weight mask.
         /// </summary>
+        /// <remarks>
+        /// The method sets the pass and frame flags of a channel that <paramref name="additive"/> sets only if the
+        /// weight of the channel in <paramref name="mask"/>, multiplied by <paramref name="weight"/>, is greater than 0.
+        /// Channels with a combined weight of 0 keep their flags. Flags that are already set in the stream stay set.
+        /// </remarks>
         /// <param name="stream">The stream to modify. The method stores the result in this stream.</param>
         /// <param name="additive">The additive stream to blend.</param>
         /// <param name="weight">The weight of the additive stream in the blend.</param>
@@ -1141,6 +1240,10 @@ namespace Unity.Animations
         /// Blends an input stream with an additive stream using a blend weight value.
         /// The result is stored in the animation stream.
         /// </summary>
+        /// <remarks>
+        /// The pass and frame flags of the stream are the flags of <paramref name="input"/>, plus the flags of
+        /// <paramref name="additive"/> if <paramref name="weight"/> is greater than 0.
+        /// </remarks>
         /// <param name="stream">The stream that receives the result. The method overwrites its previous
         /// contents.</param>
         /// <param name="input">The stream to blend.</param>
@@ -1154,6 +1257,11 @@ namespace Unity.Animations
         /// Blends an input stream with an additive stream using a blend weight value and stream weight masks.
         /// The result is stored in the animation stream.
         /// </summary>
+        /// <remarks>
+        /// The pass and frame flags of the stream are the flags of <paramref name="input"/>, plus the flags of
+        /// <paramref name="additive"/> for the channels where the weight of the channel in <paramref name="mask"/>,
+        /// multiplied by <paramref name="weight"/>, is greater than 0.
+        /// </remarks>
         /// <param name="stream">The stream that receives the result. The method overwrites its previous
         /// contents.</param>
         /// <param name="input">The stream to blend.</param>
@@ -1180,8 +1288,13 @@ namespace Unity.Animations
         /// The scratchpad is a second stream on the same rig. The method overwrites it with intermediate values. The
         /// method also overwrites the channels of the additive stream, so the stream no longer holds the pose that you
         /// passed in. Copy it before the call if you need the original pose again.
+        ///
+        /// If <paramref name="weight"/> is greater than 0, the method sets the pass and frame flags of the channels
+        /// that <paramref name="additive"/> sets. If <paramref name="weight"/> is 0 or less, the flags of the stream
+        /// don't change. Flags that are already set in the stream stay set.
         /// </remarks>
-        /// <param name="stream">The stream to modify. The method stores the result in this stream.</param>
+        /// <param name="stream">The stream to modify, with its rotations in character space. The method stores the
+        /// result in this stream, with its rotations in character space.</param>
         /// <param name="scratchpad">A stream on the same rig that stores temporary results. The method overwrites its
         /// contents.</param>
         /// <param name="additive">The additive stream to blend, in local space. The method modifies it.</param>
@@ -1189,7 +1302,7 @@ namespace Unity.Animations
         /// <exception cref="System.InvalidOperationException">Thrown if safety checks are enabled and the streams don't
         /// use the same rig.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void BlendAdditiveCharacterSpace(this ref AnimationStream stream, ref AnimationStream scratchpad, ref AnimationStream additive, float weight) =>
+        internal static void BlendAdditiveCharacterSpace(this ref AnimationStream stream, ref AnimationStream scratchpad, ref AnimationStream additive, float weight) =>
             Core.BlendAdditiveCharacterSpace(ref stream, ref scratchpad, ref additive, weight);
 
         /// <summary>
@@ -1203,8 +1316,13 @@ namespace Unity.Animations
         /// <see cref="BlendAdditiveCharacterSpace(ref AnimationStream, ref AnimationStream, ref AnimationStream, float)"/>:
         /// it applies the additive rotations in character space, overwrites the scratchpad stream, and modifies the
         /// additive stream.
+        ///
+        /// The method sets the pass and frame flags of a channel that <paramref name="additive"/> sets only if the
+        /// weight of the channel in <paramref name="mask"/>, multiplied by <paramref name="weight"/>, is greater than 0.
+        /// Channels with a combined weight of 0 keep their flags. Flags that are already set in the stream stay set.
         /// </remarks>
-        /// <param name="stream">The stream to modify. The method stores the result in this stream.</param>
+        /// <param name="stream">The stream to modify, with its rotations in character space. The method stores the
+        /// result in this stream, with its rotations in character space.</param>
         /// <param name="scratchpad">A stream on the same rig that stores temporary results. The method overwrites its
         /// contents.</param>
         /// <param name="additive">The additive stream to blend, in local space. The method modifies it.</param>
@@ -1215,7 +1333,7 @@ namespace Unity.Animations
         /// <exception cref="System.InvalidOperationException">Thrown if safety checks are enabled and the streams don't
         /// use the same rig, or if <paramref name="mask"/> wasn't created for that rig.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void BlendAdditiveCharacterSpace(this ref AnimationStream stream, ref AnimationStream scratchpad, ref AnimationStream additive, float weight, in AnimationStreamMask mask) =>
+        internal static void BlendAdditiveCharacterSpace(this ref AnimationStream stream, ref AnimationStream scratchpad, ref AnimationStream additive, float weight, in AnimationStreamMask mask) =>
             Core.BlendAdditiveCharacterSpace(ref stream, ref scratchpad, ref additive, weight, mask);
 
         /// <summary>

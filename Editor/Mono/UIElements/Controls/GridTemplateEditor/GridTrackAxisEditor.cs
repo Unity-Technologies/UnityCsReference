@@ -31,6 +31,8 @@ namespace UnityEditor.UIElements
             };
 
             public int emittedCount => mode == GridTemplateRepeatMode.Count ? Math.Max(1, count) : 1;
+
+            public GridTrackTemplateEntry templateEntry => new GridTrackTemplateEntry(emittedTrack, mode == GridTemplateRepeatMode.Count ? Math.Max(1, count) : 0);
         }
 
         readonly List<Entry> m_Entries = new();
@@ -104,6 +106,7 @@ namespace UnityEditor.UIElements
                 allowRemove = true,
                 showBoundCollectionSize = false,
                 showFoldoutHeader = false,
+                showBorder = true,
                 selectionType = SelectionType.Single,
             };
             m_ListView.AddToClassList(listUssClassName);
@@ -140,6 +143,64 @@ namespace UnityEditor.UIElements
         }
 
         public List<GridTrackSize> GetTracks() => ToList();
+
+        // The authored form: repeat(<count>, <track>) rows stay single entries instead of being expanded.
+        public List<GridTrackTemplateEntry> GetTemplate()
+        {
+            var template = new List<GridTrackTemplateEntry>();
+            if (m_Placeholder)
+                return template;
+            foreach (var e in m_Entries)
+                template.Add(e.templateEntry);
+            return template;
+        }
+
+        public void SetTemplate(IReadOnlyList<GridTrackTemplateEntry> template)
+        {
+            if (TemplateMatches(template))
+                return;
+
+            m_Notify = false;
+            try
+            {
+                m_Entries.Clear();
+                m_Placeholder = template == null || template.Count == 0;
+                if (m_Placeholder)
+                    m_Entries.Add(new Entry());
+                else
+                    foreach (var t in template)
+                        m_Entries.Add(EntryFromTemplate(t));
+                RefreshView();
+            }
+            finally
+            {
+                m_Notify = true;
+            }
+        }
+
+        bool TemplateMatches(IReadOnlyList<GridTrackTemplateEntry> template)
+        {
+            int count = template?.Count ?? 0;
+            if (m_Placeholder)
+                return count == 0;
+            if (count != m_Entries.Count)
+                return false;
+            for (int i = 0; i < count; ++i)
+                if (!m_Entries[i].templateEntry.Equals(template[i]))
+                    return false;
+            return true;
+        }
+
+        static Entry EntryFromTemplate(GridTrackTemplateEntry t)
+        {
+            if (t.track.isAutoFill)
+                return new Entry { mode = GridTemplateRepeatMode.AutoFill, track = PatternFromRepeat(t.track) };
+            if (t.track.isAutoFit)
+                return new Entry { mode = GridTemplateRepeatMode.AutoFit, track = PatternFromRepeat(t.track) };
+            if (t.isRepeat)
+                return new Entry { mode = GridTemplateRepeatMode.Count, count = t.repeatCount, track = t.track };
+            return new Entry { mode = GridTemplateRepeatMode.None, track = t.track };
+        }
 
         // Test-friendly mutators (mirror the +/- footer and the per-row repeat selector), so add/remove
         // logic can be exercised without simulating clicks in a panel.
@@ -306,14 +367,7 @@ namespace UnityEditor.UIElements
             // consecutive tracks are NOT auto-merged into a repeat(count) row (that is created explicitly
             // via a row's repeat selector), so separately added identical tracks stay individually editable.
             foreach (var t in tracks)
-            {
-                if (t.isAutoFill)
-                    m_Entries.Add(new Entry { mode = GridTemplateRepeatMode.AutoFill, track = PatternFromRepeat(t) });
-                else if (t.isAutoFit)
-                    m_Entries.Add(new Entry { mode = GridTemplateRepeatMode.AutoFit, track = PatternFromRepeat(t) });
-                else
-                    m_Entries.Add(new Entry { mode = GridTemplateRepeatMode.None, track = t });
-            }
+                m_Entries.Add(EntryFromTemplate(new GridTrackTemplateEntry(t)));
         }
 
         // A repeat(auto-fill|auto-fit, …) pattern is stored in the track's own min/max fields.

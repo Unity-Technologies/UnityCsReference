@@ -37,5 +37,12 @@ namespace UnityEditor.Build.Content
         ///<summary>Bool to determine if this resource file represents serialized Unity objects (serialized file) or binary resource data.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.ResourceFile" />.</remarks>
         public bool serializedFile { get { return m_SerializedFile; } set { m_SerializedFile = value; } }
+
+        [SerializeField]
+        [NativeName("storeUncompressed")]
+        internal bool m_StoreUncompressed;
+        ///<summary>Bool to store this file in uncompressed blocks of its own, whatever the archive compression, so it can be read in place.</summary>
+        ///<remarks>Use it for data that is already compressed, such as audio or video. <see cref="ContentBuildInterface.ArchiveAndCompress(ResourceFile[], string, UnityEngine.BuildCompression, bool)" /> fails when it is set on a file in an LZMA archive, because LZMA compresses the whole archive as one stream.</remarks>
+        public bool storeUncompressed { get { return m_StoreUncompressed; } set { m_StoreUncompressed = value; } }
     }
 }

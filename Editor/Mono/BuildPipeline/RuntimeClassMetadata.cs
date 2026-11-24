@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.Scripting.ScriptCompilation.MsBuild;
 using UnityEngine.Scripting;
 using System.Diagnostics;
 
@@ -116,15 +117,32 @@ namespace UnityEditor
             if (m_UsedTypesPerUserAssembly == null)
                 return true;
 
-            if (Array.IndexOf(userAssemblyNames, assemblyName) != -1)
+            bool isTargetAssembly = Array.IndexOf(userAssemblyNames, assemblyName) != -1;
+            string asmdefPath = null;
+            if (isTargetAssembly || MsBuildCompilationInterface.IsEnabled())
             {
-                // Don't treat code in packages as used automatically (case 1003047).
-                var asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(assemblyName);
-                if (asmdefPath == null || !EditorCompilationInterface.Instance.IsPathInPackageDirectory(asmdefPath))
-                    return true;
+                asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(assemblyName);
+
+                // MSBuild keeps asmdefs out of GetTargetAssemblyInfos, so an asmdef marks a target assembly there
+                isTargetAssembly |= asmdefPath != null;
             }
+
+            // Don't treat code in packages as used automatically (case 1003047).
+            if (isTargetAssembly && (asmdefPath == null || !IsPathInPackageDirectory(asmdefPath)))
+                return true;
+
             bool isUsed = m_UsedTypesPerUserAssembly.ContainsKey(assemblyName);
             return isUsed;
+        }
+
+        static bool IsPathInPackageDirectory(string path)
+        {
+            if (!MsBuildCompilationInterface.IsEnabled())
+                return EditorCompilationInterface.Instance.IsPathInPackageDirectory(path);
+
+            var assetPathsMetaData = MsBuildCompilationInterface.Instance.GetAssetPathsMetaData();
+            return assetPathsMetaData != null &&
+                Array.Exists(assetPathsMetaData, p => path.StartsWith(p.DirectoryPath, StringComparison.OrdinalIgnoreCase));
         }
 
         [RequiredByNativeCode]

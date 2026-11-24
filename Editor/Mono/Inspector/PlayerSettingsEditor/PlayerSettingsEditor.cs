@@ -47,7 +47,7 @@ namespace UnityEditor
     {
         class Styles
         {
-            public static readonly GUIStyle categoryBox = new GUIStyle(EditorStyles.helpBox);
+            public static readonly GUIStyle categoryBox = new GUIStyle(EditorStyles.frameBox);
             static Styles()
             {
                 categoryBox.padding.left = 4;
@@ -161,6 +161,7 @@ namespace UnityEditor
             public static readonly GUIContent enableInternalProfiler = L10n.TextContent("Enable Internal Profiler* (Deprecated)", "Internal profiler counters should be accessed by scripts using UnityEngine.Profiling::Profiler API.", null, null);
             public static readonly GUIContent stripUnusedMeshComponents = L10n.TextContent("Optimize Mesh Data*", "Remove unused mesh components", null, null);
             public static readonly GUIContent strictShaderVariantMatching = L10n.TextContent("Strict shader variant matching*", "When enabled, if a shader variant is missing, Unity uses the error shader and displays an error in the Console.", null, null);
+            public static readonly GUIContent warnAboutOutOfDateShaders = L10n.TextContent("Warn about out-of-date shaders*", "Display a warning in the Console when Unity loads a shader built with a different major or minor Unity version.", null, null);
             public static readonly GUIContent mipStripping = L10n.TextContent("Texture Mipmap Stripping*", "Remove unused texture mipmap levels from package builds, reducing package size on disk. Limits the texture quality settings to the highest mipmap level that was included during the build.", null, null);
             public static readonly GUIContent enableFrameTimingStats = L10n.TextContent("Frame Timing Stats", "Enable gathering of CPU/GPU frame timing statistics.", null, null);
             public static readonly GUIContent enableOpenGLProfilerGPURecorders = L10n.TextContent("OpenGL: Profiler GPU Recorders", "Enable Profiler Recorders when rendering with OpenGL. Always enabled with other rendering APIs. Optional on OpenGL due to potential incompatibility with Frame Timing Stats and the GPU Profiler.", null, null);
@@ -438,6 +439,7 @@ namespace UnityEditor
         SerializedProperty m_UnsupportedMSAAFallback;
         SerializedProperty m_StripUnusedMeshComponents;
         SerializedProperty m_StrictShaderVariantMatching;
+        SerializedProperty m_WarnAboutOutOfDateShaders;
         SerializedProperty m_MipStripping;
         SerializedProperty m_VertexChannelCompressionMask;
         SerializedProperty m_MetalAPIValidation;
@@ -978,6 +980,7 @@ namespace UnityEditor
             m_UnsupportedMSAAFallback       = FindPropertyAssert("unsupportedMSAAFallback");
             m_StripUnusedMeshComponents     = FindPropertyAssert("StripUnusedMeshComponents");
             m_StrictShaderVariantMatching   = FindPropertyAssert("strictShaderVariantMatching");
+            m_WarnAboutOutOfDateShaders     = FindPropertyAssert("warnAboutOutOfDateShaders");
             m_MipStripping                  = FindPropertyAssert("mipStripping");
             m_VertexChannelCompressionMask  = FindPropertyAssert("VertexChannelCompressionMask");
             m_MetalAPIValidation            = FindPropertyAssert("metalAPIValidation");
@@ -2849,6 +2852,8 @@ namespace UnityEditor
             }
 
             EditorGUILayout.PropertyField(m_StrictShaderVariantMatching, SettingsContent.strictShaderVariantMatching);
+
+            EditorGUILayout.PropertyField(m_WarnAboutOutOfDateShaders, SettingsContent.warnAboutOutOfDateShaders);
 
             EditorGUILayout.PropertyField(m_KeepLoadedShadersAlive, SettingsContent.keepLoadedShadersAlive);
 

@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace PlayerBuildProgramLibrary.Data
 {
     public class Plugin
@@ -72,7 +74,9 @@ namespace PlayerBuildProgramLibrary.Data
 
     public class LinkerConfig
     {
-        public string[] LinkXmlFiles = new string[0];
+        public string[] LinkXmlFiles = Array.Empty<string>();
+        public string[] LinkAttributesFiles = Array.Empty<string>();
+        public string[] SubstitutionFiles = Array.Empty<string>();
         public string[] AssembliesToProcess = new string[0];
         public string EditorToLinkerData;
         // Path to the ManagedCapture config file, or null when no config is supplied.

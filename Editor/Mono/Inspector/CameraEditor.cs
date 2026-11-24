@@ -179,6 +179,7 @@ namespace UnityEditor
                 L10n.TextContent("Legacy Vertex Lit", null, null, null)
             };
 
+            #pragma warning disable CS0618
             internal static readonly int[] k_CameraRenderPathValues =
             {
                 (int)RenderingPath.UsePlayerSettings,
@@ -186,6 +187,7 @@ namespace UnityEditor
                 (int)RenderingPath.DeferredShading,
                 (int)RenderingPath.VertexLit
             };
+            #pragma warning restore CS0618
 
             internal static readonly GUIContent[] k_DefaultOptions =
             {
@@ -236,6 +238,7 @@ namespace UnityEditor
             public SerializedProperty orthographicSize { get; private set; }
             public SerializedProperty depth { get; private set; }
             public SerializedProperty cullingMask { get; private set; }
+            [Obsolete("CameraEditor.Settings.renderingPath is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the rendering path in the Universal Render Pipeline (URP), use the Rendering Path property of the Universal Renderer asset instead.", false)]
             public SerializedProperty renderingPath { get; private set; }
             [Obsolete("CameraEditor.Settings.occlusionCulling is deprecated and will be removed in a future release. Consider migrating to GPU Occlusion Culling where your target platform supports it. #from(6000.7)", false)]
             public SerializedProperty occlusionCulling { get; private set; }
@@ -279,8 +282,8 @@ namespace UnityEditor
                 orthographicSize = m_SerializedObject.FindProperty("orthographic size");
                 depth = m_SerializedObject.FindProperty("m_Depth");
                 cullingMask = m_SerializedObject.FindProperty("m_CullingMask");
-                renderingPath = m_SerializedObject.FindProperty("m_RenderingPath");
                 #pragma warning disable CS0618
+                renderingPath = m_SerializedObject.FindProperty("m_RenderingPath");
                 occlusionCulling = m_SerializedObject.FindProperty("m_OcclusionCulling");
                 #pragma warning restore CS0618
                 targetTexture = m_SerializedObject.FindProperty("m_TargetTexture");
@@ -483,6 +486,7 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(depth);
             }
 
+            [Obsolete("CameraEditor.Settings.DrawRenderingPath is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the rendering path in the Universal Render Pipeline (URP), use the Rendering Path property of the Universal Renderer asset instead.", false)]
             public void DrawRenderingPath()
             {
                 EditorGUILayout.IntPopup(renderingPath, k_CameraRenderPaths, k_CameraRenderPathValues, Styles.renderingPath);
@@ -599,9 +603,11 @@ namespace UnityEditor
         {
             get
             {
+                #pragma warning disable CS0618
                 var isCamDeferred = camera.renderingPath == RenderingPath.DeferredShading;
                 var isTierDeferred = Rendering.EditorGraphicsSettings.GetCurrentTierSettings().renderingPath == RenderingPath.DeferredShading;
                 return isCamDeferred || (camera.renderingPath == RenderingPath.UsePlayerSettings && isTierDeferred);
+                #pragma warning restore CS0618
             }
         }
 
@@ -834,7 +840,9 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
             settings.DrawDepth();
+            #pragma warning disable CS0618
             settings.DrawRenderingPath();
+            #pragma warning restore CS0618
 
             if (showOrthographicDeferredWarning)
                 EditorGUILayout.HelpBox(Styles.orthoDeferredWarning.text, MessageType.Warning, true);
@@ -1001,7 +1009,9 @@ namespace UnityEditor
             ExtendedQuery<PropertyField>(editor, Styles.k_DepthElementName, settings.depth);
 
             var renderingPath = ExtendedQuery<DropdownField>(editor, Styles.k_RenderingPathElementName, Styles.renderingPath);
+            #pragma warning disable CS0618
             var renderingPathUpdate = UIElementsEditorUtility.BindSerializedProperty(renderingPath, settings.renderingPath, Settings.k_CameraRenderPaths, Settings.k_CameraRenderPathValues);
+            #pragma warning restore CS0618
 
             var orthographicDeferredWarning = ExtendedQuery<HelpBox>(editor, Styles.k_OrthographicDeferredWarningElementName, Styles.orthoDeferredWarning);
             var orthographicDeferrednCheck = UIElementsEditorUtility.CreateDynamicVisibilityCallback(orthographicDeferredWarning, () => showOrthographicDeferredWarning);

@@ -22,7 +22,7 @@ namespace Unity.Animations
             // of a whole number of cycles belongs to the next cycle. The remainder of such a time clamps to 0.
             var ratio = (double)t / (double)length;
             var cycles = math.min(math.floor(RoundUpToFloat(ratio)), math.floor(ratio) + 1.0);
-            return (t - new DiscreteTime(cycles) * (float)length).Clamp(DiscreteTime.Zero, length);
+            return (t - length * (long)cycles).Clamp(DiscreteTime.Zero, length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

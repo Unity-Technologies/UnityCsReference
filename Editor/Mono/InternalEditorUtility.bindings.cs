@@ -807,6 +807,9 @@ namespace UnityEditorInternal
         [FreeFunction("UnityConfig::GetUnityBuildHash", true)]
         extern public static string GetUnityBuildHash();
 
+        [FreeFunction("UnityConfig::GetUnityBuildFullHash", true)]
+        extern public static string GetUnityRevisionFull();
+
         [FreeFunction("UnityConfig::GetUnityDisplayVersion", true)]
         extern public static string GetUnityDisplayVersion();
 

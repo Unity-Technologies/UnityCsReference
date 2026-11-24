@@ -1125,6 +1125,70 @@ namespace UnityEngine.UIElements.StyleSheets
             return entry;
         }
 
+        // Authored form of a track list: repeat(<count>, <single track>) stays one entry; any other repeat() group is expanded.
+        public void ReadGridTrackTemplate(List<GridTrackTemplateEntry> result, int index)
+        {
+            result.Clear();
+            var group = new List<GridTrackSize>();
+            while (index < valueCount)
+            {
+                var handle = m_Values[m_CurrentValueIndex + index].handle;
+                if (handle.valueType == StyleValueType.Function && (StyleValueFunction)GetValue(index).handle.valueIndex == StyleValueFunction.Repeat)
+                {
+                    ++index;
+                    int argCount = ReadInt(index++);
+                    if (GetValueType(index) != StyleValueType.Float && GetValueType(index) != StyleValueType.Dimension)
+                    {
+                        var firstVal = m_Values[m_CurrentValueIndex + index];
+                        var kw = firstVal.sheet.ReadAsString(firstVal.handle);
+                        bool autoFill = string.Equals(kw, "auto-fill", StringComparison.OrdinalIgnoreCase);
+                        ++index;
+                        if (index < valueCount && GetValueType(index) == StyleValueType.CommaSeparator) ++index;
+                        var pattern = index < valueCount ? ReadTrackEntry(ref index) : GridTrackSize.Auto();
+                        result.Add(new GridTrackTemplateEntry(autoFill ? GridTrackSize.RepeatAutoFill(pattern) : GridTrackSize.RepeatAutoFit(pattern)));
+                        continue;
+                    }
+
+                    int count = Math.Max(0, ReadInt(index++));
+                    group.Clear();
+                    for (int arg = 1; arg < argCount; ++arg)
+                    {
+                        if (GetValueType(index) == StyleValueType.CommaSeparator) { ++index; continue; }
+                        group.Add(ReadTrackEntry(ref index));
+                    }
+                    if (group.Count == 1 && count > 0)
+                    {
+                        result.Add(new GridTrackTemplateEntry(group[0], count));
+                    }
+                    else
+                    {
+                        for (int r = 0; r < count; ++r)
+                            foreach (var track in group)
+                                result.Add(new GridTrackTemplateEntry(track));
+                    }
+                }
+                else if (handle.valueType == StyleValueType.Function)
+                {
+                    result.Add(new GridTrackTemplateEntry(ReadTrackEntry(ref index)));
+                }
+                else if (handle.valueType == StyleValueType.Keyword)
+                {
+                    var kw = m_Values[m_CurrentValueIndex + index].sheet.ReadKeyword(handle);
+                    ++index;
+                    if (kw == StyleValueKeyword.Auto) result.Add(new GridTrackTemplateEntry(GridTrackSize.Auto()));
+                }
+                else if (handle.valueType == StyleValueType.CommaSeparator)
+                {
+                    ++index;
+                }
+                else
+                {
+                    result.Add(new GridTrackTemplateEntry(ReadSingleTrack(index)));
+                    ++index;
+                }
+            }
+        }
+
         // CSS Grid track list: grid-template-columns/rows, grid-auto-columns/rows.
         // Space-separated (no CommaSeparator between top-level items). Handles single tracks plus
         // the minmax(), fit-content() and repeat() track functions.

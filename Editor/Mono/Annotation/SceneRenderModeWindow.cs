@@ -25,9 +25,13 @@ namespace UnityEditor
         AlphaChannel = 5,
         Overdraw = 6,
         Mipmaps = 7,
+        [Obsolete("DrawCameraMode.DeferredDiffuse is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To view albedo, specular, smoothness or normals, use Material Override in the Rendering Debugger instead. #from(7000.0)", false)]
         DeferredDiffuse = 8,
+        [Obsolete("DrawCameraMode.DeferredSpecular is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To view albedo, specular, smoothness or normals, use Material Override in the Rendering Debugger instead. #from(7000.0)", false)]
         DeferredSpecular = 9,
+        [Obsolete("DrawCameraMode.DeferredSmoothness is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To view albedo, specular, smoothness or normals, use Material Override in the Rendering Debugger instead. #from(7000.0)", false)]
         DeferredSmoothness = 10,
+        [Obsolete("DrawCameraMode.DeferredNormal is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To view albedo, specular, smoothness or normals, use Material Override in the Rendering Debugger instead. #from(7000.0)", false)]
         DeferredNormal = 11,
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -133,10 +137,13 @@ namespace UnityEditor
                 new SceneView.CameraMode(DrawCameraMode.BakedIndices, "Lightmap Indices", kBakedGI),
                 new SceneView.CameraMode(DrawCameraMode.LightOverlap, "Light Overlap", kBakedGI),
 
-                new SceneView.CameraMode(DrawCameraMode.DeferredDiffuse, "Albedo", kDeferred),
-                new SceneView.CameraMode(DrawCameraMode.DeferredSpecular, "Specular", kDeferred),
-                new SceneView.CameraMode(DrawCameraMode.DeferredSmoothness, "Smoothness", kDeferred),
-                new SceneView.CameraMode(DrawCameraMode.DeferredNormal, "Normal", kDeferred),
+                // Deferred modes only work in the Built-In Render Pipeline, so they're hidden from the menu.
+#pragma warning disable CS0618 // Type or member is obsolete
+                new SceneView.CameraMode(DrawCameraMode.DeferredDiffuse, "Albedo", kDeferred, false),
+                new SceneView.CameraMode(DrawCameraMode.DeferredSpecular, "Specular", kDeferred, false),
+                new SceneView.CameraMode(DrawCameraMode.DeferredSmoothness, "Smoothness", kDeferred, false),
+                new SceneView.CameraMode(DrawCameraMode.DeferredNormal, "Normal", kDeferred, false),
+#pragma warning restore CS0618
 
                 new SceneView.CameraMode(DrawCameraMode.RenderPaths, "Render Paths", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.AlphaChannel, "Alpha Channel", kMiscellaneous),

@@ -15,6 +15,10 @@ class UnityMSBuildLogger
 {
     // Must match Unity.BuildService.ProjectCache.ProjectCacheSummary.LogCode.
     const string k_ProjectCacheSummaryLogCode = "UnityProjectCacheSummary";
+    // Must match Unity.BuildService.Host.ProjectModel.InMemoryBuildManagerLogger.CscInvokedCode.
+    const string k_CscInvokedLogCode = "UnityCscInvoked";
+    // The solution root project; it compiles no scripts of its own.
+    const string k_EntryPointProjectSuffix = ".EntryPoint.csproj";
 
     public static void LogBuildFailedWithoutResult(Exception exception, TimeSpan elapsed, string lastProgressText, string configuration, bool generateBinLog)
     {
@@ -50,13 +54,24 @@ class UnityMSBuildLogger
         }
     }
 
-    // stdout, so it reaches Editor.log without a Console entry on every compile.
-    public static void LogProjectCacheSummary(BuildResultMessage buildResultMessage)
+    // stdout, so it reaches Editor.log without a Console entry on every compile. The Csc lines match the ones Bee
+    // prints per compiled assembly, which tests and tools count.
+    public static void LogBuildSummary(BuildResultMessage buildResultMessage)
     {
+        var projectResults = buildResultMessage.GetProjectResults();
         foreach (var logMessage in buildResultMessage.GetLogMessages())
         {
-            if (logMessage.MessageType == LogMessageType.Message && logMessage.Code == k_ProjectCacheSummaryLogCode)
+            if (logMessage.MessageType != LogMessageType.Message)
+                continue;
+
+            if (logMessage.Code == k_ProjectCacheSummaryLogCode)
                 Console.WriteLine(logMessage.Message);
+            else if (logMessage.Code == k_CscInvokedLogCode
+                     && !string.IsNullOrEmpty(logMessage.File)
+                     && !logMessage.File.EndsWith(k_EntryPointProjectSuffix, StringComparison.OrdinalIgnoreCase)
+                     && projectResults.TryGetValue(logMessage.File, out var projectResult)
+                     && !string.IsNullOrEmpty(projectResult.AssemblyName))
+                Console.WriteLine($"Csc {projectResult.AssemblyName}.dll");
         }
     }
 
@@ -78,13 +93,14 @@ class UnityMSBuildLogger
                     continue;
                 }
 
-                var instanceId = LookupInstanceId(fileInstanceIdCache, logMessage.File);
-                Debug.LogCompilerMessage(FormatLogMessageToString(logMessage), logMessage.File, logMessage.LineNumber, logMessage.ColumnNumber,
+                var file = GetReportedFilePath(logMessage.File, projectResults.Key);
+                var instanceId = LookupInstanceId(fileInstanceIdCache, file);
+                Debug.LogCompilerMessage(FormatLogMessageToString(logMessage, file), file, logMessage.LineNumber, logMessage.ColumnNumber,
                                        buildingForEditor, logMessage.MessageType == LogMessageType.Error, logIdentifier, instanceId);
             }
         }
 
-        LogProjectCacheSummary(buildResultMessage);
+        LogBuildSummary(buildResultMessage);
 
         foreach (var logMessage in buildResultMessage.GetLogMessages())
         {
@@ -95,7 +111,7 @@ class UnityMSBuildLogger
                 continue;
 
             var instanceId = LookupInstanceId(fileInstanceIdCache, logMessage.File);
-            Debug.LogCompilerMessage(FormatLogMessageToString(logMessage), logMessage.File, logMessage.LineNumber, logMessage.ColumnNumber,
+            Debug.LogCompilerMessage(FormatLogMessageToString(logMessage, logMessage.File), logMessage.File, logMessage.LineNumber, logMessage.ColumnNumber,
                                    buildingForEditor, logMessage.MessageType == LogMessageType.Error, logIdentifier, instanceId);
         }
 
@@ -111,13 +127,31 @@ class UnityMSBuildLogger
     private static bool IsScriptUpdaterManifestPointer(LogMessage logMessage) =>
         logMessage.Code == MsBuildCompilation.k_PendingScriptUpdatesWarningCode;
 
-    private static string FormatLogMessageToString(LogMessage logMessage)
+    private static string FormatLogMessageToString(LogMessage logMessage, string file)
     {
         // Match the Roslyn/legacy pipeline shape parsed by PostProcessorOutputParser and
         // expected by test regexes like Regex(".*error.*") (case-sensitive):
         // <file>(<line>,<col>): error|warning <code>: <message>
         var severity = logMessage.MessageType == LogMessageType.Error ? "error" : "warning";
-        return $"{logMessage.File}({logMessage.LineNumber},{logMessage.ColumnNumber}): {severity} {logMessage.Code}: {logMessage.Message}";
+        return $"{file}({logMessage.LineNumber},{logMessage.ColumnNumber}): {severity} {logMessage.Code}: {logMessage.Message}";
+    }
+
+    // The .NET SDK compiles with GenerateFullPaths, so csc roots every diagnostic path at the project folder, also an
+    // analyzer location that is not a file, e.g. "ReportAdditionalFiles". Report such a path as the analyzer gave it.
+    internal static string GetReportedFilePath(string file, string projectFile)
+    {
+        if (string.IsNullOrEmpty(file) || string.IsNullOrEmpty(projectFile) || !Path.IsPathRooted(file) || File.Exists(file) || Directory.Exists(file))
+            return file;
+
+        var projectDirectory = Path.GetDirectoryName(projectFile);
+        if (string.IsNullOrEmpty(projectDirectory))
+            return file;
+
+        var relativePath = Path.GetRelativePath(projectDirectory, file);
+        if (Path.IsPathRooted(relativePath) || relativePath == ".." || relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            return file;
+
+        return relativePath;
     }
 
     private static EntityId LookupInstanceId(IDictionary<string, EntityId> fileInstanceIdCache, string filePath)

@@ -1500,6 +1500,33 @@ namespace UnityEditor
             Repaint();
         }
 
+        // Called from EditorHelper when opening the already selected asset, as no selection change is sent then
+        [RequiredByNativeCode]
+        static void RevealAssetInAllProjectBrowsers(EntityId entityId)
+        {
+            foreach (var browser in s_ProjectBrowsers)
+            {
+                if (browser.m_ListArea == null)
+                    continue;
+
+                browser.RevealAsset(entityId);
+                browser.Repaint();
+            }
+        }
+
+        void RevealAsset(EntityId entityId)
+        {
+            if (m_LockTracker.isLocked || !CanFrameAsset(entityId))
+                return;
+
+            if (m_ViewMode == ViewMode.OneColumn && !m_SearchFilter.IsSearching())
+                m_AssetTree.Frame(entityId, true, false);
+            else if (m_SearchFilter.IsSearching() || m_ListArea.IsShowing(entityId))
+                m_ListArea.Frame(entityId, true, false);
+            else
+                FrameObjectInTwoColumnMode(entityId, true, false);
+        }
+
         void SetFoldersInSearchFilter(EntityId[] selectedInstanceIDs)
         {
             m_SearchFilter.folders = GetFolderPathsFromInstanceIDs(selectedInstanceIDs);

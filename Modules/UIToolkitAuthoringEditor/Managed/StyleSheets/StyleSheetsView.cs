@@ -223,7 +223,7 @@ sealed class StyleSheetsView : VisualElement, IDisposable
         m_Handler.Context = m_AuthoringContext;
 
         m_HierarchyView = new HierarchyView();
-        m_HierarchyView.ListView.fixedItemHeight = 20;
+        m_HierarchyView.ListView.fixedItemHeight = 16;
         m_HierarchyView.AddToClassList(StyleSheetNodeTypeHandler.StyleSheetsWindowHierarchyViewUssClassName);
         m_HierarchyView.NameColumn.title = "Rules";
         m_HierarchyView.NameColumn.stretchable = true;

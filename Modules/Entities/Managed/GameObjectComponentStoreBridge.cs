@@ -51,22 +51,36 @@ namespace Unity.Entities
             try
             {
                 var entity = UnsafeUtility.As<ulong, Entity>(ref entityIdRaw);
-                if (!EntityComponentStore.s_entityStore.Data.Exists(entity))
-                    return;
-                if (!EntityComponentStore.s_entityStore.Data.GetEntityInChunk(entity).Equals(EntityInChunk.Null))
-                    return;
-
-                var access = ((WorldUnmanagedImpl*)world)->m_EntityManager.GetCheckedEntityDataAccess();
-                var archetype = access->GetGameObjectEntityArchetype();
-                access->PrepareForAdditiveStructuralChanges(archetype.Archetype);
-                var changes = access->BeginAdditiveStructuralChanges();
-                access->AllocateAndAssignChunksToExistingEntities(archetype, &entity, 1);
-                access->EndStructuralChanges(ref changes);
+                AttachGameObjectEntity(((WorldUnmanagedImpl*)world)->m_EntityManager.GetCheckedEntityDataAccess(), entity);
             }
             catch (Exception ex)
             {
                 Debug.LogException(ex);
             }
+        }
+
+        [RequiredByNativeCode]
+        static bool AttachGameObjectEntityToWorld(IntPtr world, ulong entityIdRaw)
+        {
+            var entity = UnsafeUtility.As<ulong, Entity>(ref entityIdRaw);
+            return AttachGameObjectEntity(((WorldUnmanagedImpl*)world)->m_EntityManager.GetCheckedEntityDataAccess(), entity);
+        }
+
+        // Gives an existing engine id a chunk with the GameObject entity archetype, keeping the id. Returns false without
+        // changes when the entity store doesn't have the id or the id already has a chunk in any World.
+        internal static bool AttachGameObjectEntity(EntityDataAccess* access, Entity entity)
+        {
+            if (!EntityComponentStore.s_entityStore.Data.Exists(entity))
+                return false;
+            if (!EntityComponentStore.s_entityStore.Data.GetEntityInChunk(entity).Equals(EntityInChunk.Null))
+                return false;
+
+            var archetype = access->GetGameObjectEntityArchetype();
+            access->PrepareForAdditiveStructuralChanges(archetype.Archetype);
+            var changes = access->BeginAdditiveStructuralChanges();
+            access->AllocateAndAssignChunksToExistingEntities(archetype, &entity, 1);
+            access->EndStructuralChanges(ref changes);
+            return true;
         }
 
         // Writes up to capacity of the GameObject entities the Worlds hold and returns how many they hold.

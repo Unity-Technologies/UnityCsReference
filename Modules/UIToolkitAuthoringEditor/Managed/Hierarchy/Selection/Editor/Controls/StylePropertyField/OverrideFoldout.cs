@@ -222,7 +222,7 @@ namespace Unity.UIToolkit.Editor
 
         void UnsetTrackedProperties(StyleDiff styleDiff)
         {
-            if (trackedProperties == null || trackedProperties.Count == 0)
+            if (trackedProperties.Count == 0)
                 return;
 
             // Removing a variable can synchronously refresh this same set, so snapshot before iterating.

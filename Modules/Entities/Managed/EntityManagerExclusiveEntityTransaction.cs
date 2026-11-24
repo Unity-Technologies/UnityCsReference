@@ -25,13 +25,13 @@ namespace Unity.Entities
             {
                 // Note this can't use read/write checking
                 AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
-                return m_EntityDataAccess->DependencyManager->ExclusiveTransactionDependency;
+                return GlobalEntityManager.GetExclusiveEntityTransactionDependency(m_EntityDataAccess);
             }
             set
             {
                 // Note this can't use read/write checking
                 AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
-                m_EntityDataAccess->DependencyManager->ExclusiveTransactionDependency = value;
+                GlobalEntityManager.SetExclusiveEntityTransactionDependency(m_EntityDataAccess, value);
             }
         }
 
@@ -70,19 +70,9 @@ namespace Unity.Entities
         /// <returns>A transaction object that provides an functions for making structural changes.</returns>
         public ExclusiveEntityTransaction BeginExclusiveEntityTransaction()
         {
-            var access = GetCheckedEntityDataAccess();
-
             if (IsInExclusiveTransaction)
                 throw new InvalidOperationException("An exclusive transaction is already in process.");
-            if (access->DependencyManager->IsInTransaction)
-                throw new InvalidOperationException("An exclusive transaction is already in process.");
-
-            access->DependencyManager->BeginExclusiveTransaction();
-
-            var copy = this;
-
-            copy.m_IsInExclusiveTransaction = 1;
-            return new ExclusiveEntityTransaction(copy);
+            return GlobalEntityManager.BeginExclusiveEntityTransaction(GetCheckedEntityDataAccess());
         }
 
         /// <summary>
@@ -97,10 +87,18 @@ namespace Unity.Entities
                 throw new InvalidOperationException("Transactions can only be ended from the main thread");
 
             AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
+            GlobalEntityManager.EndExclusiveEntityTransaction(m_EntityDataAccess);
+        }
 
-            m_EntityDataAccess->DependencyManager->PreEndExclusiveTransaction();
-            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
-            m_EntityDataAccess->DependencyManager->EndExclusiveTransaction();
+        // The EntityManager the holder of a World's exclusive transaction uses
+        internal static EntityManager ExclusiveTransactionHolder(EntityDataAccess* access
+            , AtomicSafetyHandle safety
+        )
+        {
+            var holder = new EntityManager { m_EntityDataAccess = access };
+            holder.m_Safety = safety;
+            holder.m_IsInExclusiveTransaction = 1;
+            return holder;
         }
 
         // ----------------------------------------------------------------------------------------------------------

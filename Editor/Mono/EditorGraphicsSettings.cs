@@ -64,6 +64,7 @@ namespace UnityEditor.Rendering
         KeepAll
     }
 
+    [Obsolete("TierSettings is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use graphics tiers. To adjust rendering for different devices in URP, assign a different URP asset to each quality level instead.", false)]
     [StructLayout(LayoutKind.Sequential)]
     public struct TierSettings
     {
@@ -79,17 +80,20 @@ namespace UnityEditor.Rendering
         public bool             enableLPPV;
         public bool             semitransparentShadows;
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public RenderingPath    renderingPath;
+#pragma warning restore CS0618
         public RealtimeGICPUUsage realtimeGICPUUsage;
     }
 
     public sealed partial class EditorGraphicsSettings
     {
-        // Use the version with NamedBuildTarget passed instead.
-        // [Obsolete("Use SetTierSettings() instead (UnityUpgradable) -> SetTierSettings(*)", false)]
+        [Obsolete("EditorGraphicsSettings.SetTierSettings is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use graphics tiers. To adjust rendering for different devices in URP, assign a different URP asset to each quality level instead.", false)]
         public static void SetTierSettings(BuildTargetGroup target, GraphicsTier tier, TierSettings settings)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             if (settings.renderingPath == RenderingPath.UsePlayerSettings)
+#pragma warning restore CS0618
                 throw new ArgumentException("TierSettings.renderingPath must be actual rendering path (not UsePlayerSettings)", "settings");
 
             SetTierSettingsImpl(target, tier, settings);
@@ -97,6 +101,7 @@ namespace UnityEditor.Rendering
             OnUpdateTierSettings(target, true);
         }
 
+        [Obsolete("EditorGraphicsSettings.SetTierSettings is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) doesn't use graphics tiers. To adjust rendering for different devices in URP, assign a different URP asset to each quality level instead.", false)]
         public static void SetTierSettings(NamedBuildTarget target, GraphicsTier tier, TierSettings settings) => SetTierSettings(target.ToBuildTargetGroup(), tier, settings);
 
         // Opens the Built-In Render Pipeline migration workflow. Registered by Project Auditor.

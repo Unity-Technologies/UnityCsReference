@@ -449,6 +449,8 @@ namespace UnityEditor
         // Asserts that values are finite.
         internal const float k_MaxCameraFarClip = 1.844674E+19f;
         internal const float k_MinCameraNearClip = 1e-5f;
+        // Ensures that the camera matrix doesn't end up with gigantic or minuscule values in the clip to world matrix
+        internal const float k_MaxCameraSizeForWorldToScreen = 2.5E+7f;
 
         [AutoStaticsCleanupOnCodeReload]
         [NonSerialized]
@@ -1223,7 +1225,13 @@ namespace UnityEditor
 
         internal Vector2 GetDynamicClipPlanes()
         {
-            float farClip = Mathf.Clamp(2000f * size, 1000f, k_MaxCameraFarClip);
+            // Snap to powers of two, so the shadow cascades stay constant while zooming.
+            float clipSize = size > 0f ? Mathf.Pow(2f, Mathf.Ceil(Mathf.Log(size, 2f))) : size;
+            // Don't snap past this limit, or the near plane gets too far for screen to world conversions.
+            if (clipSize > k_MaxCameraSizeForWorldToScreen)
+                clipSize = size;
+
+            float farClip = Mathf.Clamp(2000f * clipSize, 1000f, k_MaxCameraFarClip);
             float nearClip = Mathf.Max(k_MinCameraNearClip, farClip * 0.000005f);
             return new Vector2(nearClip, farClip);
         }
@@ -1408,10 +1416,6 @@ namespace UnityEditor
         Camera ISupportsEditorTools.handlesCamera => m_Camera;
 
         [SerializeField]
-        Shader m_ReplacementShader;
-        [SerializeField]
-        string m_ReplacementString;
-        [SerializeField]
         bool m_SceneVisActive = true;
 
         internal bool sceneVisActive
@@ -1428,10 +1432,9 @@ namespace UnityEditor
 
         string m_SceneVisHiddenCount = "0";
 
+        [Obsolete("SceneView.SetSceneViewShaderReplace is deprecated and will be removed in a future release. Shader replacement is supported only by the Built-In Render Pipeline, which is deprecated. It has no effect. To render objects with a different shader in the Scene view, use a ScriptableRenderPass with DrawingSettings.overrideShader in the Universal Render Pipeline instead. #from(6000.7)", false)]
         public void SetSceneViewShaderReplace(Shader shader, string replaceString)
         {
-            m_ReplacementShader = shader;
-            m_ReplacementString = replaceString;
         }
 
         internal bool m_ShowSceneViewWindows = false;
@@ -2517,7 +2520,9 @@ namespace UnityEditor
             bool usingScriptableRenderPipeline = (GraphicsSettings.currentRenderPipeline != null);
             if (m_Camera == null || usingScriptableRenderPipeline)
                 return false;
+#pragma warning disable CS0618 // Type or member is obsolete
             if (m_Camera.actualRenderingPath == RenderingPath.DeferredShading)
+#pragma warning restore CS0618
                 return true;
             return false;
         }
@@ -2534,10 +2539,12 @@ namespace UnityEditor
                 mode == DrawCameraMode.ShadowCascades ||
                 mode == DrawCameraMode.RenderPaths ||
                 mode == DrawCameraMode.AlphaChannel ||
+#pragma warning disable CS0618 // Type or member is obsolete
                 mode == DrawCameraMode.DeferredDiffuse ||
                 mode == DrawCameraMode.DeferredSpecular ||
                 mode == DrawCameraMode.DeferredSmoothness ||
                 mode == DrawCameraMode.DeferredNormal ||
+#pragma warning restore CS0618
                 mode == DrawCameraMode.RealtimeCharting ||
                 mode == DrawCameraMode.Systems ||
                 mode == DrawCameraMode.Clustering ||
@@ -2568,7 +2575,9 @@ namespace UnityEditor
             if (UseSceneFiltering() || !DoesCameraDrawModeSupportDeferred(m_CameraMode.drawMode))
             {
                 if (IsSceneCameraDeferred())
+#pragma warning disable CS0618 // Type or member is obsolete
                     m_Camera.renderingPath = RenderingPath.Forward;
+#pragma warning restore CS0618
             }
         }
 
@@ -2586,7 +2595,7 @@ namespace UnityEditor
                 // show overdraw
                 if (!s_ShowOverdrawShader)
                     s_ShowOverdrawShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewShowOverdraw.shader") as Shader;
-                m_Camera.SetReplacementShader(s_ShowOverdrawShader, "RenderType");
+                m_Camera.SetEditorReplacementShader(s_ShowOverdrawShader, "RenderType");
             }
             else if (m_CameraMode.drawMode == DrawCameraMode.Mipmaps)
             {
@@ -2598,11 +2607,11 @@ namespace UnityEditor
                 if (s_ShowMipsShader != null && s_ShowMipsShader.isSupported)
                 {
                     CreateMipColorsTexture();
-                    m_Camera.SetReplacementShader(s_ShowMipsShader, "RenderType");
+                    m_Camera.SetEditorReplacementShader(s_ShowMipsShader, "RenderType");
                 }
                 else
                 {
-                    m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
+                    m_Camera.ResetEditorReplacementShader();
                 }
             }
             else if (m_CameraMode.drawMode == DrawCameraMode.TextureStreaming)
@@ -2614,16 +2623,16 @@ namespace UnityEditor
                     s_ShowTextureStreamingShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewShowTextureStreaming.shader") as Shader;
                 if (s_ShowTextureStreamingShader != null && s_ShowTextureStreamingShader.isSupported)
                 {
-                    m_Camera.SetReplacementShader(s_ShowTextureStreamingShader, "RenderType");
+                    m_Camera.SetEditorReplacementShader(s_ShowTextureStreamingShader, "RenderType");
                 }
                 else
                 {
-                    m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
+                    m_Camera.ResetEditorReplacementShader();
                 }
             }
             else
             {
-                m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
+                m_Camera.ResetEditorReplacementShader();
             }
         }
 
@@ -2735,7 +2744,9 @@ namespace UnityEditor
 
         void RenderFilteredScene(Rect groupSpaceCameraRect)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             var oldRenderingPath = m_Camera.renderingPath;
+#pragma warning restore CS0618
 
             // First pass: Draw the scene normally in destination render texture, save color buffer for later
             DoClearCamera(groupSpaceCameraRect);
@@ -2752,10 +2763,12 @@ namespace UnityEditor
             Graphics.Blit(m_SavedColorTargetTexture, m_SceneTargetTexture, s_FadeMaterial);
 
             // Third pass: Draw aura for objects which meet the search filter, but are occluded. Save color buffer for later.
+#pragma warning disable CS0618 // Type or member is obsolete
             m_Camera.renderingPath = RenderingPath.Forward;
+#pragma warning restore CS0618
             if (!s_AuraShader)
                 s_AuraShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewAura.shader") as Shader;
-            m_Camera.SetReplacementShader(s_AuraShader, "");
+            m_Camera.SetEditorReplacementShader(s_AuraShader, "");
             Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowFiltered);
             Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, drawGizmos);
 
@@ -2773,7 +2786,7 @@ namespace UnityEditor
 
             RenderTexture.active = m_SceneTargetTexture;
             GL.Clear(false, true, Color.clear);
-            m_Camera.ResetReplacementShader();
+            m_Camera.ResetEditorReplacementShader();
             Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, drawGizmos);
 
             // restore old state
@@ -2804,8 +2817,10 @@ namespace UnityEditor
             }
 
             // Reset camera
-            m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
+            m_Camera.ResetEditorReplacementShader();
+#pragma warning disable CS0618 // Type or member is obsolete
             m_Camera.renderingPath = oldRenderingPath;
+#pragma warning restore CS0618
 
             if (fade < 1)
                 Repaint();
@@ -2880,7 +2895,9 @@ namespace UnityEditor
         {
             if (c == null)
                 return false;
+#pragma warning disable CS0618 // Type or member is obsolete
             return Attribute.IsDefined(c.GetType(), typeof(ImageEffectAllowedInSceneView));
+#pragma warning restore CS0618
         }
 
         void UpdateImageEffects(bool enable)
@@ -2968,7 +2985,9 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = 100;
 
             SetupCamera();
+#pragma warning disable CS0618 // Type or member is obsolete
             RenderingPath oldRenderingPath = m_Camera.renderingPath;
+#pragma warning restore CS0618
 
             // Use custom scene RenderSettings (if currently showing a custom scene)
             bool restoreOverrideRenderSettings = false;
@@ -3033,7 +3052,9 @@ namespace UnityEditor
 
             RestoreFogAndShadowDistance(oldFog, oldShadowDistance);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             m_Camera.renderingPath = oldRenderingPath;
+#pragma warning restore CS0618
 
             if (!UseSceneFiltering())
             {
@@ -3562,6 +3583,7 @@ namespace UnityEditor
             }
 
             // show one of deferred buffers
+#pragma warning disable CS0618 // Type or member is obsolete
             if (m_CameraMode.drawMode == DrawCameraMode.DeferredDiffuse ||
                 m_CameraMode.drawMode == DrawCameraMode.DeferredSpecular ||
                 m_CameraMode.drawMode == DrawCameraMode.DeferredSmoothness ||
@@ -3577,6 +3599,7 @@ namespace UnityEditor
                 }
                 Handles.EndGUI();
             }
+#pragma warning restore CS0618
         }
 
         private void HandleSelectionAndOnSceneGUI()
@@ -3688,6 +3711,7 @@ namespace UnityEditor
             return null;
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         // Note: this can return "use player settings" value too!
         // In order to check things like "is using deferred", use IsUsingDeferredRenderingPath
         internal static RenderingPath GetSceneViewRenderingPath()
@@ -3717,6 +3741,7 @@ namespace UnityEditor
             }
             return true;
         }
+#pragma warning restore CS0618
 
         private void UpdateSceneCameraSettings()
         {
@@ -3797,7 +3822,9 @@ namespace UnityEditor
                 m_Camera.transform.position = p;
             }
 
+#pragma warning disable CS0618 // Type or member is obsolete
             m_Camera.renderingPath = GetSceneViewRenderingPath();
+#pragma warning restore CS0618
             if (!CheckDrawModeForRenderingPath(m_CameraMode.drawMode))
                 m_CameraMode = GetBuiltinCameraMode(DrawCameraMode.Textured);
 
@@ -4511,11 +4538,15 @@ namespace UnityEditor
 
             m_Light[1].color = kSceneViewUpLight - kSceneViewMidLight;
             m_Light[1].transform.LookAt(Vector3.down);
+#pragma warning disable CS0618 // Type or member is obsolete
             m_Light[1].renderMode = LightRenderMode.ForceVertex;
+#pragma warning restore CS0618
 
             m_Light[2].color = kSceneViewDownLight - kSceneViewMidLight;
             m_Light[2].transform.LookAt(Vector3.up);
+#pragma warning disable CS0618 // Type or member is obsolete
             m_Light[2].renderMode = LightRenderMode.ForceVertex;
+#pragma warning restore CS0618
 
             HandleUtility.handleMaterial.SetColor("_SkyColor", kSceneViewUpLight * 1.5f);
             HandleUtility.handleMaterial.SetColor("_GroundColor", kSceneViewDownLight * 1.5f);

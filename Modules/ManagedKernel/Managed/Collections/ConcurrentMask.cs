@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
@@ -31,11 +32,13 @@ namespace Unity.Collections
     {
         internal Long512 f0,f1;
         public int Length { readonly get { return 1024;} set {} }
+
+        [PatchedBody("f0")]
+        readonly ref long FirstElementRef() { throw new NotImplementedException("Patching this method failed"); }
+
         public ref long ElementAt(int index)
         {
-            unsafe { fixed(Long512* p = &f0) {
-                return ref UnsafeUtility.AsRef<long>((long*)p + index);
-            } }
+            return ref Unsafe.Add(ref FirstElementRef(), index);
         }
     }
 

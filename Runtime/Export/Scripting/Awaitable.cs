@@ -253,6 +253,53 @@ namespace UnityEngine
             }
         }
 
+        // Reads the pending exception without releasing the Awaitable; null when detached or none.
+        internal Exception PeekException()
+        {
+            bool lockTaken = false;
+            try
+            {
+                _spinLock.Enter(ref lockTaken);
+                return _handle.IsNull ? null : _exceptionToRethrow?.SourceException;
+            }
+            finally
+            {
+                if (lockTaken)
+                {
+                    _spinLock.Exit();
+                }
+            }
+        }
+
+        // Frees the native object and GCHandle but keeps the Awaitable completed, so late readers don't see a detached state.
+        internal void ReleaseNativeBackingKeepCompletion()
+        {
+            bool lockTaken = false;
+            try
+            {
+                _spinLock.Enter(ref lockTaken);
+                var ptr = _handle;
+                if (ptr.IsNull || ptr.IsManaged)
+                    return;
+
+                if (_cancelTokenRegistration.HasValue)
+                {
+                    _cancelTokenRegistration.Value.Dispose();
+                    _cancelTokenRegistration = null;
+                }
+                _handle = AwaitableHandle.ManagedHandle;
+                _managedAwaitableDone = true;
+                ReleaseNativeAwaitable(ptr);
+            }
+            finally
+            {
+                if (lockTaken)
+                {
+                    _spinLock.Exit();
+                }
+            }
+        }
+
         public void Cancel()
         {
             var handle = CheckPointerValidity();

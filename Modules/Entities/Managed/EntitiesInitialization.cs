@@ -22,11 +22,13 @@ namespace Unity.Entities
         }
 
         /// <summary>
-        /// Releases the Entities state shared by every World. Every World has been disposed by then.
+        /// Releases the Entities state shared by every World. A load can still have its loading World here.
         /// </summary>
         [EntitiesCleanup]
         static void ShutdownEntities()
         {
+            // Lifecycle methods of one attribute run in no defined order, so this runs here, before the entity store goes away.
+            LoadingWorldSystem.DisposeInUseAtShutdown();
             EntityComponentStore.s_entityStore.Data.Dispose();
         }
 

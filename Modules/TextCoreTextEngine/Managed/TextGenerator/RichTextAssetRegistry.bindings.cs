@@ -24,6 +24,10 @@ namespace UnityEngine.TextCore
         [AutoStaticsCleanupOnCodeReload]
         internal static readonly Dictionary<uint, TextColorGradient> s_GradientAssetCache = new();
 
+        [ThreadStatic]
+        [NoAutoStaticsCleanup] // cleared after each use
+        static List<SpriteAsset> s_VisitedSpriteAssets;
+
         internal delegate bool ExternalSpriteResolver(EntityId textSettingsId, uint assetNameHash, uint spriteNameHash, int spriteIndexHint,
             out int spriteIndex, out EntityId spriteAssetId, out GlyphMetrics metrics, out float scale);
 
@@ -42,13 +46,13 @@ namespace UnityEngine.TextCore
         {
             if (!textBuffer.isCreated || textBuffer.length == 0) return;
 
-            // Pre-warm the default sprite asset's EntityId on the main thread.
+            // Prepare the default sprite asset and its fallbacks for worker threads.
             var instanceDefault = textSettings.defaultSpriteAsset;
             var defaultSpriteAsset = instanceDefault != null ? instanceDefault : TextSettings.s_GlobalSpriteAsset;
             if (defaultSpriteAsset != null)
             {
                 defaultSpriteAsset.UpdateLookupTables();
-                _ = defaultSpriteAsset.entityId;
+                PrepareSpriteAssetForWorkerThreads(defaultSpriteAsset);
             }
 
             IntPtr nativeTextSettings = textSettings.nativeTextSettings;
@@ -112,22 +116,24 @@ namespace UnityEngine.TextCore
             if (ReferenceEquals(asset, null))
                 return -1;
 
-            // Fetch the correct sprite glyph
-            var table = asset.spriteCharacterTable;
-            int count = table == null ? 0 : table.Count;
             int index = spriteIndexHint;
             if (index < 0 && spriteNameHash != 0)
             {
-                for (int i = 0; i < count; i++)
+                var visited = s_VisitedSpriteAssets ??= new List<SpriteAsset>();
+                try
                 {
-                    var sc = table![i];
-                    if (sc != null && HashName(sc.name) == spriteNameHash)
-                    {
-                        index = i;
-                        break;
-                    }
+                    asset = SearchForSpriteByNameHash(asset, spriteNameHash, visited, out index);
                 }
+                finally
+                {
+                    visited.Clear();
+                }
+                if (ReferenceEquals(asset, null))
+                    return -1;
             }
+
+            var table = asset.m_GlyphIndexLookup != null ? asset.spriteCharacterTable : null;
+            int count = table == null ? 0 : table.Count;
             if (index < 0 || index >= count)
                 return -1;
             var ch = table![index];
@@ -138,6 +144,86 @@ namespace UnityEngine.TextCore
             float glyphScale = ch.glyph != null ? ch.glyph.scale : 1f;
             scale = ch.scale * glyphScale;
             return index;
+        }
+
+        static SpriteAsset SearchForSpriteByNameHash(SpriteAsset asset, uint spriteNameHash, List<SpriteAsset> visited, out int index)
+        {
+            visited.Add(asset);
+
+            var table = asset.m_GlyphIndexLookup != null ? asset.spriteCharacterTable : null;
+            int count = table == null ? 0 : table.Count;
+            for (int i = 0; i < count; i++)
+            {
+                var sc = table![i];
+                if (sc != null && HashName(sc.name) == spriteNameHash)
+                {
+                    index = i;
+                    return asset;
+                }
+            }
+
+            var fallbacks = asset.fallbackSpriteAssets;
+            int fallbackCount = fallbacks == null ? 0 : fallbacks.Count;
+            for (int i = 0; i < fallbackCount; i++)
+            {
+                var fallback = fallbacks![i];
+                if (ReferenceEquals(fallback, null) || ContainsReference(visited, fallback) || IsDestroyed(fallback))
+                    continue;
+
+                var found = SearchForSpriteByNameHash(fallback, spriteNameHash, visited, out index);
+                if (!ReferenceEquals(found, null))
+                    return found;
+            }
+
+            index = -1;
+            return null;
+        }
+
+        static void PrepareSpriteAssetForWorkerThreads(SpriteAsset asset, List<SpriteAsset> visited)
+        {
+            visited.Add(asset);
+            if (asset.m_GlyphIndexLookup == null || asset.m_IsSpriteAssetLookupTablesDirty)
+                asset.UpdateLookupTables();
+            _ = asset.entityId;
+
+            var fallbacks = asset.fallbackSpriteAssets;
+            if (fallbacks == null)
+                return;
+
+            foreach (var fallback in fallbacks)
+            {
+                if (fallback != null && !ContainsReference(visited, fallback))
+                    PrepareSpriteAssetForWorkerThreads(fallback, visited);
+            }
+        }
+
+        static void PrepareSpriteAssetForWorkerThreads(SpriteAsset asset)
+        {
+            var visited = s_VisitedSpriteAssets ??= new List<SpriteAsset>();
+            try
+            {
+                PrepareSpriteAssetForWorkerThreads(asset, visited);
+            }
+            finally
+            {
+                visited.Clear();
+            }
+        }
+
+        static bool IsDestroyed(SpriteAsset asset)
+        {
+            return ReferenceEquals(UnityEngine.Object.FindObjectFromEntityIdThreadSafe(asset.entityId), null);
+        }
+
+        // UnityEngine.Object equality calls into native code, which worker threads can't do.
+        static bool ContainsReference(List<SpriteAsset> list, SpriteAsset asset)
+        {
+            foreach (var item in list)
+            {
+                if (ReferenceEquals(item, asset))
+                    return true;
+            }
+            return false;
         }
 
         [RequiredByNativeCode]
@@ -221,7 +307,12 @@ namespace UnityEngine.TextCore
             var name = new ReadOnlySpan<char>((char*)namePtr, nameLength);
 
             uint hash = HashName(name);
-            if (s_SpriteAssetCache.ContainsKey(hash)) return;
+            if (s_SpriteAssetCache.TryGetValue(hash, out var cachedSpriteAsset))
+            {
+                if (cachedSpriteAsset != null)
+                    PrepareSpriteAssetForWorkerThreads(cachedSpriteAsset);
+                return;
+            }
 
             var textSettings = UnityEngine.Object.FindObjectFromEntityIdThreadSafe(textSettingsId) as TextSettings;
             if (textSettings == null) return;
@@ -234,8 +325,7 @@ namespace UnityEngine.TextCore
                 return;
             }
 
-            spriteAsset.UpdateLookupTables();
-            _ = spriteAsset.entityId;
+            PrepareSpriteAssetForWorkerThreads(spriteAsset);
             s_SpriteAssetCache[hash] = spriteAsset;
         }
 

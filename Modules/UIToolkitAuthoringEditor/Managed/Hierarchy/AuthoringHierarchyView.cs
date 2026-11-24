@@ -31,6 +31,8 @@ sealed class AuthoringHierarchyView : VisualElement, IDisposable
     public const string SearchFieldUssClassName = UssClassName + "__search-field";
     public const string HierarchyViewUssClassName = UssClassName + "__hierarchy-view";
 
+    static readonly string k_UssPath = "UIToolkitAuthoring/Hierarchy/AuthoringHierarchyView.uss";
+
     internal const string updateMarkerName = "AuthoringHierarchyView.Update";
     [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
     static readonly ProfilerMarker k_UpdateMarker = new(updateMarkerName);
@@ -53,13 +55,18 @@ sealed class AuthoringHierarchyView : VisualElement, IDisposable
         m_Session = session ?? throw new ArgumentNullException(nameof(session));
 
         AddToClassList(UssClassName);
+        styleSheets.Add(UnityEditor.EditorGUIUtility.Load(k_UssPath) as StyleSheet);
         style.flexGrow = 1;
 
-        m_SearchField = new ToolbarSearchField();
+        var searchToolbar = new Toolbar();
+       
+        Add(searchToolbar);
+
+        m_SearchField = new ToolbarSearchField { placeholderText = "Search..." };
         m_SearchField.AddToClassList(SearchFieldUssClassName);
         m_SearchField.style.width = StyleKeyword.Auto;
         m_SearchField.RegisterValueChangedCallback(evt => m_HierarchyView.Filter = evt.newValue ?? string.Empty);
-        Add(m_SearchField);
+        searchToolbar.Add(m_SearchField);
 
         m_Hierarchy = new Unity.Hierarchy.Hierarchy();
         m_Handler = UIDocumentSessionNodeHandler.Create(m_Hierarchy, session, showDocumentNode);

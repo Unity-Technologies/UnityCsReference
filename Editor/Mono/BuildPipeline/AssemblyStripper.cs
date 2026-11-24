@@ -75,14 +75,30 @@ namespace UnityEditorInternal
             return results;
         }
 
-        internal static IEnumerable<NPath> GetUserBlacklistFiles()
+        static IEnumerable<NPath> FindUserFilesInAssets(string fileName)
         {
 #pragma warning disable UAC2001 // Avoid Linq
-            return Directory.GetFiles("Assets", "link.xml", SearchOption.AllDirectories)
+            return Directory.GetFiles("Assets", fileName, SearchOption.AllDirectories)
 #pragma warning restore UAC2001
                 .Select(s => Path.Combine(Directory.GetCurrentDirectory(), s))
                 .ToNPaths();
         }
+
+        static string[] ToExistingAbsolutePaths(IEnumerable<NPath> paths)
+        {
+#pragma warning disable UAC2001 // Avoid Linq
+            return paths
+#pragma warning restore UAC2001
+                .Where(p => p?.FileExists() ?? false)
+                .Select(p => p.MakeAbsolute().ToString())
+                .ToArray();
+        }
+
+        internal static IEnumerable<NPath> GetUserBlacklistFiles() => FindUserFilesInAssets("link.xml");
+
+        public static string[] GetLinkAttributesFiles() => ToExistingAbsolutePaths(FindUserFilesInAssets("link.attributes.xml"));
+
+        public static string[] GetSubstitutionFiles() => ToExistingAbsolutePaths(FindUserFilesInAssets("link.substitutions.xml"));
 
         public static string[] GetLinkXmlFiles(BuildPostProcessArgs args, NPath linkerInputDirectory)
         {
@@ -99,12 +115,7 @@ namespace UnityEditorInternal
             linkXmlFiles.AddRange(ProcessBuildPipelineGenerateAdditionalLinkXmlFiles(args));
             linkXmlFiles.AddRange(GetUserBlacklistFiles());
 
-#pragma warning disable UAC2001 // Avoid Linq
-            return linkXmlFiles
-#pragma warning restore UAC2001
-                .Where(p => p?.FileExists() ?? false)
-                .Select(p => p.MakeAbsolute().ToString())
-                .ToArray();
+            return ToExistingAbsolutePaths(linkXmlFiles);
         }
 
         static bool BuildFileMatchesAssembly(BuildFile file, string assemblyName)

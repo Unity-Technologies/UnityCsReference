@@ -39,16 +39,7 @@ namespace UnityEditor.Scripting.CodeReload
         [NoAutoStaticsCleanup]
         internal static readonly IReadOnlyList<LeakAllowListEntry> Entries = new LeakAllowListEntry[]
         {
-            new LeakAllowListEntry("Assembly-CSharp-Editor-testable", "FileSystemProvider+<>c", "Search", "SCP-2273"),
-            new LeakAllowListEntry("Assembly-CSharp-Editor-testable", "HierarchicalTypeProvider+<>c", "Search", "SCP-2273"),
-            new LeakAllowListEntry("Assembly-CSharp-Editor-testable", "ItemGeneratorSearchProvider", "Search", "SCP-2273"),
-            new LeakAllowListEntry("Assembly-CSharp-Editor-testable", "UnityEditor.Search.Providers.LightingDataSearchProvider", "Search", "SCP-2273"),
-            new LeakAllowListEntry("Assembly-CSharp-Editor-testable", "UnityEditor.Search.Providers.LightingDataSearchProvider+<>c", "Search", "SCP-2273"),
-            new LeakAllowListEntry("Grpc.Core", "Grpc.Core.GrpcEnvironment+ShutdownHooks+<>c", "ML Agents", "SCP-2265"),
             new LeakAllowListEntry("System.Private.CoreLib", "System.Reflection.LoaderAllocator", "Scripting", "COPT-3929"),
-            new LeakAllowListEntry("com.unity.quicksearch.samples", "DynamicProvider+<>c", "Search", "SCP-2273"),
-            new LeakAllowListEntry("com.unity.quicksearch.samples", "SpatialProvider+<>c", "Search", "SCP-2273"),
-            new LeakAllowListEntry("com.unity.quicksearch.samples", "TypeProvider+<>c__DisplayClass8_0", "Search", "SCP-2273"),
         };
     }
 }

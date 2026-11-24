@@ -102,10 +102,16 @@ namespace UnityEditor.U2D
     [NativeHeader("Runtime/2D/SpriteAtlas/SpriteAtlas.h")]
     public static class SpriteAtlasExtensions
     {
+        [Obsolete("SpriteAtlas V1 is Obsolete and will be removed in an upcoming version. Please use V2.", false)]
         extern public static void Add([NotNull] this SpriteAtlas spriteAtlas, UnityEngine.Object[] objects);
+        [Obsolete("SpriteAtlas V1 is Obsolete and will be removed in an upcoming version. Please use V2.", false)]
         extern public static void Remove([NotNull] this SpriteAtlas spriteAtlas, UnityEngine.Object[] objects);
+        [NativeName("Remove")]
+        extern internal static void RemoveInternal([NotNull] this SpriteAtlas spriteAtlas, UnityEngine.Object[] objects);
         extern internal static void RemoveAt([NotNull] this SpriteAtlas spriteAtlas, int index);
+        [Obsolete("SpriteAtlas V1 is Obsolete and will be removed in an upcoming version. Please use V2.", false)]
         extern public static UnityEngine.Object[] GetPackables([NotNull] this SpriteAtlas spriteAtlas);
+        [Obsolete("SpriteAtlas V1 is Obsolete and will be removed in an upcoming version. Please use V2.", false)]
         extern internal static void SetV2([NotNull] this SpriteAtlas spriteAtlas);
         internal static void RegisterAndPackAtlas(this SpriteAtlas spriteAtlas, AssetImportContext context, AssetImporter importer, U2D.ScriptablePacker scriptablePacker)
         {

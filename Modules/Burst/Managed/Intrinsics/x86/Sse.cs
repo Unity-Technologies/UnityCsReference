@@ -323,7 +323,7 @@ namespace Unity.Burst.Intrinsics
             public static v128 min_ss(v128 a, v128 b)
             {
                 v128 dst = a;
-                dst.Float0 = Math.Min(a.Float0, b.Float0);
+                dst.Float0 = a.Float0 < b.Float0 ? a.Float0 : b.Float0;
                 return dst;
             }
 
@@ -336,10 +336,10 @@ namespace Unity.Burst.Intrinsics
             public static v128 min_ps(v128 a, v128 b)
             {
                 v128 dst = default(v128);
-                dst.Float0 = Math.Min(a.Float0, b.Float0);
-                dst.Float1 = Math.Min(a.Float1, b.Float1);
-                dst.Float2 = Math.Min(a.Float2, b.Float2);
-                dst.Float3 = Math.Min(a.Float3, b.Float3);
+                dst.Float0 = a.Float0 < b.Float0 ? a.Float0 : b.Float0;
+                dst.Float1 = a.Float1 < b.Float1 ? a.Float1 : b.Float1;
+                dst.Float2 = a.Float2 < b.Float2 ? a.Float2 : b.Float2;
+                dst.Float3 = a.Float3 < b.Float3 ? a.Float3 : b.Float3;
                 return dst;
             }
 
@@ -352,7 +352,7 @@ namespace Unity.Burst.Intrinsics
             public static v128 max_ss(v128 a, v128 b)
             {
                 v128 dst = a;
-                dst.Float0 = Math.Max(a.Float0, b.Float0);
+                dst.Float0 = a.Float0 > b.Float0 ? a.Float0 : b.Float0;
                 return dst;
             }
 
@@ -365,10 +365,10 @@ namespace Unity.Burst.Intrinsics
             public static v128 max_ps(v128 a, v128 b)
             {
                 v128 dst = default(v128);
-                dst.Float0 = Math.Max(a.Float0, b.Float0);
-                dst.Float1 = Math.Max(a.Float1, b.Float1);
-                dst.Float2 = Math.Max(a.Float2, b.Float2);
-                dst.Float3 = Math.Max(a.Float3, b.Float3);
+                dst.Float0 = a.Float0 > b.Float0 ? a.Float0 : b.Float0;
+                dst.Float1 = a.Float1 > b.Float1 ? a.Float1 : b.Float1;
+                dst.Float2 = a.Float2 > b.Float2 ? a.Float2 : b.Float2;
+                dst.Float3 = a.Float3 > b.Float3 ? a.Float3 : b.Float3;
                 return dst;
             }
 
@@ -532,7 +532,9 @@ namespace Unity.Burst.Intrinsics
             [BurstTargetCpu(BurstTargetCpu.X64_SSE2)]
             public static v128 cmpgt_ss(v128 a, v128 b)
             {
-                return cmplt_ss(b, a);
+                v128 dst = a;
+                dst.UInt0 = a.Float0 > b.Float0 ? ~0u : 0u;
+                return dst;
             }
 
             // _mm_cmpgt_ps
@@ -556,7 +558,9 @@ namespace Unity.Burst.Intrinsics
             [BurstTargetCpu(BurstTargetCpu.X64_SSE2)]
             public static v128 cmpge_ss(v128 a, v128 b)
             {
-                return cmple_ss(b, a);
+                v128 dst = a;
+                dst.UInt0 = a.Float0 >= b.Float0 ? ~0u : 0u;
+                return dst;
             }
 
             // _mm_cmpge_ps
@@ -667,7 +671,9 @@ namespace Unity.Burst.Intrinsics
             [BurstTargetCpu(BurstTargetCpu.X64_SSE2)]
             public static v128 cmpngt_ss(v128 a, v128 b)
             {
-                return cmpnlt_ss(b, a);
+                v128 dst = a;
+                dst.UInt0 = !(a.Float0 > b.Float0) ? ~0u : 0u;
+                return dst;
             }
 
             // _mm_cmpngt_ps
@@ -691,7 +697,9 @@ namespace Unity.Burst.Intrinsics
             [BurstTargetCpu(BurstTargetCpu.X64_SSE2)]
             public static v128 cmpnge_ss(v128 a, v128 b)
             {
-                return cmpnle_ss(b, a);
+                v128 dst = a;
+                dst.UInt0 = !(a.Float0 >= b.Float0) ? ~0u : 0u;
+                return dst;
             }
 
             // _mm_cmpnge_ps

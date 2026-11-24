@@ -343,6 +343,8 @@ namespace UnityEditor.U2D
 
             SyncPlatformSettings();
 
+            m_AssetPath = LoadSourceAsset();
+
             m_TexturePlatformSettingsView = new SpriteAtlasInspectorPlatformSettingView(IsTargetMaster());
             m_TexturePlatformSettingTextureHelper = new TexturePlatformSettingsFormatHelper();
             m_TexturePlatformSettingsController = new TexturePlatformSettingsViewController();
@@ -350,7 +352,6 @@ namespace UnityEditor.U2D
             // Don't show max size option for secondary textures as they must have the same size as the main texture.
             m_SecondaryTexturePlatformSettingsView = new SpriteAtlasInspectorPlatformSettingView(false);
 
-            m_AssetPath = LoadSourceAsset();
             if (spriteAtlasAsset == null)
                 return;
 

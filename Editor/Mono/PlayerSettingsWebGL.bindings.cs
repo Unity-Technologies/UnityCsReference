@@ -252,18 +252,18 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
             }
 
-            [NativeProperty("webGLWebAssemblyTable", TargetType.Field)]
-            public extern static bool webAssemblyTable
+            [Obsolete("webAssemblyTable is deprecated. All WebAssembly 2023 features are always enabled.", false)]
+            public static bool webAssemblyTable
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+                get => true;
+                set { }
             }
 
-            [NativeProperty("webGLWebAssemblyBigInt", TargetType.Field)]
-            public extern static bool webAssemblyBigInt
+            [Obsolete("webAssemblyBigInt is deprecated. All WebAssembly 2023 features are always enabled.", false)]
+            public static bool webAssemblyBigInt
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+                get => true;
+                set { }
             }
 
             [NativeProperty("webGLCloseOnQuit", TargetType.Field)]
@@ -273,11 +273,11 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
             }
 
-            [NativeProperty("webWasm2023", TargetType.Field)]
-            public extern static bool wasm2023
+            [Obsolete("wasm2023 is deprecated. All WebAssembly 2023 features are always enabled.", false)]
+            public static bool wasm2023
             {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
+                get => true;
+                set {}
             }
 
             [NativeProperty("webEnableSubmoduleStrippingCompatibility", TargetType.Field)]

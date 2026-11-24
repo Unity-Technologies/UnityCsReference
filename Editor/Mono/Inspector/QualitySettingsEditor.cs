@@ -1809,9 +1809,11 @@ namespace UnityEditor
             if (mainCamera == null)
                 return;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             RenderingPath renderPath = mainCamera.actualRenderingPath;
             if (renderPath == RenderingPath.DeferredShading)
                 return; // using deferred, all is good
+#pragma warning restore CS0618
 
             if ((mainCamera.depthTextureMode & DepthTextureMode.Depth) != 0)
                 return; // already produces depth texture, all is good

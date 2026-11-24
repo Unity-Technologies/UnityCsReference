@@ -155,24 +155,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 try
                 {
-#pragma warning disable UAC2001 // Avoid Linq
-                    var references = loadedCustomScriptAssembly.References.Where(r => !string.IsNullOrEmpty(r))
-#pragma warning restore UAC2001
-                        .ToArray();
-
-                    if (references.Length == references.DistinctCount())
-                    {
-                        continue;
-                    }
-
-#pragma warning disable UAC2001 // Avoid Linq
-                    var duplicateRefs = references.GroupBy(r => r).SelectMany(g => g.Skip(1)).ToArray();
-#pragma warning restore UAC2001
-                    var duplicateRefsString = string.Join(",", duplicateRefs);
-
-                    throw new AssemblyDefinitionException(
-                        $"Assembly has duplicate references: {duplicateRefsString}",
+                    var duplicateReferencesException = CreateDuplicateReferencesException(
+                        loadedCustomScriptAssembly.References,
                         loadedCustomScriptAssembly.FilePath);
+
+                    if (duplicateReferencesException != null)
+                        throw duplicateReferencesException;
                 }
                 catch (Exception e)
                 {
@@ -180,6 +168,30 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     exceptions.Add(e);
                 }
             }
+        }
+
+        // Also used by MSBU, which loads asmdefs without LoadingAssemblyDefinition.
+        internal static AssemblyDefinitionException CreateDuplicateReferencesException(string[] assemblyReferences, string filePath)
+        {
+            var seenReferences = new HashSet<string>();
+            var duplicateRefs = new List<string>();
+            foreach (var reference in assemblyReferences)
+            {
+                if (string.IsNullOrEmpty(reference))
+                    continue;
+
+                if (!seenReferences.Add(reference))
+                    duplicateRefs.Add(reference);
+            }
+
+            if (duplicateRefs.Count == 0)
+                return null;
+
+            var duplicateRefsString = string.Join(",", duplicateRefs);
+
+            return new AssemblyDefinitionException(
+                $"Assembly has duplicate references: {duplicateRefsString}",
+                filePath);
         }
 
         static void ConvertGUIDReferencesToAssemblyNames(List<CustomScriptAssembly> assemblies, Dictionary<string, CustomScriptAssembly> guidsToAssemblies)

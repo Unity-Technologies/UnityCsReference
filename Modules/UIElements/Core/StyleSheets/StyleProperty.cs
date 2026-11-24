@@ -2282,6 +2282,53 @@ namespace UnityEngine.UIElements
             requireVariableResolve = false;
         }
 
+        static bool IsRepeatCountEntry(GridTrackTemplateEntry entry)
+            => entry.isRepeat && !entry.track.isAutoFill && !entry.track.isAutoFit;
+
+        // Writes an authored track list, keeping repeat(<count>, <track>) entries as repeat() tokens.
+        public void SetGridTrackTemplate(StyleSheet styleSheet, IReadOnlyList<GridTrackTemplateEntry> value)
+        {
+            if (value == null || value.Count == 0)
+            {
+                SetGridTrackSizeList(styleSheet, null);
+                return;
+            }
+
+            int total = 0;
+            foreach (var entry in value)
+                total += GridTrackHandleCount(entry.track) + (IsRepeatCountEntry(entry) ? 4 : 0);
+
+            SetSize(ref m_Values, total);
+            int index = 0;
+            foreach (var entry in value)
+            {
+                if (IsRepeatCountEntry(entry))
+                {
+                    styleSheet.WriteFunction(ref values[index++], StyleValueFunction.Repeat);
+                    styleSheet.WriteFloat(ref values[index++], 3); // count, comma, <track>
+                    styleSheet.WriteFloat(ref values[index++], entry.repeatCount);
+                    styleSheet.WriteCommaSeparator(ref values[index++]);
+                }
+                WriteGridTrackSize(styleSheet, values, ref index, entry.track);
+            }
+            requireVariableResolve = false;
+        }
+
+        // Reads the authored track list without expanding repeat(<count>, <track>).
+        public bool TryGetGridTrackTemplate(StyleSheet styleSheet, List<GridTrackTemplateEntry> value)
+        {
+            value.Clear();
+            if (styleSheet == null || ContainsVariable())
+                return false;
+
+            var reader = new StylePropertyReader();
+            reader.SetInlineContext(styleSheet, new[] { this }, null);
+            if (reader.valueCount == 0)
+                return false;
+            reader.ReadGridTrackTemplate(value, 0);
+            return true;
+        }
+
         /// <summary>
         /// Tries to read a <see cref="List{TimeValue}"/> from the <see cref="StyleProperty"/>'s value.
         /// </summary>

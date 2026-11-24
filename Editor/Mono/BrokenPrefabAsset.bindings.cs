@@ -6,7 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeHeader("Modules/AssetPipelineEditor/Public/BrokenPrefabAsset.h")]
+    [NativeHeader("Editor/Modules/AssetPipelineEditor/Public/BrokenPrefabAsset.h")]
     [UnityEngine.NativeClass("BrokenPrefabAsset", PersistentTypeId = 0x672E287B)]
     public class BrokenPrefabAsset : DefaultAsset
     {

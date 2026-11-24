@@ -371,8 +371,50 @@ namespace UnityEngine
         public static extern int GetEventCount();
         internal static extern void ClearEvents();
         
-        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.InputForUIModule")]
-        internal static extern int GetDoubleClickTime();
+        /// <summary>
+        /// Obtains the maximum time, in milliseconds, between two clicks for the second click to count as a double-click.
+        /// </summary>
+        /// <remarks>
+        /// On Windows, this is the double-click time configured in the operating system. On other platforms, it's
+        /// 500 milliseconds.
+        ///
+        /// Unity uses this value to compute <see cref="Event.clickCount"/> and the click count of UI Toolkit pointer
+        /// events. UI Toolkit text fields use the click count to place the cursor on a single click, select a word on a
+        /// double-click, and select a line on a triple click. UI Toolkit list and tree views use it to detect when the
+        /// user double-clicks or double-taps an item to choose it.
+        ///
+        /// Use this method when you count clicks or taps yourself, so your UI matches the timing of the Unity UI and
+        /// the user's system settings. For mouse events, <see cref="Event.clickCount"/> already accounts for this value.
+        ///
+        /// The following example uses this method to detect a double tap on a touchscreen and logs "Double tap" to the
+        /// Console. The example uses the legacy <see cref="Input"/> class, so it requires the Input Manager to be enabled
+        /// in **Active Input Handling**.
+        /// </remarks>
+        /// <returns>The maximum time between two clicks of a double-click, in milliseconds.</returns>
+        /// <example>
+        ///   <code><![CDATA[
+        /// using UnityEngine;
+        ///
+        /// public class DoubleTapExample : MonoBehaviour
+        /// {
+        ///     float m_LastTapTime = float.NegativeInfinity;
+        ///
+        ///     void Update()
+        ///     {
+        ///         if (Input.touchCount == 0 || Input.GetTouch(0).phase != TouchPhase.Began)
+        ///             return;
+        ///
+        ///         // Convert the double-click time from milliseconds to seconds to compare it with Time.unscaledTime.
+        ///         float doubleClickTime = Event.GetDoubleClickTime() * 0.001f;
+        ///         if (Time.unscaledTime - m_LastTapTime < doubleClickTime)
+        ///             Debug.Log("Double tap");
+        ///
+        ///         m_LastTapTime = Time.unscaledTime;
+        ///     }
+        /// }
+        /// ]]></code>
+        /// </example>
+        public static extern int GetDoubleClickTime();
 
         internal static class BindingsMarshaller
         {

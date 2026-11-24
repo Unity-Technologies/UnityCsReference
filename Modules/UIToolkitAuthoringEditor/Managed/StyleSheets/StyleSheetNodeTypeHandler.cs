@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Unity.Hierarchy;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -363,6 +364,12 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
     internal static readonly string StyleRuleSelectorPseudoStateUssClass = "unity-builder-code-label--element-pseudo-state";
     internal static readonly string StyleRuleSelectorChainedClassUssClass = StyleSheetsWindowUssClassName + "__class-pill--chained";
     internal const string GroupNodeName = "Inherited Style Sheets";
+
+    [NoAutoStaticsCleanup]
+    static Background s_StyleSheetIcon;
+    static Background StyleSheetIcon => s_StyleSheetIcon.GetSelectedImage()
+        ? s_StyleSheetIcon
+        : s_StyleSheetIcon = Background.FromObject(EditorGUIUtility.Load("StyleSheet Icon"));
 
     protected IStyleRuleSelectionHandler SelectionHandler => m_StyleRuleSelectionHandler;
 
@@ -793,6 +800,7 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
         {
             item.RowContainer.AddToClassList(StyleRuleHeaderUssClassName);
             item.RowContainer.EnableInClassList(StyleRuleHeaderActiveUssClassName, !node.IsReadOnly && node.StyleSheet == View?.ActiveStyleSheet);
+            item.Icon.style.backgroundImage = StyleSheetIcon;
 
             return;
         }
@@ -884,6 +892,7 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
         item.RowContainer.RemoveFromClassList(StyleRuleHeaderActiveUssClassName);
         item.RowContainer.RemoveFromClassList(StyleSheetReadOnlyRowUssClassName);
         item.RowContainer.RemoveFromClassList(StyleSheetGroupRowUssClassName);
+        item.Icon.style.backgroundImage = StyleKeyword.Null;
         item.Name.style.display = DisplayStyle.Flex;
         item.LeftCustomContainer.Clear();
         item.UnregisterCallback<PointerEnterEvent, StyleRule>(OnStartHover);

@@ -17,8 +17,8 @@ namespace UnityEngine
     // this runs before any other assembly's code and before wrapper creation.
     internal static partial class CoreInitializer
     {
-        // The editor also calls Initialize natively before initialDomainReloadingComplete, so it runs
-        // twice per reload. Guards the second call. Reset each domain generation.
+        // Survives code reloads, so the once-only steps run once per process. After startup the native call
+        // before initialDomainReloadingComplete is the only call per reload; [OnAssemblyLoaded] does not refire.
         [NoAutoStaticsCleanup] static bool s_Initialized;
 
         [OnAssemblyLoaded]

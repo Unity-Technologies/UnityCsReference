@@ -270,6 +270,8 @@ namespace UnityEditor.Modules
             return new LinkerConfig
             {
                 LinkXmlFiles = AssemblyStripper.GetLinkXmlFiles(args, linkerInputDirectory),
+                LinkAttributesFiles = AssemblyStripper.GetLinkAttributesFiles(),
+                SubstitutionFiles = AssemblyStripper.GetSubstitutionFiles(),
                 EditorToLinkerData = AssemblyStripper.WriteEditorData(args, linkerInputDirectory),
                 ManagedCaptureConfigFile = AssemblyStripper.WriteManagedCaptureConfig(linkerInputDirectory),
 #pragma warning disable UAC2001 // Avoid Linq

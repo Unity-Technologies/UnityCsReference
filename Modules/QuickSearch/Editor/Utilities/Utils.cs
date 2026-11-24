@@ -1128,11 +1128,6 @@ namespace UnityEditor.Search
             return UnityConnect.instance.GetAccessToken();
         }
 
-        internal static string GetPackagesKey()
-        {
-            return UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesKey);
-        }
-
         internal static void OpenPackageManager(string packageName)
         {
             PackageManager.UI.PackageManagerWindow.OpenAndSelectPackage(packageName, PackageManager.UI.Internal.MyAssetsPage.k_Id);

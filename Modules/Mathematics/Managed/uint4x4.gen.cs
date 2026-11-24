@@ -595,6 +595,9 @@ namespace Unity.Mathematics
 
 
 
+        [Unity.Collections.LowLevel.Unsafe.PatchedBody("c0")]
+        readonly ref uint4 FirstColumnRef() { throw new NotImplementedException("Patching this method failed"); }
+
         /// <summary>Returns the uint4 element at a specified index.</summary>
         unsafe public ref uint4 this[int index]
         {
@@ -602,7 +605,7 @@ namespace Unity.Mathematics
             {
                 if ((uint)index >= 4)
                     throw new System.ArgumentException("index must be between[0...3]");
-                fixed (uint4x4* array = &this) { return ref ((uint4*)array)[index]; }
+                return ref Unsafe.Add(ref FirstColumnRef(), index);
             }
         }
 

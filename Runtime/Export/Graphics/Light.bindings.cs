@@ -95,6 +95,7 @@ namespace UnityEngine
         extern public Texture cookie { get; set; }
 
         // How to render the light.
+        [Obsolete("Light.renderMode is deprecated and will be removed in a future release. In the Universal Render Pipeline (URP), it only affects which lights the Forward rendering path prefers when more lights reach an object than Per Object Limit allows.", false)]
         extern public LightRenderMode renderMode
         {
             get;

@@ -19,6 +19,11 @@ namespace UnityEditorInternal
         [FreeFunction("RemoveDataComponentUndoable")]
         internal static extern bool RemoveDataComponent(EntityId componentEntityId);
 
+        // 1 enabled, 0 disabled, -1 if the component has no enabled state
+        internal static extern int GetDataComponentEnabledState(EntityId componentEntityId);
+
+        internal static extern bool SetDataComponentsEnabled(EntityId[] componentEntityIds, bool enabled);
+
         [FreeFunction("ResetDataComponentUndoable")]
         internal static extern bool ResetDataComponent(EntityId componentEntityId);
 
@@ -85,12 +90,6 @@ namespace UnityEditorInternal
 
         [FreeFunction("MoveComponents")]
         internal static extern bool MoveComponentsRelativeToComponents(Component[] components, Component[] targetComponents, bool aboveTarget, [DefaultValue("false")] bool validateOnly);
-
-        internal static extern bool CopyComponentToGameObject([NotNull] Component component, [NotNull] GameObject targetGameObject, bool validateOnly, [NotNull][Out] List<Component> outNewComponents);
-        internal static extern bool CopyComponentToGameObjects([NotNull] Component component, GameObject[] targetGameObjects, bool validateOnly, [NotNull][Out] List<Component> outNewComponents);
-        internal static extern bool CopyComponentRelativeToComponent([NotNull] Component component, [NotNull] Component targetComponent, bool aboveTarget, bool validateOnly, [NotNull][Out] List<Component> outNewComponents);
-        internal static extern bool CopyComponentRelativeToComponents([NotNull] Component component, Component[] targetComponents, bool aboveTarget, bool validateOnly, [NotNull][Out] List<Component> outNewComponents);
-        internal static extern bool CopyComponentsRelativeToComponents(Component[] components, Component[] targetComponents, bool aboveTarget, bool validateOnly, [NotNull][Out] List<Component> outNewComponents);
 
         [FreeFunction]
         internal static extern bool WarnCanAddScriptComponent([NotNull] GameObject gameObject, [NotNull] MonoScript script);

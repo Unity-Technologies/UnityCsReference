@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Rendering;
 
 namespace Unity.Multiplayer.PlayMode.Editor
@@ -44,6 +46,25 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_ProjectPath = "-projectPath";
         const string k_EditorMode = "-editor-mode";
         const string k_EditorDebuggingName = "-name";   // Note: this specific string is ONLY for the benefit of IDEs
+
+        static readonly string[] k_ForwardedGraphicsSwitches =
+        {
+            "force-ugk",
+            "force-ugk-validation",
+            "force-d3d12-debug",
+            "force-d3d12-debug-gbv",
+            "force-d3d12-debug-as-errors",
+        };
+
+        static readonly string[] k_ForwardedGraphicsSwitchesWithValue =
+        {
+            "force-device-index",
+        };
+
+        static readonly char[] k_UnquotedValueForbiddenChars = { ' ', '\t', '"' };
+
+        [NoAutoStaticsCleanup] // test seam; the default targets a framework method and pins nothing across reloads
+        internal static Func<string[]> MainEditorCommandLineArgs { get; set; } = Environment.GetCommandLineArgs;
 
         public static string BuildLogFileArgument(VirtualProjectIdentifier identifier)
         {
@@ -107,6 +128,64 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 GraphicsDeviceType.OpenGLCore => "-force-glcore",
                 _ => string.Empty
             };
+
+        // A clone must run the same graphics device, adapter and debug layers as the main editor. The editor runs
+        // UGK only when started with -force-ugk, and UGK numbers adapters differently from the legacy device, so
+        // -force-device-index is only meaningful when forwarded together with it.
+        public static List<string> BuildForwardedGraphicsArguments(string[] mainEditorCommandLineArgs)
+        {
+            var forwarded = new List<string>();
+            if (mainEditorCommandLineArgs == null)
+                return forwarded;
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < mainEditorCommandLineArgs.Length; i++)
+            {
+                var switchName = GetSwitchName(mainEditorCommandLineArgs[i]);
+                if (switchName == null || !seen.Add(switchName))
+                    continue;
+
+                var bareSwitch = FindSwitch(k_ForwardedGraphicsSwitches, switchName);
+                if (bareSwitch != null)
+                {
+                    forwarded.Add($"-{bareSwitch}");
+                    continue;
+                }
+
+                var valueSwitch = FindSwitch(k_ForwardedGraphicsSwitchesWithValue, switchName);
+                var hasValue = i + 1 < mainEditorCommandLineArgs.Length && IsSwitchValue(mainEditorCommandLineArgs[i + 1]);
+                if (valueSwitch != null && hasValue)
+                {
+                    forwarded.Add($"-{valueSwitch} {mainEditorCommandLineArgs[i + 1]}");
+                    i++;
+                }
+            }
+
+            return forwarded;
+        }
+
+        static string FindSwitch(string[] switches, string switchName)
+            => Array.Find(switches, s => string.Equals(s, switchName, StringComparison.OrdinalIgnoreCase));
+
+        static string GetSwitchName(string arg)
+        {
+            if (string.IsNullOrEmpty(arg))
+                return null;
+            if (arg.StartsWith("--", StringComparison.Ordinal))
+                return arg.Substring(2);
+            if (arg.StartsWith("-", StringComparison.Ordinal))
+                return arg.Substring(1);
+            return null;
+        }
+
+        // Mirrors IsArgValue in Runtime/Utilities/Argv.cpp, and also rejects values that would need quoting,
+        // since the clone's arguments are joined without re-quoting.
+        static bool IsSwitchValue(string arg)
+        {
+            if (string.IsNullOrEmpty(arg) || arg.IndexOfAny(k_UnquotedValueForbiddenChars) >= 0)
+                return false;
+            return arg[0] != '-' || arg.Length == 1 || char.IsDigit(arg[1]);
+        }
 
         public static string BuildEditorModeArgument(string editorModeName)
             => $"{k_EditorMode} {editorModeName}";

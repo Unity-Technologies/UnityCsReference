@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using Mono.Cecil;
 using Unity.IO.LowLevel.Unsafe;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.Scripting.ScriptCompilation.MsBuild;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -187,9 +188,16 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public static Error[] ValidateAssemblyDefinitionFiles()
         {
-            var customScriptAssemblies = EditorCompilationInterface.Instance.GetCustomScriptAssemblies();
+            var assemblyDefinitions = new List<(string name, string path)>();
+            if (MsBuildCompilationInterface.IsEnabled())
+                assemblyDefinitions.AddRange(MsBuildCompilationInterface.Instance.GetAssemblyDefinitionNamesAndPaths());
+            else
+            {
+                foreach (var assembly in EditorCompilationInterface.Instance.GetCustomScriptAssemblies())
+                    assemblyDefinitions.Add((assembly.Name, assembly.FilePath));
+            }
 
-            if (customScriptAssemblies.Length == 0)
+            if (assemblyDefinitions.Count == 0)
                 return null;
 
             var pluginImporters = PluginImporter.GetAllImporters();
@@ -208,9 +216,9 @@ namespace UnityEditor
 
             var errors = new List<Error>();
 
-            foreach (var customScriptAssembly in customScriptAssemblies)
+            foreach (var assemblyDefinition in assemblyDefinitions)
             {
-                var lowerAsmdefFilename = $"{customScriptAssembly.Name.ToLower(CultureInfo.InvariantCulture)}.dll";
+                var lowerAsmdefFilename = $"{assemblyDefinition.name.ToLower(CultureInfo.InvariantCulture)}.dll";
 
                 string pluginPath;
 
@@ -218,7 +226,7 @@ namespace UnityEditor
                 {
                     var error = new Error()
                     {
-                        message = $"Plugin '{pluginPath}' has the same filename as Assembly Definition File '{customScriptAssembly.FilePath}'. Rename the assemblies to avoid hard to diagnose issues and crashes.",
+                        message = $"Plugin '{pluginPath}' has the same filename as Assembly Definition File '{assemblyDefinition.path}'. Rename the assemblies to avoid hard to diagnose issues and crashes.",
                         flags = ErrorFlags.AsmdefPluginConflict,
                         assemblyPath = pluginPath
                     };

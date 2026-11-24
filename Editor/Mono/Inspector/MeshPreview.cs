@@ -333,7 +333,7 @@ namespace UnityEditor
             for (int i = 0; i < elements.Length; i++)
             {
                 var element = elements[i];
-                if (element == m_DisplayModes[(int)DisplayMode.Blendshapes] && Selection.count > 1)
+                if (element == m_DisplayModes[(int)DisplayMode.Blendshapes] && Selection.knownCount > 1)
                     continue;
 
                 if (disabledItems == null || disabledItems[i])

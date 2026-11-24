@@ -15,10 +15,10 @@ namespace Unity.Entities
     // TypeManager.ChunkComponentTypeFlag, because nothing else tells it apart from the regular component of its type.
     static unsafe class GlobalEntityManagerNativeBridge
     {
-        static Entity ToEntity(ulong entityId) => UnsafeUtility.As<ulong, Entity>(ref entityId);
+        internal static Entity ToEntity(ulong entityId) => UnsafeUtility.As<ulong, Entity>(ref entityId);
 
         // Type ids are sparse, and an id without a registered type finds the null type's TypeInfo
-        static ComponentType ToComponentType(uint typeId)
+        internal static ComponentType ToComponentType(uint typeId)
         {
             var isChunkComponent = (typeId & TypeManager.ChunkComponentTypeFlag) != 0;
             var index = (int)(typeId & ~(uint)TypeManager.ChunkComponentTypeFlag);
@@ -28,7 +28,7 @@ namespace Unity.Entities
             return ComponentType.FromTypeIndex(isChunkComponent ? TypeManager.MakeChunkComponentTypeIndex(typeIndex) : typeIndex);
         }
 
-        static uint ToTypeId(ComponentType type) => (uint)(type.TypeIndex.Index | (type.IsChunkComponent ? TypeManager.ChunkComponentTypeFlag : 0));
+        internal static uint ToTypeId(ComponentType type) => (uint)(type.TypeIndex.Index | (type.IsChunkComponent ? TypeManager.ChunkComponentTypeFlag : 0));
 
         static ComponentTypeSet ToComponentTypeSet(IntPtr typeIds, int count)
         {
@@ -43,6 +43,9 @@ namespace Unity.Entities
         [RequiredByNativeCode]
         internal static void GetWorldUnmanaged(ulong entity, IntPtr world) =>
             *(WorldUnmanaged*)world = GlobalEntityManager.GetWorldUnmanaged(ToEntity(entity));
+
+        [RequiredByNativeCode]
+        internal static bool IsInExclusiveEntityTransaction(ulong entity) => GlobalEntityManager.IsInExclusiveEntityTransaction(ToEntity(entity));
 
         [RequiredByNativeCode]
         internal static bool Exists(ulong entity) => GlobalEntityManager.Exists(ToEntity(entity));

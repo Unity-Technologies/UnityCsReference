@@ -976,6 +976,10 @@ namespace UnityEngine.Networking
         // Modules/UnityWebRequest/Profiler/WebRequestProfilerCapture.h.
         internal extern byte profilerSource { get; set; }
 
+        // Mirrors WebRequestProfilerSource in Modules/UnityWebRequest/Profiler/WebRequestProfilerCapture.h.
+        internal const byte k_ProfilerSourceHttpClient = 1;
+        internal const byte k_ProfilerSourceHttpClientDiagnostics = 2;
+
         private extern bool use100Continue { get; set; }
 
         ///<summary>Determines whether this UnityWebRequest will include <c>Expect: 100-Continue</c> in its outgoing request headers. (Default: <c>true</c>).</summary>

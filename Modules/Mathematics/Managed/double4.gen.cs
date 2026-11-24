@@ -3751,13 +3751,13 @@ namespace Unity.Mathematics
             {
                 if ((uint)index >= 4)
                     throw new System.ArgumentException("index must be between[0...3]");
-                fixed (double4* array = &this) { return ((double*)array)[index]; }
+                return Unsafe.Add(ref x, index);
             }
             set
             {
                 if ((uint)index >= 4)
                     throw new System.ArgumentException("index must be between[0...3]");
-                fixed (double* array = &x) { array[index] = value; }
+                Unsafe.Add(ref x, index) = value;
             }
         }
 

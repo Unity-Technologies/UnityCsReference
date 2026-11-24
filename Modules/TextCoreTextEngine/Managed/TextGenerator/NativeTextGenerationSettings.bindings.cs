@@ -54,6 +54,7 @@ namespace UnityEngine.TextCore
 
         public bool disableAdvancedFontFeatures;
         public bool richTextEnabled;
+        public bool emojiFallbackSupport;
 
         // Index of the link currently hovered by the pointer (or a HoveredTag sentinel).
         // Read by the native rich-text parser to apply hover styling.
@@ -93,6 +94,7 @@ namespace UnityEngine.TextCore
             color = Color.black,
             hoveredTag = HoveredTag.None,
             pixelsPerPointFixed64 = 64,
+            emojiFallbackSupport = true,
         };
 
         // Used by automated tests
@@ -125,6 +127,7 @@ namespace UnityEngine.TextCore
             preProcessFlags = tgs.preProcessFlags;
             disableAdvancedFontFeatures = tgs.disableAdvancedFontFeatures;
             richTextEnabled = tgs.richTextEnabled;
+            emojiFallbackSupport = tgs.emojiFallbackSupport;
             hoveredTag = tgs.hoveredTag;
             pixelsPerPointFixed64 = tgs.pixelsPerPointFixed64;
             minContentMeasure = tgs.minContentMeasure;
@@ -164,6 +167,7 @@ namespace UnityEngine.TextCore
                 $"{nameof(preProcessFlags)}: {preProcessFlags}\n" +
                 $"{nameof(disableAdvancedFontFeatures)}: {disableAdvancedFontFeatures}\n" +
                 $"{nameof(richTextEnabled)}: {richTextEnabled}\n" +
+                $"{nameof(emojiFallbackSupport)}: {emojiFallbackSupport}\n" +
                 $"{nameof(minContentMeasure)}: {minContentMeasure}\n" +
                 $"{nameof(flipYAxis)}: {flipYAxis}\n" +
                 $"{nameof(isEditable)}: {isEditable}\n" +
@@ -204,6 +208,7 @@ namespace UnityEngine.TextCore
             hash.Add(disableAdvancedFontFeatures);
             hash.Add(color);
             hash.Add(richTextEnabled);
+            hash.Add(emojiFallbackSupport);
             hash.Add(minContentMeasure);
             hash.Add(flipYAxis);
             hash.Add(isEditable);
@@ -243,6 +248,7 @@ namespace UnityEngine.TextCore
                 && color.Equals(in other.color)
                 && disableAdvancedFontFeatures == other.disableAdvancedFontFeatures
                 && richTextEnabled == other.richTextEnabled
+                && emojiFallbackSupport == other.emojiFallbackSupport
                 && hoveredTag == other.hoveredTag
                 && pixelsPerPointFixed64 == other.pixelsPerPointFixed64
                 && minContentMeasure == other.minContentMeasure

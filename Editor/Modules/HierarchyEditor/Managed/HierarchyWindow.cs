@@ -1423,10 +1423,10 @@ namespace Unity.Hierarchy.Editor
             if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.SearchText))
                 RestoreSearchText(viewState.SearchText);
 
-            // Queue the rest to happen on next frame (all except the view model state)
+            // Queue the rest to happen on next frame; the search text is excluded, as a late copy would overwrite a search typed meanwhile
             m_HierarchyView.SetState(new HierarchyViewState
             {
-                ValidContent = viewState.ValidContent & ~HierarchyViewState.Content.ViewModelState,
+                ValidContent = viewState.ValidContent & ~(HierarchyViewState.Content.ViewModelState | HierarchyViewState.Content.SearchText),
                 SearchText = viewState.SearchText,
                 ScrollPositionX = viewState.ScrollPositionX,
                 ScrollPositionY = viewState.ScrollPositionY,

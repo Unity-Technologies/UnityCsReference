@@ -354,6 +354,14 @@ namespace Unity.Mathematics
             return new RigidTransform(invRotation, invTranslation);
         }
 
+        /// <summary>Returns trueValue if test is true, falseValue otherwise.</summary>
+        /// <param name="falseValue">Value to use if test is false.</param>
+        /// <param name="trueValue">Value to use if test is true.</param>
+        /// <param name="test">Bool value to choose between falseValue and trueValue.</param>
+        /// <returns>The selection between falseValue and trueValue according to bool test.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RigidTransform select(RigidTransform falseValue, RigidTransform trueValue, bool test) { return new RigidTransform(select(falseValue.rot, trueValue.rot, test), select(falseValue.pos, trueValue.pos, test)); }
+
         /// <summary>Returns the result of transforming the RigidTransform b by the RigidTransform a.</summary>
         /// <param name="a">The RigidTransform on the left.</param>
         /// <param name="b">The RigidTransform on the right.</param>

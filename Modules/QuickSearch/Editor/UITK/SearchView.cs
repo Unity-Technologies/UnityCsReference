@@ -307,7 +307,7 @@ namespace UnityEditor.Search
             if (disposing)
             {
                 AssetPreview.DeletePreviewTextureManagerByID(m_ViewId);
-                m_PreviewManager.Clear();
+                m_PreviewManager.Dispose();
                 m_ViewState.context?.Dispose();
                 DisposeResultView();
             }

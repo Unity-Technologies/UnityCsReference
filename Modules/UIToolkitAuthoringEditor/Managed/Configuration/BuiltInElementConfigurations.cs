@@ -215,6 +215,12 @@ static class BuiltInElementConfigurations
         context.SetAttribute("label", "Vec4 Field");
     }
 
+    [UILibraryDefaultConfiguration(typeof(QuaternionEulerField))]
+    static void ConfigureQuaternionEulerField(ElementConfigurationContext context)
+    {
+        context.SetAttribute("label", "Quaternion Field");
+    }
+
     [UILibraryDefaultConfiguration(typeof(RectField))]
     static void ConfigureRectField(ElementConfigurationContext context)
     {

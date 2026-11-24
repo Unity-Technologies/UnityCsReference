@@ -113,6 +113,9 @@ internal partial class ATGTextJobSystem
     {
         textElement.uitkTextHandle.EnsureIsReadyForJobs();
 
+        if (textElement.PostProcessTextVertices != null)
+            textElement.uitkTextHandle.CacheTextGenerationInfoWithEditingState();
+
         // Password and placeholders do not support rich text
         if (textElement.enableRichText && !textElement.edition.isPassword && !textElement.showPlaceholderText && textElement.textBuffer.length > 0)
         {
@@ -233,9 +236,6 @@ internal partial class ATGTextJobSystem
                 var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
                 ManagedJobData managedJobData = managedJobDatas[index];
                 var ve = managedJobData.textElement;
-                if (ve.PostProcessTextVertices != null)
-                    ve.uitkTextHandle.CacheTextGenerationInfo();
-
                 (managedJobData.textInfo, managedJobData.success) = ve.uitkTextHandle.UpdateNative();
 
                 managedJobData.hasMissingGlyphs = managedJobData.textElement.uitkTextHandle.HasMissingGlyphs(managedJobData.textInfo, ref managedJobData.missingGlyphsPerFontAsset);

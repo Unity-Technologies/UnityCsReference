@@ -681,6 +681,20 @@ namespace UnityEditor
             return Math.Max(0, Array.IndexOf(types, GetType()));
         }
 
+        internal static float GetEnterPlayModeBehaviorPopupWidth()
+        {
+            var enumType = typeof(EnterPlayModeBehavior);
+            var options = EditorGUI.EnumNamesCache.GetEnumTypeLocalizedGUIContents(enumType, EnumDataUtility.GetCachedEnumData(enumType));
+            var width = 0f;
+            foreach (var option in options)
+            {
+                width = Mathf.Max(width, EditorStyles.toolbarDropDown.CalcSize(option).x);
+            }
+
+            // An off-grid width would be snapped to the device pixel grid and could lose a pixel.
+            return GUIUtility.CeilToPixelGrid(width, GUIUtility.pixelsPerPoint);
+        }
+
         private void DoToolbarGUI()
         {
             if (Event.current.isKey || Event.current.type == EventType.Used)
@@ -741,7 +755,7 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying && !EditorApplication.isPaused))
                 {
-                    enterPlayModeBehavior = (EnterPlayModeBehavior)EditorGUILayout.EnumPopup(enterPlayModeBehavior, EditorStyles.toolbarDropDown, GUILayout.Width(110));
+                    enterPlayModeBehavior = (EnterPlayModeBehavior)EditorGUILayout.EnumPopup(enterPlayModeBehavior, EditorStyles.toolbarDropDown, GUILayout.Width(GetEnterPlayModeBehaviorPopupWidth()));
                 }
 
                 if (ShouldShowMetalFrameCaptureGUI())

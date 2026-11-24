@@ -48,6 +48,7 @@ namespace Unity.Collections.LowLevel.Unsafe
     ///
     ///You can only use the <c>DisposeSentinel</c> class when ENABLE_UNITY_COLLECTIONS_CHECKS is defined.</remarks>
     ///<seealso cref="Unity.Collections.LowLevel.Unsafe.NativeContainerAttribute" />
+    [Obsolete("DisposeSentinel is deprecated. Use UnsafeUtility.MallocTracked instead.", false)]
     [StructLayout(LayoutKind.Sequential)]
     public sealed class DisposeSentinel
     {
@@ -169,33 +170,6 @@ namespace Unity.Collections.LowLevel.Unsafe
                 sentinel.m_IsCreated = 0;
                 sentinel = null;
             }
-        }
-
-        internal struct Dummy
-        {
-            public class Class { };
-            public static implicit operator Dummy(Class value)
-            {
-                return default;
-            }
-        }
-
-        internal static void Create(out AtomicSafetyHandle safety, out Dummy sentinel, int callSiteStackDepth, Allocator allocator)
-        {
-            safety = (allocator == Allocator.Temp) ? AtomicSafetyHandle.GetTempMemoryHandle() : AtomicSafetyHandle.Create();
-            sentinel = default;
-            if (allocator == Allocator.Temp || allocator == Allocator.AudioKernel)
-                return;
-
-            if (Unity.Jobs.LowLevel.Unsafe.JobsUtility.IsExecutingJob)
-                throw new InvalidOperationException("Jobs can only create Temp memory");
-
-            sentinel = default;
-        }
-
-        internal static void Clear(ref Dummy sentinel)
-        {
-            sentinel = default;
         }
 
     }

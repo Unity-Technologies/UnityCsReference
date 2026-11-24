@@ -223,7 +223,7 @@ internal partial class SerializedObjectBindingContext
             // mistakenly use that instead of the correct SerializedProperty.
             // To avoid this we check if the PropertyField has already assigned a SerializedProperty
             // to the field and use that instead. (UUM-27252)
-            if (!EditorGUI.HasVisibleChildFields(parentProperty) &&
+            if (!EditorGUI.HasVisibleChildFields(parentProperty, true) &&
                 fieldElement?.GetProperty(BaseField<string>.serializedPropertyCopyName) is SerializedProperty fieldProperty)
             {
                 property = fieldProperty;

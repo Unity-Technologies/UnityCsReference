@@ -53,7 +53,8 @@ namespace UnityEditor.HardwareProfiles
             "HasBuggyPSOSerialization",
             "HasBuggySpecConstStore",
             "HasBuggyLog2VariablePrecision",
-            "HasBuggySubpassMerging"
+            "HasBuggySubpassMerging",
+            "HasBuggyDepthClampWithoutFragmentShader"
         };
 
         public virtual void DisableAll()

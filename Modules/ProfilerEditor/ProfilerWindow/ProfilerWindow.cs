@@ -482,6 +482,7 @@ namespace UnityEditor
             m_CpuProfilerAssistantController = new CpuProfilerAssistantController();
             ConstructVisualTree(m_DataService, m_PersistentSettingsService);
             SubscribeToGlobalEvents();
+            ProfilerRoleProvider.ProfilerProcess.RefreshProfilerWindow(this);
         }
 
         void CreateGUI()

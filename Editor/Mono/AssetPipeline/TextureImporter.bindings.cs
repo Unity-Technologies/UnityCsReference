@@ -31,8 +31,7 @@ namespace UnityEditor
         /// The import block collection associated with this texture importer.
         /// Blocks run during import to customize the texture import pipeline.
         /// </summary>
-        [UnityEngine.Internal.ExcludeFromDocs]
-        public BlockCollection<ITextureImporterBlock> blockCollection
+        internal BlockCollection<ITextureImporterBlock> blockCollection
         {
             get => m_BlockCollection ??= new BlockCollection<ITextureImporterBlock>();
         }

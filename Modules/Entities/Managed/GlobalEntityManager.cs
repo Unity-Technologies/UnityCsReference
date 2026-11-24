@@ -9,6 +9,8 @@ using Unity.Burst.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities.LowLevel.Unsafe;
+using Unity.Jobs;
+using Unity.Jobs.LowLevel.Unsafe;
 
 namespace Unity.Entities
 {
@@ -54,6 +56,72 @@ namespace Unity.Entities
             access->m_WorldUnmanaged.EntityManager.GetCheckedEntityDataAccess();
         }
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
+        static void CheckIsNotExecutingJob()
+        {
+            if (Hint.Unlikely(JobsUtility.IsExecutingJob))
+                throw new InvalidOperationException("An exclusive entity transaction can only begin and end outside of jobs.");
+        }
+
+        /// <summary>
+        /// Begins an exclusive entity transaction on a World. Until it ends, the World can only be used through the
+        /// returned transaction, which a job can hold.
+        /// </summary>
+        internal static ExclusiveEntityTransaction BeginExclusiveEntityTransaction(WorldUnmanaged world)
+        {
+            var access = GetEntityDataAccess(world);
+            CheckCanAccess(access);
+            return BeginExclusiveEntityTransaction(access);
+        }
+
+        internal static ExclusiveEntityTransaction BeginExclusiveEntityTransaction(EntityDataAccess* access)
+        {
+            CheckIsNotExecutingJob();
+            CheckIsNotInExclusiveEntityTransaction(access);
+            access->DependencyManager->BeginExclusiveTransaction();
+            return new ExclusiveEntityTransaction(access);
+        }
+
+        /// <summary>
+        /// Ends a World's exclusive entity transaction, after completing <see cref="GetExclusiveEntityTransactionDependency"/>.
+        /// </summary>
+        internal static void EndExclusiveEntityTransaction(WorldUnmanaged world) => EndExclusiveEntityTransaction(GetEntityDataAccess(world));
+
+        internal static void EndExclusiveEntityTransaction(EntityDataAccess* access)
+        {
+            CheckIsNotExecutingJob();
+            var dependencyManager = access->DependencyManager;
+            dependencyManager->PreEndExclusiveTransaction();
+            // Throws if a job holding the transaction is still running without being part of the dependency
+            if (dependencyManager->IsInTransaction)
+                AtomicSafetyHandle.CheckWriteAndThrow(dependencyManager->Safety.ExclusiveTransactionSafety);
+            dependencyManager->EndExclusiveTransaction();
+        }
+
+        /// <summary>
+        /// The jobs using a World's exclusive entity transaction. Ending the transaction completes them.
+        /// </summary>
+        internal static JobHandle GetExclusiveEntityTransactionDependency(WorldUnmanaged world) => GetExclusiveEntityTransactionDependency(GetEntityDataAccess(world));
+
+        internal static JobHandle GetExclusiveEntityTransactionDependency(EntityDataAccess* access) => access->DependencyManager->ExclusiveTransactionDependency;
+
+        /// <summary>
+        /// Sets the jobs using a World's exclusive entity transaction. The new handle must depend on the previous one.
+        /// </summary>
+        internal static void SetExclusiveEntityTransactionDependency(WorldUnmanaged world, JobHandle dependency) => SetExclusiveEntityTransactionDependency(GetEntityDataAccess(world), dependency);
+
+        internal static void SetExclusiveEntityTransactionDependency(EntityDataAccess* access, JobHandle dependency) => access->DependencyManager->ExclusiveTransactionDependency = dependency;
+
+        // A World's EntityDataAccess is kept in its EntityManager
+        static EntityDataAccess* GetEntityDataAccess(WorldUnmanaged world) => world.EntityManager.GetUncheckedEntityDataAccess();
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
+        static void CheckIsNotInExclusiveEntityTransaction(EntityDataAccess* access)
+        {
+            if (access->DependencyManager->IsInTransaction)
+                throw new InvalidOperationException("An exclusive transaction is already in process.");
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Archetype* GetCheckedArchetypeOrNull(Entity entity)
         {
@@ -82,6 +150,13 @@ namespace Unity.Entities
         /// <returns>The world that owns the entity.</returns>
         /// <exception cref="ArgumentException">Thrown if the entity doesn't exist.</exception>
         public static WorldUnmanaged GetWorldUnmanaged(Entity entity) => GetCheckedEntityDataAccess(entity)->m_WorldUnmanaged;
+
+        // Unchecked on every thread and in every build, so a caller can avoid touching such an entity
+        internal static bool IsInExclusiveEntityTransaction(Entity entity)
+        {
+            var archetype = EntityComponentStore.GetArchetypeOrNull(entity);
+            return archetype != null && archetype->EntityDataAccess->IsInExclusiveTransaction;
+        }
 
         /// <summary>
         /// Gets the managed world that owns an entity.
@@ -286,7 +361,7 @@ namespace Unity.Entities
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS"), Conditional("UNITY_DOTS_DEBUG")]
-        static void AssertCanPointToComponentData(TypeIndex typeIndex)
+        internal static void AssertCanPointToComponentData(TypeIndex typeIndex)
         {
             if (Hint.Unlikely(!typeIndex.IsComponentType || typeIndex.IsChunkComponent || typeIndex.IsManagedTypeInternal))
                 throw new ArgumentException($"{typeIndex} isn't an unmanaged IComponentData type.");
@@ -508,7 +583,7 @@ namespace Unity.Entities
 
         internal static UnsafeUntypedDynamicBuffer GetBuffer(WorldUnmanaged world, Entity entity, ComponentType type, bool isReadOnly = false) => GetBuffer(world.EntityManager.GetCheckedEntityDataAccess(entity), entity, type.TypeIndex, isReadOnly);
 
-        static UnsafeUntypedDynamicBuffer GetBuffer(EntityDataAccess* access, Entity entity, TypeIndex typeIndex, bool isReadOnly)
+        internal static UnsafeUntypedDynamicBuffer GetBuffer(EntityDataAccess* access, Entity entity, TypeIndex typeIndex, bool isReadOnly)
         {
             // Nothing constrains the type as it does for GetBuffer<T>, and any other type's data isn't a buffer header
             if (Hint.Unlikely(!typeIndex.IsBuffer))
@@ -590,7 +665,7 @@ namespace Unity.Entities
         internal static bool HasComponentObjectState(Entity entity, ComponentType type) =>
             GetCheckedStore(GetCheckedEntityDataAccess(entity), entity, type.TypeIndex)->HasComponentObjectState(entity, type.TypeIndex);
 
-        static EntityComponentStore* GetCheckedStore(EntityDataAccess* access, Entity entity, TypeIndex typeIndex)
+        internal static EntityComponentStore* GetCheckedStore(EntityDataAccess* access, Entity entity, TypeIndex typeIndex)
         {
             var store = access->EntityComponentStore;
             store->AssertEntityHasComponent(entity, typeIndex);

@@ -1356,9 +1356,13 @@ namespace Unity.Collections
         {
             internal Array4096<T> f0, f1, f2, f3, f4, f5, f6, f7;
             public int Length { readonly get { return 32768; } set {} }
+
+            [PatchedBody("f0")]
+            readonly ref T FirstElementRef() { throw new NotImplementedException("Patching this method failed"); }
+
             public ref T ElementAt(int index)
             {
-                unsafe { fixed(Array4096<T>* p = &f0) { return ref UnsafeUtility.AsRef<T>((T*)p + index); } }
+                return ref Unsafe.Add(ref FirstElementRef(), index);
             }
         }
 

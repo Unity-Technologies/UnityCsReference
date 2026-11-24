@@ -639,9 +639,6 @@ namespace UnityEditor
 
         public Vector3 ScreenToWorldDistance(SceneView view, Vector2 delta)
         {
-            // Ensures that the camera matrix doesn't end up with gigantic or minuscule values in the clip to world matrix
-            const float k_MaxCameraSizeForWorldToScreen = 2.5E+7f;
-
             // store original camera and view values
             var camera = view.camera;
             var near = camera.nearClipPlane;
@@ -651,7 +648,7 @@ namespace UnityEditor
             var size = view.size;
 
             // set camera transform and clip values to safe values
-            view.size = Mathf.Min(view.size, k_MaxCameraSizeForWorldToScreen);
+            view.size = Mathf.Min(view.size, SceneView.k_MaxCameraSizeForWorldToScreen);
             // account for the distance clamping
             var scale = size / view.size;
             var clip = view.GetDynamicClipPlanes();

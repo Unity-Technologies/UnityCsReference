@@ -44,7 +44,7 @@ namespace UnityEditor.TextCore.Text
                 return Array.Empty<uint>();
 
             // Point size is irrelevant to the character map; any valid value works.
-            if (FontEngine.LoadFontFace(font, 90, faceIndex, out FontFaceHandle faceHandle) != FontEngineError.Success)
+            if (FontEngine.LoadFontFace(font, 90, faceIndex, font.GetEntityId(), out FontFaceHandle faceHandle) != FontEngineError.Success)
                 return Array.Empty<uint>();
 
             try
@@ -72,7 +72,7 @@ namespace UnityEditor.TextCore.Text
 
         internal static bool HasStaleGlyphIndices(Font font, int faceIndex, IEnumerable<(uint unicode, uint glyphIndex)> bakedCharacters)
         {
-            if (font == null || FontEngine.LoadFontFace(font, 90, faceIndex, out FontFaceHandle faceHandle) != FontEngineError.Success)
+            if (font == null || FontEngine.LoadFontFace(font, 90, faceIndex, font.GetEntityId(), out FontFaceHandle faceHandle) != FontEngineError.Success)
                 return false;
 
             try

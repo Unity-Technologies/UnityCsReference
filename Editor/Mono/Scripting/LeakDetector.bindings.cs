@@ -165,6 +165,45 @@ namespace UnityEditor.Scripting.CodeReload
         }
         #pragma warning restore CS0649
 
+        /// <summary>
+        /// When the precise AssemblyLoadContext leak scan runs after a code reload.
+        /// Matches native AssemblyLoadContextLeakDetector::DetectionMode and Unity.Private.Scripting.AlcLeakDetectionMode.
+        /// </summary>
+        [UsedByNativeCode]
+        internal enum DetectionMode
+        {
+            /// <summary>
+            /// No scan. An AssemblyLoadContext that is not unloaded only logs a warning once per session.
+            /// </summary>
+            Off = 0,
+
+            /// <summary>
+            /// Scans the AssemblyLoadContexts that are still alive after 5 full GCs following a code reload. Set by -enable-alc-leak-detection.
+            /// </summary>
+            GCTriggered = 1,
+
+            /// <summary>
+            /// Forces collections right after every code reload and scans the AssemblyLoadContexts that survive them,
+            /// so a leak is tied to the reload that caused it. Set by -enable-alc-leak-detection each-reload.
+            /// </summary>
+            EachReload = 2,
+        }
+
+        /// <summary>
+        /// Returns the current leak detection mode, initialized from -enable-alc-leak-detection [each-reload].
+        /// ScriptingCore reads it on every code reload.
+        /// </summary>
+        [NativeMethod(Name = "AssemblyLoadContextLeakDetector::GetDetectionMode", IsFreeFunction = true, IsThreadSafe = true)]
+        [NativeConditional("ENABLE_CORECLR && ENABLE_PROFILER")]
+        internal static extern DetectionMode GetDetectionMode();
+
+        /// <summary>
+        /// Overrides the leak detection mode set from the command line, for example for the duration of a test run.
+        /// </summary>
+        [NativeMethod(Name = "AssemblyLoadContextLeakDetector::SetDetectionMode", IsFreeFunction = true, IsThreadSafe = true)]
+        [NativeConditional("ENABLE_CORECLR && ENABLE_PROFILER")]
+        internal static extern void SetDetectionMode(DetectionMode mode);
+
         // Performs an AssemblyLoadContext leak detection and returns detailed result information.
         //
         // Identifies AssemblyLoadContexts that are in unloading state and the objects whose types

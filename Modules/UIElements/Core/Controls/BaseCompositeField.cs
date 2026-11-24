@@ -41,7 +41,8 @@ namespace UnityEngine.UIElements
         internal List<TField> fields => m_Fields;
 
         internal abstract FieldDescription[] DescribeFields();
-        bool m_ShouldUpdateDisplay;
+        TField m_FieldSkippedByDisplayUpdate;
+        bool m_IsSettingValidatedValue;
         bool m_ForceUpdateDisplay;
         bool m_IsDelayed;
 
@@ -133,7 +134,6 @@ namespace UnityEngine.UIElements
             labelElement.AddToClassList(labelUssClassNameUnique);
             visualInput.AddToClassList(inputUssClassNameUnique);
 
-            m_ShouldUpdateDisplay = true;
             m_Fields = new List<TField>();
             FieldDescription[] fieldDescriptions = DescribeFields();
 
@@ -178,21 +178,65 @@ namespace UnityEngine.UIElements
 
                     field.label = desc.name;
 
+                    // The whole validated value, kept so components changed by onValidateValue aren't rebuilt from stale ones. (UUM-161306)
+                    var hasValidatedValue = false;
+                    TValueType validatedValue = default;
+                    var hasEditStart = false;
+                    TValueType editStartValue = default;
+                    var editId = 0;
+
                     field.onValidateValue += newValue =>
                     {
                         if (isValidationIgnored)
+                        {
+                            hasValidatedValue = false;
                             return newValue;
+                        }
 
-                        TValueType cur = value;
+                        // Every keystroke of an edit applies to the value the edit started from, so the other components don't drift.
+                        if (hasEditStart && hasValidatedValue && !EqualityComparer<TValueType>.Default.Equals(value, validatedValue))
+                            editStartValue = value;
+
+                        TValueType cur = hasEditStart ? editStartValue : value;
                         desc.write(ref cur, newValue);
-                        var validatedValue = ValidatedValue(cur);
+                        validatedValue = ValidatedValue(cur);
+                        hasValidatedValue = true;
                         return desc.read(validatedValue);
                     };
 
+                    field.RegisterCallback<FocusInEvent>(e =>
+                    {
+                        if (e.target == field)
+                            return;
+                        editId++;
+                        hasEditStart = true;
+                        editStartValue = value;
+                        hasValidatedValue = false;
+                    });
+
+                    // The text is committed by the blur that follows the focus out, so the edit ends after it.
+                    field.RegisterCallback<FocusOutEvent>(e =>
+                    {
+                        if (e.relatedTarget is VisualElement target && (target == field || field.Contains(target)))
+                            return;
+                        var endingEditId = editId;
+                        field.schedule.Execute(() =>
+                        {
+                            if (endingEditId != editId)
+                                return;
+                            hasEditStart = false;
+                            hasValidatedValue = false;
+                        });
+                    });
+
                     field.RegisterValueChangedCallback(e =>
                     {
+                        var useValidatedValue = hasValidatedValue && EqualityComparer<TFieldValue>.Default.Equals(desc.read(validatedValue), e.newValue);
                         TValueType cur = value;
-                        desc.write(ref cur, e.newValue);
+                        if (useValidatedValue)
+                            cur = validatedValue;
+                        else
+                            desc.write(ref cur, e.newValue);
 
                         // Here, just check and make sure the text is updated in the basic field and is the same as the value...
                         // For example, backspace done on a selected value will empty the field (text == "") but the value will be 0.
@@ -202,11 +246,19 @@ namespace UnityEngine.UIElements
                         // If text is different or value changed because of an explicit value set
                         if (valueString != textString || field.CanTryParse(textString))
                         {
-                            m_ShouldUpdateDisplay = false;
+                            m_FieldSkippedByDisplayUpdate = field;
                         }
 
-                        value = cur;
-                        m_ShouldUpdateDisplay = true;
+                        m_IsSettingValidatedValue = useValidatedValue;
+                        try
+                        {
+                            value = cur;
+                        }
+                        finally
+                        {
+                            m_FieldSkippedByDisplayUpdate = null;
+                            m_IsSettingValidatedValue = false;
+                        }
                     });
 
                     m_Fields.Add(field);
@@ -238,7 +290,9 @@ namespace UnityEngine.UIElements
                 FieldDescription[] fieldDescriptions = DescribeFields();
                 foreach (var fd in fieldDescriptions)
                 {
-                    m_Fields[i].SetValueWithoutNotify(fd.read(rawValue));
+                    // The field being edited keeps its text as typed.
+                    if (m_Fields[i] != m_FieldSkippedByDisplayUpdate)
+                        m_Fields[i].SetValueWithoutNotify(fd.read(rawValue));
                     i++;
                 }
             }
@@ -246,15 +300,21 @@ namespace UnityEngine.UIElements
 
         public override void SetValueWithoutNotify(TValueType newValue)
         {
-            var displayNeedsUpdate = m_ForceUpdateDisplay || (m_ShouldUpdateDisplay && !EqualityComparer<TValueType>.Default.Equals(rawValue, newValue));
+            var displayNeedsUpdate = m_ForceUpdateDisplay || !EqualityComparer<TValueType>.Default.Equals(rawValue, newValue);
 
-            // Make sure to call the base class to set the value...
-            base.SetValueWithoutNotify(newValue);
-
-            // Before Updating the display, just check if the value changed...
-            if (displayNeedsUpdate)
+            // A value already validated by a sub-field edit is stored and displayed as is, so onValidateValue runs once per edit.
+            var isValidatedValue = m_IsSettingValidatedValue;
+            m_IsSettingValidatedValue = false;
+            using (isValidatedValue ? IgnoreValidation() : default)
             {
-                UpdateDisplay();
+                // Make sure to call the base class to set the value...
+                base.SetValueWithoutNotify(newValue);
+
+                // Before Updating the display, just check if the value changed...
+                if (displayNeedsUpdate)
+                {
+                    UpdateDisplay();
+                }
             }
 
             m_ForceUpdateDisplay = false;

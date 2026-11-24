@@ -971,16 +971,6 @@ namespace UnityEditor
 
         public static extern string GetTemplateCustomValue(string name);
 
-        internal static extern string spritePackerPolicy
-        {
-            [StaticAccessor("GetPlayerSettings().GetEditorOnly().spritePackerPolicy")]
-            [NativeMethod("c_str")]
-            get;
-
-            [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
-            set;
-        }
-
         // TargetGroup no longer defines the entire build targets space. Now build targets are better
         // identified by a string key (wrapped into NamedBuildTarget), so all the following methods are being replaced.
 
@@ -1724,6 +1714,9 @@ namespace UnityEditor
         // Don't do fuzzy variant selection in the player. If the requested variant is not there, use error shader.
         public static extern bool strictShaderVariantMatching { get; set; }
 
+        // Log a warning when loading a subshader built with a different Unity version. Asset bundles and content directories built with this setting disabled are not checked.
+        public static extern bool warnAboutOutOfDateShaders { get; set; }
+
         // Should unused mips be excluded from texture build?
         public static extern bool mipStripping { get; set; }
 
@@ -1781,6 +1774,8 @@ namespace UnityEditor
 
         // Defines whether the BlendShape weight range in SkinnedMeshRenderers is clamped
         public static extern bool legacyClampBlendShapeWeights { get; set; }
+
+        public static extern bool metalFramebufferOnly { get; set; }
 
         // If enabled, metal API validation will be turned on in the editor
         [NativeProperty("MetalAPIValidation")]

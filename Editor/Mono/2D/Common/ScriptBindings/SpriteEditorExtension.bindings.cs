@@ -24,7 +24,6 @@ namespace UnityEditor.U2D
         private static extern string GetSpriteIDScripting([NotNull] Sprite sprite);
         private static extern void SetSpriteIDScripting([NotNull] Sprite sprite, string spriteID);
         internal static extern SpriteAtlas GetActiveAtlas([NotNull] this Sprite sprite);
-        internal static extern string GetActiveAtlasName([NotNull] this Sprite sprite);
         internal static extern Texture2D GetActiveAtlasTexture([NotNull] this Sprite sprite);
         internal static extern Rect GetActiveAtlasTextureRect([NotNull] this Sprite sprite);
         internal static extern Vector2 GetActiveAtlasTextureRectOffset([NotNull] this Sprite sprite);

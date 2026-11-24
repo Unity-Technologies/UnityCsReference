@@ -52,8 +52,8 @@ sealed partial class UIDocumentSession : IDisposable
     bool m_ExternalChanges;
     bool m_ExternalSave;
     bool m_InsideGroup;
-    // Set while we drive our own discard reload, so the registry's AssetReloaded event (which we also
-    // subscribe to for other tools' changes) does not make us re-clone a second time.
+    // Set while we drive our own save or discard reload, so the registry's AssetReloaded event and the save
+    // commands (which we also subscribe to for other tools' changes) do not make us re-clone a second time.
     bool m_SelfReloading;
 
     /// <summary>
@@ -164,7 +164,7 @@ sealed partial class UIDocumentSession : IDisposable
         UICommandQueue.GroupBegan += OnGroupBegan;
         UICommandQueue.GroupEnded += OnGroupEnded;
         UICommandQueue.RegisterHandlerForCategory(k_ExternalChangesTrackedCategories, CheckForBuilderChanges);
-        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Save, OnBuilderSave);
+        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Save, OnExternalSave);
         UIAssetRegistry.instance.AssetReloaded += OnRegistryAssetReloaded;
 
         s_Sessions.Add(this);
@@ -430,7 +430,17 @@ sealed partial class UIDocumentSession : IDisposable
 
     public bool Save()
     {
-        var succeeded = UIAssetRegistry.instance.SaveAsset(EditedAsset, CommandSources.Stage);
+        bool succeeded;
+        m_SelfReloading = true;
+        try
+        {
+            succeeded = UIAssetRegistry.instance.SaveAsset(EditedAsset, CommandSources.Stage);
+        }
+        finally
+        {
+            m_SelfReloading = false;
+        }
+
         ReloadAssets();
         CloneTree();
         return succeeded;
@@ -558,10 +568,10 @@ sealed partial class UIDocumentSession : IDisposable
 
         Undo.undoRedoPerformed -= OnUndoRedoPerformed;
         EditorApplication.delayCall -= DoProcessBuilderChanges;
-        EditorApplication.delayCall -= DoProcessBuilderSave;
+        EditorApplication.delayCall -= DoProcessExternalSave;
         UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Styling, OnStylingChanged);
         UICommandQueue.UnregisterHandlerForCategory(k_ExternalChangesTrackedCategories, CheckForBuilderChanges);
-        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Save, OnBuilderSave);
+        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Save, OnExternalSave);
         UICommandQueue.GroupBegan -= OnGroupBegan;
         UICommandQueue.GroupEnded -= OnGroupEnded;
         UIAssetRegistry.LiveInstance?.AssetReloaded -= OnRegistryAssetReloaded;
@@ -742,12 +752,15 @@ sealed partial class UIDocumentSession : IDisposable
         m_ExternalChanges = false;
     }
 
-    void OnBuilderSave(in CommandContext context)
+    // A save this session did not drive (File > Save writing every tracked asset, another window on the same
+    // document) re-imports what the panel was cloned from, so the session adopts the saved document.
+    void OnExternalSave(in CommandContext context)
     {
-        if (context.Status != CommandExecutionStatus.Success || context.Source != CommandSources.Builder)
+        if (context.Status != CommandExecutionStatus.Success || m_SelfReloading)
             return;
 
-        if (context.Command is not PostSaveCommand postSaveCommand)
+        // Saving the document alone leaves its style sheets unsaved, which adopting it as clean would drop.
+        if (context.Command is not PostSaveCommand { SingleAsset: false } postSaveCommand)
             return;
 
         // A save that failed to write leaves the document unsaved, so adopting it as clean would drop the "*"
@@ -755,17 +768,34 @@ sealed partial class UIDocumentSession : IDisposable
         if (!postSaveCommand.Succeeded)
             return;
 
-        // Ignore saves of documents we are not editing so a save of an unrelated document never discards our
-        // own in-memory edits.
-        if (postSaveCommand.Context.EditedVisualTreeAsset != EditedVisualTreeAsset)
+        // Ignore saves that did not write what we edit so a save of an unrelated asset never discards our own
+        // in-memory edits.
+        if (!SaveWroteEditedAsset(postSaveCommand))
             return;
 
         m_ExternalSave = true;
-        // Defer so the reload runs after the Builder's save has fully settled.
-        EditorApplication.delayCall += DoProcessBuilderSave;
+        // Defer so the reload runs after the save has fully settled.
+        EditorApplication.delayCall += DoProcessExternalSave;
     }
 
-    void DoProcessBuilderSave()
+    bool SaveWroteEditedAsset(PostSaveCommand postSaveCommand)
+    {
+        if (StandaloneStyleSheet == null)
+            return postSaveCommand.Context.EditedVisualTreeAsset == EditedVisualTreeAsset;
+
+        // A style sheet edited on its own is written by its own save, or by the save of a document that
+        // references it. The preview document is not what we edit: its save leaves the style sheet unsaved.
+        if (postSaveCommand.Asset == StandaloneStyleSheet)
+            return true;
+        if (postSaveCommand.Asset is not VisualTreeAsset savedDocument)
+            return false;
+
+        using var _ = ListPool<StyleSheet>.Get(out var styleSheets);
+        UIAssetRegistry.CollectDocumentStyleSheets(savedDocument, styleSheets);
+        return styleSheets.Contains(StandaloneStyleSheet);
+    }
+
+    void DoProcessExternalSave()
     {
         if (!m_ExternalSave)
             return;
