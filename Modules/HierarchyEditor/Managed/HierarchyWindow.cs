@@ -49,7 +49,6 @@ namespace Unity.Hierarchy.Editor
 
         static StateCache<HierarchyViewState> s_StateCache { get => s_ScopedLazy.Value.StateCache; set => s_ScopedLazy.Value.StateCache = value; }
 
-        const double k_UpdateTimeout = 1000.0 / 60.0;
         const float k_BatchTime = 50f;
         const string k_HierarchyProgress = "hierarchy-progress";
 
@@ -1250,7 +1249,7 @@ namespace Unity.Hierarchy.Editor
 
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).Update()");
 
-            if (m_HierarchyView.UpdateIncrementalTimed(k_UpdateTimeout))
+            if (m_HierarchyView.UpdateIncrementalTimed(HierarchyPreferences.UpdateTimeBudget.value))
             {
                 if (m_HierarchyView.Filtering)
                 {

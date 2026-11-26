@@ -2395,6 +2395,10 @@ namespace Unity.Hierarchy
                         return UpdateListView();
 
                     case UpdateStage.ExecutePostUpdateActions:
+                        // Actions queued after this update's data stages expect the view model to know their nodes
+                        if (ExecutePostUpdateActionsNeeded && DataUpdateNeeded)
+                            UpdateData();
+
                         ExecuteActions(m_PostUpdateActionQueue);
                         return false;
 

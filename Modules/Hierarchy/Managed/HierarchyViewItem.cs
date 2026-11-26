@@ -344,7 +344,9 @@ namespace Unity.Hierarchy
             // Shows the handler's override name if it returns one, otherwise streams the node's native UTF-8 name into
             // the label without allocating a managed string. If the node was already removed from the hierarchy but is
             // still listed by the view model, clears the text left on the recycled row by its previous node.
-            var overrideName = (m_Handler as IHierarchyEditorNodeTypeHandler)?.GetDisplayNameOverride(m_View, in m_Node);
+            var overrideName = m_View.Source.Exists(in m_Node)
+                ? (m_Handler as IHierarchyEditorNodeTypeHandler)?.GetDisplayNameOverride(m_View, in m_Node)
+                : null;
             if (overrideName != null)
                 m_Name.Text = overrideName;
             else if (m_View.Source.TryGetNameRaw(in m_Node, out var name))

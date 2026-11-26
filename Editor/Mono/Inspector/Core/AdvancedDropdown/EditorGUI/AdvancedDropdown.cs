@@ -24,6 +24,11 @@ namespace UnityEditor.IMGUI.Controls
 
         public void Show(Rect rect)
         {
+            ShowAtScreenRect(GUIUtility.GUIToScreenRect(rect));
+        }
+
+        internal void ShowAtScreenRect(Rect screenRect)
+        {
             if (m_WindowInstance != null)
             {
                 m_WindowInstance.Close();
@@ -49,7 +54,7 @@ namespace UnityEditor.IMGUI.Controls
             m_WindowInstance.dataSource = m_DataSource;
             m_WindowInstance.gui = m_Gui;
             m_WindowInstance.windowClosed += (w) => ItemSelected(w.GetSelectedItem());
-            m_WindowInstance.Init(rect);
+            m_WindowInstance.InitWithScreenRect(screenRect);
         }
 
         internal void SetFilter(string searchString)

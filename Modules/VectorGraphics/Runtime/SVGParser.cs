@@ -325,7 +325,7 @@ namespace Unity.VectorGraphics
         internal void SetStyleSheets(List<string> styleSheets)
         {
             foreach (var text in styleSheets)
-                styles.SetGlobalStyleSheet(SVGStyleSheetUtils.Parse(text));
+                styles.AddGlobalRules(SVGStyleSheetUtils.ParseRules(text));
         }
 
         public Dictionary<SceneNode, float> NodeOpacities { get { return nodeOpacity; } }
@@ -2763,14 +2763,6 @@ namespace Unity.VectorGraphics
             else
                 nodeData.classes = new List<string>();
 
-
-            // nodeData.classes = SortedClasses(nodeData.classes).ToList();
-
-            var sortedClasses = new List<string>();
-            foreach (var c in SortedClasses(nodeData.classes))
-                sortedClasses.Add(c);
-
-            nodeData.classes = sortedClasses;
             nodeData.id = node["id"];
 
             var layer = new StyleLayer();
@@ -2848,20 +2840,10 @@ namespace Unity.VectorGraphics
             return nodeLayers[node];
         }
 
-        public void SetGlobalStyleSheet(SVGStyleSheet sheet)
+        public void AddGlobalRules(List<KeyValuePair<string, SVGPropertySheet>> rules)
         {
-            foreach (var sel in sheet.selectors)
-            {
-                var existingProps = globalStyleSheet[sel];
-                if (existingProps == null)
-                {
-                    globalStyleSheet[sel] = sheet[sel];
-                    continue;
-                }
-
-                foreach (var prop in sheet[sel])
-                    existingProps[prop.Key] = prop.Value;
-            }
+            foreach (var rule in rules)
+                globalStyleSheet.AddRule(rule.Key, rule.Value);
         }
 
         public string Evaluate(string attribName, Inheritance inheritance = Inheritance.None)
@@ -2908,80 +2890,72 @@ namespace Unity.VectorGraphics
             var id = string.IsNullOrEmpty(nodeData.id) ? null : "#" + nodeData.id;
             var name = string.IsNullOrEmpty(nodeData.name) ? null : nodeData.name;
 
-            if (LookupPropertyInSheet(sheet, attribName, id, out val))
-                return true;
-
-            foreach (var c in nodeData.classes)
-            {
-                var klass = "." + c;
-                if (LookupPropertyInSheet(sheet, attribName, klass, out val))
-                    return true;
-            }
-
-            if (LookupPropertyInSheet(sheet, attribName, name, out val))
-                return true;
-
-            if (LookupPropertyInSheet(sheet, attribName, "*", out val))
-                return true;
-
-            val = null;
-            return false;
+            return LookupPropertyInSheet(sheet, attribName, id, null, out val) ||
+                LookupPropertyInSheet(sheet, attribName, null, nodeData.classes, out val) ||
+                LookupPropertyInSheet(sheet, attribName, name, null, out val) ||
+                LookupPropertyInSheet(sheet, attribName, "*", null, out val);
         }
 
-        private bool LookupPropertyInSheet(SVGStyleSheet sheet, string attribName, string selector, out string val)
+        // Matches the selector, or any of the classes when the selector is null
+        private bool LookupPropertyInSheet(SVGStyleSheet sheet, string attribName, string selector, List<string> classes, out string val)
         {
-            if (selector == null)
-            {
-                val = null;
+            val = null;
+            if (selector == null && (classes == null || classes.Count == 0))
                 return false;
-            }
 
-            string matchingSelector = "";
-
-            foreach (var s in sheet.selectors)
+            // The most specific rule that declares the property wins, and the last one on a tie
+            int bestSpecificity = -1;
+            var rules = sheet.rules;
+            for (int i = rules.Count - 1; i >= 0; --i)
             {
-                bool partMatches = false;
+                if (!rules[i].Value.TryGetValue(attribName, out var ruleVal))
+                    continue;
 
-                var selectorParts = s.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                var selectorParts = rules[i].Key.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                int specificity = SelectorSpecificity(selectorParts);
+                if (specificity <= bestSpecificity)
+                    continue;
+
+                bool partMatches = false;
                 foreach (var part in selectorParts)
                 {
-                    if (part == selector)
+                    if (SelectorPartMatches(part, selector, classes))
                     {
                         partMatches = true;
                         break;
                     }
                 }
 
-                if (partMatches)
+                if (partMatches && (selectorParts.Length == 1 || MatchesDescendants(selectorParts, selectorParts.Length - 1)))
                 {
-                    if (selectorParts.Length == 1)
-                    {
-                        matchingSelector = selectorParts[0];
-                        break;
-                    }
-                    else if (selectorParts.Length > 1)
-                    {
-                        if (MatchesDescendants(selectorParts, selectorParts.Length - 1))
-                        {
-                            matchingSelector = s;
-                            break;
-                        }
-                    }
+                    bestSpecificity = specificity;
+                    val = ruleVal;
                 }
             }
 
-            if (!string.IsNullOrEmpty(matchingSelector))
+            return bestSpecificity >= 0;
+        }
+
+        static bool SelectorPartMatches(string part, string selector, List<string> classes)
+        {
+            if (selector != null)
+                return part == selector;
+            return part.Length > 1 && part[0] == '.' && classes.Contains(part.Substring(1));
+        }
+
+        static int SelectorSpecificity(string[] selectorParts)
+        {
+            int ids = 0, classes = 0, types = 0;
+            foreach (var part in selectorParts)
             {
-                var props = sheet[matchingSelector];
-                if (props.ContainsKey(attribName))
-                {
-                    val = props[attribName];
-                    return true;
-                }
+                if (part[0] == '#')
+                    ++ids;
+                else if (part[0] == '.')
+                    ++classes;
+                else if (part != "*")
+                    ++types;
             }
-
-            val = null;
-            return false;
+            return ids * 1000000 + classes * 1000 + types;
         }
 
         bool MatchesDescendants(string[] selectorParts, int partIndexToMatch, int layerIndex = -1)
@@ -3007,38 +2981,6 @@ namespace Unity.VectorGraphics
                     return MatchesDescendants(selectorParts, partIndexToMatch - 1, i - 1);
             }
             return false;
-        }
-
-        private IEnumerable<string> SortedClasses(List<string> classes)
-        {
-            // We may not have parsed the global sheets yet (happens when setting a class on the root <svg> element).
-            int selectorCount = 0;
-            foreach (var s in globalStyleSheet.selectors)
-                ++selectorCount;
-
-            if (selectorCount == 0)
-            {
-                foreach (var klass in classes)
-                    yield return klass;
-            }
-
-            // We match classes in reverse order of their appearance. This isn't conformant to CSS selectors priority,
-            // but this works well enough for auto-generated CSS styles.
-            var reversedSelectors = new List<string>(globalStyleSheet.selectors);
-            reversedSelectors.Reverse();
-
-            foreach (var sel in reversedSelectors)
-            {
-                var parts = sel.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var part in parts)
-                {
-                    if (part[0] != '.')
-                        continue;
-                    var klass = part.Substring(1);
-                    if (classes.Contains(klass))
-                        yield return klass;
-                }
-            }
         }
 
         public struct NodeData

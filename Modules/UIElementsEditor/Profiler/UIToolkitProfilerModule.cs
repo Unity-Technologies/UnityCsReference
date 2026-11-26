@@ -10,7 +10,7 @@ using Unity.Profiling.Editor;
 namespace UnityEditor.UIElements
 {
     [Serializable]
-    [ProfilerModuleMetadata("UI Toolkit", IconPath = "Profiler.UIToolkit", Tooltip = "Shows how much time UI Toolkit spends on picking, runtime bindings, style resolution, layout, animation, preparing render data, and drawing panels.")]
+    [ProfilerModuleMetadata("UI Toolkit", IconPath = "Profiler.UIToolkit", Tooltip = "Shows how much time UI Toolkit spends on picking, bindings, style resolution, layout, animation, preparing render data, and drawing panels.")]
     internal class UIToolkitProfilerModule : ProfilerModule
     {
         const int k_DefaultOrderIndex = 9; // before UI (Canvas)
@@ -23,15 +23,15 @@ namespace UnityEditor.UIElements
         };
 
         // Core UI Toolkit markers (manual: UI Toolkit profiler markers — Core markers), excluding ImmediateRepaint
-        static readonly ProfilerCounterDescriptor[] k_ChartCounters = new ProfilerCounterDescriptor[]
+        internal static readonly ProfilerCounterDescriptor[] k_ChartCounters = new ProfilerCounterDescriptor[]
         {
-            new ProfilerCounterDescriptor("Pick All", "Identify the element under the pointer or being hovered.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Runtime Bindings", "Update runtime bindings.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Update Style", "Apply style sheets and compute the resolved style of the element.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Update Layout", "Compute and update the layout position of every element.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Update Animation", "Update the animations.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Prepare Render", "Prepare graphics data for rendering the panel.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Render Panels", "Render the panel.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Pick All", "Time spent identifying the element under the pointer or being hovered.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Bindings", "Time spent updating bindings, including Editor bindings.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Update Style", "Time spent applying style sheets and computing the resolved style of elements.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Update Layout", "Time spent computing and updating the layout of elements.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Update Animation", "Time spent updating animations.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Prepare Render", "Time spent preparing graphics data for rendering the panels.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Render Panels", "Time spent rendering the panels.", ProfilerCategory.UIToolkit),
         };
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace UnityEditor.UIElements
         internal static readonly string[] k_ColumnDisplayTitles = new string[]
         {
             L10n.Tr("Pick All"),
-            L10n.Tr("Runtime Bindings"),
+            L10n.Tr("Bindings"),
             L10n.Tr("Update Style"),
             L10n.Tr("Update Layout"),
             L10n.Tr("Update Animation"),

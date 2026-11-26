@@ -227,7 +227,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Sets whether nodes of this type should always be visible during search when descendants match.
         /// </summary>
-        [NativeMethod]
+        [NativeMethod(IsThreadSafe = true)]
         protected extern void SetSearchAlwaysVisible(bool value);
 
         /// <summary>

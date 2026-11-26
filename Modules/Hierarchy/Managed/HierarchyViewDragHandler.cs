@@ -856,7 +856,7 @@ sealed class HierarchyViewDragHandler
             var previousNonSelectedNode = Source.Root;
             if (targetIndex > 0)
                 previousNonSelectedNode = draggingFromHierarchy ? FindFirsNonSelectedNodeBackward(targetIndex - 1) : ViewModel[targetIndex - 1];
-            var lastNonSelectedChild = draggingFromHierarchy ? GetLastNonSelectedChild(in parentNode) : GetLastChild(in parentNode);
+            var lastNonSelectedChild = draggingFromHierarchy ? GetLastVisibleNonSelectedChild(in parentNode) : GetLastVisibleChild(in parentNode);
             // Allow only if the previous non-selected node is the last child of its parent, or the parent itself if and only if
             // it has children and they are all selected.
             if (lastNonSelectedChild == previousNonSelectedNode ||
@@ -900,14 +900,14 @@ sealed class HierarchyViewDragHandler
             var dropParent = previousNonSelectedNode;
             var dropParentDepth = ViewModel.GetDepth(in dropParent);
             if (dropParentDepth >= pointerDepth ||
-                ViewModel.GetChildrenCount(in dropParent) == 0 ||
-                ViewModel.DoesNotHaveFlags(in dropParent, HierarchyNodeFlags.Expanded))
+                ViewModel.DoesNotHaveFlags(in dropParent, HierarchyNodeFlags.Expanded) ||
+                !ViewModel.HasVisibleChildren(in dropParent))
             {
                 dropParent = FindAncestorAtDepth(dropParent, pointerDepth - 1);
                 dropParentDepth = ViewModel.GetDepth(in dropParent);
             }
 
-            var lastChild = GetLastChild(in dropParent);
+            var lastChild = GetLastVisibleChild(in dropParent);
             if (ViewModel.IndexOf(in lastChild) >= targetIndex && !belowLastNode)
             {
                 // Find the child index of the next node under dropParent, which might be different that the target node
@@ -929,29 +929,31 @@ sealed class HierarchyViewDragHandler
     }
 
     /// <summary>
-    /// Gets the last child of the specified parent node.
+    /// Gets the last child of the specified parent node that has a row in the view model. If there is none, returns null.
     /// </summary>
-    HierarchyNode GetLastChild(in HierarchyNode parentNode)
+    HierarchyNode GetLastVisibleChild(in HierarchyNode parentNode)
     {
-        var childrenCount = ViewModel.GetChildrenCount(in parentNode);
-        return childrenCount > 0 ? ViewModel.GetChild(in parentNode, childrenCount - 1) : HierarchyNode.Null;
+        for (var i = ViewModel.GetChildrenCount(in parentNode) - 1; i >= 0; --i)
+        {
+            var child = ViewModel.GetChild(in parentNode, i);
+            if (ViewModel.Contains(in child))
+                return child;
+        }
+
+        return HierarchyNode.Null;
     }
 
     /// <summary>
-    /// Gets the last non-selected child of the specified parent node. If all children are selected or there is no child, returns null.
+    /// Gets the last non-selected child of the specified parent node that has a row in the view model. If there is none, returns null.
     /// </summary>
     /// <param name="parentNode">The parent node.</param>
-    /// <returns>The last non selected child, if any.</returns>
-    HierarchyNode GetLastNonSelectedChild(in HierarchyNode parentNode)
+    /// <returns>The last visible non-selected child, if any.</returns>
+    HierarchyNode GetLastVisibleNonSelectedChild(in HierarchyNode parentNode)
     {
-        var childrenCount = ViewModel.GetChildrenCount(in parentNode);
-        if (childrenCount == 0)
-            return HierarchyNode.Null;
-
-        for (var i = childrenCount - 1; i >= 0; --i)
+        for (var i = ViewModel.GetChildrenCount(in parentNode) - 1; i >= 0; --i)
         {
             var child = ViewModel.GetChild(in parentNode, i);
-            if (ViewModel.DoesNotHaveFlags(in child, HierarchyNodeFlags.Selected))
+            if (ViewModel.Contains(in child) && ViewModel.DoesNotHaveFlags(in child, HierarchyNodeFlags.Selected))
                 return child;
         }
 

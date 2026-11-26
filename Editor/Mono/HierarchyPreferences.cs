@@ -38,6 +38,11 @@ namespace UnityEditor
         public static readonly SavedBool AllowAlphaNumericHierarchy = new SavedBool("AllowAlphaNumericHierarchy", false);
         public static readonly SavedInt GameObjectIconMode = new SavedInt("HierarchyWindow.GameObjectIconMode", 0);
 
+        internal const float k_DefaultUpdateTimeBudget = 0.5f;
+
+        // Caps what a frame gives the hierarchy update rather than what it needs, so the rest is picked up next frame
+        public static readonly SavedFloat UpdateTimeBudget = new SavedFloat("HierarchyWindow.UpdateTimeBudget", k_DefaultUpdateTimeBudget);
+
         /// <summary>
         /// Fired whenever any tracked hierarchy preference value changes.
         /// Subscribers receive no argument; query the specific preference for the new value.
@@ -90,6 +95,7 @@ namespace UnityEditor
             UseQueryBuilder.Refresh();
             AlternatingRowBackground.Refresh();
             GameObjectIconMode.Refresh();
+            UpdateTimeBudget.Refresh();
         }
 
         [VisibleToOtherModules("HierarchyModule", "MultiplayerEditorModule")]

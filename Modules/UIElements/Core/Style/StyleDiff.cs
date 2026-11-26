@@ -192,6 +192,25 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        // Copy only on change: the inline style updates its stored lists in place
+        private bool SetInlineValue<T, TComputed>(ref StylePropertyData<StyleList<T>, TComputed> property,
+            StyleList<T> storedInlineValue)
+        {
+            if (property.inlineValue.Equals(storedInlineValue))
+                return false;
+            property.inlineValue = InlineStyleAccess.CopyStoredValue(storedInlineValue);
+            return true;
+        }
+
+        private bool SetInlineValue<TComputed>(ref StylePropertyData<StyleMaterialDefinition, TComputed> property,
+            StyleMaterialDefinition storedInlineValue)
+        {
+            if (property.inlineValue.Equals(storedInlineValue))
+                return false;
+            property.inlineValue = InlineStyleAccess.CopyStoredValue(storedInlineValue);
+            return true;
+        }
+
         private bool SetComputedValue<TInline, TComputed>(ref StylePropertyData<TInline, TComputed> property,
             TComputed computedValue)
             where TComputed : struct, IEquatable<TComputed>

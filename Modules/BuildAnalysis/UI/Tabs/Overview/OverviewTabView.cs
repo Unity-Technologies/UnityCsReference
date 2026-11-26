@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Globalization;
 using System.IO;
 using UnityEditor;
@@ -141,11 +142,19 @@ namespace UnityEditor.Build.Analysis
 
         // OutputPath from BuildReportSummary may be a file (e.g. .exe for a Player build).
         // We only show the directory in the UI and open the directory when the user clicks the button, so we need to normalize it here.
+        // A macOS player is an .app bundle: a directory, but opening it launches the player, so treat it as a file.
         private static string NormalizeToDirectory(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return string.Empty;
-            return Directory.Exists(path) ? path : (Path.GetDirectoryName(path) ?? string.Empty);
+            if (Directory.Exists(path) && !IsAppBundle(path))
+                return path;
+            return Path.GetDirectoryName(path) ?? string.Empty;
+        }
+
+        private static bool IsAppBundle(string path)
+        {
+            return string.Equals(Path.GetExtension(path), ".app", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

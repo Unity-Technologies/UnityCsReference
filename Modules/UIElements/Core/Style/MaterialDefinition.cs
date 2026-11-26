@@ -108,6 +108,10 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a <see cref="VisualElement"/> material.
     /// </summary>
+    /// <remarks>
+    /// A MaterialDefinition read from <see cref="IResolvedStyle.unityMaterial"/> or <see cref="IStyle.unityMaterial"/> is a copy.
+    /// To change a material property of an element, read the value, call a method such as <see cref="SetFloat"/>, and assign the value back to <see cref="IStyle.unityMaterial"/>.
+    /// </remarks>
     [Serializable]
     public partial struct MaterialDefinition : IEquatable<MaterialDefinition>
     {

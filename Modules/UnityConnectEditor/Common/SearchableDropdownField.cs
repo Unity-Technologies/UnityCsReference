@@ -42,12 +42,10 @@ namespace UnityEditor.Connect
         void ShowPicker()
         {
             var input = this.Q(className: BasePopupField<string, string>.inputUssClassName) ?? (VisualElement)this;
-            // AdvancedDropdown.Show applies GUIUtility.GUIToScreenRect internally, which is
-            // unreliable from UI Toolkit pointer callbacks. Compute the correct screen rect
-            // via the panel-aware helper, then pre-invert so the internal conversion cancels.
+            // IMGUI's GUI/screen conversions are unreliable from UI Toolkit callbacks and are not
+            // inverses across monitors with different scaling, so pass the screen rect as is.
             var screenRect = EditorMenuExtensions.GUIToScreenRect(this, input.worldBound);
-            var anchor = GUIUtility.ScreenToGUIRect(screenRect);
-            new SearchablePicker(this, anchor.width).Show(anchor);
+            new SearchablePicker(this, screenRect.width).ShowAtScreenRect(screenRect);
         }
 
         sealed class SearchablePicker : AdvancedDropdown

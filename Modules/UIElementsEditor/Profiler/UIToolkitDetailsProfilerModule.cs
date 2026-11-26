@@ -24,15 +24,15 @@ namespace UnityEditor.UIElements
         };
 
         // Render metrics
-        static readonly ProfilerCounterDescriptor[] k_ChartCounters = new ProfilerCounterDescriptor[]
+        internal static readonly ProfilerCounterDescriptor[] k_ChartCounters = new ProfilerCounterDescriptor[]
         {
             new ProfilerCounterDescriptor("Batches Count", "Total number of batches rendered.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Draw Calls Count", "Total number of draw calls.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Vertices Count", "Total number of vertices.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Indices Count", "Total number of indices.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Hierarchy Version Changes", "Total number of hierarchy version changes since previous tick, summed across panels.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("Repaint Version Changes", "Total number of version changes since previous repaint, summed across panels.", ProfilerCategory.UIToolkit),
-            new ProfilerCounterDescriptor("VisualElement Count", "Total number of visual elements, summed across panels.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Hierarchy Changes", "Total number of hierarchy changes (add, remove, or reparent of visual elements) during the frame, summed across panels.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Panel Changes", "Total number of changes to visual elements (style, layout, transform, hierarchy, and others) during the frame, summed across panels.", ProfilerCategory.UIToolkit),
+            new ProfilerCounterDescriptor("Visual Element Count", "Total number of visual elements, summed across panels.", ProfilerCategory.UIToolkit),
             new ProfilerCounterDescriptor("Event Count", "Total number of events dispatched (pointer, keyboard, navigation, and others), summed across panels.", ProfilerCategory.UIToolkit),
         };
 

@@ -1192,6 +1192,15 @@ namespace UnityEditor
 
             // Get the index for selected asset entry in the tree list view
             var selectedPath = AssetDatabase.GUIDToAssetPath(selectedObjectGuid);
+            // The saved selection can come from a layout shared with another project, or from a deleted asset.
+            if (string.IsNullOrEmpty(selectedPath))
+            {
+                m_SelectedAssetGuid = null;
+                m_ImportActivityState.selectedImportResultID = null;
+                UpdateSelectedView(RightContentState.ShowOverview);
+                return;
+            }
+
             var selectedIndex = m_AllAssetsList.FindIndex(asset => asset.artifactInfo.importStats.assetPath.Equals(selectedPath, StringComparison.Ordinal));
             if (selectedIndex == -1)
             {

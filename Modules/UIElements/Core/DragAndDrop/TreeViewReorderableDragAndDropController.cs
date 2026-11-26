@@ -179,6 +179,13 @@ namespace UnityEngine.UIElements
             m_ExpandDropItemScheduledItem?.Pause();
         }
 
+        internal void PauseAutoExpand()
+        {
+            m_ExpandDropItemScheduledItem?.Pause();
+            if (m_DropData != null)
+                m_DropData.lastItemId = -1;
+        }
+
         void RestoreExpanded(List<int> ids)
         {
             // We assume that we can only have expanded items during dragging

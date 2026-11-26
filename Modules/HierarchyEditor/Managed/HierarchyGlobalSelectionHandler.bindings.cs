@@ -10,10 +10,10 @@ namespace Unity.Hierarchy.Editor
     [NativeHeader("Modules/HierarchyEditor/HierarchyGlobalSelectionBindings.h")]
     internal sealed partial class HierarchyGlobalSelectionHandler
     {
-        [FreeFunction("HierarchyGlobalSelectionBindings::SyncGlobalSelectionFromViewModel")]
+        [FreeFunction("HierarchyGlobalSelectionBindings::SyncGlobalSelectionFromViewModel", IsThreadSafe = true)]
         static extern bool SyncGlobalSelectionFromViewModelNative(HierarchyViewModel viewModel);
 
-        [FreeFunction("HierarchyGlobalSelectionBindings::SyncViewModelFromGlobalSelection")]
+        [FreeFunction("HierarchyGlobalSelectionBindings::SyncViewModelFromGlobalSelection", IsThreadSafe = true)]
         static extern bool SyncViewModelFromGlobalSelectionNative(HierarchyViewModel viewModel);
     }
 }

@@ -83,6 +83,8 @@ namespace UnityEditor
             public static readonly GUIContent alternatingRowBackground = EditorGUIUtility.TrTextContent("Enable Alternating Row Background", "When enabled, even and odd rows will have different background colors.");
             public static readonly GUIContent nameColumnStretchable = EditorGUIUtility.TrTextContent("Auto stretch Name Column", "When enabled, the name column will automatically stretch to take as much space as possible.");
             public static readonly GUIContent gameObjectIconMode = EditorGUIUtility.TrTextContent("GameObject Icons", "Controls how the new Hierarchy window replaces GameObject icons.");
+            public const string milliseconds = "ms";
+            public static readonly GUIContent updateTimeBudget = EditorGUIUtility.TrTextContent("Update Time Budget", "Set the maximum time in milliseconds that the Hierarchy window spends updating each frame. Any remaining updates continues in the next frame.");
             public static readonly GUIContent[] gameObjectIconModeOptions =
             {
                 EditorGUIUtility.TrTextContent("Use components and custom icons"),
@@ -704,11 +706,26 @@ By default, Windows will combine these under a single taskbar item.");
             var alternatingRows = EditorGUILayout.Toggle(GeneralProperties.alternatingRowBackground, HierarchyPreferences.AlternatingRowBackground);
             var useQueryBuilder = EditorGUILayout.Toggle(GeneralProperties.queryBuilder, HierarchyPreferences.UseQueryBuilder);
             var gameObjectIconMode = EditorGUILayout.Popup(GeneralProperties.gameObjectIconMode, HierarchyPreferences.GameObjectIconMode.value, GeneralProperties.gameObjectIconModeOptions);
+            float updateTimeBudget;
+            EditorGUI.s_UnitString = GeneralProperties.milliseconds;
+            try
+            {
+                updateTimeBudget = EditorGUILayout.FloatField(GeneralProperties.updateTimeBudget, HierarchyPreferences.UpdateTimeBudget);
+            }
+            finally
+            {
+                EditorGUI.s_UnitString = null;
+            }
+
             if (EditorGUI.EndChangeCheck())
             {
                 HierarchyPreferences.AlternatingRowBackground.value = alternatingRows;
                 HierarchyPreferences.UseQueryBuilder.value = useQueryBuilder;
                 HierarchyPreferences.GameObjectIconMode.value = gameObjectIconMode;
+
+                // A budget of zero or less drops the update to one step per frame, so an in-progress edit is left uncommitted
+                if (updateTimeBudget > 0f)
+                    HierarchyPreferences.UpdateTimeBudget.value = updateTimeBudget;
             }
             EditorGUI.EndDisabled();
             EditorGUI.indentLevel--;

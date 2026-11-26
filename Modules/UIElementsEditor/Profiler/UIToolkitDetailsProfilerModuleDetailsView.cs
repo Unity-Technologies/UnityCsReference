@@ -120,18 +120,18 @@ namespace UnityEditor.UIElements
                 tooltip: L10n.Tr("Total vertices referenced by Draw commands. Sum across batches on panel rows; per-batch on batch rows.")));
             columns.Add(MakeUIntColumn("indices", L10n.Tr("Indices"), r => r.indexCount, alwaysShown: true,
                 tooltip: L10n.Tr("Total indices submitted by Draw commands. Sum across batches on panel rows; per-batch on batch rows.")));
-            columns.Add(MakeUIntColumn("immediateDraws", L10n.Tr("Imm Draws"), r => r.immediateDraws, alwaysShown: true,
+            columns.Add(MakeUIntColumn("immediateDraws", L10n.Tr("Immediate Draws"), r => r.immediateDraws, alwaysShown: true,
                 tooltip: L10n.Tr("Immediate-mode draws (Immediate / ImmediateCull commands). Panel rows show the sum across all batches; batch rows show the count for that batch only. Each one breaks batching.")));
             columns.Add(MakeUIntColumn("drawRanges", L10n.Tr("Draw Ranges"), r => r.drawRangeCount, alwaysShown: true,
                 tooltip: L10n.Tr("Number of contiguous draw ranges stashed before each batch was broken. Sum across batches on panel rows; per-batch on batch rows. Many small ranges per batch can indicate fragmentation.")));
             columns.Add(MakeBreakingReasonColumn());
             columns.Add(MakeOwnerColumn());
             columns.Add(MakeUIntColumn("hierarchyChanges", L10n.Tr("Hierarchy Changes"), r => r.hierarchyVersionChanges, alwaysShown: false, panelOnly: true,
-                tooltip: L10n.Tr("Number of hierarchy version changes (add/remove/reparent of VisualElements) since the previous frame.")));
-            columns.Add(MakeUIntColumn("repaintChanges", L10n.Tr("Repaint Changes"), r => r.repaintVersionChanges, alwaysShown: false, panelOnly: true,
-                tooltip: L10n.Tr("Number of repaint version changes since the previous frame. High values indicate elements are being marked dirty frequently.")));
-            columns.Add(MakeIntColumn("veCount", L10n.Tr("VE Count"), r => r.visualElementCount, panelOnly: true,
-                tooltip: L10n.Tr("Total number of VisualElements in this panel's hierarchy.")));
+                tooltip: L10n.Tr("Number of hierarchy changes (add, remove, or reparent of visual elements) on this panel during the frame.")));
+            columns.Add(MakeUIntColumn("repaintChanges", L10n.Tr("Panel Changes"), r => r.repaintVersionChanges, alwaysShown: false, panelOnly: true,
+                tooltip: L10n.Tr("Number of changes to visual elements (style, layout, transform, hierarchy, and others) on this panel during the frame. High values indicate elements are being marked dirty frequently.")));
+            columns.Add(MakeIntColumn("veCount", L10n.Tr("Visual Elements"), r => r.visualElementCount, panelOnly: true,
+                tooltip: L10n.Tr("Total number of visual elements in this panel's hierarchy.")));
             columns.Add(MakeIntColumn("events", L10n.Tr("Events"), r => r.eventCount, panelOnly: true,
                 tooltip: L10n.Tr("Number of events dispatched on this panel during the frame (pointer, keyboard, navigation, and others). Click the row to see the per-event list in the right pane.")));
 

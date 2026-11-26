@@ -166,11 +166,9 @@ namespace Unity.Burst.Editor
             //     from Debug to Release or vice-versa.
             // This is because these are the two cases in which CompilerClient will be
             // destroyed and recreated.
-            // We also need to send it if (c) OnAssemblyCompilationFinished ignored the assemblies of a build that had
-            // a C# compile error. ScriptAssembly.HasCompileErrors is set for the whole build, but the assemblies that
-            // did get built are still loaded by this domain, so otherwise all of their entry points are rejected.
-            var sendAssemblies = SessionState.GetBool(assembliesDroppedSessionKey, false);
-            SessionState.SetBool(assembliesDroppedSessionKey, false);
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code.
+            var assemblyNamesAndDefines = (IEnumerable<(string, string[])>)Array.Empty<(string, string[])>();
+#pragma warning restore UA2001
 
             if (BurstCompilerService.DequeuePendingBurstLoad())
             {
@@ -184,26 +182,28 @@ namespace Unity.Burst.Editor
                 }
                 else
                 {
-                    sendAssemblies = true;
+#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code.
+                    // Gather list of assemblies to compile (only actually used at Editor startup)
+                    assemblyNamesAndDefines = UnityEditor.Compilation.CompilationPipeline
+                        .GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor)
+                        .Where(x => File.Exists(x.outputPath)) // If C# compilation fails, it won't exist on disk
+                        .Select(x => (x.name, x.defines));
+#pragma warning restore UA2001
                 }
             }
-
-#pragma warning disable UA2001 // The Banned API Analyzer produces compile errors for any new Linq code.
-            var assemblyNamesAndDefines = (IEnumerable<(string, string[])>)Array.Empty<(string, string[])>();
-
-            if (sendAssemblies)
-            {
-                // Gather list of assemblies to compile (only actually used at Editor startup)
-                assemblyNamesAndDefines = UnityEditor.Compilation.CompilationPipeline
-                    .GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor)
-                    .Where(x => File.Exists(x.outputPath)) // If C# compilation fails, it won't exist on disk
-                    .Select(x => (x.name, x.defines));
-            }
-#pragma warning restore UA2001
 
             var packagesChanged = SessionState.GetBool(packagesChangedSessionKey, false);
             BurstCompiler.DomainReload(assemblyNamesAndDefines, packagesChanged);
             SessionState.SetBool(packagesChangedSessionKey, false);
+
+            // OnAssemblyCompilationFinished ignores every assembly of a build that had a C# compile error, because
+            // ScriptAssembly.HasCompileErrors is set for the whole build. The assemblies that did get built are still
+            // loaded by this domain, so report them now or all of their entry points are rejected.
+            if (SessionState.GetBool(assembliesDroppedSessionKey, false))
+            {
+                SessionState.SetBool(assembliesDroppedSessionKey, false);
+                NotifyBurstAboutBuiltEditorAssemblies();
+            }
 
             BurstCompiler.OnBeginProgressBar += (msg) => EditorUtility.DisplayProgressBar("Burst", msg, -1);
             BurstCompiler.OnEndProgressBar += EditorUtility.ClearProgressBar;
@@ -615,6 +615,25 @@ namespace Unity.Burst.Editor
             }
 
             BurstCompiler.NotifyAssemblyCompilationNotRequired(Path.GetFileNameWithoutExtension(arg1));
+        }
+
+        private static void NotifyBurstAboutBuiltEditorAssemblies()
+        {
+            BurstCompiler.NotifyCompilationStarted(
+                GetAssemblyFolders(),
+                BurstAssemblyDisable.GetDisabledAssemblies(BurstAssemblyDisable.DisableType.Editor, ""));
+
+            foreach (var assembly in UnityEditor.Compilation.CompilationPipeline
+                .GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor))
+            {
+                // If C# compilation fails, the output won't exist on disk
+                if (File.Exists(assembly.outputPath))
+                {
+                    BurstCompiler.NotifyAssemblyCompilationFinished(assembly.name, assembly.defines);
+                }
+            }
+
+            BurstCompiler.NotifyCompilationFinished();
         }
 
         private static bool TryGetOptionsFromMember(MemberInfo member, out string flagsOut)

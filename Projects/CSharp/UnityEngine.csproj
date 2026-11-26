@@ -1271,6 +1271,9 @@
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyUIDInfo.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyUIDInfo.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyUpdateStage.bindings.cs">
+      <Link>Modules\HierarchyCore\ScriptBindings\HierarchyUpdateStage.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyViewModel.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyViewModel.bindings.cs</Link>
     </Compile>
@@ -7144,7 +7147,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_g5gdvx6f/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_ivis2vpb/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

@@ -96,10 +96,11 @@ namespace UnityEditor.Search
                     case UpdateMode.Update:
                         m_Hierarchy.Update();
                         return false;
+                    // An update cycle can end with work queued during it, which still needs its own cycle before sorting
                     case UpdateMode.UpdateIncremental:
-                        return m_Hierarchy.UpdateIncremental();
+                        return m_Hierarchy.UpdateIncremental() || m_Hierarchy.UpdateNeeded;
                     case UpdateMode.UpdateIncrementalTimed:
-                        return m_Hierarchy.UpdateIncrementalTimed(timeLimit.TotalMilliseconds);
+                        return m_Hierarchy.UpdateIncrementalTimed(timeLimit.TotalMilliseconds) || m_Hierarchy.UpdateNeeded;
                     default:
                         throw new NotImplementedException(mode.ToString());
                 }

@@ -385,6 +385,8 @@ namespace UnityEngine.UIElements
 
         private protected override bool HandleItemNavigation(bool moveIn, bool altPressed)
         {
+            dragger?.CompletePendingCancel();
+
             var selectionIncrement = 1;
             var hasChanges = false;
 

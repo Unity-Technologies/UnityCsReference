@@ -54,30 +54,34 @@ namespace Unity.VectorGraphics
         {
             m_Selectors.Clear();
         }
+
+        public IReadOnlyList<KeyValuePair<string, SVGPropertySheet>> rules
+        {
+            get { return m_Selectors; }
+        }
+
+        // Unlike the indexer, this keeps an earlier rule with the same selector
+        public void AddRule(string selector, SVGPropertySheet props)
+        {
+            m_Selectors.Add(new KeyValuePair<string, SVGPropertySheet>(selector, props));
+        }
     };
 
     internal static class SVGStyleSheetUtils
     {
-        public static SVGStyleSheet Parse(string cssText)
+        public static List<KeyValuePair<string, SVGPropertySheet>> ParseRules(string cssText)
         {
-            var result = new SVGStyleSheet();
+            var rules = new List<KeyValuePair<string, SVGPropertySheet>>();
             var tokens = Tokenize(cssText);
 
             var sheet = new SVGStyleSheet();
             while (ParseSelector(tokens, sheet))
             {
-                var resultList = new List<string>(result.selectors);
-                foreach (var sel in sheet.selectors)
-                {
-                    if (resultList.Contains(sel))
-                        CombineProperties(result[sel], sheet[sel]);
-                    else
-                        result[sel] = sheet[sel];
-                }
+                rules.AddRange(sheet.rules);
                 sheet.Clear();
             }
 
-            return result;
+            return rules;
         }
 
         public static SVGPropertySheet ParseInline(string cssText)
@@ -161,12 +165,6 @@ namespace Unity.VectorGraphics
                 else if (token == "}" && --depth <= 0)
                     return;
             }
-        }
-
-        private static void CombineProperties(SVGPropertySheet first, SVGPropertySheet second)
-        {
-            foreach (var key in second.Keys)
-                first[key] = second[key];
         }
 
         private static SVGPropertySheet CopyProperties(SVGPropertySheet props)

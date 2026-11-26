@@ -2004,7 +2004,7 @@ namespace UnityEditor.UIElements
                 return "none";
 
             // Check for uniform scale
-            if (Length.Approximately(value.x, value.y))
+            if (Length.Approximately(value.x, value.y) && Mathf.Approximately(value.z, 0))
             {
                 return value.x.ToString();
             }

@@ -379,7 +379,11 @@ namespace NiceIO
                     if (i == 0)
                         return _path[0] == '/' ? new NPath("/") : new NPath("");
                     if (_path[i] != '/') continue;
-                    var isRooted = _path[i - 1] == ':' || _path[0] == '/';
+                    // Keep the trailing separator only for a drive root ("C:/", or "\\?\C:\" which is stored as
+                    // "\\?/C:/"). POSIX roots ("/") are handled by the i == 0 case above. A '/' after any other ':'
+                    // (e.g. "https:/host/...") is an ordinary separator; keeping it made Parent(x) == x and
+                    // RecursiveParents stop early.
+                    var isRooted = (i == 2 && _path[1] == ':') || (i == 6 && _path.StartsWith(@"\\?/") && _path[5] == ':');
 
                     var length = isRooted ? (i + 1) : i;
 
@@ -1383,7 +1387,11 @@ namespace NiceIO
                     if (candidate.IsRoot || candidate._path == ".")
                         yield break;
 
-                    candidate = candidate.Parent;
+                    var parent = candidate.Parent;
+                    // Guard against a non-progressing Parent (fixed point) so this can never spin.
+                    if (parent._path == candidate._path)
+                        yield break;
+                    candidate = parent;
                     yield return candidate;
                 }
             }
@@ -1833,6 +1841,17 @@ namespace NiceIO
                 }
             }
 
+            static bool WaitForFileToDisappear(NPath file)
+            {
+                for (var attempt = 1; attempt <= 10; attempt++)
+                {
+                    if (!file.FileExists())
+                        return true;
+                    System.Threading.Thread.Sleep(attempt * 5);
+                }
+                return !file.FileExists();
+            }
+
             public override void Directory_Delete(NPath path, bool recursive)
             {
                 if (recursive)
@@ -1856,7 +1875,8 @@ namespace NiceIO
 		                    // Another process/thread may have deleted (or be in the process of deleting) the file since the time we listed out the directory, causing any of these exceptions.
 	                        catch (Exception e) when (e is InvalidOperationException or FileNotFoundException or UnauthorizedAccessException)
 	                        {
-		                        if (file.FileExists())
+		                        // A concurrent delete can still be pending removal.
+		                        if (!WaitForFileToDisappear(file))
 			                        throw;
 	                        }
                         }

@@ -1693,7 +1693,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// <returns>The index of the item.</returns>
         public int GetIndexFromPosition(Vector2 position)
         {
-            var itemHeight = AlignmentUtils.RoundToPixelGrid(fixedItemHeight, scaledPixelsPerPoint);
+            var itemHeight = fixedItemHeight;
 
             if (hasActiveStickyRow && position.y < itemHeight)
                 return m_StickyRow.index;

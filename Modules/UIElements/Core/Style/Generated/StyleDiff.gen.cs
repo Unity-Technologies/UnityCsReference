@@ -541,6 +541,8 @@ namespace UnityEngine.UIElements
         private void Refresh(VisualElement element, in ResolutionContext context)
         {
             bool notify;
+            var inlineStyleAccess = (InlineStyleAccess)element.style;
+
             notify = false;
             notify |= SetInlineValue(ref m_AlignContent, element.style.alignContent);
             notify |= SetComputedValue(ref m_AlignContent, element.computedStyle.alignContent);
@@ -577,7 +579,7 @@ namespace UnityEngine.UIElements
                 Notify(nameof(aspectRatio));
 
             notify = false;
-            notify |= SetInlineValue(ref m_BackdropFilter, element.style.backdropFilter);
+            notify |= SetInlineValue(ref m_BackdropFilter, inlineStyleAccess.GetStoredStyleList<FilterFunction>(StylePropertyId.BackdropFilter));
             notify |= SetComputedValue(ref m_BackdropFilter, element.computedStyle.backdropFilter);
             notify |= ApplyContext(ref m_BackdropFilter, in context);
             if (notify)
@@ -738,7 +740,7 @@ namespace UnityEngine.UIElements
                 Notify(nameof(display));
 
             notify = false;
-            notify |= SetInlineValue(ref m_Filter, element.style.filter);
+            notify |= SetInlineValue(ref m_Filter, inlineStyleAccess.GetStoredStyleList<FilterFunction>(StylePropertyId.Filter));
             notify |= SetComputedValue(ref m_Filter, element.computedStyle.filter);
             notify |= ApplyContext(ref m_Filter, in context);
             if (notify)
@@ -969,28 +971,28 @@ namespace UnityEngine.UIElements
                 Notify(nameof(transformOrigin));
 
             notify = false;
-            notify |= SetInlineValue(ref m_TransitionDelay, element.style.transitionDelay);
+            notify |= SetInlineValue(ref m_TransitionDelay, inlineStyleAccess.GetStoredStyleList<TimeValue>(StylePropertyId.TransitionDelay));
             notify |= SetComputedValue(ref m_TransitionDelay, element.computedStyle.transitionDelay);
             notify |= ApplyContext(ref m_TransitionDelay, in context);
             if (notify)
                 Notify(nameof(transitionDelay));
 
             notify = false;
-            notify |= SetInlineValue(ref m_TransitionDuration, element.style.transitionDuration);
+            notify |= SetInlineValue(ref m_TransitionDuration, inlineStyleAccess.GetStoredStyleList<TimeValue>(StylePropertyId.TransitionDuration));
             notify |= SetComputedValue(ref m_TransitionDuration, element.computedStyle.transitionDuration);
             notify |= ApplyContext(ref m_TransitionDuration, in context);
             if (notify)
                 Notify(nameof(transitionDuration));
 
             notify = false;
-            notify |= SetInlineValue(ref m_TransitionProperty, element.style.transitionProperty);
+            notify |= SetInlineValue(ref m_TransitionProperty, inlineStyleAccess.GetStoredStyleList<StylePropertyName>(StylePropertyId.TransitionProperty));
             notify |= SetComputedValue(ref m_TransitionProperty, element.computedStyle.transitionProperty);
             notify |= ApplyContext(ref m_TransitionProperty, in context);
             if (notify)
                 Notify(nameof(transitionProperty));
 
             notify = false;
-            notify |= SetInlineValue(ref m_TransitionTimingFunction, element.style.transitionTimingFunction);
+            notify |= SetInlineValue(ref m_TransitionTimingFunction, inlineStyleAccess.GetStoredStyleList<EasingFunction>(StylePropertyId.TransitionTimingFunction));
             notify |= SetComputedValue(ref m_TransitionTimingFunction, element.computedStyle.transitionTimingFunction);
             notify |= ApplyContext(ref m_TransitionTimingFunction, in context);
             if (notify)
@@ -1046,7 +1048,7 @@ namespace UnityEngine.UIElements
                 Notify(nameof(unityFontStyleAndWeight));
 
             notify = false;
-            notify |= SetInlineValue(ref m_UnityMaterial, element.style.unityMaterial);
+            notify |= SetInlineValue(ref m_UnityMaterial, inlineStyleAccess.GetStoredStyleMaterialDefinition(StylePropertyId.UnityMaterial));
             notify |= SetComputedValue(ref m_UnityMaterial, element.computedStyle.unityMaterial);
             notify |= ApplyContext(ref m_UnityMaterial, in context);
             if (notify)
