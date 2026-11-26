@@ -94,7 +94,7 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public bool Equals(Scale other)
         {
-            return other == this;
+            return m_Scale.Equals(other.m_Scale);
         }
 
         /// <undoc/>

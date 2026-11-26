@@ -513,35 +513,80 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// The spacing between characters when using regular style.
         /// </summary>
-        public float regularStyleSpacing { get { return m_RegularStyleSpacing; } set { m_RegularStyleSpacing = value; } }
+        public float regularStyleSpacing
+        {
+            get { return m_RegularStyleSpacing; }
+            set
+            {
+                m_RegularStyleSpacing = value;
+                if (m_NativeFontAsset != IntPtr.Zero)
+                    UpdateRegularStyleSpacing();
+            }
+        }
         [FormerlySerializedAs("normalSpacingOffset")][SerializeField]
         internal float m_RegularStyleSpacing = 0;
 
         /// <summary>
         /// Defines the dilation of the text when using bold style.
         /// </summary>
-        public float boldStyleWeight { get { return m_BoldStyleWeight; } set { m_BoldStyleWeight = value; } }
+        public float boldStyleWeight
+        {
+            get { return m_BoldStyleWeight; }
+            set
+            {
+                m_BoldStyleWeight = value;
+                if (m_NativeFontAsset != IntPtr.Zero)
+                    UpdateBoldWeight();
+            }
+        }
         [FormerlySerializedAs("boldStyle")][SerializeField]
         internal float m_BoldStyleWeight = 0.75f;
 
         /// <summary>
         /// The spacing between characters when using regular style.
         /// </summary>
-        public float boldStyleSpacing { get { return m_BoldStyleSpacing; } set { m_BoldStyleSpacing = value; } }
+        public float boldStyleSpacing
+        {
+            get { return m_BoldStyleSpacing; }
+            set
+            {
+                m_BoldStyleSpacing = value;
+                if (m_NativeFontAsset != IntPtr.Zero)
+                    UpdateBoldSpacing();
+            }
+        }
         [FormerlySerializedAs("boldSpacing")][SerializeField]
         internal float m_BoldStyleSpacing = 7f;
 
         /// <summary>
         /// Defines the slant of the text when using italic style.
         /// </summary>
-        public byte italicStyleSlant { get { return m_ItalicStyleSlant; } set { m_ItalicStyleSlant = value; } }
+        public byte italicStyleSlant
+        {
+            get { return m_ItalicStyleSlant; }
+            set
+            {
+                m_ItalicStyleSlant = value;
+                if (m_NativeFontAsset != IntPtr.Zero)
+                    UpdateItalicAngle();
+            }
+        }
         [FormerlySerializedAs("italicStyle")][SerializeField]
         internal byte m_ItalicStyleSlant = 35;
 
         /// <summary>
         /// The number of spaces that a tab represents.
         /// </summary>
-        public byte tabMultiple { get { return m_TabMultiple; } set { m_TabMultiple = value; } }
+        public byte tabMultiple
+        {
+            get { return m_TabMultiple; }
+            set
+            {
+                m_TabMultiple = value;
+                if (m_NativeFontAsset != IntPtr.Zero)
+                    UpdateTabMultiple();
+            }
+        }
         [FormerlySerializedAs("tabSize")][SerializeField]
         internal byte m_TabMultiple = 10;
 
@@ -995,11 +1040,7 @@ namespace UnityEngine.TextCore.Text
                 // We need to update those lists to native in case they changed
                 UpdateFallbacks();
                 UpdateWeightFallbacks();
-                UpdateFaceInfo();
-                UpdateRenderMode();
-                UpdateItalicAngle();
-                UpdateBoldWeight();
-                UpdateBoldSpacing();
+                UpdateNativeProperties();
             }
         }
 

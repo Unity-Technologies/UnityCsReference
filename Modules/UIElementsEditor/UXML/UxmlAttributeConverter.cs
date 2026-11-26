@@ -1098,7 +1098,8 @@ namespace UnityEditor.UIElements
             {
                 var colorKey = value.colorKeys[i];
                 var color = colorKey.color;
-                sb.Append($"{{{colorKey.time.ToString(CultureInfo.InvariantCulture)},#{ColorUtility.ToHtmlStringRGBA(color)}");
+                var ldrColor = new Color(Mathf.Clamp01(color.r), Mathf.Clamp01(color.g), Mathf.Clamp01(color.b), Mathf.Clamp01(color.a));
+                sb.Append($"{{{colorKey.time.ToString(CultureInfo.InvariantCulture)},#{ColorUtility.ToHtmlStringRGBA(ldrColor)}");
                 if (color.maxColorComponent > 1f || color.r < 0f || color.g < 0f || color.b < 0f)
                 {
                     sb.Append(',');
@@ -2284,7 +2285,7 @@ namespace UnityEditor.UIElements
                 return "none";
 
             // Check for uniform scale
-            if (Length.Approximately(value.x, value.y))
+            if (Length.Approximately(value.x, value.y) && Mathf.Approximately(value.z, 0))
             {
                 return value.x.ToString();
             }

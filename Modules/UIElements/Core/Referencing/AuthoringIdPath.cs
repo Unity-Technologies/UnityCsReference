@@ -68,6 +68,16 @@ public struct AuthoringIdPath : IEquatable<AuthoringIdPath>
     }
 
     /// <summary>
+    /// Checks for equality between this instance and another object.
+    /// </summary>
+    /// <param name="obj">The object to compare against.</param>
+    /// <returns><see langword="true"/> if <paramref name="obj"/> is an <see cref="AuthoringIdPath"/> with a matching <see cref="path"/>.</returns>
+    public override bool Equals(object obj)
+    {
+        return obj is AuthoringIdPath other && Equals(other);
+    }
+
+    /// <summary>
     /// Returns hash code for the AuthoringIdPath. The hash code is computed based on the path IDs.
     /// </summary>
     /// <returns>The hascode generated from the path.</returns>

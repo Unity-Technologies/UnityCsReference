@@ -40,10 +40,27 @@ namespace UnityEngine.UIElements.UIR
             : base(k_CreateAction, null, 100, 1000) { }
     }
 
-    partial class RenderTreeManager : IDisposable
+    partial class RenderTreeManager : IDisposable, IPooledNativeStore
     {
         readonly ElementIdPool m_ElementIdPool = new();
         internal ElementIdPool elementIdPool => m_ElementIdPool;
+
+        // The shader-info atlas: the allocators' entries, plus one element-info texel per live element id
+        string IPooledNativeStore.storeName => "ShaderInfo";
+
+        long IPooledNativeStore.GetBytesReserved() => shaderInfoAllocator?.GetReservedBytes() ?? 0;
+
+        long IPooledNativeStore.GetBytesUsed()
+        {
+            if (shaderInfoAllocator == null)
+                return 0;
+            return shaderInfoAllocator.GetUsedBytes() + (long)m_ElementIdPool.liveCount * ShaderInfoAllocator.kTexelBytes;
+        }
+
+        void IPooledNativeStore.ReleasePendingSlots()
+        {
+            // Entries are freed with their render data
+        }
 
         // Lazily acquire the id + queue the record write. Returns false (caller discards the mesh) when exhausted.
         public bool EnsureElementId(RenderData renderData)
@@ -310,6 +327,7 @@ namespace UnityEngine.UIElements.UIR
 
             shaderInfoAllocator = new ShaderInfoAllocator(forceGammaRendering ? ColorSpace.Gamma : activeColorSpace);
             m_PerGlyphTcs = new PerGlyphTextCoreSettings(this);
+            PooledNativeStores.Register(this);
         }
 
         #region Dispose Pattern
@@ -350,6 +368,7 @@ namespace UnityEngine.UIElements.UIR
                 boxShadowProfile?.Dispose();
                 boxShadowProfile = null;
 
+                PooledNativeStores.Unregister(this);
                 shaderInfoAllocator.Dispose();
                 shaderInfoAllocator = null;
 

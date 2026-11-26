@@ -165,7 +165,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return null;
             if (!primaryVersion.isFullyFetched)
                 m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
-            var package = CreatePackage(packageName, versionList, isDiscoverable: packageData.isDiscoverable, isDeprecated: packageData.isDeprecated, deprecationMessage: packageData.deprecationMessage, compliance: packageData.compliance);
+            var package = CreatePackage(packageName, versionList, isDiscoverable: packageData.isDiscoverable, isDeprecated: packageData.isLifecycleDeprecated, deprecationMessage: packageData.lifecycleDeprecationMessage, compliance: packageData.compliance);
             SetProgress(package, m_PackageProgressTracker.GetProgress(packageName));
             return package;
         }

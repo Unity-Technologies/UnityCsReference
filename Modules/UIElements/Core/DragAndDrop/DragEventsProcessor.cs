@@ -29,6 +29,7 @@ namespace UnityEngine.UIElements
         int m_ActivePointerId = PointerId.invalidPointerId;
         Vector3 m_Start;
         bool m_PendingPerformDrag;
+        bool m_ExitedDragPendingCancel;
 
         protected readonly VisualElement m_Target;
 
@@ -158,6 +159,8 @@ namespace UnityEngine.UIElements
 
         private void OnPointerDownEvent(PointerDownEvent evt)
         {
+            CompletePendingCancel();
+
             // Only an actual drag is protected from other pointers. A mere drag candidate can be
             // taken over by any pointer going down, so a device that vanished mid-press (e.g.
             // unplugged) can never block the next pointer from starting a drag.
@@ -204,6 +207,8 @@ namespace UnityEngine.UIElements
 
         internal void OnPointerUpEvent(PointerUpEvent evt)
         {
+            CompletePendingCancel();
+
             if (IsForeignPointer(evt.pointerId))
                 return;
 
@@ -244,7 +249,7 @@ namespace UnityEngine.UIElements
 
         private void OnPointerCapturedOut(PointerCaptureOutEvent evt)
         {
-            if (IsForeignPointer(evt.pointerId))
+            if (IsForeignPointer(evt.pointerId) || m_ExitedDragPendingCancel)
                 return;
 
             CancelDragAndDrop();
@@ -259,8 +264,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void CompletePendingCancel()
+        {
+            if (!m_ExitedDragPendingCancel)
+                return;
+
+            m_ExitedDragPendingCancel = false;
+            ClearDragAndDropUI(true);
+        }
+
         void CancelDragAndDrop(int releaseCapturePointerId = -1)
         {
+            CompletePendingCancel();
+
             if (m_DragState == DragState.None && !m_PendingPerformDrag)
                 return;
 
@@ -284,15 +300,24 @@ namespace UnityEngine.UIElements
             if (!useDragEvents)
                 return;
 
-            // The matching pointer up is consumed by the editor drag-and-drop operation, so this
-            // is where an exited drag ends. It ends as a cancel, undoing the drag's side effects
-            // (e.g. a tree's automatic expansions), and its state is cleared, or the next press
-            // would be read as part of it.
+            // The matching pointer up is consumed by the editor drag-and-drop operation, and the cursor
+            // can re-enter before the drop. The cancel waits for the next pointer event, and the state
+            // is cleared now, or the next press would be read as part of this drag.
             if (m_DragState == DragState.Dragging)
-                ClearDragAndDropUI(true);
+            {
+                ClearDragAndDropUI(false);
+                m_ExitedDragPendingCancel = true;
+                ((this as ListViewDragger)?.dragAndDropController as TreeViewReorderableDragAndDropController)?.PauseAutoExpand();
+            }
+            var pointerId = m_ActivePointerId;
             m_DragState = DragState.None;
             m_ActivePointerId = PointerId.invalidPointerId;
             m_PendingPerformDrag = false;
+            if (pointerId != PointerId.invalidPointerId)
+            {
+                m_Target.ReleasePointer(pointerId);
+                m_Target.panel?.ProcessPointerCapture(pointerId);
+            }
             ReleaseDragOwnership();
             var view = evt.target as BaseVerticalCollectionView;
             view?.dragger?.ClearDragAndDropUI(false);
@@ -311,6 +336,7 @@ namespace UnityEngine.UIElements
             if (!useDragEvents)
                 return;
 
+            m_ExitedDragPendingCancel = false;
             m_DragState = DragState.None;
             m_ActivePointerId = PointerId.invalidPointerId;
             ReleaseDragOwnership();
@@ -354,6 +380,9 @@ namespace UnityEngine.UIElements
                 m_PendingPerformDrag = false;
                 return;
             }
+
+            if (m_ExitedDragPendingCancel && (evt.pressedButtons & (1 << (int)MouseButton.LeftMouse)) == 0)
+                CompletePendingCancel();
 
             // Ignore moves if we're not on the target that started drag.
             if (m_DragState != DragState.CanStartDrag)

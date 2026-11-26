@@ -17,8 +17,11 @@ namespace Unity.U2D.Physics.Editor
     {
         // Shared single-line mask field used by the mask drawers: 64-bit layers use LayerMaskField64,
         // 32-bit layers use the native LayerMaskField. Reads/writes bitMaskProperty.ulongValue.
+        // The mask has its own property scope, so its mixed value, prefab override and context menu are the mask's alone, not those of a filter it sits in.
         internal static void DrawMaskField(Rect position, GUIContent label, SerializedProperty bitMaskProperty, bool showAsPhysicsMask)
         {
+            label = EditorGUI.BeginProperty(position, label, bitMaskProperty);
+
             if (showAsPhysicsMask || PhysicsWorld.usePhysicsLayers)
             {
                 LayerMaskField64.Draw(position, label, bitMaskProperty, showAsPhysicsMask);
@@ -30,6 +33,8 @@ namespace Unity.U2D.Physics.Editor
                 if (EditorGUI.EndChangeCheck())
                     bitMaskProperty.ulongValue = newMask;
             }
+
+            EditorGUI.EndProperty();
         }
 
         #region UITK
@@ -76,7 +81,7 @@ namespace Unity.U2D.Physics.Editor
 
             // 32-bit mask.
             {
-                var categories = new LayerMaskField32(property.displayName) { bindingPath = bitMaskBindingPath };
+                var categories = new LayerMaskField32(property.displayName, bitMaskProperty) { bindingPath = bitMaskBindingPath };
                 root.Add(categories);
 
                 return root;

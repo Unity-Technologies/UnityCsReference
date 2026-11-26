@@ -141,6 +141,18 @@ namespace UnityEditor.InsightsEditor
 
             UnityConnect.instance.ProjectStateChanged -= OnCloudProjectStateChanged;
             UnityConnect.instance.ProjectStateChanged += OnCloudProjectStateChanged;
+
+            RegisterCallback<AttachToPanelEvent>(_ => EngineDiagnosticsSettings.buildProfileStateChanged += OnBuildProfileStateChanged);
+            RegisterCallback<DetachFromPanelEvent>(_ => EngineDiagnosticsSettings.buildProfileStateChanged -= OnBuildProfileStateChanged);
+        }
+
+        void OnBuildProfileStateChanged(BuildProfile profile)
+        {
+            if (profile != m_buildProfile)
+                return;
+
+            m_DataReportingLevelDropdown.SetIndexWithoutNotify(StateToIndex(buildProfileEngineDiagnosticsState));
+            dataCollectionChanged?.Invoke();
         }
 
         void OnDropdownIndexChanged(int index)

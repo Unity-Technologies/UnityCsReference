@@ -148,6 +148,9 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
         AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
     }
 
+    // Reads through the buffer's pointer, which dangles when the buffer has been disposed, so always call
+    // NavQueryBuffer.CheckWriteSafetyAndThrow() first. That reports a disposed buffer as disposed and
+    // avoids a use-after-free here, whether or not a new buffer has been allocated at the same address.
     readonly void CheckBufferMatchAndThrow(NavQueryBuffer queryBuffer)
     {
         // IsWorldForQueryInternal dereferences the query pointer, so a buffer that still holds one has to
@@ -201,8 +204,8 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
         int areaMask = NavMesh.AllAreas, NativeArray<float> costs = new())
     {
         CheckValidPtrAndThrow();
-        CheckBufferMatchAndThrow(queryBuffer);
         queryBuffer.CheckWriteSafetyAndThrow();
+        CheckBufferMatchAndThrow(queryBuffer);
 
         if (!queryBuffer.HasNodePool())
             throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
@@ -253,8 +256,8 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     public readonly NavQueryStatus ContinueFindPath(NavQueryBuffer queryBuffer, int nodesToVisit, out int nodesVisited)
     {
         CheckValidPtrAndThrow();
-        CheckBufferMatchAndThrow(queryBuffer);
         queryBuffer.CheckWriteSafetyAndThrow();
+        CheckBufferMatchAndThrow(queryBuffer);
 
         if (!queryBuffer.HasNodePool())
             throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
@@ -271,8 +274,8 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     public readonly NavQueryStatus EndFindPath(NavQueryBuffer queryBuffer, out int pathSize)
     {
         CheckValidPtrAndThrow();
-        CheckBufferMatchAndThrow(queryBuffer);
         queryBuffer.CheckWriteSafetyAndThrow();
+        CheckBufferMatchAndThrow(queryBuffer);
 
         if (!queryBuffer.HasNodePool())
             throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
@@ -289,8 +292,8 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
     public readonly unsafe int GetResultFromFindPath(NavQueryBuffer queryBuffer, NativeSlice<NavNode> path)
     {
         CheckValidPtrAndThrow();
-        CheckBufferMatchAndThrow(queryBuffer);
         queryBuffer.CheckWriteSafetyAndThrow();
+        CheckBufferMatchAndThrow(queryBuffer);
 
         if (!queryBuffer.HasNodePool())
             throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);

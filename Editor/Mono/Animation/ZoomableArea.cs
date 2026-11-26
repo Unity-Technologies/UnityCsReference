@@ -160,6 +160,10 @@ namespace UnityEditor
         [SerializeField] private bool m_IgnoreScrollWheelUntilClicked = false;
         public bool ignoreScrollWheelUntilClicked { get { return m_IgnoreScrollWheelUntilClicked; } set { m_IgnoreScrollWheelUntilClicked = value; } }
 
+        // Pixels scrolled per unit of scroll wheel delta when scrolling over the sliders.
+        [SerializeField] private float m_ScrollWheelStepSize = k_ScrollStepSize;
+        public float scrollWheelStepSize { get { return m_ScrollWheelStepSize; } set { m_ScrollWheelStepSize = value; } }
+
         [SerializeField] private bool m_EnableMouseInput = true;
         public bool enableMouseInput { get { return m_EnableMouseInput; } set { m_EnableMouseInput = value; } }
 
@@ -747,16 +751,26 @@ namespace UnityEditor
                 return;
             if (m_VSlider && new Rect(area.x + area.width, area.y + GUI.skin.verticalScrollbarUpButton.fixedHeight, vSliderWidth, area.height - (GUI.skin.verticalScrollbarDownButton.fixedHeight + hSliderHeight)).Contains(Event.current.mousePosition))
             {
-                SetTransform(new Vector2(m_Translation.x, m_Translation.y - (Event.current.delta.y * k_ScrollStepSize)), m_Scale);
+                ScrollVertically(Event.current.delta.y);
                 Event.current.Use();
                 return;
             }
 
             if (m_HSlider && new Rect(area.x + GUI.skin.horizontalScrollbarLeftButton.fixedWidth, area.y + area.height, area.width - (GUI.skin.horizontalScrollbarRightButton.fixedWidth + vSliderWidth), hSliderHeight).Contains(Event.current.mousePosition))
             {
-                SetTransform(new Vector2(m_Translation.x + (Event.current.delta.y * k_ScrollStepSize), m_Translation.y), m_Scale);
+                ScrollHorizontally(Event.current.delta.y);
                 Event.current.Use();
             }
+        }
+
+        public void ScrollVertically(float scrollWheelDelta)
+        {
+            SetTransform(new Vector2(m_Translation.x, m_Translation.y - (scrollWheelDelta * m_ScrollWheelStepSize)), m_Scale);
+        }
+
+        public void ScrollHorizontally(float scrollWheelDelta)
+        {
+            SetTransform(new Vector2(m_Translation.x + (scrollWheelDelta * m_ScrollWheelStepSize), m_Translation.y), m_Scale);
         }
 
         public void EndViewGUI()

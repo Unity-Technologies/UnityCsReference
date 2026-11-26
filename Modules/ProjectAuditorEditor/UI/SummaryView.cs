@@ -117,6 +117,10 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         protected Timings m_Timings;
 
+        int m_NumFailedAssemblies;
+        int m_NumNotCompiledAssemblies;
+        bool m_ShowIncompleteCodeAnalysisNotice;
+
         bool m_ShowSessionInformation = true;
 
         protected const float k_NavigationButtonWidth = 180.0f;
@@ -159,6 +163,8 @@ namespace Unity.ProjectAuditor.Editor.UI
         protected virtual void ResetStats()
         {
             m_Timings = new Timings();
+            m_NumFailedAssemblies = 0;
+            m_NumNotCompiledAssemblies = 0;
         }
 
         protected virtual void RefreshStats()
@@ -173,6 +179,34 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_Timings.AssetsAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.AssetIssue);
             m_Timings.SettingsAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.ProjectSetting);
             m_Timings.GameObjectAnalysisTime = report.CalculateIssueCategoryAnalysisDuration(IssueCategory.GameObject);
+
+            foreach (var assembly in report.FindByCategory(IssueCategory.Assembly))
+            {
+                if (assembly.Severity == Severity.Error)
+                    m_NumFailedAssemblies++;
+                else if (assembly.Severity == Severity.Warning)
+                    m_NumNotCompiledAssemblies++;
+            }
+        }
+
+        protected bool IsCodeAnalysisIncomplete => m_NumFailedAssemblies > 0 || m_NumNotCompiledAssemblies > 0;
+
+        protected string AppendIncompleteCodeAnalysisText(string text)
+        {
+            return IsCodeAnalysisIncomplete ? $"{text} {Contents.IncompleteCodeAnalysisText}" : text;
+        }
+
+        protected void DrawIncompleteCodeAnalysisNotice()
+        {
+            // Decided on Layout only, so Layout and Repaint always draw the same controls
+            if (Event.current.type == EventType.Layout)
+                m_ShowIncompleteCodeAnalysisNotice = IsCodeAnalysisIncomplete && !m_ViewManager.HasPendingCategory(IssueCategory.Code);
+
+            if (!m_ShowIncompleteCodeAnalysisNotice)
+                return;
+
+            var text = string.Format(Contents.IncompleteCodeAnalysisFormat, m_NumFailedAssemblies, m_NumNotCompiledAssemblies);
+            Utility.DrawHelpBoxWithButton(text, Contents.ViewErrors, MessageType.Warning, () => m_Window?.GotoCategory(IssueCategory.CodeCompilerMessage));
         }
 
         protected void AccumulateStat(ReportItem issue, ref Stats stats)
@@ -249,11 +283,11 @@ namespace Unity.ProjectAuditor.Editor.UI
                 GUILayout.Space(12);
 
                 if (totalIssuesExcludingIgnoredAndFixed == 0)
-                    GUILayout.Label(noIssuesText, SharedStyles.Label);
+                    GUILayout.Label(AppendIncompleteCodeAnalysisText(noIssuesText), SharedStyles.Label);
                 else if (totalMajorAndCriticalIssues == 0)
-                    EditorGUILayout.LabelField(noMajorIssuesText, SharedStyles.Label);
+                    EditorGUILayout.LabelField(AppendIncompleteCodeAnalysisText(noMajorIssuesText), SharedStyles.Label);
                 else
-                    EditorGUILayout.LabelField(string.Format(totalMajorAndCriticalIssues == 1 ? severeCountFormat : severeCountPluralFormat, totalMajorAndCriticalIssues), SharedStyles.Label);
+                    EditorGUILayout.LabelField(AppendIncompleteCodeAnalysisText(string.Format(totalMajorAndCriticalIssues == 1 ? severeCountFormat : severeCountPluralFormat, totalMajorAndCriticalIssues)), SharedStyles.Label);
             }
         }
 
@@ -715,6 +749,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent SessionInformationContent = L10n.TextContent("Session Information", null, null, null);
             public static readonly GUIContent MoreDetails = L10n.TextContent("More Details", null, null, null);
             public static readonly GUIContent Review = L10n.TextContent("Review", null, null, null);
+
+            public static readonly string IncompleteCodeAnalysisFormat = L10n.Tr("Code analysis is incomplete because of compilation errors ({0} failed to compile, {1} not compiled). Issues related to those assemblies are not shown. Fix the compilation errors, then run a new analysis to include them.", null);
+            public static readonly string IncompleteCodeAnalysisText = L10n.Tr("Compilation errors prevented full analysis.", null);
+            public static readonly GUIContent ViewErrors = L10n.TextContent("View Errors", "Show the compilation errors", null, null);
         }
     }
 }

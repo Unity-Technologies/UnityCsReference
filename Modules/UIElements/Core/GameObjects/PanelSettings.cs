@@ -1162,17 +1162,22 @@ namespace UnityEngine.UIElements
                 m_AttachedPanelComponentsList.RemoveFromListAndFromVisualTree(panelComponent);
             }
 
-            // A prefab-stage instance of a screen-space panel must not attach while playing: it would draw
-            // over the live UI and steal its input. World-space panels keep attaching so prefab contents
-            // stay visible while editing.
-            if (Application.isPlaying && renderMode != PanelRenderMode.WorldSpace &&
-                (UIDocument.IsGameObjectInOpenPrefabStage?.Invoke(panelComponent.gameObject) ?? false))
+            if (RefusesPrefabStageContents(panelComponent.gameObject))
+            {
+                // Drops registrations made in edit mode; an emptied panel gets disposed
+                panelComponent.DetachRootVisualElement();
                 return;
+            }
 
             m_AttachedPanelComponentsList.AddToListAndToVisualTree(panelComponent, visualTree, false);
 
             UITKAccessibilityBridge.OnPanelComponentAttached(panelComponent);
         }
+
+        // Screen-space prefab stage contents would draw over the live UI and steal its input
+        internal bool RefusesPrefabStageContents(GameObject gameObject) =>
+            Application.isPlaying && renderMode != PanelRenderMode.WorldSpace &&
+            (UIDocument.IsGameObjectInOpenPrefabStage?.Invoke(gameObject) ?? false);
 
         internal void DetachPanelComponent(IPanelComponent panelComponent)
         {

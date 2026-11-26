@@ -61,6 +61,7 @@ sealed partial class UIViewport : VisualElement
     readonly UICanvasZoomManipulator m_ZoomManipulator;
     readonly List<UICanvasResizeManipulator> m_ResizeManipulators = new();
     readonly AddElementDropManipulator m_DropManipulator;
+    readonly Func<VisualElement, bool> m_IsShownInCanvas;
 
     TwoPaneSplitView m_OuterSplitView;
     TwoPaneSplitView m_InnerSplitView;
@@ -95,6 +96,7 @@ sealed partial class UIViewport : VisualElement
         m_Surface.RegisterCallback<ValidateCommandEvent>(OnValidateCommand);
         m_Surface.RegisterCallback<ExecuteCommandEvent>(OnExecuteCommand);
         m_Canvas = this.Q<UICanvas>();
+        m_IsShownInCanvas = IsShownInCanvas;
 
         m_PanManipulator = new UICanvasPanManipulator(this);
         m_ZoomManipulator = new UICanvasZoomManipulator(this);
@@ -179,9 +181,11 @@ sealed partial class UIViewport : VisualElement
         if (m_Canvas.PreviewMode)
             return;
         UIViewportContextMenuUtility.PopulateMenu(evt.menu,
-            CommandSources.Viewport, m_Canvas.DocumentRoot.InPlaceEditor,
-            m_Canvas.PanelElement?.subRootVisualElement?.panel);
+            CommandSources.Viewport, m_Canvas.DocumentRoot.InPlaceEditor, m_IsShownInCanvas);
     }
+
+    // Outside the UI Stage the selection holds the live scene element, not the clone this canvas renders.
+    bool IsShownInCanvas(VisualElement element) => m_Canvas.DocumentRoot.ResolveCanvasElement(element) != null;
 
     void OnValidateCommand(ValidateCommandEvent evt)
     {
@@ -204,7 +208,7 @@ sealed partial class UIViewport : VisualElement
                 break;
             }
             case EventCommandNames.Paste:
-                if (UIViewportContextMenuUtility.CanPaste(m_Canvas.PanelElement?.subRootVisualElement?.panel))
+                if (UIViewportContextMenuUtility.CanPaste(m_IsShownInCanvas))
                     evt.StopPropagation();
                 break;
             case EventCommandNames.Duplicate:
@@ -250,7 +254,7 @@ sealed partial class UIViewport : VisualElement
                 break;
             }
             case EventCommandNames.Paste:
-                if (UIViewportContextMenuUtility.DoPaste(CommandSources.Viewport, m_Canvas.PanelElement?.subRootVisualElement?.panel))
+                if (UIViewportContextMenuUtility.DoPaste(CommandSources.Viewport, m_IsShownInCanvas))
                     evt.StopPropagation();
                 break;
             case EventCommandNames.Duplicate:
@@ -436,13 +440,13 @@ sealed partial class UIViewport : VisualElement
 
     VisualElement GetFirstSelectedElement()
     {
-        var subRoot = m_Canvas.PanelElement?.subRootVisualElement;
         foreach (var selectedId in Selection.entityIds)
         {
             if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection { Element: { } element })
             {
-                if (element.panel != null && element.panel == subRoot?.panel)
-                    return element;
+                var canvasElement = m_Canvas.DocumentRoot.ResolveCanvasElement(element);
+                if (canvasElement != null)
+                    return canvasElement;
             }
         }
         return null;

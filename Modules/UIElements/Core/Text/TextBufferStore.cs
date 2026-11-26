@@ -27,7 +27,7 @@ namespace UnityEngine.UIElements
     /// elements enqueue their handle for <see cref="Collect"/>, and <see cref="Shutdown"/> walks
     /// the live slots before code unload, ahead of the native leak check.
     /// </summary>
-    partial class TextBufferStore
+    partial class TextBufferStore : IPooledNativeStore
     {
         enum SharedManagerState
         {
@@ -98,6 +98,24 @@ namespace UnityEngine.UIElements
         // a slot is actually freed.
         internal int LiveCount { get; private set; }
 
+        // Used in tests
+        internal long BytesReserved => m_Store.BytesReserved;
+
+        // Used in tests
+        internal long BytesUsed => LiveCount * (long)m_Store.BytesPerSlot;
+
+        string IPooledNativeStore.storeName => "TextBuffer";
+
+        long IPooledNativeStore.GetBytesReserved() => BytesReserved;
+
+        long IPooledNativeStore.GetBytesUsed() => BytesUsed;
+
+        void IPooledNativeStore.ReleasePendingSlots()
+        {
+            while (m_ToFree.Count > 0)
+                Collect();
+        }
+
         unsafe TextBufferStore()
         {
             var componentTypes = new[] { UnmanagedComponentType.Create<TextBufferData>() };
@@ -107,6 +125,7 @@ namespace UnityEngine.UIElements
             initialData[0] = (byte*)&initial;
 
             m_Store = new UnmanagedDataStore(componentTypes, componentLabels, initialData, k_InitialCapacity, Allocator.Persistent, "TextBuffer");
+            PooledNativeStores.Register(this);
         }
 
         public UnmanagedDataHandle Allocate()
@@ -183,6 +202,7 @@ namespace UnityEngine.UIElements
                 data->processedBuffer.Dispose();
             }
 
+            PooledNativeStores.Unregister(this);
             m_Store.Dispose();
         }
     }

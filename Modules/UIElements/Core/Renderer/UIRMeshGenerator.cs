@@ -861,6 +861,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 bool isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
+                float regularWeight = isSprite ? 0.0f : fa.regularStyleWeight;
                 Span<NativeTextElementInfo> textElementInfosSpan = nativeMeshInfo.textElementInfos;
 
                 while (remainingVertexCount > 0)
@@ -896,10 +897,10 @@ namespace UnityEngine.UIElements.UIR
                     for (int vDst = 0, vSrc = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 1, j += 6)
                     {
                         ref var tei = ref textElementInfosSpan[vSrc];
-                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 0], ref tei.bottomLeft, pos, inverseScale, isColorGlyph: isColorFont);
-                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 1], ref tei.topLeft, pos, inverseScale, isColorGlyph: isColorFont);
-                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 2], ref tei.topRight, pos, inverseScale, isColorGlyph: isColorFont);
-                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 3], ref tei.bottomRight, pos, inverseScale, isColorGlyph: isColorFont);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 0], ref tei.bottomLeft, pos, inverseScale, isColorGlyph: isColorFont, regularWeight: regularWeight);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 1], ref tei.topLeft, pos, inverseScale, isColorGlyph: isColorFont, regularWeight: regularWeight);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 2], ref tei.topRight, pos, inverseScale, isColorGlyph: isColorFont, regularWeight: regularWeight);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 3], ref tei.bottomRight, pos, inverseScale, isColorGlyph: isColorFont, regularWeight: regularWeight);
 
                         indexSpan[j + 0] = (ushort)(vDst + 0);
                         indexSpan[j + 1] = (ushort)(vDst + 1);
@@ -997,9 +998,11 @@ namespace UnityEngine.UIElements.UIR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ConvertTextVertexToUIRVertex(out Vertex dst, ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false, bool isTextCore = false)
+        internal static void ConvertTextVertexToUIRVertex(out Vertex dst, ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false, bool isTextCore = false, float regularWeight = 0.0f)
         {
             float x = vertex.uv2.y;
+            if (!isTextCore && x == 0.0f)
+                x = regularWeight;
 
             // vertex.uv2.y can be between -3 and 3, but we want negative to be less impactful than positive.
             // -3 = -1, -1 = -0.33, 0 = 0, 1 = 1...

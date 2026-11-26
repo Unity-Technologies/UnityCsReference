@@ -1,0 +1,162 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Collections.Generic;
+
+using UnityEditor;
+using UnityEditor.UIElements;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace Unity.U2D.Physics.Editor
+{
+    /// <summary>
+    /// Builds the UI Toolkit fields for a <see cref="PhysicsQuery.QueryFilter"/> serialized property.
+    /// The categories and hit categories use 64-bit or 32-bit mask fields depending on the project's layer configuration.
+    /// Add the returned element directly to embed the fields inline, or wrap it in a <see cref="Foldout"/> for a collapsible section.
+    /// </summary>
+    public static class QueryFilterInspector
+    {
+        /// <summary>
+        /// Create the editable fields for a <see cref="PhysicsQuery.QueryFilter"/> property, with no wrapping foldout.
+        /// </summary>
+        /// <param name="property">The serialized <see cref="PhysicsQuery.QueryFilter"/> property to build the fields for.</param>
+        /// <returns>A container with the categories, hit categories, and ignore filter fields.</returns>
+        public static VisualElement CreateFields(SerializedProperty property)
+        {
+            var body = new VisualElement();
+
+            const string categoriesTypeName = nameof(PhysicsQuery.QueryFilter.m_Categories);
+            const string hitCategoriesTypeName = nameof(PhysicsQuery.QueryFilter.m_HitCategories);
+            const string ignoreFilterTypeName = nameof(PhysicsQuery.QueryFilter.m_IgnoreFilter);
+
+            var categoriesProperty = property.FindPropertyRelative(categoriesTypeName);
+            var hitCategoriesProperty = property.FindPropertyRelative(hitCategoriesTypeName);
+            var ignoreFilterProperty = property.FindPropertyRelative(ignoreFilterTypeName);
+
+            var categoriesBindingPath = $"{categoriesTypeName}.{nameof(PhysicsQuery.QueryFilter.categories.bitMask)}";
+            var hitCategoriesBindingPath = $"{hitCategoriesTypeName}.{nameof(PhysicsQuery.QueryFilter.hitCategories.bitMask)}";
+
+            // Find if we need to show as a basic 64-bit mask.
+            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask(property);
+
+            // 64-bit mask.
+            if (showAsPhysicsMask || PhysicsWorld.usePhysicsLayers)
+            {
+                var layerNames = new List<String>(capacity: 64);
+                var layerMasks = new List<UInt64>(capacity: 64);
+
+                // Are we showing as a physics mask?
+                if (showAsPhysicsMask)
+                {
+                    // Yes, so set layer names and masks for each bit.
+                    PhysicsLayers.GetBitNamesAndMasks(layerNames, layerMasks);
+                }
+                else
+                {
+                    // No, so get the layer names and masks.
+                    PhysicsLayers.GetLayerNamesAndMasks(layerNames, layerMasks);
+                }
+
+                var categories = new Mask64Field(categoriesProperty.displayName, layerNames, PhysicsMask.One)
+                {
+                    bindingPath = categoriesBindingPath,
+                    choicesMasks = layerMasks
+                };
+                categories.AddToClassList(Mask64Field.alignedFieldUssClassName);
+                body.Add(categories);
+
+                var hitCategories = new Mask64Field(hitCategoriesProperty.displayName, layerNames, PhysicsMask.All)
+                {
+                    bindingPath = hitCategoriesBindingPath,
+                    choicesMasks = layerMasks
+                };
+                hitCategories.AddToClassList(Mask64Field.alignedFieldUssClassName);
+                body.Add(hitCategories);
+            }
+            else
+            {
+                // 32-bit mask.
+                var categories = new LayerMaskField32(categoriesProperty.displayName, categoriesProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask))) { bindingPath = categoriesBindingPath };
+                var hitCategories = new LayerMaskField32(hitCategoriesProperty.displayName, hitCategoriesProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask))) { bindingPath = hitCategoriesBindingPath };
+
+                body.Add(categories);
+                body.Add(hitCategories);
+            }
+
+            body.Add(new PropertyField(ignoreFilterProperty));
+            return body;
+        }
+    }
+
+    [CustomPropertyDrawer(typeof(PhysicsQuery.QueryFilter))]
+    sealed class QueryFilterPropertyDrawer : PropertyDrawer
+    {
+        #region UITK
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            // The foldout is bound to the property so its expanded state is the property's own, as for any struct in an inspector.
+            var foldout = new Foldout { text = property.displayName, value = false, bindingPath = property.propertyPath };
+            foldout.Add(QueryFilterInspector.CreateFields(property));
+            return foldout;
+        }
+
+        #endregion
+
+        #region IMGUI
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            if (!property.isExpanded)
+                return EditorGUIUtility.singleLineHeight;
+
+            var ignoreFilterProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_IgnoreFilter));
+            return EditorGUIUtility.singleLineHeight
+                + (EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight) * 2
+                + EditorGUIUtility.standardVerticalSpacing + EditorGUI.GetPropertyHeight(ignoreFilterProperty, true);
+        }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask(property);
+
+            // The filter's property scope covers only its header, so the override bar and context menu of each field below are that field's own.
+            var foldoutRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+            label = EditorGUI.BeginProperty(foldoutRect, label, property);
+            property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label, true);
+            EditorGUI.EndProperty();
+
+            if (property.isExpanded)
+            {
+                EditorGUI.indentLevel++;
+
+                var categoriesProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_Categories));
+                var hitCategoriesProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_HitCategories));
+                var ignoreFilterProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_IgnoreFilter));
+
+                var categoriesBitMask = categoriesProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask));
+                var hitCategoriesBitMask = hitCategoriesProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask));
+
+                float y = foldoutRect.yMax + EditorGUIUtility.standardVerticalSpacing;
+                var lineHeight = EditorGUIUtility.singleLineHeight;
+                var spacing = EditorGUIUtility.standardVerticalSpacing;
+
+                PhysicsMaskPropertyDrawer.DrawMaskField(new Rect(position.x, y, position.width, lineHeight), new GUIContent(categoriesProperty.displayName), categoriesBitMask, showAsPhysicsMask);
+                y += lineHeight + spacing;
+
+                PhysicsMaskPropertyDrawer.DrawMaskField(new Rect(position.x, y, position.width, lineHeight), new GUIContent(hitCategoriesProperty.displayName), hitCategoriesBitMask, showAsPhysicsMask);
+                y += lineHeight + spacing;
+
+                var ignoreFilterHeight = EditorGUI.GetPropertyHeight(ignoreFilterProperty, true);
+                EditorGUI.PropertyField(new Rect(position.x, y, position.width, ignoreFilterHeight), ignoreFilterProperty, true);
+
+                EditorGUI.indentLevel--;
+            }
+        }
+
+        #endregion
+    }
+}

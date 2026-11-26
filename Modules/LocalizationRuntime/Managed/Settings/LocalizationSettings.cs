@@ -75,7 +75,7 @@ public partial class LocalizationSettings : ScriptableObject
     [SerializeReference] List<Locale> m_AvailableLocales = new();
     [SerializeField] string m_ProjectLocaleCode;
     [SerializeReference] ResourceDatabase m_ResourceDatabase = new();
-    [SerializeReference] List<IStartupLocaleSelector> m_StartupSelectors = new() { new CommandLineLocaleSelector(), new SystemLocaleSelector() };
+    [StartupSelectors, SerializeReference] List<IStartupLocaleSelector> m_StartupSelectors = new() { new CommandLineLocaleSelector(), new SystemLocaleSelector() };
     [SerializeField] LoadingPreference m_PreferredLoading = LoadingPreference.Asynchronous;
     [SerializeField] SmartStringsSettings m_SmartStringsSettings;
     [SerializeField] PreloadBehavior m_PreloadBehavior = PreloadBehavior.PreloadSelectedLocale;

@@ -114,7 +114,7 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public bool Equals(StyleRotate other)
         {
-            return other == this;
+            return m_Keyword == other.m_Keyword && m_Value.Equals(other.m_Value);
         }
 
         /// <undoc/>

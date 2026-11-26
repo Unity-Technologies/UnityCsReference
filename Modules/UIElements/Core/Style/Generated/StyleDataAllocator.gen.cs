@@ -27,6 +27,7 @@ namespace UnityEngine.UIElements
 
     static partial class StyleDataAllocator
     {
+        internal const int k_StyleDataTypeCount = 8;
         internal static StyleDataType GetType<T>()
             where T : unmanaged
         {

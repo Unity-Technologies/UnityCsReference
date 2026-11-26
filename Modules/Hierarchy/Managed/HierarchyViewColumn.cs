@@ -195,6 +195,13 @@ namespace Unity.Hierarchy
                 return;
             }
 
+            // The view model can still list a node removed from the hierarchy until its next update
+            if (!m_View.Source.Exists(in node))
+            {
+                cell.HideCachedEditor();
+                return;
+            }
+
             cell.Node = node;
             cell.NodeIndex = index;
             cell.Handler = m_View.ViewModel.GetNodeTypeHandler(node);

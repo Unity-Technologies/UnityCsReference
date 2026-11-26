@@ -250,6 +250,7 @@ namespace UnityEngine.UIElements
 
             nativeSettings.preProcessFlags = PreProcessFlags.None;
             nativeSettings.minContentMeasure = false;
+            nativeSettings.isEditable = m_TextElement.isInputField;
 
             // A managed string is only required for an explicit measure request
             string? text = textToMeasure;

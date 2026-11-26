@@ -48,6 +48,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
     {
         const int k_DefaultRowHeight = 18;
         const int k_FirstId = 1;
+        // Groups use their own sequence so that issue IDs don't depend on how issues were batched.
+        // -1 is the hidden root and 0 the placeholder row.
+        const int k_FirstGroupId = -2;
 
         readonly SeverityRules m_Rules;
         readonly ViewDescriptor m_Desc;
@@ -65,6 +68,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         bool m_SelectionGroupChanged = true;
         bool m_SelectionChangedReportItems = true;
         int m_NextId;
+        int m_NextGroupId;
         int m_NumMatchingIssues;
         bool m_FlatView;
         bool m_ShowIgnoredIssues;
@@ -130,11 +134,16 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 // if necessary, create a group
                 if (!m_TreeViewItemGroupsLookup.ContainsKey(name))
                 {
-                    var group = new IssueTableItem(m_NextId++, 0, name);
+                    var group = new IssueTableItem(m_NextGroupId--, 0, name);
                     m_TreeViewItemGroupsLookup[name] = group;
 
                     if (m_ExpandedGroupNames.Contains(name))
-                        state.expandedIDs.Add(group.id);
+                    {
+                        // TreeView.IsExpanded binary-searches expandedIDs, and group IDs count down
+                        var index = state.expandedIDs.BinarySearch(group.id);
+                        if (index < 0)
+                            state.expandedIDs.Insert(~index, group.id);
+                    }
                 }
             }
 
@@ -182,11 +191,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         m_ExpandedGroupNames.Add(group.Key);
                 }
 
-                // IDs restart on rebuild, so a leftover issue ID could match a new group
+                // IDs restart on rebuild, so a leftover ID could match a different row
                 state.expandedIDs.Clear();
             }
 
             m_NextId = k_FirstId;
+            m_NextGroupId = k_FirstGroupId;
             m_TreeViewItemGroupsLookup.Clear();
             m_TreeViewItemIssues = new Dictionary<int, IssueTableItem>();
         }

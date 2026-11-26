@@ -103,8 +103,8 @@
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\RequiredMemberAttribute.cs">
       <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\RequiredMemberAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\StubBodyIfTypeNotUsedAttribute.cs">
-      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\StubBodyIfTypeNotUsedAttribute.cs</Link>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\CoreAttributes\StubBodyIfTypeNotInstantiatedAttribute.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\CoreAttributes\StubBodyIfTypeNotInstantiatedAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\DelegateWithContext.cs">
       <Link>External\ScriptingCore\Unity.Scripting\DelegateWithContext.cs</Link>
@@ -1294,6 +1294,9 @@
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyUIDInfo.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyUIDInfo.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyUpdateStage.bindings.cs">
+      <Link>Modules\HierarchyCore\ScriptBindings\HierarchyUpdateStage.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\HierarchyViewModel.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\HierarchyViewModel.bindings.cs</Link>
     </Compile>
@@ -1746,6 +1749,9 @@
     </Compile>
     <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Settings\StartupLocaleSelectors.cs">
       <Link>Modules\LocalizationRuntime\Managed\Settings\StartupLocaleSelectors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Settings\StartupSelectorsAttribute.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Settings\StartupSelectorsAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\AssetEntries.cs">
       <Link>Modules\LocalizationRuntime\Managed\Tables\AssetEntries.cs</Link>
@@ -5179,6 +5185,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\PointerManipulator.cs">
       <Link>Modules\UIElements\Core\PointerManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\PooledNativeStores.cs">
+      <Link>Modules\UIElements\Core\PooledNativeStores.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\ProjectionUtils.cs">
       <Link>Modules\UIElements\Core\ProjectionUtils.cs</Link>
     </Compile>
@@ -5820,6 +5829,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDataAllocator.bindings.cs">
       <Link>Modules\UIElements\Core\Style\StyleDataAllocator.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDataPoolStore.cs">
+      <Link>Modules\UIElements\Core\Style\StyleDataPoolStore.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDataRef.cs">
       <Link>Modules\UIElements\Core\Style\StyleDataRef.cs</Link>
@@ -8133,7 +8145,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_4xuebtzk/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_6ob3c5aw/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

@@ -188,7 +188,9 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
 
     internal readonly void CheckWriteSafetyAndThrow()
     {
-        AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+        if (!AtomicSafetyHandle.IsDefaultValue(m_Safety))
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+
         CheckValidAndThrow();
     }
 

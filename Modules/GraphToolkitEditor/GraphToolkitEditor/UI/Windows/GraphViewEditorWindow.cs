@@ -1578,6 +1578,9 @@ Would you like to save these changes?
         /// <param name="view">The view.</param>
         public void UnregisterView(RootView view)
         {
+            if (view is ModelInspectorView modelInspectorView)
+                modelInspectorView.uiTreeRebuilt -= OnInspectorUITreeRebuilt;
+
             view.OnDestroy();
             m_Views.Remove(view);
         }
@@ -1705,6 +1708,17 @@ Would you like to save these changes?
             else
             {
                 ResolveAndAttachVisualizationContext();
+            }
+        }
+
+        void OnInspectorUITreeRebuilt()
+        {
+            // The rebuilt inspector views lost the stored visuals, such as condition and transition icon overrides.
+            if (m_IsVisualizationContextAttached &&
+                GetRootGraphModelGuid() == m_RootGraphModelGuid &&
+                GraphVisualization.Registry.TryGetVisualizationSession(m_CurrentVisualizationContextId, out var session))
+            {
+                session.NotifyInspectorRebuilt();
             }
         }
 

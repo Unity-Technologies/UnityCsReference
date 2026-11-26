@@ -745,7 +745,7 @@ namespace UnityEngine.UIElements
         private void UpdateTooltip()
         {
             // We set the tooltip text if text gets truncated
-            bool needsTooltip = displayTooltipWhenElided && isElided;
+            bool needsTooltip = displayTooltipWhenElided && isElided && !string.IsNullOrEmpty(text);
 
             if (needsTooltip)
             {

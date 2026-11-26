@@ -210,6 +210,9 @@ namespace UnityEditor.UIElements
 
         public override void SetValueWithoutNotify(AnimationCurve newValue)
         {
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
+
             m_ValueNull = newValue == null;
             if (newValue != null)
             {

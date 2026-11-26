@@ -544,7 +544,7 @@ namespace UnityEditor.Build.Analysis
             var icon = new Image { scaleMode = ScaleMode.ScaleToFit };
             icon.AddToClassList("inspector__references-item-icon");
             row.Add(icon);
-            var name = new Label();
+            var name = new Label { displayTooltipWhenElided = false };
             name.AddToClassList("inspector__references-item-name");
             row.Add(name);
             if (withSize)

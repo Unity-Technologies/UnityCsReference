@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using Unity.Hierarchy;
 using Unity.Profiling;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -261,10 +262,7 @@ namespace UnityEngine.UIElements
         /// <param name="rebuildTree">Whether we need to rebuild tree data. Set to false when doing multiple operations.</param>
         public virtual void Move(int id, int newParentId, int childIndex = -1, bool rebuildTree = true)
         {
-            if (id == newParentId)
-                return;
-
-            if (IsChildOf(newParentId, id))
+            if (!CanMove(id, newParentId))
                 return;
 
             if (!m_IdToNodeDictionary.TryGetValue(id, out var node))
@@ -854,6 +852,25 @@ namespace UnityEngine.UIElements
         internal void RaiseItemParentChanged(int id, int newParentId)
         {
             RaiseItemIndexChanged(id, newParentId);
+        }
+
+        internal bool CanMove(int id, int newParentId)
+        {
+            if (id == newParentId || IsChildOf(newParentId, id))
+                return false;
+
+            using var pooledAncestorIds = HashSetPool<int>.Get(out var ancestorIds);
+            return TryGetAncestorIds(newParentId, id, ancestorIds);
+        }
+
+        internal bool TryGetAncestorIds(int parentId, int itemId, HashSet<int> ancestorIds)
+        {
+            if (Exists(parentId))
+            {
+                for (var id = parentId; id != BaseTreeView.invalidId && ancestorIds.Add(id); id = GetParentId(id)) { }
+            }
+
+            return ancestorIds.Add(itemId);
         }
 
         internal HierarchyNode CreateNode(in HierarchyNode parent)

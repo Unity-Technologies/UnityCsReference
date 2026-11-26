@@ -416,6 +416,11 @@ namespace UnityEngine
             get { return SupportsBackbufferDepthMemoryless(); }
         }
 
+        internal static bool canStoreMemorylessTextures
+        {
+            get { return CanStoreMemorylessTextures(); }
+        }
+
         public static bool supportsMultisampleAutoResolve
         {
             get { return SupportsMultisampleAutoResolve(); }
@@ -1011,6 +1016,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsBackbufferDepthMemoryless")]
         static extern bool SupportsBackbufferDepthMemoryless();
+
+        [FreeFunction("ScriptingGraphicsCaps::CanStoreMemorylessTextures")]
+        static extern bool CanStoreMemorylessTextures();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleAutoResolve")]
         static extern bool SupportsMultisampleAutoResolve();

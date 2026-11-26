@@ -135,7 +135,7 @@ class ManagedObjectStore<T>
     }
 }
 
-internal partial class LayoutManager : IDisposable
+internal partial class LayoutManager : IDisposable, IPooledNativeStore
 {
     enum SharedManagerState
     {
@@ -249,6 +249,21 @@ internal partial class LayoutManager : IDisposable
     // Used in tests. Number of nodes still waiting to be recycled (and to have their ComputedStyle released).
     internal int PendingRecycleNodeCount => m_NodesToFree.Count;
 
+    // Nodes allocated and not yet recycled
+    int m_LiveNodeCount;
+
+    string IPooledNativeStore.storeName => "Layout";
+
+    long IPooledNativeStore.GetBytesReserved() => m_Nodes.BytesReserved;
+
+    long IPooledNativeStore.GetBytesUsed() => (long)m_LiveNodeCount * m_Nodes.BytesPerSlot;
+
+    void IPooledNativeStore.ReleasePendingSlots()
+    {
+        while (m_NodesToFree.Count > 0)
+            TryRecycleNodes();
+    }
+
     internal static LayoutManager GetManager(int index)
         => (uint) index < s_Managers.Count ? s_Managers[index] : null;
 
@@ -327,6 +342,7 @@ internal partial class LayoutManager : IDisposable
 
         m_Nodes = new UnmanagedDataStore(nodeComponentTypes, nodeComponentLabels, nodeComponentData,
             initialNodeCapacity, allocator, "Layout");
+        PooledNativeStores.Register(this);
     }
 
     public void Dispose()
@@ -352,6 +368,7 @@ internal partial class LayoutManager : IDisposable
             }
         }
 
+        PooledNativeStores.Unregister(this);
         m_Nodes.Dispose();
         m_Configs.Dispose();
     }
@@ -404,6 +421,7 @@ internal partial class LayoutManager : IDisposable
         TryRecycleSingleNode();
 
         var handle = m_Nodes.Allocate();
+        m_LiveNodeCount++;
 
         if (handle.Index > m_HighMark)
             m_HighMark = handle.Index;
@@ -466,6 +484,7 @@ internal partial class LayoutManager : IDisposable
             LayoutNative.ReleaseGridTracks(m_Index, computedData.GridTracks);
 
         m_Nodes.Free(handle);
+        m_LiveNodeCount--;
     }
 
     public void Collect()

@@ -157,10 +157,16 @@ namespace UnityEngine.UIElements
         /// <param name="newValue"></param>
         public override void SetValueWithoutNotify(bool newValue)
         {
-            visualInput.SetCheckedPseudoState(newValue);
-            SetCheckedPseudoState(newValue);
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
 
-            base.SetValueWithoutNotify(newValue);
+            using (IgnoreValidation())
+            {
+                visualInput.SetCheckedPseudoState(newValue);
+                SetCheckedPseudoState(newValue);
+
+                base.SetValueWithoutNotify(newValue);
+            }
         }
 
         void OnClickEvent(EventBase evt)

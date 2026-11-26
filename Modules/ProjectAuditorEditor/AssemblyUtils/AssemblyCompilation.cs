@@ -288,8 +288,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 "global_level = -1\n" + // Rank below the project's own globalconfig files so user settings are preserved.
                 "build_property.UnityEnableAutoStaticsCleanupAnalysis = true\n" +
                 // Report the statics-cleanup diagnostics as warnings rather than the analyzer's
-                // default Error severity, so that referenced assemblies still compile and dependent
-                // assemblies don't cascade into CS0006 (missing metadata) failures.
+                // default Error severity, so that referenced assemblies still compile.
                 "dotnet_diagnostic.UAL0010.severity = warning\n" +
                 "dotnet_diagnostic.UAL0011.severity = warning\n" +
                 "dotnet_diagnostic.UAL0012.severity = warning\n" +
@@ -338,6 +337,8 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
                 var additionalCompilerArguments = new List<string>(assemblyBuilder.compilerOptions.AdditionalCompilerArguments ?? Array.Empty<string>());
                 additionalCompilerArguments.AddRange(responseFileData.OtherArguments);
+                // Must come last: the last -warnaserror wins, and a warning must never stop the analysis
+                additionalCompilerArguments.Add("-warnaserror-");
                 assemblyBuilder.compilerOptions.AdditionalCompilerArguments = additionalCompilerArguments.ToArray();
 
                 // add asmdef-specific defines

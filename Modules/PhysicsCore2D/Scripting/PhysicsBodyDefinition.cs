@@ -51,7 +51,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public partial record struct PhysicsBodyDefinition
+    public partial struct PhysicsBodyDefinition
     {
         /// <summary>
         /// Create a default <see cref="PhysicsBody"/> definition.

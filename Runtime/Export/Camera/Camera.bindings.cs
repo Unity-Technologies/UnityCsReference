@@ -138,7 +138,9 @@ namespace UnityEngine
         extern public DepthTextureMode depthTextureMode { get; set; }
         extern public bool clearStencilAfterLightingPass { get; set; }
 
+        [Obsolete("Camera.SetReplacementShader is deprecated because shader replacement is supported only by the Built-In Render Pipeline, which is deprecated. To render objects with a different shader, use a ScriptableRenderPass with DrawingSettings.overrideShader in the Universal Render Pipeline instead. #from(6000.7)", false)]
         extern public void SetReplacementShader(Shader shader, string replacementTag);
+        [Obsolete("Camera.ResetReplacementShader is deprecated because shader replacement is supported only by the Built-In Render Pipeline, which is deprecated. To render objects with a different shader, use a ScriptableRenderPass with DrawingSettings.overrideShader in the Universal Render Pipeline instead. #from(6000.7)", false)]
         extern public void ResetReplacementShader();
 
         internal enum ProjectionMatrixMode{ Explicit, Implicit, PhysicalPropertiesBased }
@@ -378,6 +380,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("CameraScripting::Render", HasExplicitThis = true)]            extern public void Render();
+        [Obsolete("Camera.RenderWithShader is deprecated because shader replacement is supported only by the Built-In Render Pipeline, which is deprecated. To render objects with a different shader, use a ScriptableRenderPass with DrawingSettings.overrideShader in the Universal Render Pipeline instead. #from(6000.7)", false)]
         [FreeFunction("CameraScripting::RenderWithShader", HasExplicitThis = true)]  extern public void RenderWithShader(Shader shader, string replacementTag);
         [FreeFunction("CameraScripting::RenderDontRestore", HasExplicitThis = true)] extern public void RenderDontRestore();
 

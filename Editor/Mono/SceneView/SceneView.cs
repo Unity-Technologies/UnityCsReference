@@ -1417,6 +1417,7 @@ namespace UnityEditor
 
         string m_SceneVisHiddenCount = "0";
 
+        [Obsolete("SceneView.SetSceneViewShaderReplace is deprecated because shader replacement is supported only by the Built-In Render Pipeline, which is deprecated. To render objects with a different shader in the Scene view, use a ScriptableRenderPass with DrawingSettings.overrideShader in the Universal Render Pipeline instead. #from(6000.7)", false)]
         public void SetSceneViewShaderReplace(Shader shader, string replaceString)
         {
             m_ReplacementShader = shader;
@@ -2238,7 +2239,7 @@ namespace UnityEditor
         [MenuItem("GameObject/Move To View %&f", true)]
         static bool ValidateMoveToView()
         {
-            return lastActiveSceneView != null && (Selection.transforms.Length != 0);
+            return lastActiveSceneView != null && (Selection.activeTransform != null);
         }
 
         [MenuItem("GameObject/Align With View %#f", secondaryPriority = 4)]
@@ -2548,6 +2549,7 @@ namespace UnityEditor
             }
         }
 
+#pragma warning disable CS0618 // Replacement shaders are deprecated, but still used by the Scene view
         private void PrepareCameraReplacementShader()
         {
             if (Event.current.type != EventType.Repaint)
@@ -2602,6 +2604,7 @@ namespace UnityEditor
                 m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
             }
         }
+#pragma warning restore CS0618
 
         bool SceneCameraRendersIntoRT()
         {
@@ -2712,6 +2715,7 @@ namespace UnityEditor
             }
         }
 
+#pragma warning disable CS0618 // Replacement shaders are deprecated, but still used by the Scene view
         void RenderFilteredScene(Rect groupSpaceCameraRect)
         {
             var oldRenderingPath = m_Camera.renderingPath;
@@ -2792,6 +2796,7 @@ namespace UnityEditor
             if (fade < 1)
                 Repaint();
         }
+#pragma warning restore CS0618
 
         void DoClearCamera(Rect cameraRect)
         {
@@ -4249,6 +4254,9 @@ namespace UnityEditor
 
         public void MoveToView()
         {
+            if (Selection.activeTransform == null)
+                return;
+
             FixNegativeSize();
             Vector3 dif = pivot - Tools.handlePosition;
             if (m_2DMode) dif.z = 0f;

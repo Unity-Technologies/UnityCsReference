@@ -20,6 +20,12 @@ class Session
     internal event Action isAttached;
     internal event Action isDetached;
 
+    /// <summary>
+    /// Raised after the inspector of the window bound to this session rebuilds its views, which drops the visuals
+    /// that were applied to them.
+    /// </summary>
+    internal event Action inspectorRebuilt;
+
     internal bool SessionIsAttached
     {
         get => m_SessionIsAttached;
@@ -124,6 +130,11 @@ class Session
         m_SessionIsAttached = true;
         isAttached?.Invoke();
     }
+
+    /// <summary>
+    /// Applies the stored visuals that the inspector displays to the views it just rebuilt.
+    /// </summary>
+    internal void NotifyInspectorRebuilt() => inspectorRebuilt?.Invoke();
 
     /// <summary>
     /// Resolves an element of the session's graph, searching its local subgraphs as well as the graph the window

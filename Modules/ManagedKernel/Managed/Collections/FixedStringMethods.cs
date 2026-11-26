@@ -130,7 +130,7 @@ namespace Unity.Collections
         /// <returns>A NativeText string that begins at `startIndex` and has an allocator of type `allocator`.</returns>
         public static NativeText Substring(ref this NativeText str, int startIndex, AllocatorManager.AllocatorHandle allocator)
         {
-            return str.Substring(startIndex, str.Length - startIndex);
+            return str.Substring(startIndex, str.Length - startIndex, allocator);
         }
 
         /// <summary>

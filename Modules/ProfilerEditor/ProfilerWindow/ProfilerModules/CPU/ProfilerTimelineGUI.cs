@@ -32,6 +32,8 @@ namespace UnityEditorInternal
         const float k_GroupHeight = k_LineHeight + 4f;
         const float k_ThreadMinHeightCollapsed = 2.0f;
         const float k_ThreadSplitterHandleSize = 6f;
+        // Matches the scroll wheel speed of GUI.ScrollView so the timeline scrolls like other Editor views.
+        const float k_ScrollWheelStepSize = 20f;
 
         const int k_MaxNeighborFrames = 3;
         const int k_MaxDisplayFrames = 1 + 2 * k_MaxNeighborFrames;
@@ -2495,6 +2497,7 @@ namespace UnityEditorInternal
                         m_TimeArea.bottommargin = 0;
                         m_TimeArea.upDirection = ZoomableArea.YDirection.Negative;
                         m_TimeArea.vZoomLockedByDefault = true;
+                        m_TimeArea.scrollWheelStepSize = k_ScrollWheelStepSize;
                     }
 
                     m_TimeArea.rect = timeAreaRect;
@@ -2563,7 +2566,7 @@ namespace UnityEditorInternal
                     Rect sideRect = new Rect(fullThreadsRect.x, fullThreadsRect.y, sideWidth, fullThreadsRect.height);
                     if (sideRect.Contains(Event.current.mousePosition) && Event.current.isScrollWheel)
                     {
-                        m_TimeArea.SetTransform(new Vector2(m_TimeArea.m_Translation.x, m_TimeArea.m_Translation.y - (Event.current.delta.y * 4)), m_TimeArea.m_Scale);
+                        m_TimeArea.ScrollVertically(Event.current.delta.y);
                         m_ProfilerWindow.Repaint();
                     }
 

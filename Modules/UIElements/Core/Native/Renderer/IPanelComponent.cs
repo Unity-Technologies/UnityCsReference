@@ -111,5 +111,9 @@ namespace UnityEngine.UIElements
         internal void HandleLiveReload();
 
         internal void OnLiveReloadOptionChanged();
+
+        internal void ReattachRootVisualElement();
+
+        internal void DetachRootVisualElement();
     }
 }

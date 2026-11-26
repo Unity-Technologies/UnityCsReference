@@ -234,9 +234,13 @@ namespace UnityEngine.UIElements
 
         public override void SetValueWithoutNotify(Enum newValue)
         {
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
+
             if (!Enum.Equals(rawValue, newValue))
             {
-                base.SetValueWithoutNotify(newValue);
+                using (IgnoreValidation())
+                    base.SetValueWithoutNotify(newValue);
 
                 if (m_EnumType == null)
                     return;

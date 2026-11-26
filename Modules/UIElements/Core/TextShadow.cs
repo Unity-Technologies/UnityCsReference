@@ -38,7 +38,7 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public bool Equals(TextShadow other)
         {
-            return other.offset == offset && other.blurRadius == blurRadius && other.color == color;
+            return other.offset.Equals(offset) && other.blurRadius.Equals(blurRadius) && other.color.Equals(color);
         }
 
         public override int GetHashCode()
@@ -53,7 +53,7 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public static bool operator==(TextShadow style1, TextShadow style2)
         {
-            return style1.Equals(style2);
+            return style1.offset == style2.offset && style1.blurRadius == style2.blurRadius && style1.color == style2.color;
         }
 
         /// <undoc/>

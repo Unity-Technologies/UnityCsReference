@@ -284,10 +284,14 @@ namespace UnityEngine.UIElements
 
         public override void SetValueWithoutNotify(TValueType newValue)
         {
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
+
             // Clamp the value around the real lowest and highest range values.
             var clampedValue = clamped ? GetClampedValue(newValue) : newValue;
 
-            base.SetValueWithoutNotify(clampedValue);
+            using (IgnoreValidation())
+                base.SetValueWithoutNotify(clampedValue);
             onSetValueWithoutNotify?.Invoke(clampedValue);
             UpdateDragElementPosition();
             UpdateTextFieldValue();

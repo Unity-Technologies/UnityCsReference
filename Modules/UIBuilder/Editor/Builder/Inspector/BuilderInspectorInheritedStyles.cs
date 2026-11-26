@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
@@ -253,22 +254,13 @@ namespace Unity.UI.Builder
 
             PreAddStyleClass(className);
 
-            // Transfer all properties from inline styles rule to new selector.
-            mainStyleSheet.TransferRulePropertiesToSelector(
-                newSelector, m_Inspector.styleSheet, m_Inspector.currentRule);
-
             // Update VisualTreeAsset.
             BuilderAssetUtilities.AddStyleClassToElementInAsset(
                 m_PaneWindow.document, currentVisualElement, className);
 
-            // Overwrite Undo Message.
-            Undo.RegisterCompleteObjectUndo(
-                new UnityEngine.Object[] { m_PaneWindow.document.visualTreeAsset, mainStyleSheet },
-                BuilderConstants.CreateStyleClassUndoMessage);
-
-            // We actually want to get the notification back and refresh ourselves.
-            m_Selection.NotifyOfStylingChange(null);
-            m_Selection.NotifyOfHierarchyChange(null, currentVisualElement);
+            m_Inspector.styleFields.PushLocalStylesToSelector(
+                new SelectorMatchRecord(mainStyleSheet, 0, 0, newSelector),
+                undoMessage: BuilderConstants.CreateStyleClassUndoMessage);
         }
 
         void OnStyleClassDelete(EventBase evt)

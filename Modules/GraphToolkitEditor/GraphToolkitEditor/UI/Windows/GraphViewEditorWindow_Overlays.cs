@@ -95,6 +95,7 @@ namespace Unity.GraphToolkit.Editor
                     wrapper.RootView = modelInspectorView;
 
                 modelInspectorView.Initialize();
+                modelInspectorView.uiTreeRebuilt += OnInspectorUITreeRebuilt;
                 modelInspectorView.AddToClassList(k_UnityThemeEnvVariablesClassName);
                 modelInspectorView.RegisterCallback<TooltipEvent>((e) => e.StopPropagation());
                 RegisterView(modelInspectorView);

@@ -69,7 +69,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         Draw2D m_Draw2D;
 
-        internal Draw2D Draw2D => m_Draw2D;
+        internal Draw2D Draw2D => m_Draw2D ??= new Draw2D(ProjectAuditor.s_DataPath + "/Shaders/ProjectAuditor.shader");
 
         Areas m_SelectedAreas;
 
@@ -438,8 +438,6 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 m_tryingFallback = false;
             }
-
-            m_Draw2D = new Draw2D(ProjectAuditor.s_DataPath + "/Shaders/ProjectAuditor.shader");
 
             RefreshWindow();
 
@@ -1864,7 +1862,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Rect clipRect = new Rect(activeView.VerticalScrollViewPos.x, activeView.VerticalScrollViewPos.y,
                     activeView.LastVerticalScrollViewSize.x - GUI.skin.verticalScrollbar.fixedWidth + widthDifference - 1f,
                     activeView.LastVerticalScrollViewSize.y);
-                m_Draw2D.SetClipRect(clipRect);
+                Draw2D.SetClipRect(clipRect);
             }
 
             DrawReport();
@@ -1872,7 +1870,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (activeView.ShowVerticalScrollView)
             {
                 EditorGUILayout.EndScrollView();
-                m_Draw2D.ClearClipRect();
+                m_Draw2D?.ClearClipRect();
 
                 if (Event.current.type == EventType.Repaint)
                 {

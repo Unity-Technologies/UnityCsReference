@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements.UIR
         ViewChange,
     }
 
-    partial class UIRenderDevice : IDisposable
+    partial class UIRenderDevice : IDisposable, IPooledNativeStore
     {
         public static class Testing
         {
@@ -230,6 +230,7 @@ namespace UnityEngine.UIElements.UIR
             });
 
             m_CommandListManager = new(m_VertexDecl, m_DefaultStencilState);
+            PooledNativeStores.Register(this);
         }
 
         static int ReserveExtrasOffset(ExtraVertexChannels channel, ExtraVertexChannels mask, ref int cursor)
@@ -328,6 +329,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
+                PooledNativeStores.Unregister(this);
                 m_Profiler.Dispose();
 
                 unsafe
@@ -1251,6 +1253,32 @@ namespace UnityEngine.UIElements.UIR
         internal AllocationStatistics GatherAllocationStatistics()
         {
             return m_MeshManager.GatherAllocationStatistics();
+        }
+
+        string IPooledNativeStore.storeName => "RendererPages";
+
+        long IPooledNativeStore.GetBytesReserved() => GetPageBytes(false);
+
+        long IPooledNativeStore.GetBytesUsed() => GetPageBytes(true);
+
+        void IPooledNativeStore.ReleasePendingSlots()
+        {
+            // A freed mesh gives its range back once its GPU fence has passed
+        }
+
+        long GetPageBytes(bool allocatedOnly)
+        {
+            if (m_MeshManager == null)
+                return 0;
+
+            var bytes = 0L;
+            foreach (var page in m_MeshManager.GatherAllocationStatistics().pages)
+            {
+                var vertices = allocatedOnly ? page.vertices.allocatedSize : page.vertices.totalSize;
+                var indices = allocatedOnly ? page.indices.allocatedSize : page.indices.totalSize;
+                bytes += vertices * (long)vertexStride + indices * (long)sizeof(ushort);
+            }
+            return bytes;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

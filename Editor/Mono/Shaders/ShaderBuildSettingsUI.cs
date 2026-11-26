@@ -415,6 +415,12 @@ namespace UnityEditor.Shaders
             if (isValidData)
             {
                 SaveSettingsData(mergedCompilerSettings);
+                bool usesKeywordOverrides = m_KeywordDeclarationOverrides.Count > 0;
+                bool usesConstantDefines = m_ConstantDefines.Count > 0;
+                ShaderBuildSettingsAnalytics.SendSettingsApplied(ShaderBuildSettingsAnalytics.CreateData(GetCurrentBuildTarget(),
+                    usesSettingsOnBuildProfile: m_IsTargetingBuildProfile, usesFastBuildMode: m_FastBuildEnabled,
+                    usesKeywordOverrides: usesKeywordOverrides, usesConstantDefines: usesConstantDefines,
+                    compilerSettings: mergedCompilerSettings));
                 m_AppliedFastBuildEnabled = m_FastBuildEnabled;
                 UpdateFastBuildControls();
                 ClearSettingsChangedState();

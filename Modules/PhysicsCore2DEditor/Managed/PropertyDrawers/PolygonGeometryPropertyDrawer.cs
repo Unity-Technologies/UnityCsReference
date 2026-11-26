@@ -34,13 +34,14 @@ namespace Unity.U2D.Physics.Editor
             var shapeField = new PopupField<Shape>(shapeLabel, new List<Shape>(shapeChoices), Shape.Box) { tooltip = Tooltips.shape };
             shapeField.AddToClassList(PopupField<Shape>.alignedFieldUssClassName);
 
-            var boxSizeField = new Vector2Field(sizeLabel) { tooltip = Tooltips.size };
+            // The size and offset fields are delayed, so a value is applied only when editing ends, and a partly typed value, such as the 0 of 0.25, is never applied and rejected.
+            var boxSizeField = new Vector2Field(sizeLabel) { tooltip = Tooltips.size, isDelayed = true };
             boxSizeField.AddToClassList(Vector2Field.alignedFieldUssClassName);
 
-            var regularSizeField = new FloatField(sizeLabel) { tooltip = Tooltips.size };
+            var regularSizeField = new FloatField(sizeLabel) { tooltip = Tooltips.size, isDelayed = true };
             regularSizeField.AddToClassList(FloatField.alignedFieldUssClassName);
 
-            var offsetField = new Vector2Field(offsetLabel) { tooltip = Tooltips.offset };
+            var offsetField = new Vector2Field(offsetLabel) { tooltip = Tooltips.offset, isDelayed = true };
             offsetField.AddToClassList(Vector2Field.alignedFieldUssClassName);
 
             var invalidCountHelpBox = new HelpBox(invalidCountMessage, HelpBoxMessageType.Warning);
@@ -375,11 +376,10 @@ namespace Unity.U2D.Physics.Editor
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            var root = new VisualElement();
-            var foldout = new Foldout { text = property.displayName, value = false, viewDataKey = typeof(PolygonGeometryPropertyDrawer).ToString() };
-            root.Add(foldout);
+            // The foldout is bound to the property so its expanded state is the property's own, as for any struct in an inspector.
+            var foldout = new Foldout { text = property.displayName, value = false, bindingPath = property.propertyPath };
             foldout.Add(PolygonGeometryInspector.CreateFields(property));
-            return root;
+            return foldout;
         }
 
         #endregion
@@ -422,10 +422,11 @@ namespace Unity.U2D.Physics.Editor
             var wideMode = EditorGUIUtility.wideMode;
             EditorGUIUtility.wideMode = true;
 
-            label = EditorGUI.BeginProperty(position, label, property);
-
+            // The geometry's property scope covers only its header, so the override bar and context menu of each field below are that field's own.
             var foldoutRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+            label = EditorGUI.BeginProperty(foldoutRect, label, property);
             property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label, true);
+            EditorGUI.EndProperty();
 
             if (property.isExpanded)
             {
@@ -526,8 +527,6 @@ namespace Unity.U2D.Physics.Editor
 
                 EditorGUI.indentLevel--;
             }
-
-            EditorGUI.EndProperty();
 
             EditorGUIUtility.wideMode = wideMode;
 

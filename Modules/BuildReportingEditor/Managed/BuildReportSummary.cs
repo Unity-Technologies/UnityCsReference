@@ -94,6 +94,18 @@ namespace UnityEditor.Build
         /// <remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.outputPath"/>.</remarks>
         public string OutputPath;
 
+        /// <summary>The <see cref="PlayerSettings.productGUID"/> of the project that made the build.</summary>
+        /// <remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.projectGuid"/>. Compare it with the
+        /// current project's GUID to tell whether a build history entry was copied from another project. Copies and
+        /// clones of a project share its GUID. It is a default-valued <see cref="GUID"/> in summaries written before
+        /// this field existed.</remarks>
+        public GUID ProjectGUID;
+
+        /// <summary>The <see cref="PlayerSettings.productName"/> of the project that made the build.</summary>
+        /// <remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.projectName"/>. It is `null` when read
+        /// from a summary written before this field existed, so test it with `string.IsNullOrEmpty`.</remarks>
+        public string ProjectName;
+
         /// <summary>The <see cref="BuildSessionGUID"/> of the build that this build ran inside, or a default-valued
         /// <see cref="GUID"/> if none.</summary>
         /// <remarks>Recorded for builds started during a Player build or an Addressables build.
@@ -207,6 +219,8 @@ namespace UnityEditor.Build
                 Platform = summary.platform,
                 PlatformName = summary.platform.ToString(),
                 ProducerPackage = string.Empty, // only external builds have one
+                ProjectGUID = summary.projectGuid,
+                ProjectName = summary.projectName,
                 Subtarget = summary.subtarget,
                 SubtargetName = summary.GetSubtargetString(),
                 TotalErrors = summary.totalErrors,

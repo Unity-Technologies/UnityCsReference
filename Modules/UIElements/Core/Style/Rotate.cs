@@ -106,7 +106,7 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public bool Equals(Rotate other)
         {
-            return other == this;
+            return m_Angle.Equals(other.m_Angle) && m_Axis.Equals(other.m_Axis) && m_IsNone == other.m_IsNone;
         }
 
         /// <undoc/>

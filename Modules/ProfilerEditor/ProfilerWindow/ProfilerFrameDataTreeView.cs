@@ -623,7 +623,9 @@ namespace UnityEditorInternal
 
             if (!patternEmpty)
             {
-                if (m_prevSearchPattern != searchString || m_DelayedSearch.HasTriggered)
+                var shouldSearch = ProfilerDriver.lastFrameIndex != m_PrevFrameIndex;
+
+                if (m_prevSearchPattern != searchString)
                 {
                     m_prevSearchPattern = searchString;
                     requestedDelayedSearch = true;
@@ -638,14 +640,14 @@ namespace UnityEditorInternal
                     EditorApplication.update -= m_DelayedSearch.Trigger;
                     EditorApplication.update += m_DelayedSearch.Trigger;
                 }
-                else if (m_ShouldExecuteDelayedSearch)
+                else if (m_ShouldExecuteDelayedSearch || m_DelayedSearch.HasTriggered)
                 {
+                    // An unchanged pattern with no pending delay (e.g. a rebuild caused by expanding the selection) must not restart the delay
                     m_ShouldExecuteDelayedSearch = false;
-                    m_Rows.Clear();
-                    Search(root, searchString, m_Rows);
+                    shouldSearch = true;
                 }
 
-                if (ProfilerDriver.lastFrameIndex != m_PrevFrameIndex)
+                if (shouldSearch)
                 {
                     m_Rows.Clear();
                     Search(root, searchString, m_Rows);

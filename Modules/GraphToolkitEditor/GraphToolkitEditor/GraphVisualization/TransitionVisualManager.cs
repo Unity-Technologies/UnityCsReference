@@ -26,6 +26,7 @@ sealed class TransitionVisualManager
         m_Session = session;
         m_Session.isAttached += OnAttached;
         m_Session.isDetached += OnDetached;
+        m_Session.inspectorRebuilt += OnInspectorRebuilt;
     }
 
     /// <summary>
@@ -260,5 +261,11 @@ sealed class TransitionVisualManager
     void OnDetached()
     {
         ClearAll();
+    }
+
+    void OnInspectorRebuilt()
+    {
+        foreach (var (transitionID, _) in TransitionVisualStore.AllTransitionVisuals)
+            NotifyIconChanged(transitionID);
     }
 }

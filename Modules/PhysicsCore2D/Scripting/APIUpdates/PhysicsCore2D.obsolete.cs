@@ -116,7 +116,7 @@ namespace Unity.U2D.Physics
         }
     }
 
-    public partial record struct PhysicsWorldDefinition
+    public partial struct PhysicsWorldDefinition
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -159,7 +159,7 @@ namespace Unity.U2D.Physics
         public bool preSolveCallbacks { readonly get => preContactCallbacks; set => preContactCallbacks = value; }
     }
 
-    public partial record struct PhysicsShapeDefinition
+    public partial struct PhysicsShapeDefinition
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -190,7 +190,7 @@ namespace Unity.U2D.Physics
         public readonly bool SetAndWriteTransform(PhysicsTransform transform) => throw new NotSupportedException();
     }
 
-    public partial record struct PhysicsBodyDefinition
+    public partial struct PhysicsBodyDefinition
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -303,7 +303,7 @@ namespace Unity.U2D.Physics
         public readonly float angle => PhysicsRotate_GetAngle(this);
     }
 
-    public readonly partial record struct PhysicsQuery
+    public readonly partial struct PhysicsQuery
     {
         public readonly partial record struct CastResult
         {
@@ -314,7 +314,7 @@ namespace Unity.U2D.Physics
         }
     }
 
-    public readonly partial record struct PhysicsEvents
+    public readonly partial struct PhysicsEvents
     {
         public readonly partial record struct TransformWriteEvent
         {
@@ -391,7 +391,7 @@ namespace Unity.U2D.Physics
         }
     }
 
-    public readonly partial record struct PhysicsCallbacks
+    public readonly partial struct PhysicsCallbacks
     {
         /// <summary>
         /// An interface that when implemented, is called as a target when a shape and its world both have their pre-contact callbacks enabled.
@@ -419,7 +419,7 @@ namespace Unity.U2D.Physics
         public void Normalized() => Normalize();
     }
 
-    public readonly partial record struct PhysicsConstants
+    public readonly partial struct PhysicsConstants
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -427,7 +427,7 @@ namespace Unity.U2D.Physics
         public const int MaxWorlds = 128;
     }
 
-    public readonly partial record struct PhysicsMath
+    public readonly partial struct PhysicsMath
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]

@@ -129,7 +129,16 @@ public class TemplateFormatter : FormatterBase, IInitializer, ISerializationCall
     /// <param name="template">String to use as the template.</param>
     public void Register(string templateName, string template)
     {
-        var parsed = m_Formatter !.Parser.ParseFormat(template);
+        if (m_Formatter == null)
+        {
+            if (m_Templates.Exists(t => t.name == templateName))
+                throw new ArgumentException($"A template named '{templateName}' is already registered.", nameof(templateName));
+
+            m_Templates.Add(new Template { name = templateName, text = template });
+            return;
+        }
+
+        var parsed = m_Formatter.Parser.ParseFormat(template);
         Templates.Add(templateName, parsed);
         m_Templates.Add(new Template { Format = parsed, name = templateName, text = template });
     }
@@ -141,8 +150,9 @@ public class TemplateFormatter : FormatterBase, IInitializer, ISerializationCall
     /// <returns><see langword="true"/> if the template was found and removed; otherwise, <see langword="false"/>.</returns>
     public bool Remove(string templateName)
     {
-        m_Templates.RemoveAll(m => m.name == templateName);
-        return Templates.Remove(templateName);
+        var comparer = m_Formatter != null ? m_Formatter.Settings.GetCaseSensitivityComparer() : StringComparer.Ordinal;
+        var removed = m_Templates.RemoveAll(m => comparer.Equals(m.name, templateName)) > 0;
+        return m_TemplatesDict != null ? m_TemplatesDict.Remove(templateName) : removed;
     }
 
     /// <summary>
@@ -150,7 +160,7 @@ public class TemplateFormatter : FormatterBase, IInitializer, ISerializationCall
     /// </summary>
     public void Clear()
     {
-        Templates.Clear();
+        m_TemplatesDict?.Clear();
         m_Templates.Clear();
     }
 
@@ -158,6 +168,7 @@ public class TemplateFormatter : FormatterBase, IInitializer, ISerializationCall
     public void Initialize(SmartFormatter smartFormatter)
     {
         m_Formatter = smartFormatter;
+        m_TemplatesDict = null;
     }
 
     void ISerializationCallbackReceiver.OnBeforeSerialize()

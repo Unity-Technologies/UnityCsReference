@@ -30,6 +30,11 @@ namespace Unity.AcceleratorClient
         [FreeFunction("AcceleratorClientV2RunAdapterGate")]
         [NativeConditional("ENABLE_UNIT_TESTS")]
         internal static extern long RunAdapterGate(string endpoint);
+
+        // One kind of adapter operation per call, `ops` times; see AcceleratorClientV2RunAllocProbeImpl for `op`.
+        [FreeFunction("AcceleratorClientV2RunAllocProbe")]
+        [NativeConditional("ENABLE_UNIT_TESTS")]
+        internal static extern long RunAllocProbe(string endpoint, int op, int ops);
     }
 
     // Managed handle for the identity push. Applies an identity to the live V2 client and fans it out to

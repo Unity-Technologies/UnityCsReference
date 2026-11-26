@@ -96,7 +96,7 @@ namespace Unity.Hierarchy
         /// This count excludes container nodes (such as scenes) that are visible only because they contain matching descendants.
         /// The count is computed during filtering and is available after the view model finishes updating.
         /// </remarks>
-        internal extern int SearchMatchCount { [NativeMethod("GetSearchMatchCount")] get; }
+        internal extern int SearchMatchCount { [NativeMethod("GetSearchMatchCount", IsThreadSafe = true)] get; }
 
         internal ReadOnlyNativeVector<HierarchyFlattenedNode> FlattenedNodes
         {

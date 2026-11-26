@@ -53,25 +53,25 @@ internal static class UIViewportContextMenuUtility
         }
     }
 
-    public static VisualElement GetFirstSelectedElement(IPanel scopePanel = null)
+    public static VisualElement GetFirstSelectedElement(Func<VisualElement, bool> isInScope = null)
     {
         foreach (var selectedId in Selection.entityIds)
             if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection { Element: { } element } && element.panel != null
-                && (scopePanel == null || element.panel == scopePanel))
+                && (isInScope == null || isInScope(element)))
                 return element;
         return null;
     }
 
-    public static bool CanPaste(IPanel scopePanel = null)
+    public static bool CanPaste(Func<VisualElement, bool> isInScope = null)
     {
-        if (!VisualElementEditingUtility.TryResolvePasteParent(GetFirstSelectedElement(scopePanel), out var parentElement, out var parentAsset))
+        if (!VisualElementEditingUtility.TryResolvePasteParent(GetFirstSelectedElement(isInScope), out var parentElement, out var parentAsset))
             return false;
         return VisualElementEditingUtility.CanPasteContent(parentElement, parentAsset);
     }
 
-    public static bool DoPaste(CommandSources.CommandSource source, IPanel scopePanel = null)
+    public static bool DoPaste(CommandSources.CommandSource source, Func<VisualElement, bool> isInScope = null)
     {
-        var selected = GetFirstSelectedElement(scopePanel);
+        var selected = GetFirstSelectedElement(isInScope);
         if (!VisualElementEditingUtility.TryResolvePasteParent(selected, out var parentElement, out var parentAsset))
             return false;
 
@@ -128,7 +128,7 @@ internal static class UIViewportContextMenuUtility
         DropdownMenu menu,
         CommandSources.CommandSource source,
         UICanvasInPlaceEditor inPlaceEditor = null,
-        IPanel scopePanel = null)
+        Func<VisualElement, bool> isInScope = null)
     {
         using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
         FilterSelection(filteredSelection);
@@ -139,7 +139,7 @@ internal static class UIViewportContextMenuUtility
         FilterSelection(liveElementsAssets, liveElements, requireFullyEditable: false);
         var allAssets = liveElementsAssets.ToArray();
 
-        PopulateEditActions(menu, selection, allAssets, CanPaste(scopePanel), () => DoPaste(source, scopePanel));
+        PopulateEditActions(menu, selection, allAssets, CanPaste(isInScope), () => DoPaste(source, isInScope));
 
         if (source == CommandSources.Viewport && inPlaceEditor != null)
         {

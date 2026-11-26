@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -77,6 +78,13 @@ namespace UnityEditor
             get;
         }
 
+        public extern bool minimized
+        {
+            [FreeFunction(k_ScriptingPrefix + "IsWindowMinimized", HasExplicitThis = true)]
+            [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
+            get;
+        }
+
         // Used by invisible "under the mouse" window of the eye dropper.
         [FreeFunction(k_ScriptingPrefix + "SetInvisible", HasExplicitThis = true)]
         [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
@@ -133,6 +141,9 @@ namespace UnityEditor
 
         [FreeFunction(k_ScriptingPrefix + "GetOrderedWindowList")]
         internal static extern void GetOrderedWindowList();
+
+        [FreeFunction(k_ScriptingPrefix + "GetWindowEntityIds")]
+        internal static extern int GetWindowEntityIds(Span<EntityId> ids);
 
         [FreeFunction(k_ScriptingPrefix + "FitRectToMouseScreen")]
         internal static extern Rect FitRectToMouseScreen(

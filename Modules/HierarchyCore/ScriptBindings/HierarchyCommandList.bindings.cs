@@ -311,9 +311,13 @@ namespace Unity.Hierarchy
         public extern bool SetName(in HierarchyNode node, string name);
 
         /// <summary>
-        /// Force an update of the hierarchy, even if no changes are pending.
+        /// Requests an update of the hierarchy and a refresh of all its views, even if no changes are pending.
         /// </summary>
-        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
+        /// <remarks>
+        /// This doesn't append a command to the list, so it leaves <see cref="IsEmpty"/> unchanged.
+        /// Use <see cref="Hierarchy.UpdateNeeded"/> to determine whether an update is pending.
+        /// </remarks>
+        /// <returns><see langword="true"/> if the update was requested, <see langword="false"/> otherwise.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool SetDirty();
 

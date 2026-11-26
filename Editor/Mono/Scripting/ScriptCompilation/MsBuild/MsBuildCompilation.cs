@@ -64,6 +64,7 @@ partial class MsBuildCompilation
     private Task<BuildResultMessage> _currentBuildTask;
 
     private MSBuildCompilationBuildState _currentBuildState;
+    private MSBuildCompilationBuildState _analysisBuildState;
     private bool _shouldRestore = false;
     private bool _requestedBuild = false;
 
@@ -110,6 +111,7 @@ partial class MsBuildCompilation
         Console.WriteLine($"Requesting Compilation: {reason}\nRestoring: {restoreString}");
 
         _currentBuildState?.CancellationTokenSource.Cancel();
+        _analysisBuildState?.CancellationTokenSource.Cancel();
         _shouldRestore |= restore;
         _requestedBuild = true;
     }
@@ -123,7 +125,7 @@ partial class MsBuildCompilation
 
     public bool IsCompiling()
     {
-        return _requestedBuild || _currentBuildState is not null;
+        return _requestedBuild || _currentBuildState is not null || _analysisBuildState is not null;
     }
 
     public EditorCompilation.CompileStatus Compile(BuildTarget buildTarget, CompileTarget target, MSBuildCompilationOptions compilationOptions)
@@ -170,11 +172,8 @@ partial class MsBuildCompilation
         if (!_requestedBuild && _currentBuildTask == null)
             return EditorCompilation.CompileStatus.Idle;
 
-        // An out-of-band analysis build (RequestAnalysisCompilationAsync) holds _currentBuildState without a
-        // _currentBuildTask. Don't start or post-process a normal compile until it finishes — this serializes
-        // the two against the host's shared per-build state. The pending _requestedBuild stays set and starts
-        // once the analysis build clears _currentBuildState (or is cancelled by RequestMsBuildScriptCompilation).
-        if (_currentBuildTask == null && _currentBuildState != null)
+        // An analysis build shares the host's per-build state, so a normal compile starts or completes once it finishes
+        if (_analysisBuildState != null)
             return EditorCompilation.CompileStatus.Compiling;
 
         // If build is running return compiling
@@ -403,8 +402,12 @@ partial class MsBuildCompilation
 
     internal async Task<CompilationMessages> RequestAnalysisCompilationAsync(string configuration, int parentProgressId, CancellationToken cancellationToken)
     {
-        // A requested compile waits for this build (see TickCompilationPipeline), but a pending restore must run first since this build doesn't restore
-        if (_shouldRestore || _currentBuildTask != null || _currentBuildState != null)
+        // A blocking caller keeps the editor from ticking, so only wait for the host to finish the in-flight build
+        while (_currentBuildTask != null && !_currentBuildTask.IsCompleted)
+            await WaitForBuildAsync(_currentBuildTask, cancellationToken);
+
+        // This build doesn't restore, and a requested compile waits for it (see TickCompilationPipeline)
+        if (_shouldRestore || _analysisBuildState != null)
         {
             return new CompilationMessages
             {
@@ -423,11 +426,12 @@ partial class MsBuildCompilation
             };
         }
 
-        _currentBuildState = new MSBuildCompilationBuildState(CompilerClient, parentProgressId);
-        using var _ = cancellationToken.Register(() => _currentBuildState.CancellationTokenSource.Cancel());
+        var buildState = new MSBuildCompilationBuildState(CompilerClient, parentProgressId);
+        _analysisBuildState = buildState;
+        using var _ = cancellationToken.Register(() => buildState.CancellationTokenSource.Cancel());
         try
         {
-            return await RunScriptCompilationAsync(configuration);
+            return await RunScriptCompilationAsync(buildState, configuration);
         }
         catch (OperationCanceledException)
         {
@@ -436,11 +440,21 @@ partial class MsBuildCompilation
         }
         finally
         {
-            _currentBuildState = null;
+            _analysisBuildState = null;
         }
     }
 
-    private async Task<CompilationMessages> RunScriptCompilationAsync(string configuration)
+    private static async Task WaitForBuildAsync(Task buildTask, CancellationToken cancellationToken)
+    {
+        var cancelled = new TaskCompletionSource<bool>();
+        using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
+        {
+            await Task.WhenAny(buildTask, cancelled.Task);
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
+    private async Task<CompilationMessages> RunScriptCompilationAsync(MSBuildCompilationBuildState buildState, string configuration)
     {
         // Derive BuildTarget from configuration string for Player analysis (Editor analysis uses the active target)
         BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
@@ -460,7 +474,7 @@ partial class MsBuildCompilation
         var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value
             || Application.HasARGV("generate-binlog");
 
-        var buildTask = _currentBuildState.BuildAsync(
+        var buildTask = buildState.BuildAsync(
             restore: false,
             generateBinLog: generateBinLog,
             configuration: configuration,

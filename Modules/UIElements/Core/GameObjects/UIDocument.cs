@@ -597,7 +597,8 @@ namespace UnityEngine.UIElements
         // Used by unit tests.
         void IPanelComponent.PerformUpdate()
         {
-            if (m_RootVisualElement == null || panelSettings == null || panelSettings.panel == null)
+            // Reading panelSettings.panel creates the panel, which would revive a disposed one for a detached document
+            if (m_RootVisualElement == null || panelSettings == null || !panelSettings.isInitialized)
             {
                 RemoveWorldSpaceCollider();
                 return;
@@ -898,8 +899,7 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement != null)
             {
                 RemoveFromHierarchy();
-                if (m_PanelSettings != null)
-                    m_PanelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
+                RemoveVisualTreeAssetTracker();
                 rootVisualElement = null;
             }
 
@@ -1092,8 +1092,7 @@ namespace UnityEngine.UIElements
             {
                 RemoveFromHierarchy();
                 // Unhook tracking, we're going down (but only after we detach from the panel).
-                if (m_PanelSettings != null)
-                    m_PanelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
+                RemoveVisualTreeAssetTracker();
                 rootVisualElement = null;
             }
 
@@ -1168,8 +1167,56 @@ namespace UnityEngine.UIElements
                 m_LiveReloadVisualTreeAssetTracker = CreateLiveReloadVisualTreeAssetTracker.Invoke(this);
             }
 
-            if (m_PanelSettings != null)
-                m_PanelSettings.panel.liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, m_RootVisualElement);
+            // Refused contents must not register on or revive the panel; reattaching registers them
+            if (m_PanelSettings == null || m_PanelSettings.RefusesPrefabStageContents(gameObject))
+                return;
+
+            var liveReloadSystem = m_PanelSettings.panel.liveReloadSystem;
+
+            // Registering twice bumps the asset reference count, which a single unregister doesn't balance.
+            if (!liveReloadSystem.IsVisualTreeAssetTrackerRegistered(m_RootVisualElement))
+                liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, m_RootVisualElement);
+        }
+
+        void RemoveVisualTreeAssetTracker()
+        {
+            if (m_RootVisualElement == null || m_PanelSettings == null || !m_PanelSettings.isInitialized)
+                return;
+
+            m_PanelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
+        }
+
+        void SetupVisualTreeAssetTrackersInSubtree()
+        {
+            SetupVisualTreeAssetTracker();
+            if (m_ChildrenContent == null)
+                return;
+
+            foreach (var child in m_ChildrenContent.m_AttachedPanelComponents)
+                ((UIDocument)child).SetupVisualTreeAssetTrackersInSubtree();
+        }
+
+        void RemoveVisualTreeAssetTrackersInSubtree()
+        {
+            RemoveVisualTreeAssetTracker();
+            if (m_ChildrenContent == null)
+                return;
+
+            foreach (var child in m_ChildrenContent.m_AttachedPanelComponents)
+                ((UIDocument)child).RemoveVisualTreeAssetTrackersInSubtree();
+        }
+
+        // Child roots stay in this tree across panel disposal, and a parent's live reload reinserts rather than rebuilds them
+        void IPanelComponent.ReattachRootVisualElement()
+        {
+            SetupVisualTreeAssetTrackersInSubtree();
+            AddRootVisualElementToTree();
+        }
+
+        void IPanelComponent.DetachRootVisualElement()
+        {
+            RemoveFromHierarchy();
+            RemoveVisualTreeAssetTrackersInSubtree();
         }
 
         void IPanelComponent.OnLiveReloadOptionChanged()

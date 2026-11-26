@@ -54,7 +54,7 @@ namespace UnityEngine.TextCore.Text
             Font sourceFont_editorRef = null;
             sourceFont_editorRef = SourceFont_EditorRef;
 
-            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, entityId, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode, italicStyleSlant, boldStyleWeight, (int)(boldStyleSpacing * 64.0f), MarshalledUnityObject.MarshalNotNull(this));
+            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, entityId, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode, italicStyleSlant, boldStyleWeight, (int)(boldStyleSpacing * 64.0f), tabMultiple, (int)(regularStyleSpacing * 64.0f), MarshalledUnityObject.MarshalNotNull(this));
         }
 
 
@@ -81,6 +81,17 @@ namespace UnityEngine.TextCore.Text
             UpdateWeightFallbacks(nativeFontAsset, weights.Item1, weights.Item2);
         }
 
+        internal void UpdateNativeProperties()
+        {
+            UpdateFaceInfo();
+            UpdateRenderMode();
+            UpdateItalicAngle();
+            UpdateBoldWeight();
+            UpdateBoldSpacing();
+            UpdateTabMultiple();
+            UpdateRegularStyleSpacing();
+        }
+
         internal void UpdateFaceInfo()
         {
             UpdateFaceInfo(nativeFontAsset, faceInfo);
@@ -104,6 +115,16 @@ namespace UnityEngine.TextCore.Text
         internal void UpdateBoldSpacing()
         {
             UpdateBoldSpacing(nativeFontAsset, (int)(boldStyleSpacing * 64.0f));
+        }
+
+        internal void UpdateTabMultiple()
+        {
+            UpdateTabMultiple(nativeFontAsset, tabMultiple);
+        }
+
+        internal void UpdateRegularStyleSpacing()
+        {
+            UpdateNormalSpacingOffset(nativeFontAsset, (int)(regularStyleSpacing * 64.0f));
         }
 
         internal IntPtr[] GetFallbacks()
@@ -261,9 +282,9 @@ namespace UnityEngine.TextCore.Text
         }
 
         // Bridges for external text systems (TMP)
-        internal static IntPtr CreateNativeFontAsset(FaceInfo faceInfo, Font sourceFontFile, Font sourceFontEditorRef, string sourceFontFilePath, EntityId fontEntityId, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode, byte italicSlant, float boldWeight, int boldSpacing, Object owner)
+        internal static IntPtr CreateNativeFontAsset(FaceInfo faceInfo, Font sourceFontFile, Font sourceFontEditorRef, string sourceFontFilePath, EntityId fontEntityId, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode, byte italicSlant, float boldWeight, int boldSpacing, byte tabMultiple, int normalSpacingOffset, Object owner)
         {
-            return Create(faceInfo, sourceFontFile, sourceFontEditorRef, sourceFontFilePath, fontEntityId, fallbacks, weightFallbacks, italicFallbacks, renderMode, italicSlant, boldWeight, boldSpacing, MarshalledUnityObject.MarshalNotNull(owner));
+            return Create(faceInfo, sourceFontFile, sourceFontEditorRef, sourceFontFilePath, fontEntityId, fallbacks, weightFallbacks, italicFallbacks, renderMode, italicSlant, boldWeight, boldSpacing, tabMultiple, normalSpacingOffset, MarshalledUnityObject.MarshalNotNull(owner));
         }
 
         internal static void DestroyNativeFontAsset(IntPtr nativeFontAsset, Object owner)
@@ -326,7 +347,7 @@ namespace UnityEngine.TextCore.Text
         static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
         static extern void UpdateWeightFallbacks(IntPtr ptr, IntPtr[] regularFallbacks, IntPtr[] italicFallbacks);
 
-        static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, EntityId fontEntityId, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode, byte italicSlant, float boldWeight, int boldSpacing, IntPtr managedObject);
+        static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, EntityId fontEntityId, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode, byte italicSlant, float boldWeight, int boldSpacing, byte tabMultiple, int normalSpacingOffset, IntPtr managedObject);
         static extern void UpdateFaceInfo(IntPtr ptr, FaceInfo faceInfo);
         static extern void UpdateRenderMode(IntPtr ptr, GlyphRenderMode renderMode);
         static extern void UpdateItalicAngle(IntPtr ptr, byte italicAngle);

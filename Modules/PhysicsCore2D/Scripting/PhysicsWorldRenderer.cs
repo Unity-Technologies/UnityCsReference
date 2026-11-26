@@ -31,7 +31,8 @@ namespace Unity.U2D.Physics
         [NoAutoStaticsCleanup] static Mesh s_RenderMesh = null; // engine Mesh destroyed by ShutdownRendering (native), no user-code reference — safe to persist across a code reload
 
         // Installed by the Editor while its draw override hides physics drawing in views with gizmos off; null renders every view.
-        // It points at editor code, so ShutdownRendering drops it on code unloading and the Editor installs it again when it loads.
+        // It points at editor code, so ClearRenderViewCheck drops it on code unloading and the Editor installs it again when it loads.
+        // It is kept when rendering shuts down outside a code reload, such as when PhysicsCore2D restarts on leaving play mode.
         // Persisted rather than auto-cleaned for the same stripping reason as the other statics in this module (see PhysicsEvents.s_PreSimulate).
         [NoAutoStaticsCleanup] internal static Func<bool> s_RenderViewCheck = null;
 
@@ -83,10 +84,8 @@ namespace Unity.U2D.Physics
         static void ShutdownRendering()
         {
             // Runs on code unloading so the Unity objects used for rendering are released while they are still valid.
-            // Native calls it outside a code reload, such as when rendering is disabled or the editor quits.
-
-            // The view check points at editor code, so it never spans a code reload.
-            s_RenderViewCheck = null;
+            // Native calls it outside a code reload, such as when rendering is disabled, PhysicsCore2D restarts or the editor quits.
+            // The Editor view check is left in place here, as the Editor only installs it again on code load or when its draw override changes.
 
             // Finish if not initialized.
             if (!s_IsInitialized)
@@ -127,6 +126,10 @@ namespace Unity.U2D.Physics
             // Flag as not initialized.
             s_IsInitialized = false;
         }
+
+        // Drops the Editor view check on code unloading, as it points at editor code that does not survive a code reload.
+        [OnCodeUnloading]
+        static void ClearRenderViewCheck() => s_RenderViewCheck = null;
 
         /// <undoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

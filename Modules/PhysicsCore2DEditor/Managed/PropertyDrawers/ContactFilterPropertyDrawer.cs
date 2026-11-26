@@ -5,39 +5,39 @@
 using System;
 using System.Collections.Generic;
 
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor;
 
 namespace Unity.U2D.Physics.Editor
 {
     /// <summary>
-    /// Builds the UI Toolkit fields for a <see cref="PhysicsQuery.QueryFilter"/> serialized property.
-    /// The categories and hit categories use 64-bit or 32-bit mask fields depending on the project's layer configuration.
+    /// Builds the UI Toolkit fields for a <see cref="PhysicsShape.ContactFilter"/> serialized property.
+    /// The categories and contacts use 64-bit or 32-bit mask fields depending on the project's layer configuration.
     /// Add the returned element directly to embed the fields inline, or wrap it in a <see cref="Foldout"/> for a collapsible section.
     /// </summary>
-    public static class QueryFilterInspector
+    public static class ContactFilterInspector
     {
         /// <summary>
-        /// Create the editable fields for a <see cref="PhysicsQuery.QueryFilter"/> property, with no wrapping foldout.
+        /// Create the editable fields for a <see cref="PhysicsShape.ContactFilter"/> property, with no wrapping foldout.
         /// </summary>
-        /// <param name="property">The serialized <see cref="PhysicsQuery.QueryFilter"/> property to build the fields for.</param>
-        /// <returns>A container with the categories, hit categories, and ignore filter fields.</returns>
+        /// <param name="property">The serialized <see cref="PhysicsShape.ContactFilter"/> property to build the fields for.</param>
+        /// <returns>A container with the categories, contacts, and group index fields.</returns>
         public static VisualElement CreateFields(SerializedProperty property)
         {
             var body = new VisualElement();
 
-            const string categoriesTypeName = nameof(PhysicsQuery.QueryFilter.m_Categories);
-            const string hitCategoriesTypeName = nameof(PhysicsQuery.QueryFilter.m_HitCategories);
-            const string ignoreFilterTypeName = nameof(PhysicsQuery.QueryFilter.m_IgnoreFilter);
+            const string categoriesTypeName = nameof(PhysicsShape.ContactFilter.m_Categories);
+            const string contactsTypeName = nameof(PhysicsShape.ContactFilter.m_Contacts);
+            const string groupIndexTypeName = nameof(PhysicsShape.ContactFilter.m_GroupIndex);
 
             var categoriesProperty = property.FindPropertyRelative(categoriesTypeName);
-            var hitCategoriesProperty = property.FindPropertyRelative(hitCategoriesTypeName);
-            var ignoreFilterProperty = property.FindPropertyRelative(ignoreFilterTypeName);
+            var contactsProperty = property.FindPropertyRelative(contactsTypeName);
+            var groupIndexProperty = property.FindPropertyRelative(groupIndexTypeName);
 
-            var categoriesBindingPath = $"{categoriesTypeName}.{nameof(PhysicsQuery.QueryFilter.categories.bitMask)}";
-            var hitCategoriesBindingPath = $"{hitCategoriesTypeName}.{nameof(PhysicsQuery.QueryFilter.hitCategories.bitMask)}";
+            var categoriesBindingPath = $"{categoriesTypeName}.{nameof(PhysicsShape.ContactFilter.categories.bitMask)}";
+            var contactsBindingPath = $"{contactsTypeName}.{nameof(PhysicsShape.ContactFilter.contacts.bitMask)}";
 
             // Find if we need to show as a basic 64-bit mask.
             var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask(property);
@@ -68,41 +68,40 @@ namespace Unity.U2D.Physics.Editor
                 categories.AddToClassList(Mask64Field.alignedFieldUssClassName);
                 body.Add(categories);
 
-                var hitCategories = new Mask64Field(hitCategoriesProperty.displayName, layerNames, PhysicsMask.All)
+                var contacts = new Mask64Field(contactsProperty.displayName, layerNames, PhysicsMask.All)
                 {
-                    bindingPath = hitCategoriesBindingPath,
+                    bindingPath = contactsBindingPath,
                     choicesMasks = layerMasks
                 };
-                hitCategories.AddToClassList(Mask64Field.alignedFieldUssClassName);
-                body.Add(hitCategories);
+                contacts.AddToClassList(Mask64Field.alignedFieldUssClassName);
+                body.Add(contacts);
             }
             else
             {
                 // 32-bit mask.
-                var categories = new LayerMaskField32(categoriesProperty.displayName) { bindingPath = categoriesBindingPath };
-                var hitCategories = new LayerMaskField32(hitCategoriesProperty.displayName) { bindingPath = hitCategoriesBindingPath };
+                var categories = new LayerMaskField32(categoriesProperty.displayName, categoriesProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask))) { bindingPath = categoriesBindingPath };
+                var contacts = new LayerMaskField32(contactsProperty.displayName, contactsProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask))) { bindingPath = contactsBindingPath };
 
                 body.Add(categories);
-                body.Add(hitCategories);
+                body.Add(contacts);
             }
 
-            body.Add(new PropertyField(ignoreFilterProperty));
+            body.Add(new PropertyField(groupIndexProperty));
             return body;
         }
     }
 
-    [CustomPropertyDrawer(typeof(PhysicsQuery.QueryFilter))]
-    sealed class QueryFilterPropertyDrawer : PropertyDrawer
+    [CustomPropertyDrawer(typeof(PhysicsShape.ContactFilter))]
+    sealed class ContactFilterPropertyDrawer : PropertyDrawer
     {
         #region UITK
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            var root = new VisualElement();
-            var foldout = new Foldout { text = property.displayName, value = false, viewDataKey = typeof(QueryFilterPropertyDrawer).ToString() };
-            root.Add(foldout);
-            foldout.Add(QueryFilterInspector.CreateFields(property));
-            return root;
+            // The foldout is bound to the property so its expanded state is the property's own, as for any struct in an inspector.
+            var foldout = new Foldout { text = property.displayName, value = false, bindingPath = property.propertyPath };
+            foldout.Add(ContactFilterInspector.CreateFields(property));
+            return foldout;
         }
 
         #endregion
@@ -114,31 +113,30 @@ namespace Unity.U2D.Physics.Editor
             if (!property.isExpanded)
                 return EditorGUIUtility.singleLineHeight;
 
-            var ignoreFilterProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_IgnoreFilter));
             return EditorGUIUtility.singleLineHeight
-                + (EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight) * 2
-                + EditorGUIUtility.standardVerticalSpacing + EditorGUI.GetPropertyHeight(ignoreFilterProperty, true);
+                + (EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight) * 3;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            label = EditorGUI.BeginProperty(position, label, property);
-
             var showAsPhysicsMask = PhysicsMaskPropertyDrawer.ShowAsPhysicsMask(property);
 
+            // The filter's property scope covers only its header, so the override bar and context menu of each field below are that field's own.
             var foldoutRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+            label = EditorGUI.BeginProperty(foldoutRect, label, property);
             property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label, true);
+            EditorGUI.EndProperty();
 
             if (property.isExpanded)
             {
                 EditorGUI.indentLevel++;
 
-                var categoriesProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_Categories));
-                var hitCategoriesProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_HitCategories));
-                var ignoreFilterProperty = property.FindPropertyRelative(nameof(PhysicsQuery.QueryFilter.m_IgnoreFilter));
+                var categoriesProperty = property.FindPropertyRelative(nameof(PhysicsShape.ContactFilter.m_Categories));
+                var contactsProperty = property.FindPropertyRelative(nameof(PhysicsShape.ContactFilter.m_Contacts));
+                var groupIndexProperty = property.FindPropertyRelative(nameof(PhysicsShape.ContactFilter.m_GroupIndex));
 
                 var categoriesBitMask = categoriesProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask));
-                var hitCategoriesBitMask = hitCategoriesProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask));
+                var contactsBitMask = contactsProperty.FindPropertyRelative(nameof(PhysicsMask.bitMask));
 
                 float y = foldoutRect.yMax + EditorGUIUtility.standardVerticalSpacing;
                 var lineHeight = EditorGUIUtility.singleLineHeight;
@@ -147,16 +145,13 @@ namespace Unity.U2D.Physics.Editor
                 PhysicsMaskPropertyDrawer.DrawMaskField(new Rect(position.x, y, position.width, lineHeight), new GUIContent(categoriesProperty.displayName), categoriesBitMask, showAsPhysicsMask);
                 y += lineHeight + spacing;
 
-                PhysicsMaskPropertyDrawer.DrawMaskField(new Rect(position.x, y, position.width, lineHeight), new GUIContent(hitCategoriesProperty.displayName), hitCategoriesBitMask, showAsPhysicsMask);
+                PhysicsMaskPropertyDrawer.DrawMaskField(new Rect(position.x, y, position.width, lineHeight), new GUIContent(contactsProperty.displayName), contactsBitMask, showAsPhysicsMask);
                 y += lineHeight + spacing;
 
-                var ignoreFilterHeight = EditorGUI.GetPropertyHeight(ignoreFilterProperty, true);
-                EditorGUI.PropertyField(new Rect(position.x, y, position.width, ignoreFilterHeight), ignoreFilterProperty, true);
+                EditorGUI.PropertyField(new Rect(position.x, y, position.width, lineHeight), groupIndexProperty, false);
 
                 EditorGUI.indentLevel--;
             }
-
-            EditorGUI.EndProperty();
         }
 
         #endregion

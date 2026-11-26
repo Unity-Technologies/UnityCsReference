@@ -19,6 +19,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         public long DurationInMs;
         public CompilerMessage[] Messages;
         public CompilationStatus Status;
+        public bool HasErrors;
         public bool EditorAssembly;
     }
 
@@ -33,6 +34,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         CompilationStatus m_CompilationStatus = CompilationStatus.NotStarted;
         AssemblyCompilationTask[] m_Dependencies;
         CompilerMessage[] m_Messages = Array.Empty<CompilerMessage>();
+        bool m_HasErrors;
         Stopwatch m_StopWatch;
 
         private bool m_EditorAssembly;
@@ -40,6 +42,10 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         private OwnerFlags m_OwnerFlags;
 
         public string AssemblyPath => m_Builder.assemblyPath;
+
+        internal bool HasErrors => m_HasErrors;
+
+        internal CompilerMessage[] Messages => m_Messages;
 
         public bool IsCompleted
         {
@@ -60,9 +66,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         {
             get
             {
-                if (m_CompilationStatus != CompilationStatus.Compiled)
-                    return false;
-                return Array.TrueForAll(m_Messages, message => message.Type != CompilerMessageType.Error);
+                return m_CompilationStatus == CompilationStatus.Compiled && !m_HasErrors;
             }
         }
 
@@ -111,6 +115,7 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                                 DurationInMs = 0,
                                 Messages = m_Messages,
                                 Status = m_CompilationStatus,
+                                HasErrors = m_HasErrors,
                                 EditorAssembly = m_EditorAssembly
                             });
                         }
@@ -129,20 +134,24 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                         DurationInMs = m_StopWatch.ElapsedMilliseconds,
                         Messages = m_Messages,
                         Status = m_CompilationStatus,
+                        HasErrors = m_HasErrors,
                         EditorAssembly = m_EditorAssembly
                     });
                     break;
             }
         }
 
-        void OnAssemblyBuilderFinished(string path, UnityEditor.Compilation.CompilerMessage[] originalMessages)
+        internal void OnAssemblyBuilderFinished(string path, UnityEditor.Compilation.CompilerMessage[] originalMessages)
         {
-            m_StopWatch.Stop();
+            m_StopWatch?.Stop();
 
             var results = new List<CompilerMessage>(originalMessages.Length);
             foreach (var msg in originalMessages)
             {
                 var unityMsg = UnityCompilerMessageToProjectAuditorCompilerMessage(msg);
+                // Checked before filtering, so an error hidden by the package filter still fails the assembly
+                if (unityMsg.Type == CompilerMessageType.Error)
+                    m_HasErrors = true;
                 if (CodeModule.PathPackageFilter(unityMsg.File, m_CodeAnalysisFlags, m_OwnerFlags))
                     results.Add(unityMsg);
             }

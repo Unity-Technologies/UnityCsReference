@@ -12,7 +12,9 @@ namespace UnityEngine
     internal sealed class NameFormatter
     {
         // Make a displayable name for a variable.
-        [FreeFunction(Name = "FormatVariableName_Binding")]
-        public static extern string FormatVariableName(string name);
+        public static string FormatVariableName(string name) => name == null ? null : FormatVariableNameInternal(name);
+
+        [FreeFunction(Name = "FormatVariableName_Binding", IsThreadSafe = true)]
+        static extern string FormatVariableNameInternal(string name);
     }
 }

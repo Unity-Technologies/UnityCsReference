@@ -617,7 +617,7 @@ namespace UnityEngine.UIElements
             if (m_ArraySizeField.showMixedValue && TextInputBaseField<string>.mixedValueString == evt.newValue)
                 return;
 
-            if (!int.TryParse(evt.newValue, out var value) || value < 0)
+            if (viewController == null || !int.TryParse(evt.newValue, out var value) || value < 0)
             {
                 using (m_ArraySizeField.IgnoreValidation())
                     m_ArraySizeField.SetValueWithoutNotify(evt.previousValue);

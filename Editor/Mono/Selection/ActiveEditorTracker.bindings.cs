@@ -138,7 +138,7 @@ namespace UnityEditor
             ActiveEditorTracker self,
             [NotNull] List<UnityObject> toBeLocked);
 
-        [FreeFunction]
+        [FreeFunction(ThrowsException = true)]
         static extern int Internal_GetVisible(
             [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
             ActiveEditorTracker self, int index);
@@ -148,7 +148,7 @@ namespace UnityEditor
             return Internal_GetVisible(this, index);
         }
 
-        [FreeFunction]
+        [FreeFunction(ThrowsException = true)]
         static extern void Internal_SetVisible(
             [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
             ActiveEditorTracker self, int index, int visible);

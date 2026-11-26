@@ -91,6 +91,23 @@ namespace Unity.GraphToolkit.Editor
         static List<ViewUpdateVisitor> s_CollapsibleUpdateVisitors;
 
         /// <summary>
+        /// Raised after <see cref="Update"/> rebuilds the whole UI tree, which recreates every inspector view.
+        /// </summary>
+        /// <remarks>
+        /// This happens when the inspected models change, for example when the selection changes.
+        /// It is also raised through <see cref="NotifyViewsRecreated"/> when a partial update recreates some views.
+        /// </remarks>
+        internal event Action uiTreeRebuilt;
+
+        /// <summary>
+        /// Raises <see cref="uiTreeRebuilt"/> for views that a partial update recreates.
+        /// </summary>
+        /// <remarks>
+        /// For example, a condition that moves to another group gets a new row, which lost the stored visuals as well.
+        /// </remarks>
+        internal void NotifyViewsRecreated() => uiTreeRebuilt?.Invoke();
+
+        /// <summary>
         /// The views for the sections in the inspector.
         /// </summary>
         protected IReadOnlyList<ChildView> SectionViews => m_SectionViews;
@@ -529,6 +546,7 @@ namespace Unity.GraphToolkit.Editor
                 if (rebuildType == UpdateType.Complete)
                 {
                     BuildUITree();
+                    uiTreeRebuilt?.Invoke();
                 }
                 else
                 {

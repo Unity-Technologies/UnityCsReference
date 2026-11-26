@@ -84,20 +84,18 @@ namespace Unity.U2D.Physics.Editor
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            var root = new VisualElement();
-
             // The definition is a property like any other here, so it carries its own name and collapses, matching every other struct drawn in an inspector.
+            // The foldout is bound to the property so its expanded state is the property's own.
             // An inspector that has already named it embeds the fields instead (see PhysicsJointDefinitionInspector).
             var foldout = new Foldout
             {
                 text = property.displayName,
                 value = false,
-                viewDataKey = GetType().ToString()
+                bindingPath = property.propertyPath
             };
-            root.Add(foldout);
             foldout.Add(CreateFields(property));
 
-            return root;
+            return foldout;
         }
 
         /// <summary>
@@ -121,7 +119,7 @@ namespace Unity.U2D.Physics.Editor
                 return CreateAnchors(property, group);
 
             var titled = !string.IsNullOrEmpty(group.title);
-            var container = titled ? CreateFoldout(group.title) : new VisualElement();
+            var container = titled ? CreateFoldout(property, group.title) : new VisualElement();
 
             var stateProperty = string.IsNullOrEmpty(group.stateField) ? null : property.FindPropertyRelative(group.stateField);
             if (stateProperty != null)
@@ -159,7 +157,7 @@ namespace Unity.U2D.Physics.Editor
 
         VisualElement CreateAnchors(SerializedProperty property, Group group)
         {
-            var container = CreateFoldout(group.title);
+            var container = CreateFoldout(property, group.title);
 
             foreach (var anchorField in group.fields)
             {
@@ -181,12 +179,13 @@ namespace Unity.U2D.Physics.Editor
             if (anchorProperty == null || autoProperty == null)
                 return null;
 
+            // The foldout is bound to the anchor property so its expanded state is the anchor's own.
             var foldout = new Foldout
             {
                 text = anchorProperty.displayName,
                 value = false,
                 tooltip = L10n.Tr(Tooltips.anchor, null),
-                viewDataKey = GetType() + "." + anchorField
+                bindingPath = anchorProperty.propertyPath
             };
 
             // Labelled without the A or B because the anchor's own foldout already says which one this is.
@@ -222,14 +221,15 @@ namespace Unity.U2D.Physics.Editor
             return foldout;
         }
 
-        Foldout CreateFoldout(string title)
+        // A group has no property of its own to hold its expanded state, so the state is kept as view data, keyed by the definition's property path so each definition keeps its own.
+        Foldout CreateFoldout(SerializedProperty property, string title)
         {
             return new Foldout
             {
                 text = L10n.Tr(title, null),
                 value = false,
                 tooltip = Tooltips.For(title),
-                viewDataKey = GetType() + "." + title
+                viewDataKey = GetType() + "." + property.propertyPath + "." + title
             };
         }
 
@@ -247,10 +247,11 @@ namespace Unity.U2D.Physics.Editor
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            label = EditorGUI.BeginProperty(position, label, property);
-
+            // The definition's property scope covers only its header, so the override bar and context menu of each field below are that field's own.
             var header = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+            label = EditorGUI.BeginProperty(header, label, property);
             property.isExpanded = EditorGUI.Foldout(header, property.isExpanded, label, true);
+            EditorGUI.EndProperty();
 
             if (property.isExpanded)
             {
@@ -258,8 +259,6 @@ namespace Unity.U2D.Physics.Editor
                 Layout(property, new Rect(position.x, position.y + LineHeight, position.width, position.height - LineHeight), true);
                 EditorGUI.indentLevel--;
             }
-
-            EditorGUI.EndProperty();
         }
 
         // The single IMGUI pass, used both to measure and to draw so the two can never describe different layouts.
@@ -372,8 +371,14 @@ namespace Unity.U2D.Physics.Editor
                 if (anchorProperty == null || autoProperty == null)
                     continue;
 
+                // The anchor header has its anchor's property scope, as the anchor foldout is bound to the anchor in the UI Toolkit path.
                 if (draw)
-                    anchorProperty.isExpanded = EditorGUI.Foldout(Line(position, y), anchorProperty.isExpanded, new GUIContent(anchorProperty.displayName, L10n.Tr(Tooltips.anchor, null)), true);
+                {
+                    var anchorLine = Line(position, y);
+                    var anchorLabel = EditorGUI.BeginProperty(anchorLine, new GUIContent(anchorProperty.displayName, L10n.Tr(Tooltips.anchor, null)), anchorProperty);
+                    anchorProperty.isExpanded = EditorGUI.Foldout(anchorLine, anchorProperty.isExpanded, anchorLabel, true);
+                    EditorGUI.EndProperty();
+                }
 
                 y += LineHeight;
 

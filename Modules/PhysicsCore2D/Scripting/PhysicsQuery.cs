@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     /// Various physics queries.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial record struct PhysicsQuery
+    public readonly partial struct PhysicsQuery
     {
         /// <summary>
         /// Check the intersection between two shapes (<see cref="PhysicsShape"/>).
@@ -568,7 +568,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly record struct SortAscendingOrder : IComparer<WorldCastResult>
+            public readonly struct SortAscendingOrder : IComparer<WorldCastResult>
             {
                 /// <undoc/>
                 readonly int IComparer<WorldCastResult>.Compare(WorldCastResult x, WorldCastResult y) => x.fraction.CompareTo(y.fraction);
@@ -932,7 +932,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly record struct SortAscendingOrder : IComparer<CastResult>
+            public readonly struct SortAscendingOrder : IComparer<CastResult>
             {
                 /// <undoc/>
                 readonly int IComparer<CastResult>.Compare(CastResult x, CastResult y) => x.m_Fraction.CompareTo(y.m_Fraction);
@@ -1027,7 +1027,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly record struct SortAscendingOrder : IComparer<DistanceResult>
+            public readonly struct SortAscendingOrder : IComparer<DistanceResult>
             {
                 /// <undoc/>
                 readonly int IComparer<DistanceResult>.Compare(DistanceResult x, DistanceResult y) => x.m_Distance.CompareTo(y.m_Distance);
@@ -1086,7 +1086,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly record struct SortAscendingOrder : IComparer<SegmentDistanceResult>
+            public readonly struct SortAscendingOrder : IComparer<SegmentDistanceResult>
             {
                 /// <undoc/>
                 readonly int IComparer<SegmentDistanceResult>.Compare(SegmentDistanceResult x, SegmentDistanceResult y) => x.m_SqrDistance.CompareTo(y.m_SqrDistance);
@@ -1252,7 +1252,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly record struct SortAscendingOrder : IComparer<TimeOfImpactResult>
+            public readonly struct SortAscendingOrder : IComparer<TimeOfImpactResult>
             {
                 /// <undoc/>
                 readonly int IComparer<TimeOfImpactResult>.Compare(TimeOfImpactResult x, TimeOfImpactResult y) => x.fraction.CompareTo(y.fraction);

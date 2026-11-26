@@ -350,7 +350,7 @@ namespace UnityEngine
 
             foreach (var currentChar in expression)
             {
-                if (IsCommand(currentChar.ToString()))
+                if (IsCommand(currentChar.ToString()) && !IsExponentSign(currentChar, sb))
                 {
                     if (sb.Length > 0)
                         result.Add(sb.ToString());
@@ -376,6 +376,26 @@ namespace UnityEngine
 
             hasVariables = result.Exists(res => IsVariable(res) || IsDelayedFunction(res));
             return result;
+        }
+
+        static bool IsExponentSign(char c, StringBuilder sb)
+        {
+            if ((c != '+' && c != '-') || sb.Length < 2)
+                return false;
+
+            var last = sb[sb.Length - 1];
+            if (last != 'e' && last != 'E')
+                return false;
+
+            var hasDigit = false;
+            for (var i = 0; i < sb.Length - 1; i++)
+            {
+                if (char.IsDigit(sb[i]))
+                    hasDigit = true;
+                else if (sb[i] != '.')
+                    return false;
+            }
+            return hasDigit;
         }
 
         static bool IsCommand(string token)

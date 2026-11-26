@@ -195,7 +195,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         PanelTracked?.Invoke(panel);
     }
 
-    void UntrackScenePanel(Panel panel)
+    internal void UntrackScenePanel(Panel panel)
     {
         if (!m_TrackedScenePanels.Remove(panel))
             return;

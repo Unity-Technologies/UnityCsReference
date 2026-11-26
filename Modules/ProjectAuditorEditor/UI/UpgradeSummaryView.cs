@@ -102,6 +102,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 return;
 
             EditorGUILayout.Space();
+            DrawIncompleteCodeAnalysisNotice();
             DrawUpgradeVersions();
             EditorGUILayout.Space();
             DrawIssueBreakdownSection();
@@ -214,12 +215,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_ShowBeforeUpgrade = Utility.BoldFoldout(m_ShowBeforeUpgrade, Utility.TempContent(string.Format(foldoutLabel, issueCount)));
             if (m_ShowBeforeUpgrade)
             {
-                var label = (issueCount > 1)
-                    ? $"{Contents.SevereCountPluralFormat} {Contents.BeforeUpgradeDescription}"
-                    : $"{Contents.SevereCountFormat} {Contents.BeforeUpgradeDescription}";
-
                 DrawTopTenLabel(
-                    Contents.BeforeUpgradeNoIssuesDescription, Contents.BeforeUpgradeDescription, label, label,
+                    Contents.BeforeUpgradeNoIssuesDescription, Contents.BeforeUpgradeDescription,
+                    $"{Contents.SevereCountFormat} {Contents.BeforeUpgradeDescription}",
+                    $"{Contents.SevereCountPluralFormat} {Contents.BeforeUpgradeDescription}",
                     issueCount, m_BeforeUpgradeSeverities.MajorAndCritical);
 
                 DrawTopTenIssues(m_BeforeUpgradeTopTen, IsIssueIgnoredOrFilteredBeforeUpgrade);
@@ -237,12 +236,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             m_ShowAfterUpgrade = Utility.BoldFoldout(m_ShowAfterUpgrade, Utility.TempContent(string.Format(foldoutLabel, issueCount)));
             if (m_ShowAfterUpgrade)
             {
-                var label = (issueCount > 1)
-                    ? $"{Contents.SevereCountPluralFormat} {Contents.AfterUpgradeDescription}"
-                    : $"{Contents.SevereCountFormat} {Contents.AfterUpgradeDescription}";
-
                 DrawTopTenLabel(
-                    Contents.AfterUpgradeNoIssuesDescription, Contents.AfterUpgradeDescription, label, label,
+                    Contents.AfterUpgradeNoIssuesDescription, Contents.AfterUpgradeDescription,
+                    $"{Contents.SevereCountFormat} {Contents.AfterUpgradeDescription}",
+                    $"{Contents.SevereCountPluralFormat} {Contents.AfterUpgradeDescription}",
                     issueCount, m_AfterUpgradeSeverities.MajorAndCritical);
 
                 DrawTopTenIssues(m_AfterUpgradeTopTen, IsIssueIgnoredOrFilteredAfterUpgrade);

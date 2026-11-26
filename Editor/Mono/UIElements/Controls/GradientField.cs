@@ -67,6 +67,8 @@ namespace UnityEditor.UIElements
                 if (m_ColorSpace == value)
                     return;
                 m_ColorSpace = value;
+                if (panel != null)
+                    UpdateGradientTexture();
                 NotifyPropertyChanged(colorSpaceProperty);
             }
         }
@@ -212,10 +214,15 @@ namespace UnityEditor.UIElements
             if (isShowingGradientPicker)
                 GradientPicker.CloseWindow(false);
 
-            if (style.backgroundImage.value.texture != null)
+            DestroyPreviewTexture();
+        }
+
+        void DestroyPreviewTexture()
+        {
+            if (m_GradientTextureImage.style.backgroundImage.value.texture != null)
             {
-                Object.DestroyImmediate(style.backgroundImage.value.texture);
-                style.backgroundImage = new Background();
+                Object.DestroyImmediate(m_GradientTextureImage.style.backgroundImage.value.texture);
+                m_GradientTextureImage.style.backgroundImage = new Background();
             }
         }
 
@@ -287,10 +294,11 @@ namespace UnityEditor.UIElements
             if (m_ValueNull || showMixedValue)
             {
                 visualInput.style.backgroundImage = m_DefaultBackground;
+                DestroyPreviewTexture();
             }
             else
             {
-                Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, resolvedStyle.backgroundImage.texture, colorSpace == ColorSpace.Linear);
+                Texture2D gradientTexture = UnityEditorInternal.GradientPreviewCache.GenerateGradientPreview(value, m_GradientTextureImage.style.backgroundImage.value.texture, colorSpace == ColorSpace.Linear);
                 m_GradientTextureImage.style.backgroundImage = gradientTexture;
 
                 IncrementVersion(VersionChangeType.Repaint); // since the Texture2D object can be reused, force dirty because the backgroundImage change will only trigger the Dirty if the Texture2D objects are different.
@@ -316,6 +324,9 @@ namespace UnityEditor.UIElements
 
         public override void SetValueWithoutNotify(Gradient newValue)
         {
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
+
             m_ValueNull = newValue == null;
             if (newValue != null)
             {

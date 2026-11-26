@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CallConvCdecl = System.Runtime.CompilerServices.CallConvCdecl;
 using System.Text;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Profiling.LowLevel;
 using UnityEngine;
@@ -153,14 +154,86 @@ namespace Unity.Profiling.LowLevel.Unsafe
         [NativeMethod(IsThreadSafe = true)]
         static extern unsafe void SetMarkerMetadata_Unsafe(IntPtr markerPtr, int index, char* name, int nameLen, byte type, byte unit);
 
-        [NativeMethod(IsThreadSafe = true)]
-        public static extern void BeginSample(IntPtr markerPtr);
+        // Mirrors the leading fields of the native profiling::Marker.
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct NativeMarker
+        {
+            public IntPtr Callback;
+            public uint Id;
+            public ushort Flags;
+            public ushort Category;
+            public IntPtr Name;
+            public IntPtr MetadataDesc;
+            public IntPtr NextStaticMarkerOrCounterValue;
+            public IntPtr GpuCallback;
+        }
+
+        // Mirrors native profiling::Profiler::ScriptingProfilerState.
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ProfilerState
+        {
+            public int Active;
+            public IntPtr BeginSample;
+            public IntPtr BeginSampleWithMetadata;
+            public IntPtr EndSample;
+        }
+
+        static class NativeProfilerState
+        {
+            internal static readonly IntPtr s_Value = GetProfilerState();
+        }
 
         [NativeMethod(IsThreadSafe = true)]
-        public static extern unsafe void BeginSampleWithMetadata(IntPtr markerPtr, int metadataCount, void* metadata);
+        [BurstAuthorizedExternalMethod]
+        static extern IntPtr GetProfilerState();
 
-        [NativeMethod(IsThreadSafe = true)]
-        public static extern void EndSample(IntPtr markerPtr);
+        // 256 : Aggressive inlining
+        [MethodImpl(256)]
+        static unsafe bool IsListening(IntPtr markerPtr, in ProfilerState state)
+        {
+            var marker = (NativeMarker*)markerPtr;
+            return state.Active != 0 || marker == null || marker->Callback != IntPtr.Zero || marker->GpuCallback != IntPtr.Zero;
+        }
+
+        // 256 : Aggressive inlining, 512 : Aggressive optimization
+        [MethodImpl(256 | 512)]
+        public static unsafe void BeginSample(IntPtr markerPtr)
+        {
+            ref var state = ref *(ProfilerState*)NativeProfilerState.s_Value;
+            if (IsListening(markerPtr, state))
+                InvokeSample(state.BeginSample, markerPtr);
+        }
+
+        // 256 : Aggressive inlining, 512 : Aggressive optimization
+        [MethodImpl(256 | 512)]
+        public static unsafe void BeginSampleWithMetadata(IntPtr markerPtr, int metadataCount, void* metadata)
+        {
+            ref var state = ref *(ProfilerState*)NativeProfilerState.s_Value;
+            if (IsListening(markerPtr, state))
+                InvokeSampleWithMetadata(state.BeginSampleWithMetadata, markerPtr, metadataCount, metadata);
+        }
+
+        // 256 : Aggressive inlining, 512 : Aggressive optimization
+        [MethodImpl(256 | 512)]
+        public static unsafe void EndSample(IntPtr markerPtr)
+        {
+            ref var state = ref *(ProfilerState*)NativeProfilerState.s_Value;
+            if (IsListening(markerPtr, state))
+                InvokeSample(state.EndSample, markerPtr);
+        }
+
+        // Kept out of line so callers don't pay the native call frame setup when nothing is listening.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static unsafe void InvokeSample(IntPtr function, IntPtr markerPtr)
+        {
+            ((delegate* unmanaged[Cdecl]<IntPtr, void>)function)(markerPtr);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static unsafe void InvokeSampleWithMetadata(IntPtr function, IntPtr markerPtr, int metadataCount, void* metadata)
+        {
+            ((delegate* unmanaged[Cdecl]<IntPtr, int, void*, void>)function)(markerPtr, metadataCount, metadata);
+        }
 
         [NativeMethod(IsThreadSafe = true)]
         public static extern unsafe void SingleSampleWithMetadata(IntPtr markerPtr, int metadataCount, void* metadata);

@@ -15,7 +15,8 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization
     /// A condition has no element of its own in the graph canvas, but its row in the transition inspector does:
     /// setting an override here changes what that row, and any custom UI a graph tool developer added through
     /// <see cref="ConditionView{T}"/>, displays. Since an override never touches the graph asset, setting one is
-    /// pushed directly to those views instead of going through the model/observer pipeline.
+    /// pushed directly to those views instead of going through the model/observer pipeline, and pushed again
+    /// whenever the inspector rebuilds them.
     /// Use <see cref="Context.ConditionVisuals"/> to access the condition visual manager from a visualization context.
     /// </remarks>
     sealed class ConditionVisualManager
@@ -28,8 +29,9 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization
         internal ConditionVisualManager(Session session)
         {
             m_Session = session;
-            m_Session.isAttached += OnAttached;
+            m_Session.isAttached += NotifyAllChanged;
             m_Session.isDetached += OnDetached;
+            m_Session.inspectorRebuilt += NotifyAllChanged;
         }
 
         /// <summary>
@@ -49,8 +51,7 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization
 
                 m_Enabled = value;
 
-                foreach (var conditionID in ConditionVisualStore.OverriddenConditionIDs)
-                    NotifyChanged(conditionID);
+                NotifyAllChanged();
             }
         }
 
@@ -110,7 +111,7 @@ namespace Unity.GraphToolkit.Editor.GraphVisualization
             }
         }
 
-        void OnAttached()
+        void NotifyAllChanged()
         {
             foreach (var conditionID in ConditionVisualStore.OverriddenConditionIDs)
                 NotifyChanged(conditionID);

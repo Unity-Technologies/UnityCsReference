@@ -128,7 +128,7 @@ namespace UnityEngine.UIElements
     /// <c>LayoutManager.SharedManager</c>: a lazily created singleton with a concurrent free-queue
     /// drained on the main thread by <see cref="Collect"/>.
     /// </summary>
-    partial class ComponentManager
+    partial class ComponentManager : IPooledNativeStore
     {
         // Small default: enough for one chunk's worth of slots without an immediate resize.
         internal const int k_DefaultInitialCapacity = 32;
@@ -193,7 +193,10 @@ namespace UnityEngine.UIElements
             public IManagedComponentBox box;
         }
 
-        ComponentManager() { }
+        ComponentManager()
+        {
+            PooledNativeStores.Register(this);
+        }
 
         // First call is always main-thread (VisualElements are main-thread only), so the state
         // transitions aren't racy. Mirrors LayoutManager.Initialize.
@@ -414,11 +417,58 @@ namespace UnityEngine.UIElements
             return ComponentManager<T>.Record?.liveCount ?? 0;
         }
 
+        /// <summary>
+        /// Test-only: bytes allocated by the unmanaged component stores, including free slots.
+        /// </summary>
+        internal long GetUnmanagedBytesReserved()
+        {
+            var bytes = 0L;
+            lock (m_StoresByComponentType)
+            {
+                foreach (var record in m_StoresByComponentType.Values)
+                {
+                    if (record.managedRegistry == null && record.store.IsValid)
+                        bytes += record.store.BytesReserved;
+                }
+            }
+            return bytes;
+        }
+
+        /// <summary>
+        /// Test-only: bytes of the live slots in the unmanaged component stores.
+        /// </summary>
+        internal long GetUnmanagedBytesUsed()
+        {
+            var bytes = 0L;
+            lock (m_StoresByComponentType)
+            {
+                foreach (var record in m_StoresByComponentType.Values)
+                {
+                    if (record.managedRegistry == null && record.store.IsValid)
+                        bytes += (long)record.liveCount * record.store.BytesPerSlot;
+                }
+            }
+            return bytes;
+        }
+
+        string IPooledNativeStore.storeName => "Components";
+
+        long IPooledNativeStore.GetBytesReserved() => GetUnmanagedBytesReserved();
+
+        long IPooledNativeStore.GetBytesUsed() => GetUnmanagedBytesUsed();
+
+        void IPooledNativeStore.ReleasePendingSlots()
+        {
+            while (m_ToFree.Count > 0)
+                Collect();
+        }
+
         void DisposeAll()
         {
             // Don't unsubscribe (the dispatcher clears subscribers) and don't null s_SharedManager: this hook
             // runs before the code-reload statics cleanup, which resets both fields.
             s_State = SharedManagerState.Shutdown;
+            PooledNativeStores.Unregister(this);
 
             // Pin the weakly-tracked managed boxes before any hook runs. From here on a finalizer drops its
             // slots without enqueueing (the state above closed that road), so a box's element is no longer

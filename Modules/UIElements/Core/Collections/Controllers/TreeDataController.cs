@@ -17,6 +17,8 @@ namespace UnityEngine.UIElements
         Dictionary<HierarchyNode, TreeViewItemData<T>> m_NodeToItemDataDictionary = new();
         Stack<IEnumerator<TreeViewItemData<T>>> m_ItemStack = new();
         Stack<HierarchyNode> m_NodeStack = new();
+        Stack<int> m_IdStack = new();
+        HashSet<int> m_PathIds = new();
 
         /// <summary>
         /// Adds an item to the tree.
@@ -65,13 +67,17 @@ namespace UnityEngine.UIElements
 
         // The below are internal utilities to update the dictionary map between a HierarchyNode to an TreeViewItemData<T>.
         // We should remove this once Hierarchy property supports managed types.
-        internal void ConvertTreeViewItemDataToHierarchy(IEnumerable<TreeViewItemData<T>> list, Func<HierarchyNode, HierarchyNode> createNode, Action<int, HierarchyNode> updateDictionary)
+        internal void ConvertTreeViewItemDataToHierarchy(IEnumerable<TreeViewItemData<T>> list, Func<HierarchyNode, HierarchyNode> createNode, Action<int, HierarchyNode> updateDictionary, HashSet<int> ancestorIds = null)
         {
             if (list == null)
                 return;
 
             m_ItemStack.Clear();
             m_NodeStack.Clear();
+            m_IdStack.Clear();
+            m_PathIds.Clear();
+            if (ancestorIds != null)
+                m_PathIds.UnionWith(ancestorIds);
             var currentIterator = list.GetEnumerator();
             HierarchyNode parentNode = HierarchyNode.Null;
 
@@ -83,6 +89,7 @@ namespace UnityEngine.UIElements
                     if (m_ItemStack.Count > 0)
                     {
                         parentNode = m_NodeStack.Pop();
+                        m_PathIds.Remove(m_IdStack.Pop());
                         currentIterator = m_ItemStack.Pop();
                         continue;
                     }
@@ -91,6 +98,12 @@ namespace UnityEngine.UIElements
                 }
 
                 var item = currentIterator.Current;
+                if (m_PathIds.Contains(item.id))
+                {
+                    Debug.LogError("TreeView item id " + item.id + " is already used by one of its ancestors. The item and its children were ignored.");
+                    continue;
+                }
+
                 var node = createNode(parentNode);
                 UpdateNodeToDataDictionary(node, item);
                 updateDictionary(item.id, node);
@@ -99,6 +112,8 @@ namespace UnityEngine.UIElements
                 {
                     // Push the parent node into the stack before updating it
                     m_NodeStack.Push(parentNode);
+                    m_IdStack.Push(item.id);
+                    m_PathIds.Add(item.id);
                     parentNode = node;
                     m_ItemStack.Push(currentIterator);
                     currentIterator = item.children.GetEnumerator();

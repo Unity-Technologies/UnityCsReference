@@ -94,6 +94,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
 
             EditorGUILayout.Space();
+            DrawIncompleteCodeAnalysisNotice();
 
             // Issue Breakdown section (shared with all summary pages)
             DrawIssueBreakdownSection();

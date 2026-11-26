@@ -257,6 +257,9 @@ namespace UnityEngine.UIElements
         /// <param name="newValue">The new value.</param>
         public override void SetValueWithoutNotify(ToggleButtonGroupState newValue)
         {
+            if (!isValidationIgnored)
+                newValue = ValidatedValue(newValue);
+
             if (newValue.length == 0)
             {
                 newValue = new ToggleButtonGroupState(0, 0);
@@ -269,7 +272,9 @@ namespace UnityEngine.UIElements
                 m_EmptyLabel?.RemoveFromHierarchy();
             }
 
-            base.SetValueWithoutNotify(newValue);
+            using (IgnoreValidation())
+                base.SetValueWithoutNotify(newValue);
+
             UpdateButtonStates(newValue);
         }
 

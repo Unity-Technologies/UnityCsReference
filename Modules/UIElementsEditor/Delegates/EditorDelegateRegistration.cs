@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -57,6 +58,51 @@ namespace UnityEditor.UIElements
                 UIElementsRuntimeUtility.OnEnteredPlayMode();
             if (stateChange == PlayModeStateChange.ExitingPlayMode)
                 UIElementsRuntimeUtility.OnExitingPlayMode();
+
+            if (stateChange == PlayModeStateChange.EnteredPlayMode)
+                DetachPrefabStagePanelComponents();
+            else if (stateChange == PlayModeStateChange.EnteredEditMode)
+                ReattachPrefabStagePanelComponents();
+        }
+
+        static void DetachPrefabStagePanelComponents()
+        {
+            foreach (var component in GetTopLevelPrefabStagePanelComponents())
+            {
+                var settings = component.panelSettings;
+                if (settings == null || settings.renderMode == PanelRenderMode.WorldSpace || component.GetRootVisualElement()?.panel == null)
+                    continue;
+
+                component.DetachRootVisualElement();
+            }
+        }
+
+        static void ReattachPrefabStagePanelComponents()
+        {
+            foreach (var component in GetTopLevelPrefabStagePanelComponents())
+            {
+                var root = component.GetRootVisualElement();
+                if (root == null || root.panel != null || !component.GetComponentEnabled())
+                    continue;
+
+                component.ReattachRootVisualElement();
+            }
+        }
+
+        // Prefab stages, including parents of a nested one, outlive play mode transitions without re-enabling their contents
+        static IEnumerable<IPanelComponent> GetTopLevelPrefabStagePanelComponents()
+        {
+            foreach (var prefabStage in PrefabStage.allPrefabStages)
+            {
+                if (!prefabStage.isValid)
+                    continue;
+
+                foreach (var component in prefabStage.prefabContentsRoot.GetComponentsInChildren<IPanelComponent>())
+                {
+                    if (component.parentUI == null)
+                        yield return component;
+                }
+            }
         }
 
         private static void SetICUDataAsset(PanelSettings target)

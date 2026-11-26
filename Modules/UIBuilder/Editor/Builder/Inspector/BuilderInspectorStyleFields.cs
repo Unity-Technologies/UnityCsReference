@@ -2434,7 +2434,7 @@ namespace Unity.UI.Builder
             PushLocalStylesToSelector(selectorMatchRecord, styleProperty);
         }
 
-        internal void PushLocalStylesToSelector(SelectorMatchRecord matchingSelector, StyleProperty styleProperty = null)
+        internal void PushLocalStylesToSelector(SelectorMatchRecord matchingSelector, StyleProperty styleProperty = null, string undoMessage = null)
         {
             // Get StyleSheet this selector belongs to.
             var toStyleSheet = matchingSelector.sheet;
@@ -2453,11 +2453,13 @@ namespace Unity.UI.Builder
             // Overwrite Undo Message.
             Undo.RegisterCompleteObjectUndo(
                 new Object[] { m_Inspector.document.visualTreeAsset, toStyleSheet },
-                BuilderConstants.ContextMenuExtractInlineValueMessage);
+                undoMessage ?? BuilderConstants.ContextMenuExtractInlineValueMessage);
 
             // We actually want to get the notification back and refresh ourselves.
             m_Inspector.selection.NotifyOfStylingChange();
-            m_Inspector.selection.NotifyOfHierarchyChange(null, m_Inspector.currentVisualElement);
+            // Rebasing the inline rule before the full restyle would drop the moved properties and restart their transitions.
+            m_Inspector.selection.NotifyOfHierarchyChange(null, m_Inspector.currentVisualElement,
+                BuilderHierarchyChangeType.All & ~BuilderHierarchyChangeType.InlineStyle);
         }
 
         void NotifyStyleChanges(List<string> styles = null, bool selfNotify = false, NotifyType notifyType = NotifyType.Default, bool ignoreUnsavedChanges = false)

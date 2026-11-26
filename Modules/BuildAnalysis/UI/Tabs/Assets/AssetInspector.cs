@@ -122,12 +122,13 @@ namespace UnityEditor.Build.Analysis
             m_Icon.image = icon;
             m_Name.text = title;
             m_Path = assetPath;
-            // Grey out Select when the asset can no longer be resolved
+            // Grey out Select when the asset can no longer be resolved, or the build is from another project
             var canSelect = AssetActions.CanShowInProject(assetPath);
             m_Select.SetEnabled(canSelect);
-            m_Select.tooltip = canSelect
-                ? "Select this asset in the Project window"
-                : AssetActions.k_MissingAssetMessage;
+            if (canSelect)
+                m_Select.tooltip = "Select this asset in the Project window";
+            else
+                m_Select.tooltip = AssetActions.SelectionBlocked ? AssetActions.k_ImportedBuildMessage : AssetActions.k_MissingAssetMessage;
         }
 
         private void OnSelectClicked() => AssetActions.ShowInProject(m_Path);

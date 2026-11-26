@@ -18,7 +18,7 @@ namespace Unity.U2D.Physics
     /// See <see cref="PhysicsWorld.Simulate(float)"/> and <see cref="PhysicsWorld.Simulate(ReadOnlySpan{PhysicsWorld}, float)"/>.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial record struct PhysicsEvents
+    public readonly partial struct PhysicsEvents
     {
         /// <summary>
         /// An event produced by a <see cref="PhysicsBody"/> that indicates the simulation changed the body in one of the following ways:
@@ -986,8 +986,8 @@ namespace Unity.U2D.Physics
         // Removes every handler from the static events, since a handler can belong to code that is about to be unloaded.
         // Calling a handler from unloaded code would run stale code, and holding it would keep that code from unloading.
         // Each subscriber subscribes again once its code has loaded.
-        // Called by PhysicsEventsLifetime before code unloads.
-        internal static void ClearEvents()
+        [OnCodeUnloading]
+        private static void ClearEvents()
         {
             s_PreSimulate = null;
             s_PostSimulate = null;
@@ -995,14 +995,5 @@ namespace Unity.U2D.Physics
             s_WorldDefinitionChange = null;
             s_WorldTransformPlaneChange = null;
         }
-    }
-
-    // Clears the static events of PhysicsEvents before code unloads.
-    // A lifecycle method makes the code generator add a partial declaration of its type and every containing type, and it declares them as plain structs or classes.
-    // PhysicsEvents is a record struct, which cannot share partial declarations with a plain struct, so the method lives on this separate type rather than on or inside PhysicsEvents.
-    internal static partial class PhysicsEventsLifetime
-    {
-        [OnCodeUnloading]
-        private static void OnCodeUnloading() => PhysicsEvents.ClearEvents();
     }
 }

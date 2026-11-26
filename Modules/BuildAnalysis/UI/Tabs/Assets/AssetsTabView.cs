@@ -18,6 +18,7 @@ namespace UnityEditor.Build.Analysis
         private VisualElement m_NoSelection;
         private VisualElement m_Body;
         private TwoPaneSplitView m_InspectorSplit;
+        private ImportedBuildBanner m_ImportedBuildBanner;
         private VisualElement m_InspectorHost;
         private BuildHeader m_Header;
         private AssetTable m_AssetTable;
@@ -69,6 +70,7 @@ namespace UnityEditor.Build.Analysis
             m_Body = m_Root.Q<VisualElement>("assets-body");
             KeyboardNavigation.ScrollFocusedIntoView(m_Root.Q<ScrollView>("assets-content"));
             m_InspectorSplit = m_Root.Q<TwoPaneSplitView>("assets-inspector-split");
+            m_ImportedBuildBanner = m_Root.Q<ImportedBuildBanner>("imported-build-banner");
             m_InspectorHost = m_Root.Q<VisualElement>("asset-inspector-host");
             m_Header = m_Root.Q<BuildHeader>("build-header");
             m_ScenesCard = m_Root.Q<StatCard>("stat-card-scenes");
@@ -180,6 +182,7 @@ namespace UnityEditor.Build.Analysis
             var hasSelection = view?.Entry != null && view.Analysis != null;
             m_NoSelection.style.display = hasSelection ? DisplayStyle.None : DisplayStyle.Flex;
             m_Body.style.display = hasSelection ? DisplayStyle.Flex : DisplayStyle.None;
+            m_ImportedBuildBanner.SetVisible(hasSelection && view.IsImported);
 
             if (!hasSelection)
             {

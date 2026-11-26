@@ -53,6 +53,33 @@ unsafe struct UnmanagedDataStore : IDisposable
 
     public int Capacity => m_Data->Capacity;
 
+    // Test and diagnostics only
+    public int BytesPerSlot
+    {
+        get
+        {
+            var bytes = 2 * sizeof(int); // Versions and FreeIndices
+            for (var i = 0; i < m_Data->ComponentCount; i++)
+                bytes += m_Data->Components[i].Size;
+            return bytes;
+        }
+    }
+
+    // Test and diagnostics only
+    public long BytesReserved
+    {
+        get
+        {
+            var bytes = 2L * sizeof(int) * m_Data->Capacity; // Versions and FreeIndices
+            for (var i = 0; i < m_Data->ComponentCount; i++)
+            {
+                ref var component = ref m_Data->Components[i];
+                bytes += (long)component.ChunkCount * component.ComponentCountPerChunk * component.Size;
+            }
+            return bytes;
+        }
+    }
+
     public UnmanagedDataStore(UnmanagedComponentType[] components, ReadOnlySpan<MemoryLabel> labels, byte** initialData, int initialCapacity, Allocator allocator, string ownerName)
     {
         Assert.IsTrue(components.Length > 0, $"{nameof(UnmanagedDataStore)} requires at least one component size.");

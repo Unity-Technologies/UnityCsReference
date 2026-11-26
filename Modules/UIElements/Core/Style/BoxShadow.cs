@@ -60,8 +60,8 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public bool Equals(BoxShadow other)
         {
-            return other.color == color && other.offset == offset && other.blurRadius == blurRadius &&
-                other.spreadRadius == spreadRadius && other.inset == inset;
+            return other.color.Equals(color) && other.offset.Equals(offset) && other.blurRadius.Equals(blurRadius) &&
+                other.spreadRadius.Equals(spreadRadius) && other.inset == inset;
         }
 
         public override int GetHashCode()
@@ -72,7 +72,8 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public static bool operator==(BoxShadow style1, BoxShadow style2)
         {
-            return style1.Equals(style2);
+            return style1.color == style2.color && style1.offset == style2.offset && style1.blurRadius == style2.blurRadius &&
+                style1.spreadRadius == style2.spreadRadius && style1.inset == style2.inset;
         }
 
         /// <undoc/>

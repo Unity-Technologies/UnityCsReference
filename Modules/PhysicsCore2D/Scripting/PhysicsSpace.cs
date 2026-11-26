@@ -269,7 +269,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly record struct SortAscendingOrder : IComparer<CastResult>
+            public readonly struct SortAscendingOrder : IComparer<CastResult>
             {
                 /// <undoc/>
                 public int Compare(CastResult x, CastResult y) => x.castResult.fraction.CompareTo(y.castResult.fraction);

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -12,12 +13,20 @@ namespace Unity.U2D.Physics.Editor
     // This wraps a LayerMaskField and exposes its value as a ulong, so the binding writes ulongValue and the layers are stored zero-extended in one write.
     internal sealed class LayerMaskField32 : BindableElement, INotifyValueChanged<ulong>, IMixedValueSupport
     {
-        public LayerMaskField32(string label)
+        public LayerMaskField32(string label, SerializedProperty bitMaskProperty)
         {
             m_Field = new LayerMaskField(label);
             m_Field.AddToClassList(LayerMaskField.alignedFieldUssClassName);
             m_Field.RegisterValueChangedCallback(OnFieldValueChanged);
             Add(m_Field);
+
+            // The binding gives the property's context menu and prefab override styling only to a field it binds directly, which is this wrapper rather than the inner field the user sees.
+            var trackedProperty = bitMaskProperty.Copy();
+            BindingsStyleHelpers.RegisterRightClickMenu(m_Field, trackedProperty);
+            m_Field.RegisterCallback<AttachToPanelEvent>(_ => SerializedPropertyProxy.UpdateStyle(m_Field, trackedProperty));
+
+            // The styling is refreshed on any change to the objects, not only to the mask, since reverting an override whose value matches the prefab changes no value.
+            this.TrackSerializedObjectValue(trackedProperty.serializedObject, _ => SerializedPropertyProxy.UpdateStyle(m_Field, trackedProperty));
         }
 
         public void SetValueWithoutNotify(ulong newValue) => m_Field.SetValueWithoutNotify((int)(uint)newValue);

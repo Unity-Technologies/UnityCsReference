@@ -830,7 +830,7 @@ namespace UnityEditor.Shaders
             }
         }
 
-        static bool IsAllDefaultRow(ShaderCompilerSettings row)
+        internal static bool IsAllDefaultRow(ShaderCompilerSettings row)
         {
             return row.compilerToolchainOverride == ShaderCompilerToolchain.Default
                 && row.optimizationLevel == ShaderOptimizationLevel.Default

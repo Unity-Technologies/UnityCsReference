@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
+using System.IO;
 using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -318,7 +319,10 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            pane.subTitle = document.activeStyleSheet.name + BuilderConstants.UssExtension;
+            var assetPath = AssetDatabase.GetAssetPath(document.activeStyleSheet);
+            pane.subTitle = string.IsNullOrEmpty(assetPath)
+                ? document.activeStyleSheet.name + BuilderConstants.UssExtension
+                : Path.GetFileName(assetPath);
         }
 
         protected override void ElementSelectionChanged(List<VisualElement> elements)

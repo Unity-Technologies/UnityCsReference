@@ -1120,6 +1120,21 @@
     <Compile Include="..\..\Editor\Mono\EditorWindow.cs">
       <Link>Editor\Mono\EditorWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorWindowTelemetry\EditorWindowTelemetry.cs">
+      <Link>Editor\Mono\EditorWindowTelemetry\EditorWindowTelemetry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorWindowTelemetry\EditorWindowUsageAnalytic.cs">
+      <Link>Editor\Mono\EditorWindowTelemetry\EditorWindowUsageAnalytic.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorWindowTelemetry\WindowIdentityResolver.cs">
+      <Link>Editor\Mono\EditorWindowTelemetry\WindowIdentityResolver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorWindowTelemetry\WindowSampleTracker.cs">
+      <Link>Editor\Mono\EditorWindowTelemetry\WindowSampleTracker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorWindowTelemetry\WindowUsage.cs">
+      <Link>Editor\Mono\EditorWindowTelemetry\WindowUsage.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\EnumDataUtility.cs">
       <Link>Editor\Mono\EnumDataUtility.cs</Link>
     </Compile>
@@ -3901,6 +3916,9 @@
     <Compile Include="..\..\Editor\Mono\ShaderUtil.cs">
       <Link>Editor\Mono\ShaderUtil.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\Analytics\ShaderBuildSettingsAnalytics.cs">
+      <Link>Editor\Mono\Shaders\Analytics\ShaderBuildSettingsAnalytics.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Shaders\MaterialHierarchyPopup.cs">
       <Link>Editor\Mono\Shaders\MaterialHierarchyPopup.cs</Link>
     </Compile>
@@ -5289,6 +5307,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildStepsElement.cs">
       <Link>Modules\BuildAnalysis\UI\Common\BuildStepsElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\ImportedBuildBanner.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\ImportedBuildBanner.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\KeyboardNavigation.cs">
       <Link>Modules\BuildAnalysis\UI\Common\KeyboardNavigation.cs</Link>
@@ -9403,6 +9424,12 @@
     <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\StartupLocaleSelectorDrawer.cs">
       <Link>Modules\LocalizationRuntimeEditor\Managed\StartupLocaleSelectorDrawer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\StartupSelectorList.cs">
+      <Link>Modules\LocalizationRuntimeEditor\Managed\StartupSelectorList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\StartupSelectorsDrawer.cs">
+      <Link>Modules\LocalizationRuntimeEditor\Managed\StartupSelectorsDrawer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\TableAssetEditors.cs">
       <Link>Modules\LocalizationRuntimeEditor\Managed\TableAssetEditors.cs</Link>
     </Compile>
@@ -12055,92 +12082,95 @@
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\Settings\Physics2DSettingsEditor.cs">
       <Link>Modules\Physics2DEditor\Managed\Settings\Physics2DSettingsEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Controls\LayerMaskField32.cs">
-      <Link>Modules\PhysicsCore2DEditor\Controls\LayerMaskField32.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Controls\LayerMaskField32.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Controls\LayerMaskField32.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Controls\LayerMaskField64.cs">
-      <Link>Modules\PhysicsCore2DEditor\Controls\LayerMaskField64.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Controls\LayerMaskField64.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Controls\LayerMaskField64.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Menu\PhysicsCore2DMenuItems.cs">
-      <Link>Modules\PhysicsCore2DEditor\Menu\PhysicsCore2DMenuItems.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Controls\SerializedPropertyProxy.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Controls\SerializedPropertyProxy.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Profiler\PhysicsCore2DFrameData.cs">
-      <Link>Modules\PhysicsCore2DEditor\Profiler\PhysicsCore2DFrameData.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Menu\PhysicsCore2DMenuItems.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Menu\PhysicsCore2DMenuItems.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Profiler\PhysicsCore2DProfilerMarkers.cs">
-      <Link>Modules\PhysicsCore2DEditor\Profiler\PhysicsCore2DProfilerMarkers.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Profiler\PhysicsCore2DFrameData.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Profiler\PhysicsCore2DFrameData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Profiler\PhysicsCore2DProfilerModule.cs">
-      <Link>Modules\PhysicsCore2DEditor\Profiler\PhysicsCore2DProfilerModule.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Profiler\PhysicsCore2DProfilerMarkers.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Profiler\PhysicsCore2DProfilerMarkers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Profiler\PhysicsCore2DProfilerViewController.cs">
-      <Link>Modules\PhysicsCore2DEditor\Profiler\PhysicsCore2DProfilerViewController.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Profiler\PhysicsCore2DProfilerModule.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Profiler\PhysicsCore2DProfilerModule.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Profiler\UI\PhysicsCore2DModuleView\PhysicsCore2DModuleView.cs">
-      <Link>Modules\PhysicsCore2DEditor\Profiler\UI\PhysicsCore2DModuleView\PhysicsCore2DModuleView.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Profiler\PhysicsCore2DProfilerViewController.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Profiler\PhysicsCore2DProfilerViewController.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Profiler\UI\PhysicsCore2DModuleView\PhysicsWorldTreeData.cs">
-      <Link>Modules\PhysicsCore2DEditor\Profiler\UI\PhysicsCore2DModuleView\PhysicsWorldTreeData.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Profiler\UI\PhysicsCore2DModuleView\PhysicsCore2DModuleView.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Profiler\UI\PhysicsCore2DModuleView\PhysicsCore2DModuleView.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Profiler\UI\PhysicsCore2DProfilerView\PhysicsCore2DProfilerView.cs">
-      <Link>Modules\PhysicsCore2DEditor\Profiler\UI\PhysicsCore2DProfilerView\PhysicsCore2DProfilerView.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Profiler\UI\PhysicsCore2DModuleView\PhysicsWorldTreeData.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Profiler\UI\PhysicsCore2DModuleView\PhysicsWorldTreeData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Profiler\UI\PhysicsCore2DStatisticView\PhysicsCore2DStatisticView.cs">
-      <Link>Modules\PhysicsCore2DEditor\Profiler\UI\PhysicsCore2DStatisticView\PhysicsCore2DStatisticView.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Profiler\UI\PhysicsCore2DProfilerView\PhysicsCore2DProfilerView.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Profiler\UI\PhysicsCore2DProfilerView\PhysicsCore2DProfilerView.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Profiler\UI\PhysicsModuleData.cs">
-      <Link>Modules\PhysicsCore2DEditor\Profiler\UI\PhysicsModuleData.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Profiler\UI\PhysicsCore2DStatisticView\PhysicsCore2DStatisticView.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Profiler\UI\PhysicsCore2DStatisticView\PhysicsCore2DStatisticView.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\ContactFilterPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\ContactFilterPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Profiler\UI\PhysicsModuleData.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Profiler\UI\PhysicsModuleData.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsDistanceJointDefinitionPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsDistanceJointDefinitionPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\ContactFilterPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\ContactFilterPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsFixedJointDefinitionPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsFixedJointDefinitionPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsDistanceJointDefinitionPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsDistanceJointDefinitionPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsHingeJointDefinitionPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsHingeJointDefinitionPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsFixedJointDefinitionPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsFixedJointDefinitionPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsJointDefinitionPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsJointDefinitionPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsHingeJointDefinitionPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsHingeJointDefinitionPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsRelativeJointDefinitionPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsRelativeJointDefinitionPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsJointDefinitionPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsJointDefinitionPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsSliderJointDefinitionPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsSliderJointDefinitionPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsRelativeJointDefinitionPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsRelativeJointDefinitionPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsWheelJointDefinitionPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\Joints\PhysicsWheelJointDefinitionPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsSliderJointDefinitionPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsSliderJointDefinitionPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\PhysicsLayerNamesPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\PhysicsLayerNamesPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsWheelJointDefinitionPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\Joints\PhysicsWheelJointDefinitionPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\PhysicsMaskPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\PhysicsMaskPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\PhysicsLayerNamesPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\PhysicsLayerNamesPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\PhysicsRotatePropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\PhysicsRotatePropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\PhysicsMaskPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\PhysicsMaskPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\PhysicsUserDataPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\PhysicsUserDataPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\PhysicsRotatePropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\PhysicsRotatePropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\PolygonGeometryPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\PolygonGeometryPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\PhysicsUserDataPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\PhysicsUserDataPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\PropertyDrawers\QueryFilterPropertyDrawer.cs">
-      <Link>Modules\PhysicsCore2DEditor\PropertyDrawers\QueryFilterPropertyDrawer.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\PolygonGeometryPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\PolygonGeometryPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Settings\PhysicsCoreProjectSettings2DProvider.cs">
-      <Link>Modules\PhysicsCore2DEditor\Settings\PhysicsCoreProjectSettings2DProvider.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\QueryFilterPropertyDrawer.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\PropertyDrawers\QueryFilterPropertyDrawer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Settings\PhysicsCoreSettings2DEditor.cs">
-      <Link>Modules\PhysicsCore2DEditor\Settings\PhysicsCoreSettings2DEditor.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Settings\PhysicsCoreProjectSettings2DProvider.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Settings\PhysicsCoreProjectSettings2DProvider.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Settings\PhysicsDrawOverride.cs">
-      <Link>Modules\PhysicsCore2DEditor\Settings\PhysicsDrawOverride.cs</Link>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Settings\PhysicsCoreSettings2DEditor.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Settings\PhysicsCoreSettings2DEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2DEditor\Managed\Settings\PhysicsDrawOverride.cs">
+      <Link>Modules\PhysicsCore2DEditor\Managed\Settings\PhysicsDrawOverride.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\ArticulationBodyEditor.cs">
       <Link>Modules\PhysicsEditor\ArticulationBodyEditor.cs</Link>
@@ -18151,7 +18181,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_4xuebtzk/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_6ob3c5aw/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

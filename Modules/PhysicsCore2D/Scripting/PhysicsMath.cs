@@ -15,7 +15,7 @@ namespace Unity.U2D.Physics
     /// These operations do not form a fully comprehensive mathematics library, they simply provide operations that are usually required when interacting with physics.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial record struct PhysicsMath
+    public readonly partial struct PhysicsMath
     {
         #region General Mathematics
 

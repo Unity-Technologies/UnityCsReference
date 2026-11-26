@@ -16,10 +16,9 @@ namespace Unity.U2D.Physics.Editor
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            const string propertyPath = nameof(PhysicsLayers.LayerNames.m_Names);
-            var layerNamesProperty = property.FindPropertyRelative(propertyPath);
+            var layerNamesProperty = property.FindPropertyRelative(nameof(PhysicsLayers.LayerNames.m_Names));
 
-            Ensure64Layers();
+            Ensure64Layers(layerNamesProperty);
 
             var layerList = new ListView
             {
@@ -29,72 +28,26 @@ namespace Unity.U2D.Physics.Editor
                 showBoundCollectionSize = false,
                 showFoldoutHeader = true,
                 horizontalScrollingEnabled = false,
-                bindingPath = $"{propertyPath}",
+                selectionType = SelectionType.None,
+                bindingPath = layerNamesProperty.propertyPath,
                 makeItem = () => new TextField { style = { flexDirection = FlexDirection.Row, alignItems  = Align.Center }, },
+                // Each name is bound to its own array element, so binding keeps it up to date, including its mixed value, prefab override, context menu and undo.
                 bindItem = (element, index) =>
                 {
                     if (element is not TextField field)
                         return;
 
-                    var layerName = layerNamesProperty.GetArrayElementAtIndex(index).stringValue;
                     field.label = $"Layer {index}";
                     field.tooltip = $"Layer {index} = (1 << {index})";
-                    field.SetValueWithoutNotify(layerName);
-                    field.userData = index;
-
-                    field.RegisterValueChangedCallback(PhysicsLayersChanged);
+                    field.BindProperty(layerNamesProperty.GetArrayElementAtIndex(index));
                 },
-                unbindItem = (element, _) =>
-                {
-                    if (element is not TextField field)
-                        return;
-
-                    field.UnregisterValueChangedCallback(PhysicsLayersChanged);
-                }
+                unbindItem = (element, _) => (element as TextField)?.Unbind()
             };
 
             layerList.AddToClassList(InspectorElement.ussClassName);
             layerList.Bind(property.serializedObject);
-            layerList.TrackPropertyValue(layerNamesProperty, (_) => RefreshItems(layerList) );
 
             return layerList;
-
-            void RefreshItems(ListView listView)
-            {
-                Ensure64Layers();
-                listView.RefreshItems();
-            }
-
-            void PhysicsLayersChanged(ChangeEvent<string> evt)
-            {
-                if (evt.target is not TextField textField)
-                    return;
-
-                evt.StopPropagation();
-                var index = (int)textField.userData;
-
-                if (index >= layerNamesProperty.arraySize)
-                    return;
-
-                layerNamesProperty.GetArrayElementAtIndex(index).stringValue = evt.newValue;
-                layerNamesProperty.serializedObject.ApplyModifiedProperties();
-            }
-
-            void Ensure64Layers()
-            {
-                // Ensure the array is always 64 elements!
-                if (layerNamesProperty.arraySize == 64)
-                    return;
-
-                // Insert elements until filled.
-                do
-                {
-                    layerNamesProperty.InsertArrayElementAtIndex(layerNamesProperty.arraySize);
-
-                } while (layerNamesProperty.arraySize != 64);
-
-                layerNamesProperty.serializedObject.ApplyModifiedProperties();
-            }
         }
 
         #endregion
@@ -115,10 +68,11 @@ namespace Unity.U2D.Physics.Editor
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            label = EditorGUI.BeginProperty(position, label, property);
-
+            // The layer names' property scope covers only the header, and each name has its own, so the mixed value, override bar and context menu of each name are its own.
             var foldoutRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+            label = EditorGUI.BeginProperty(foldoutRect, label, property);
             property.isExpanded = EditorGUI.Foldout(foldoutRect, property.isExpanded, label, true);
+            EditorGUI.EndProperty();
 
             if (property.isExpanded)
             {
@@ -135,23 +89,23 @@ namespace Unity.U2D.Physics.Editor
                 {
                     var element = namesProperty.GetArrayElementAtIndex(i);
                     var rowRect = new Rect(position.x, y, position.width, lineHeight);
-                    var rowLabel = new GUIContent($"Layer {i}", $"Layer {i} = (1 << {i})");
+                    var rowLabel = EditorGUI.BeginProperty(rowRect, new GUIContent($"Layer {i}", $"Layer {i} = (1 << {i})"), element);
 
                     EditorGUI.BeginChangeCheck();
                     var newName = EditorGUI.TextField(rowRect, rowLabel, element.stringValue);
                     if (EditorGUI.EndChangeCheck())
                         element.stringValue = newName;
 
+                    EditorGUI.EndProperty();
+
                     y += lineHeight + spacing;
                 }
 
                 EditorGUI.indentLevel--;
             }
-
-            EditorGUI.EndProperty();
         }
 
-        // Keep the backing array at exactly 64 elements (mirrors the UITK path's Ensure64Layers).
+        // Keep the backing array at exactly 64 elements, for both the UI Toolkit and IMGUI paths.
         static void Ensure64Layers(SerializedProperty namesProperty)
         {
             if (namesProperty.arraySize == k_LayerCount)

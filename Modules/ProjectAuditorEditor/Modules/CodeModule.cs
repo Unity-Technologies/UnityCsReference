@@ -502,6 +502,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     var analyzingText = configuration == "Analysis" ? "Editor" : "Player";
                     AsyncProgressState progressState = progress?.Start($"Analyzing {analyzingText} Code", 1);
 
+                    // A busy pipeline rejects the request below, and rewriting the filter then would change the running build's selection.
+                    if (!MsBuildCompilationInterface.Instance.IsCompiling())
+                        WriteAssemblyFilterTargets(analysisParams.AssemblyNames);
+
                     var compilationTask = RequestCompilationAsync(configuration, progressState?.Id ?? -1, cancellationSource.Token);
                     while (!compilationTask.IsCompleted)
                     {
@@ -528,6 +532,18 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     if (compilationTask.IsFaulted)
                     {
                         Debug.LogError($"Project Auditor: '{configuration}' compilation failed: {compilationTask.Exception?.GetBaseException().Message}");
+                        if (mergedIssues.Count > 0)
+                            analysisParams.OnIncomingIssues(mergedIssues);
+                        analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Failure, threadExecutionTimeMs);
+                        yield break;
+                    }
+
+                    // The build didn't run (e.g. a script compilation was already pending), so nothing was analyzed
+                    var compilationMessages = compilationTask.Result;
+                    if (!compilationMessages.Success && compilationMessages.Assemblies.Length == 0)
+                    {
+                        var reason = compilationMessages.Messages.Length > 0 ? compilationMessages.Messages[0].Msg.Message : string.Empty;
+                        Debug.LogError($"Project Auditor: '{configuration}' compilation failed: {reason}");
                         if (mergedIssues.Count > 0)
                             analysisParams.OnIncomingIssues(mergedIssues);
                         analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Failure, threadExecutionTimeMs);
@@ -678,7 +694,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             return globalConfig.ToString();
         }
 
-        // Feeds every analyzer found by label into the Analysis build.
+        // Feeds every analyzer found by label into the Analysis build, with warnings-as-errors switched off.
         static void WriteAnalyzerProps(IReadOnlyCollection<string> analyzerAssetPaths)
         {
             var propsPath = Path.Combine(ProjectAuditor.ProjectPath, "Library", "ScriptAnalysis.props");
@@ -688,6 +704,13 @@ namespace Unity.ProjectAuditor.Editor.Modules
             {
                 writer.WriteComment(" This file is auto-generated. Do not edit ");
                 writer.WriteStartElement("Project");
+
+                // Imported after the project's own props, so a warning must never stop the analysis
+                writer.WriteStartElement("PropertyGroup");
+                writer.WriteElementString("TreatWarningsAsErrors", "false");
+                writer.WriteElementString("WarningsAsErrors", string.Empty);
+                writer.WriteEndElement();
+
                 writer.WriteStartElement("ItemGroup");
                 writer.WriteAttributeString("Condition", "'$(IsEntryPointProject)' != 'true'");
 
@@ -704,6 +727,129 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 writer.WriteEndElement();
                 writer.WriteEndElement();
             }
+        }
+
+        // Trims the entry point's references to the listed assemblies; MSBuild still builds what they reference.
+        // Must sort after PackageProjectReferences.targets, which adds the package references it has to trim.
+        static void WriteAssemblyFilterTargets(string[] assemblyNames)
+        {
+            var targetsPath = Path.Combine(ProjectAuditor.ProjectPath, "Library", "MSBuild", "GeneratedPropsTargets", "EntryPoint", "ScriptAnalysis.AssemblyFilter.targets");
+            if (assemblyNames == null)
+            {
+                if (File.Exists(targetsPath))
+                    File.Delete(targetsPath);
+                return;
+            }
+
+            var targets = new StringBuilder();
+            var settings = new XmlWriterSettings { Indent = true, IndentChars = "  ", OmitXmlDeclaration = true };
+            using (var writer = XmlWriter.Create(targets, settings))
+            {
+                writer.WriteComment(" This file is auto-generated. Do not edit ");
+                writer.WriteStartElement("Project");
+                writer.WriteStartElement("ItemGroup");
+                writer.WriteAttributeString("Condition", "'$(Configuration)' == 'Analysis' Or $(Configuration.EndsWith('+Analysis'))");
+
+                foreach (var projectName in GetProjectNames(assemblyNames, FindEntryPointProjects(Path.GetDirectoryName(targetsPath))))
+                {
+                    writer.WriteStartElement("_ScriptAnalysisProjectReference");
+                    writer.WriteAttributeString("Include", $"@(ProjectReference->WithMetadataValue('Filename', '{EscapeMsBuildItemValue(projectName)}'))");
+                    writer.WriteEndElement();
+                }
+
+                writer.WriteStartElement("ProjectReference");
+                writer.WriteAttributeString("Remove", "@(ProjectReference)");
+                writer.WriteEndElement();
+
+                writer.WriteStartElement("ProjectReference");
+                writer.WriteAttributeString("Include", "@(_ScriptAnalysisProjectReference)");
+                writer.WriteEndElement();
+
+                writer.WriteEndElement();
+                writer.WriteEndElement();
+            }
+
+            // The build service re-evaluates every project importing a file that changes, so leave it untouched if equal.
+            var content = targets.ToString();
+            if (File.Exists(targetsPath) && File.ReadAllText(targetsPath) == content)
+                return;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(targetsPath));
+            File.WriteAllText(targetsPath, content);
+        }
+
+        // The projects Main.EntryPoint references: Assets/**/*.csproj and the package projects the build service lists.
+        static List<string> FindEntryPointProjects(string entryPointTargetsDirectory)
+        {
+            var projectPaths = new List<string>(Directory.EnumerateFiles(Path.Combine(ProjectAuditor.ProjectPath, "Assets"), "*.csproj", SearchOption.AllDirectories));
+            var packageReferencesPath = Path.Combine(entryPointTargetsDirectory, "PackageProjectReferences.targets");
+            if (File.Exists(packageReferencesPath))
+            {
+                foreach (var element in ReadMsBuildElements(packageReferencesPath, "ProjectReference"))
+                    projectPaths.Add(element.GetAttribute("Include"));
+            }
+
+            return projectPaths;
+        }
+
+        // Generated projects are named "<AssemblyName>.gen.csproj", but a hand-authored project can set any AssemblyName.
+        internal static HashSet<string> GetProjectNames(string[] assemblyNames, IEnumerable<string> projectPaths)
+        {
+            var projectNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var assemblyName in assemblyNames)
+                projectNames.Add(assemblyName + ".gen");
+
+            foreach (var projectPath in projectPaths)
+            {
+                if (projectPath.EndsWith(".gen.csproj", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (IsProjectRequested(projectPath, assemblyNames))
+                    projectNames.Add(Path.GetFileNameWithoutExtension(projectPath));
+            }
+
+            return projectNames;
+        }
+
+        static bool IsProjectRequested(string projectPath, string[] assemblyNames)
+        {
+            var declared = false;
+            foreach (var element in ReadMsBuildElements(projectPath, "AssemblyName"))
+            {
+                var name = element.InnerText.Trim();
+                if (name.Contains("$(") || Array.IndexOf(assemblyNames, name) != -1)
+                    return true;
+                declared = true;
+            }
+
+            return !declared && Array.IndexOf(assemblyNames, Path.GetFileNameWithoutExtension(projectPath)) != -1;
+        }
+
+        static IEnumerable<XmlElement> ReadMsBuildElements(string path, string elementName)
+        {
+            var document = new XmlDocument();
+            try
+            {
+                document.Load(path);
+            }
+            catch (Exception e) when (e is XmlException || e is IOException)
+            {
+                return Array.Empty<XmlElement>();
+            }
+
+            var elements = new List<XmlElement>();
+            foreach (XmlNode node in document.GetElementsByTagName(elementName))
+            {
+                if (node is XmlElement element)
+                    elements.Add(element);
+            }
+
+            return elements;
+        }
+
+        static bool IsAssemblyListed(AnalysisParams analysisParams, string assemblyName)
+        {
+            return analysisParams.AssemblyNames == null || Array.IndexOf(analysisParams.AssemblyNames, assemblyName) != -1;
         }
 
         static bool IsNetAnalyzer(string assetPath)
@@ -846,6 +992,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (!includeTests && assemblyInfo.IsTestAssembly)
                     continue;
 
+                // Dependencies of the listed assemblies are built too, but not reported
+                if (!IsAssemblyListed(context.Params, assemblyName))
+                    continue;
+
                 var message = new AssemblyUtils.CompilerMessage
                 {
                     Code = logMessage.Code ?? string.Empty,
@@ -930,6 +1080,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             // The MSBuild entry point project references every assembly, so it isn't one the user can act on.
             if (assemblyName == "Main.EntryPoint")
+                return assemblyInfo;
+
+            if (!IsAssemblyListed(context.Params, assemblyName))
                 return assemblyInfo;
 
             if (!PathPackageFilter(assemblyInfo.PackageResolvedPath ?? assemblyInfo.AsmDefPath ?? string.Empty, context.Params.CodeAnalysisFlags, context.Params.OwnerFlags))
@@ -1256,23 +1409,26 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 severity = Severity.Warning;
                 status = "Not compiled: a dependency failed to compile";
             }
-            else if (Array.Exists(compilerMessages, m => m.Type == CompilerMessageType.Error))
+            else if (compilationResult.HasErrors)
             {
                 severity = Severity.Error;
                 status = k_FailedToCompileStatus;
             }
 
             var assemblyInfo = AssemblyInfoProvider.GetAssemblyInfoFromAssemblyPath(compilationResult.AssemblyPath, compilationResult.EditorAssembly);
-            yield return context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
-                .WithCustomProperties(
-                [
-                    assemblyInfo.IsReadOnly,
-                    assemblyInfo.GetTypeString(),
-                    status,
-                ])
-                .WithDependencies(new AssemblyDependencyNode(assemblyInfo.Name, compilationResult.DependentAssemblyNames))
-                .WithLocation(assemblyInfo.AsmDefPath)
-                .WithSeverity(severity);
+            if (PathPackageFilter(assemblyInfo.PackageResolvedPath ?? assemblyInfo.AsmDefPath ?? string.Empty, context.Params.CodeAnalysisFlags, context.Params.OwnerFlags))
+            {
+                yield return context.CreateInsight(IssueCategory.Assembly, assemblyInfo.Name)
+                    .WithCustomProperties(
+                    [
+                        assemblyInfo.IsReadOnly,
+                        assemblyInfo.GetTypeString(),
+                        status,
+                    ])
+                    .WithDependencies(new AssemblyDependencyNode(assemblyInfo.Name, compilationResult.DependentAssemblyNames))
+                    .WithLocation(assemblyInfo.AsmDefPath)
+                    .WithSeverity(severity);
+            }
 
             foreach (var message in compilerMessages)
                 yield return ProcessEditorCompilerMessage(context, assemblyInfo, message);

@@ -106,6 +106,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             if (reportIsCompatible)
             {
                 EditorGUILayout.Space();
+                DrawIncompleteCodeAnalysisNotice();
                 DrawCategoryBreakdown();
 
                 if (!m_ViewManager.HasPendingCategories())

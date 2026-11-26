@@ -471,6 +471,7 @@ internal partial class ATGTextJobSystem
             int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
 
             bool isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
+            float regularWeight = isSprite ? 0.0f : fa.regularStyleWeight;
             Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;
 
             for (int j = 0; j < atlasCount; ++j)
@@ -516,10 +517,10 @@ internal partial class ATGTextJobSystem
 
                         uirQuadMap?.Record(teiIndex, verticesArray.Count, vDst);
 
-                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 0], ref tei.bottomLeft, pos, inverseScale, isDynamicColor, isColorFont);
-                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 1], ref tei.topLeft, pos, inverseScale, isDynamicColor, isColorFont);
-                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 2], ref tei.topRight, pos, inverseScale, isDynamicColor, isColorFont);
-                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 3], ref tei.bottomRight, pos, inverseScale, isDynamicColor, isColorFont);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 0], ref tei.bottomLeft, pos, inverseScale, isDynamicColor, isColorFont, regularWeight: regularWeight);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 1], ref tei.topLeft, pos, inverseScale, isDynamicColor, isColorFont, regularWeight: regularWeight);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 2], ref tei.topRight, pos, inverseScale, isDynamicColor, isColorFont, regularWeight: regularWeight);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 3], ref tei.bottomRight, pos, inverseScale, isDynamicColor, isColorFont, regularWeight: regularWeight);
 
                         indexSpan[k + 0] = (ushort)(vDst + 0);
                         indexSpan[k + 1] = (ushort)(vDst + 1);

@@ -337,5 +337,88 @@ namespace UnityEngine.UIElements
             s_ThreadIndex = initValue;
             return initValue;
         }
+
+        static readonly int s_MainTexId = Shader.PropertyToID("_MainTex");
+        static readonly int s_ColorConversionId = Shader.PropertyToID("_ColorConversion");
+
+        [NoAutoStaticsCleanup] // persist the cached material; nulling it would orphan the native HideAndDontSave object
+        static Material s_CopyMaterial;
+        static Material copyMaterial
+        {
+            get
+            {
+                if (s_CopyMaterial == null)
+                    s_CopyMaterial = new Material(Shader.Find(UIR.Shaders.k_CopyRegion)) { hideFlags = HideFlags.HideAndDontSave };
+                return s_CopyMaterial;
+            }
+        }
+
+        // Not thread-safe; UIR rendering is sequential. Revisit if panel processing becomes parallel.
+        [NoAutoStaticsCleanup] // Reused property block; cleared before each copy
+        static readonly MaterialPropertyBlock s_PropertyBlock = new MaterialPropertyBlock();
+
+        // Copies srcRect of source 1:1 into target at dstPos (bottom-origin texels), keeping the stored bytes.
+        public static void CopyRegion(RenderTexture source, RectInt srcRect, RenderTexture target, Vector2Int dstPos)
+        {
+            bool sourceDecodes = ConvertsSRGB(source);
+            bool targetEncodes = ConvertsSRGB(target);
+
+            // Cancels the sampler's decode against the store's encode, so the result matches a raw copy's bytes.
+            float colorConversion;
+            if (sourceDecodes == targetEncodes)
+                colorConversion = 0f;
+            else if (targetEncodes)
+                colorConversion = -1f;
+            else
+                colorConversion = 1f;
+
+            var previousActive = RenderTexture.active;
+            var previousViewport = UIR.Utility.GetActiveViewport();
+            FilterMode previousFilterMode = source.filterMode;
+            source.filterMode = FilterMode.Point; // texel-centered taps; WebGL 2 cannot bilinear-filter float formats
+            GL.PushMatrix();
+            try
+            {
+                s_PropertyBlock.Clear();
+                s_PropertyBlock.SetTexture(s_MainTexId, source);
+                s_PropertyBlock.SetFloat(s_ColorConversionId, colorConversion);
+
+                GL.LoadPixelMatrix(0, target.width, 0, target.height);
+                Graphics.SetRenderTarget(target);
+                copyMaterial.SetPass(0);
+                UIR.Utility.SetPropertyBlock(s_PropertyBlock);
+
+                float srcLeft = (float)srcRect.x / source.width;
+                float srcBottom = (float)srcRect.y / source.height;
+                float srcRight = (float)srcRect.xMax / source.width;
+                float srcTop = (float)srcRect.yMax / source.height;
+
+                float dstLeft = dstPos.x;
+                float dstBottom = dstPos.y;
+                float dstRight = dstPos.x + srcRect.width;
+                float dstTop = dstPos.y + srcRect.height;
+
+                GL.Begin(GL.QUADS);
+                GL.TexCoord2(srcLeft, srcBottom);
+                GL.Vertex3(dstLeft, dstBottom, 0f);
+                GL.TexCoord2(srcLeft, srcTop);
+                GL.Vertex3(dstLeft, dstTop, 0f);
+                GL.TexCoord2(srcRight, srcTop);
+                GL.Vertex3(dstRight, dstTop, 0f);
+                GL.TexCoord2(srcRight, srcBottom);
+                GL.Vertex3(dstRight, dstBottom, 0f);
+                GL.End();
+            }
+            finally
+            {
+                GL.PopMatrix();
+                source.filterMode = previousFilterMode;
+                Graphics.SetRenderTarget(previousActive);
+                GL.Viewport(CastToRect(previousViewport));
+            }
+        }
+
+        // RenderTexture.sRGB reports the requested format; Gamma projects never decode or encode on read/write.
+        static bool ConvertsSRGB(RenderTexture rt) => rt.sRGB && QualitySettings.activeColorSpace == ColorSpace.Linear;
     }
 }

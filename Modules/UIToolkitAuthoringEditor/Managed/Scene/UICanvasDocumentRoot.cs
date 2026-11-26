@@ -384,9 +384,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         if (ReferenceEquals(element.panel, subPanel))
             return element;
 
-        // Only the live tree this canvas previews. Two GameObjects can render one document, and the id path is
-        // built from asset ids alone — their elements correspond to the same clone — so the panel is the only
-        // thing that says whether this element is the one we stand in for.
+        // Ancestry, not panel: components sharing PanelSettings share one panel.
         var authoritativeRoot = AuthoritativeRootProvider?.Invoke();
         if (authoritativeRoot == null || !ReferenceEquals(element.panel, authoritativeRoot.panel))
             return null;
@@ -395,6 +393,9 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         // VisualElementAsset, so correspondence has nothing to match it on.
         if (ReferenceEquals(element, authoritativeRoot))
             return m_PanelElement.subRootVisualElement;
+
+        if (!authoritativeRoot.Contains(element))
+            return null;
 
         return m_PanelElement.subRootVisualElement?.FindCorrespondingElement(element);
     }

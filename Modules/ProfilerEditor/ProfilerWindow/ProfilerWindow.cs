@@ -1998,6 +1998,7 @@ namespace UnityEditor
 
         void ProfilerModulesDropdownWindow.IResponder.OnRestoreDefaultModules()
         {
+            var previouslySelectedModule = selectedModule;
             DeselectSelectedModuleIfNecessary();
 
             int index = m_AllModules.Count - 1;
@@ -2025,6 +2026,15 @@ namespace UnityEditor
 
             // Restore the Bottleneck/Highlights view to its default visible state.
             SetBottleneckViewVisible(true);
+
+            // The details view was closed above, so reselect a module unless the Bottlenecks view is showing (UUM-117802).
+            if (m_SelectedModuleIndex == k_NoModuleSelected && m_BottlenecksDetailsViewController == null)
+            {
+                if (previouslySelectedModule != null && m_AllModules.Contains(previouslySelectedModule) && previouslySelectedModule.active)
+                    SelectModule(previouslySelectedModule);
+                else
+                    SelectFirstActiveModule();
+            }
 
             Repaint();
 

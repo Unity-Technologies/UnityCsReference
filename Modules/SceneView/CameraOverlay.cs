@@ -537,6 +537,9 @@ namespace UnityEditor
 
         public override VisualElement CreatePanelContent()
         {
+            // Update does not run while hidden, so the selected camera may have been destroyed since.
+            ClearDestroyedViewpoint();
+
             var styleSheet = EditorGUIUtility.Load(k_USSFilePath) as StyleSheet;
 
             m_Root = new VisualElement();
@@ -557,7 +560,8 @@ namespace UnityEditor
 
         public override void OnCreated()
         {
-            EditorApplication.update += Update;
+            // Overlays start hidden and raise displayedChanged when first shown, so Update is subscribed from there.
+            displayedChanged += OnDisplayedChanged;
             StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageSwitched;
             StageNavigationManager.instance.recoveredFromStageChangeError += OnRecoveredFromStageChangeError;
 
@@ -568,6 +572,7 @@ namespace UnityEditor
 
         public override void OnWillBeDestroyed()
         {
+            displayedChanged -= OnDisplayedChanged;
             EditorApplication.update -= Update;
             StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageSwitched;
             StageNavigationManager.instance.recoveredFromStageChangeError -= OnRecoveredFromStageChangeError;
@@ -578,6 +583,14 @@ namespace UnityEditor
             (containerWindow as SceneView).viewpoint.cameraLookThroughStateChanged -= CameraViewStateChanged;
 
             onWillBeDestroyed?.Invoke();
+        }
+
+        // Update scans the scene for viewpoints while none is selected, so only poll while the overlay is visible.
+        void OnDisplayedChanged(bool display)
+        {
+            EditorApplication.update -= Update;
+            if (display)
+                EditorApplication.update += Update;
         }
 
         // When the camera view is enabled in the SceneView, we reduce the overlay to hide the preview
@@ -753,16 +766,28 @@ namespace UnityEditor
                 m_SelectedTargetPerStage.Remove(stageHandle);
         }
 
+        void ClearDestroyedViewpoint()
+        {
+            if (viewpoint == null || viewpoint.TargetObject)
+                return;
+
+            m_SelectedViewpoint = null;
+
+            onViewpointSelected?.Invoke(m_SelectedViewpoint);
+        }
+
         void Update()
         {
+            if (!displayed)
+            {
+                EditorApplication.update -= Update;
+                return;
+            }
+
             if (viewpoint == null)
                 SelectPreferredViewpoint();
-            else if (!viewpoint.TargetObject)
-            {
-                m_SelectedViewpoint = null;
-
-                onViewpointSelected?.Invoke(m_SelectedViewpoint);
-            }
+            else
+                ClearDestroyedViewpoint();
 
             // Enable the toolbar only when there is at least one camera in the scene.
             contentRoot.SetEnabled(viewpoint != null);

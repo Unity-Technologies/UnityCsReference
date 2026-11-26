@@ -1780,7 +1780,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public record struct ExplosionDefinition
+        public struct ExplosionDefinition
         {
             /// <summary>
             /// Create a default explode definition.
@@ -3798,7 +3798,7 @@ namespace Unity.U2D.Physics
         /// You must immediately extract what information you need and not directly reference the returned data as it will be cleared immediately after being provided.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly record struct DrawResults
+        public readonly struct DrawResults
         {
             internal readonly PhysicsBuffer m_PolygonGeometryElements;
             internal readonly PhysicsBuffer m_CircleGeometryElements;
@@ -3823,7 +3823,7 @@ namespace Unity.U2D.Physics
             /// A Polygon Geometry Element.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct PolygonGeometryElement
+            public readonly struct PolygonGeometryElement
             {
                 /// <summary>
                 /// The transform of the polygon element.
@@ -3917,7 +3917,7 @@ namespace Unity.U2D.Physics
             /// A Circle Geometry Element.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct CircleGeometryElement
+            public readonly struct CircleGeometryElement
             {
                 /// <summary>
                 /// The transform of the circle element.
@@ -3964,7 +3964,7 @@ namespace Unity.U2D.Physics
             /// A Capsule Geometry Element.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct CapsuleGeometryElement
+            public readonly struct CapsuleGeometryElement
             {
                 /// <summary>
                 /// The transform of the capsule element.
@@ -4017,7 +4017,7 @@ namespace Unity.U2D.Physics
             /// A Line Element.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct LineElement
+            public readonly struct LineElement
             {
                 /// <summary>
                 /// The transform of the line element.
@@ -4057,7 +4057,7 @@ namespace Unity.U2D.Physics
             /// A Point Element.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly record struct PointElement
+            public readonly struct PointElement
             {
                 /// <summary>
                 /// The position of the point element.
@@ -4169,7 +4169,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public record struct DrawColors
+        public struct DrawColors
         {
             /// <summary>
             /// The X component of the Transform axis.

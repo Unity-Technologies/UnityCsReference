@@ -7,6 +7,7 @@ using System.IO;
 using UnityEditor.Build.Profile;
 using UnityEditor.InsightsEditor;
 using UnityEditor.Mono.BuildPipeline;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -35,7 +36,7 @@ namespace UnityEditor.EngineDiagnostics
     [NativeHeader("Modules/UnityConnect/Insights/InsightsSettings.h")]
     [NativeHeader("Modules/Insights/CollectionRequirement.h")]
     [StaticAccessor("GetInsightsSettings()")]
-    public static class EngineDiagnosticsSettings
+    public static partial class EngineDiagnosticsSettings
     {
         public static bool enabled
         {
@@ -58,6 +59,9 @@ namespace UnityEditor.EngineDiagnostics
             GetState(profile.buildTarget, profile) != BuildProfileEngineDiagnosticsState.Disabled;
 
         internal static extern void NotifyActiveBuildProfileChanged();
+
+        [AutoStaticsCleanupOnCodeReload]
+        internal static event Action<BuildProfile> buildProfileStateChanged;
 
         // Called by InsightsSettings to resolve the active build profile's state.
         [RequiredByNativeCode]
@@ -105,6 +109,7 @@ namespace UnityEditor.EngineDiagnostics
 
             InvalidatePlayerDataCache(profile.buildTarget);
             NotifyActiveBuildProfileChanged();
+            buildProfileStateChanged?.Invoke(profile);
             return true;
         }
 

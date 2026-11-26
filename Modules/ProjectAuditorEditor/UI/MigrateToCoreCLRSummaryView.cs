@@ -87,6 +87,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
 
             EditorGUILayout.Space();
+            DrawIncompleteCodeAnalysisNotice();
             DrawRuntimeVersions();
             EditorGUILayout.Space();
             DrawIssueBreakdownSection();

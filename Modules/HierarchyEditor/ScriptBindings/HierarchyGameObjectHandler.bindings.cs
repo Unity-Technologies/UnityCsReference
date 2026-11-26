@@ -1071,8 +1071,8 @@ namespace Unity.Hierarchy.Editor
 
         // Resolves the framing sibling (or parent fallback) for an insertion point described by
         // data. For BetweenItems, walks data.Parent's children — skipping selected nodes when
-        // skipSelected is set, and skipping non-droppable types (anything other than GameObject or
-        // SubScene) — to pick the sibling around data.ChildIndex.
+        // skipSelected is set, skipping children without a row (hidden), and skipping non-droppable types
+        // (anything other than GameObject or SubScene) — to pick the sibling around data.ChildIndex.
         void ResolveSiblingTarget(in HierarchyViewDragAndDropHandlingData data, bool skipSelected, out HierarchyNode target, out HierarchyDropFlags flags)
         {
             if (data.DropPosition == DragAndDropPosition.OverItem)
@@ -1096,7 +1096,7 @@ namespace Unity.Hierarchy.Editor
             foreach (var child in data.View.Source.EnumerateChildren(in parent))
             {
                 var childType = viewModel.GetNodeType(in child);
-                var isValidTarget = childType == goNodeType || childType == subSceneNodeType;
+                var isValidTarget = (childType == goNodeType || childType == subSceneNodeType) && viewModel.Contains(in child);
 
                 if (isValidTarget && !(skipSelected && viewModel.HasFlags(in child, HierarchyNodeFlags.Selected)))
                 {
@@ -1139,7 +1139,7 @@ namespace Unity.Hierarchy.Editor
         [FreeFunction("HierarchyGameObjectHandlerBindings::GetOrCreateNodeFromEntityId", HasExplicitThis = true, IsThreadSafe = true)]
         extern HierarchyNode GetOrCreateNodeFromEntityId(EntityId entityId);
 
-        [FreeFunction("HierarchyGameObjectHandlerBindings::SetPendingExternalDrop", HasExplicitThis = true)]
+        [FreeFunction("HierarchyGameObjectHandlerBindings::SetPendingExternalDrop", HasExplicitThis = true, IsThreadSafe = true)]
         extern void SetPendingExternalDrop(HierarchyNode parentNode, int dropIndex);
 
         #region Marked as obsolete warning in 6.7

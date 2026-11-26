@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEditor.Build.Reporting;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -72,6 +73,12 @@ namespace UnityEditor.Build.Analysis
         private bool m_WasProSkin;
 
         internal BuildEntry SelectedBuild => m_BuildListPanel?.SelectedBuild;
+
+        // Swapped by tests to stand in for another project.
+        internal Func<GUID> CurrentProjectGUIDProvider { get; set; } = BuildReport.GetCurrentProjectGUID;
+
+        // The build whose analysis the tabs show; empty when none is shown.
+        internal GUID ShownBuild => m_OverviewTabView?.ShownBuild ?? default;
 
         internal ExternalViewRouter ExternalViews => m_ExternalViews;
 
@@ -149,6 +156,11 @@ namespace UnityEditor.Build.Analysis
         private void OnDisable()
         {
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+
+            // Only a window that built its UI can have set the block. A maximize backup window gets
+            // OnEnable and OnDisable without CreateGUI and must not unblock the window still showing the build.
+            if (m_TabHost != null)
+                AssetActions.SelectionBlocked = false;
 
             m_ExternalViews?.Release();
 
@@ -348,6 +360,7 @@ namespace UnityEditor.Build.Analysis
                 // Invalidate any in-flight load (so its continuation is dropped as stale) and clear the view.
                 m_Gate.Clear();
                 m_ExternalViews.Release();
+                UpdateImportedState(null);
                 m_TabHost.Apply(null);
                 m_LoadingOverlay.Hide();
                 return;
@@ -387,6 +400,7 @@ namespace UnityEditor.Build.Analysis
         private int TakeOverContentArea(BuildEntry selection)
         {
             var seq = m_Gate.Begin(selection.BuildSessionGUID);
+            UpdateImportedState(null);
             m_TabHost.Apply(null);
             m_LoadingOverlay.Hide();
             return seq;
@@ -452,6 +466,7 @@ namespace UnityEditor.Build.Analysis
             {
                 if (!m_Gate.IsStale(seq))
                 {
+                    UpdateImportedState(null);
                     m_TabHost.Apply(null); // clear to no-selection
                     m_LoadingOverlay.Hide();
                     m_Gate.Clear(); // a failed load isn't shown — drop the target so re-selecting retries
@@ -463,12 +478,22 @@ namespace UnityEditor.Build.Analysis
             if (m_Gate.IsStale(seq))
                 return;
 
-            m_TabHost.Apply(new BuildAnalysisView(build, analyzed, GetRelatedBuilds(build.BuildSessionGUID)));
+            // Before Apply, so the tabs bind their asset actions with the right availability.
+            var isImported = UpdateImportedState(analyzed.Analysis != null ? build : null);
+            m_TabHost.Apply(new BuildAnalysisView(build, analyzed, GetRelatedBuilds(build.BuildSessionGUID), isImported));
             m_LoadingOverlay.Hide();
 
             // A build that produced no analysis isn't shown — drop the target so re-selecting retries.
             if (analyzed.Analysis == null)
                 m_Gate.Clear();
+        }
+
+        // A build from another project gets the tabs' banner, and its asset paths can't be selected in this project.
+        internal bool UpdateImportedState(BuildEntry build)
+        {
+            var isImported = ImportedBuildBanner.IsImported(build, CurrentProjectGUIDProvider());
+            AssetActions.SelectionBlocked = isImported;
+            return isImported;
         }
 
         private void SavePersistedState()

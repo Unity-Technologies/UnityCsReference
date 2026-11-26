@@ -582,6 +582,8 @@ namespace Unity.GraphToolkit.Editor
             m_ConditionViewModels.Add(conditionView.ConditionModel, conditionView);
             conditionView.TransitionModel = TransitionModel;
             conditionView.TransitionSupportModel = TransitionSupportModel;
+
+            (RootView as ModelInspectorView)?.NotifyViewsRecreated();
         }
 
         /// <summary>
