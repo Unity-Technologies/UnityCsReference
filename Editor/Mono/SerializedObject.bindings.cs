@@ -23,23 +23,23 @@ namespace UnityEditor
         // Create SerializedObject for inspected object.
         public SerializedObject(Object obj)
         {
-            m_NativeObjectPtr = InternalCreate(new Object[] {obj}, null);
+            m_NativeObjectPtr = CreateFromObjects(new Object[] {obj}, null);
         }
 
         public SerializedObject(Object obj, Object context)
         {
-            m_NativeObjectPtr = InternalCreate(new Object[] {obj}, context);
+            m_NativeObjectPtr = CreateFromObjects(new Object[] {obj}, context);
         }
 
         // Create SerializedObject for inspected object.
         public SerializedObject(Object[] objs)
         {
-            m_NativeObjectPtr = InternalCreate(objs, null);
+            m_NativeObjectPtr = CreateFromObjects(objs, null);
         }
 
         public SerializedObject(Object[] objs, Object context)
         {
-            m_NativeObjectPtr = InternalCreate(objs, context);
+            m_NativeObjectPtr = CreateFromObjects(objs, context);
         }
 
         /// <summary>
@@ -193,6 +193,20 @@ namespace UnityEditor
 
         // Updates this serialized object's isExpanded value to the global inspector's expanded state for this object
         extern internal void UpdateExpandedState();
+
+        // A data component wrapper has no native object, so targets that include one go through their EntityIds.
+        static IntPtr CreateFromObjects(Object[] objs, Object context)
+        {
+            if (objs != null)
+            {
+                foreach (var obj in objs)
+                {
+                    if (obj is Component component && component.isDataComponent)
+                        return InternalCreateFromEntityIds(Array.ConvertAll(objs, o => (object)o == null ? EntityId.None : o.GetEntityId()), context);
+                }
+            }
+            return InternalCreate(objs, context);
+        }
 
         [NativeMethod(Name = "SerializedObjectBindings::InternalCreate", IsFreeFunction = true, ThrowsException = true)]
         extern static IntPtr InternalCreate(Object[] monoObjs, Object context);

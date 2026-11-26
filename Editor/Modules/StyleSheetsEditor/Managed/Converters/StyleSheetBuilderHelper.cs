@@ -162,6 +162,9 @@ namespace UnityEditor.StyleSheets
                     case StyleValueType.String:
                         helper.builder.AddValue(sheet.ReadString(value), StyleValueType.String);
                         break;
+                    case StyleValueType.SlashSeparator:
+                        helper.builder.AddSlashSeparator();
+                        break;
                 }
             }
             helper.builder.EndProperty();

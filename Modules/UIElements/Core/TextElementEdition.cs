@@ -5,7 +5,6 @@
 using System;
 using System.Text;
 using Unity.Properties;
-using UnityEngine.Bindings;
 using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 
@@ -50,14 +49,13 @@ namespace UnityEngine.UIElements
 
         internal void RestoreValueAndText();
 
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        internal Func<char, bool> AcceptCharacter { get; set; }
-        internal Action<bool> UpdateScrollOffset { get; set; }
-        internal Action UpdateValueFromText { get; set; }
-        internal Action UpdateTextFromValue { get; set; }
+        internal ITextInputField textInputField { get; set; }
 
-        internal Action MoveFocusToCompositeRoot { get; set; }
-        internal Func<string> GetDefaultValueType { get; set; }
+        internal bool AcceptCharacter(char c);
+        internal void UpdateScrollOffset(bool isBackspace);
+        internal void UpdateValueFromText();
+        internal void UpdateTextFromValue();
+        internal void MoveFocusToCompositeRoot();
 
         internal void UpdateText(string value);
 
@@ -143,6 +141,18 @@ namespace UnityEngine.UIElements
         }
     }
 
+    internal interface ITextInputField
+    {
+        bool AcceptCharacter(char c);
+        void UpdateScrollOffset(bool isBackspace);
+        void UpdateValueFromText();
+        void UpdateTextFromValue();
+        void MoveFocusToCompositeRoot();
+        string GetDefaultValueType();
+        void OnPlaceholderChanged();
+        void OnIsReadOnlyChanged(bool isReadOnly);
+    }
+
     // Text editing and selection management implementation
     public partial class TextElement : ITextEdition
     {
@@ -180,7 +190,9 @@ namespace UnityEngine.UIElements
             m_EditingManipulator.editingUtilities.multiline = m_Multiline;
         }
 
-        internal bool isInputField = false;
+        ITextInputField m_TextInputField;
+
+        internal bool isInputField => m_TextInputField != null;
 
         bool m_Multiline;
 
@@ -200,7 +212,6 @@ namespace UnityEngine.UIElements
 
         internal TouchScreenKeyboard m_TouchScreenKeyboard;
         internal bool m_SkipTouchScreenKeyboardSync;
-        internal Action<bool> onIsReadOnlyChanged;
         TouchScreenKeyboard ITextEdition.touchScreenKeyboard
         {
             get => m_TouchScreenKeyboard;
@@ -296,7 +307,7 @@ namespace UnityEngine.UIElements
                 m_IsReadOnly = value;
                 if (panel != null)
                     EnsureEditingManipulator();
-                onIsReadOnlyChanged?.Invoke(value);
+                m_TextInputField?.OnIsReadOnlyChanged(value);
                 NotifyPropertyChanged(isReadOnlyProperty);
             }
         }
@@ -453,11 +464,11 @@ namespace UnityEngine.UIElements
                 //this approach results not showing leading 0s when input fields are updated from the UI Builder if there is a placeholder text
                 //however since this does not occur at run-time and inputfields are generally empty when placeholder text is set this should be ok
                 //if we want to fix this down the line then defaultValue needs to return null so we could differentiate an empty field vs. one with "0"
-                if (!string.IsNullOrEmpty(value) && (text == null || text.Equals(edition.GetDefaultValueType())))
+                if (!string.IsNullOrEmpty(value) && (text == null || text.Equals(m_TextInputField?.GetDefaultValueType() ?? string.Empty)))
                     text = "";
 
                 m_PlaceholderText = value;
-                OnPlaceholderChanged?.Invoke();
+                m_TextInputField?.OnPlaceholderChanged();
                 MarkDirtyRepaint();
             }
         }
@@ -483,13 +494,18 @@ namespace UnityEngine.UIElements
             text = m_OriginalText;
         }
 
-        Func<char, bool> ITextEdition.AcceptCharacter { get; set; }
-        Action<bool> ITextEdition.UpdateScrollOffset { get; set; }
-        Action ITextEdition.UpdateValueFromText { get; set; }
-        Action ITextEdition.UpdateTextFromValue { get; set; }
-        Action ITextEdition.MoveFocusToCompositeRoot { get; set; }
-        internal Action OnPlaceholderChanged { get; set; }
-        Func<string> ITextEdition.GetDefaultValueType { get; set; }
+        ITextInputField ITextEdition.textInputField
+        {
+            get => m_TextInputField;
+            set => m_TextInputField = value;
+        }
+
+        bool ITextEdition.AcceptCharacter(char c) => m_TextInputField?.AcceptCharacter(c) ?? false;
+
+        void ITextEdition.UpdateScrollOffset(bool isBackspace) => m_TextInputField?.UpdateScrollOffset(isBackspace);
+        void ITextEdition.UpdateValueFromText() => m_TextInputField?.UpdateValueFromText();
+        void ITextEdition.UpdateTextFromValue() => m_TextInputField?.UpdateTextFromValue();
+        void ITextEdition.MoveFocusToCompositeRoot() => m_TextInputField?.MoveFocusToCompositeRoot();
 
         void ITextEdition.UpdateText(string value)
         {

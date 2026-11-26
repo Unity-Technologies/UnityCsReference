@@ -257,6 +257,17 @@ namespace UnityEditor.EditorTools
             return res;
         }
 
+        // If the shared tracker is locked, use fallback tracker instance so that the active selection is always
+        // represented. Addresses case where a single locked inspector is open.
+        internal static ActiveEditorTracker trackerForSelection
+        {
+            get
+            {
+                var shared = ActiveEditorTracker.sharedTracker;
+                return shared.isLocked ? ActiveEditorTracker.fallbackTracker : shared;
+            }
+        }
+
         void CollectEditorsForTracker(EditorToolContext ctx, ActiveEditorTracker tracker, List<ComponentEditor> editors)
         {
             var trackerEditors = tracker.activeEditors;
@@ -307,13 +318,8 @@ namespace UnityEditor.EditorTools
             if (m_OwnerType != typeof(SceneView))
                 return;
 
-            // If the shared tracker is locked, use fallback tracker instance so that the active selection is always
-            // represented. Addresses case where a single locked inspector is open.
-            var shared = ActiveEditorTracker.sharedTracker;
-            var activeTracker = shared.isLocked ? ActiveEditorTracker.fallbackTracker : shared;
-
             // We collect editors only for the tracker that represents the active selection.
-            CollectEditorsForTracker(ctx, activeTracker, editors);
+            CollectEditorsForTracker(ctx, trackerForSelection, editors);
 
             foreach (var editor in editors)
                 editor.InstantiateEditor();

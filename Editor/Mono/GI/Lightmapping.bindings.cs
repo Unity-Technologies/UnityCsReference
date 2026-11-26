@@ -172,22 +172,27 @@ namespace UnityEditor
 
         // Set concurrent jobs type. Warning, high priority can impact Editor performance
         [StaticAccessor("EnlightenPrecompManager::Get()", StaticAccessorType.Arrow)]
+        [NativeConditional("ENABLE_RUNTIME_GI")]
         internal static extern ConcurrentJobsType concurrentJobsType { get; set; }
 
         // Clears disk cache and recreates cache directories.
+        [NativeHeader("Runtime/GI/GICache.h")]
         [StaticAccessor("GICache", StaticAccessorType.DoubleColon)]
         public static extern void ClearDiskCache();
 
         // Updates cache path from Editor preferences.
+        [NativeHeader("Runtime/GI/GICache.h")]
         [StaticAccessor("GICache", StaticAccessorType.DoubleColon)]
         internal static extern void UpdateCachePath();
 
         // Get the disk cache size in Mb.
+        [NativeHeader("Runtime/GI/GICache.h")]
         [StaticAccessor("GICache", StaticAccessorType.DoubleColon)]
         [NativeName("LastKnownCacheSize")]
         internal static extern long diskCacheSize { get; }
 
         // Get the disk cache path.
+        [NativeHeader("Runtime/GI/GICache.h")]
         [StaticAccessor("GICache", StaticAccessorType.DoubleColon)]
         [NativeName("CachePath")]
         internal static extern string diskCachePath { get; }

@@ -36,7 +36,7 @@ namespace Unity.Animations
     /// If safety checks are enabled, a mask throws an `ObjectDisposedException` if you use it after you dispose its
     /// memory.
     ///
-    /// The following example uses the `Unity.Animation`, `Unity.Collections`, `Unity.Entities`, `Unity.IntegerTime`,
+    /// The following example uses the `Unity.Animations`, `Unity.Collections`, `Unity.Entities`, `Unity.IntegerTime`,
     /// `Unity.Mathematics`, and `UnityEngine` namespaces. It is a `MonoBehaviour` that creates a weight mask for the
     /// upper body or the lower body of a character. Each frame, it samples two clips and blends their streams with a
     /// stream mask that views the weights of the mask.

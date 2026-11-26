@@ -60,6 +60,13 @@ namespace UnityEngine.UIElements
                     $"VisualElement already has a component of type '{Type.GetTypeFromHandle(typeHandle).Name}'. Only one component of a given type is allowed per element.");
         }
 
+        void ThrowIfAddedDuringRequirementResolution(RuntimeTypeHandle typeHandle)
+        {
+            if (FindComponentIndex(typeHandle) >= 0)
+                throw new InvalidOperationException(
+                    $"Component '{Type.GetTypeFromHandle(typeHandle).Name}' was added to this VisualElement while it was being added: an [OnComponentAdded] method of one of its required components ([RequiresComponentOfType]) added it. The element keeps the component attached by that method.");
+        }
+
         static void ThrowComponentNotAttached(RuntimeTypeHandle typeHandle)
         {
             throw new InvalidOperationException(
@@ -322,7 +329,10 @@ namespace UnityEngine.UIElements
         /// <exception cref="InvalidOperationException">
         /// Thrown if a component of the same type is already attached (an element holds at most one
         /// component of each type), if this element's resources have been released, or if called from a
-        /// <see cref="ReleaseComponentResourcesAttribute">[ReleaseComponentResources]</see> method.
+        /// <see cref="ReleaseComponentResourcesAttribute">[ReleaseComponentResources]</see> method. In the
+        /// Editor, also thrown if the <see cref="OnComponentAddedAttribute">[OnComponentAdded]</see> method
+        /// of a component that <typeparamref name="T"/> requires adds <typeparamref name="T"/> while it is
+        /// being added.
         /// </exception>
         public void AddComponent<T>(in T value) where T : struct, IVisualElementComponent
         {
@@ -354,7 +364,10 @@ namespace UnityEngine.UIElements
         /// </returns>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this element's resources have been released, or if called from a
-        /// <see cref="ReleaseComponentResourcesAttribute">[ReleaseComponentResources]</see> method.
+        /// <see cref="ReleaseComponentResourcesAttribute">[ReleaseComponentResources]</see> method. In the
+        /// Editor, also thrown if the <see cref="OnComponentAddedAttribute">[OnComponentAdded]</see> method
+        /// of a component that <typeparamref name="T"/> requires adds <typeparamref name="T"/> while it is
+        /// being added.
         /// </exception>
         public ref T GetOrAddComponent<T>() where T : struct, IVisualElementComponent
         {
@@ -384,6 +397,7 @@ namespace UnityEngine.UIElements
             // Add the [RequiresComponentOfType] components first. This can grow the component arrays,
             // so nothing must be cached across this call.
             value.__ResolveComponentRequirements(this);
+            ThrowIfAddedDuringRequirementResolution(typeHandle);
 
             var record = ComponentManager<T>.Record;
 

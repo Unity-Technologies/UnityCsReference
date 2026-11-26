@@ -139,7 +139,7 @@ namespace UnityEngine.UIElements
         internal const string k_SerializationLayoutDependencyKey = "uitk/serialization-layout";
 
         [VisibleToOtherModules("UnityEditor.UIElementsModule")]
-        internal static int currentSerializationLayoutHash => StylePropertyUtil.k_SerializationLayoutHash;
+        internal static int currentSerializationLayoutHash => StyleSheetSerializationLayout.hash;
 
         // Must default to 0: assets serialized before this field existed deserialize to 0 and are flagged.
         [SerializeField]

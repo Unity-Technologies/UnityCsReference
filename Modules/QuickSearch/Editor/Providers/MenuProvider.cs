@@ -29,7 +29,8 @@ namespace UnityEditor.Search.Providers
 
         internal const string type = "menu";
         private const string displayName = "Menus";
-        private const string disabledMenuExecutionWarning = "The menu you are trying to execute is disabled. It will not be executed.";
+        private const string disabledMenuExecutionWarning = "The menu item you're trying to run is disabled, so it can't run.";
+        private const string missingMenuExecutionWarning = "The menu item {0} no longer exists, so it can't run. Search again to refresh the results.";
 
         [AutoStaticsCleanupOnCodeReload]
         private static string[] shortcutIds;
@@ -227,6 +228,11 @@ namespace UnityEditor.Search.Providers
                     handler = (item) =>
                     {
                         var menuId = item.id;
+                        if (!Menu.MenuItemExists(menuId))
+                        {
+                            Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, missingMenuExecutionWarning, menuId);
+                            return;
+                        }
                         if (!Menu.GetEnabled(menuId))
                         {
                             Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, disabledMenuExecutionWarning);

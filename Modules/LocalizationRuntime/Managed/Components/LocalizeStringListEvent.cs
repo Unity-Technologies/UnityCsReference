@@ -25,6 +25,7 @@ namespace Unity.Localization.Components;
 /// <seealso cref="LocalizedStringList"/>
 /// <seealso cref="LocalizedStringGroup"/>
 [AddComponentMenu("Localization/Localize String List Event")]
+[HelpURL("localization/localize-strings")]
 public class LocalizeStringListEvent : MonoBehaviour
 {
     [SerializeReference] ILocalizedStringList m_List = new LocalizedStringList();

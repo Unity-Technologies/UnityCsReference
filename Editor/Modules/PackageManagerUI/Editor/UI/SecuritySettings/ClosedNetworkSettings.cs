@@ -33,15 +33,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             m_SettingsProxy.onClosedNetworkEnabledChanged += OnClosedNetworkEnabledChanged;
+            m_SettingsProxy.onHasBypassPackageTrustEntitlementChanged += OnHasBypassPackageTrustEntitlementChanged;
             Refresh();
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             m_SettingsProxy.onClosedNetworkEnabledChanged -= OnClosedNetworkEnabledChanged;
+            m_SettingsProxy.onHasBypassPackageTrustEntitlementChanged -= OnHasBypassPackageTrustEntitlementChanged;
         }
 
         private void OnClosedNetworkEnabledChanged(bool closedNetworkEnabled)
+        {
+            ResetDraft();
+        }
+
+        private void OnHasBypassPackageTrustEntitlementChanged(bool hasBypassPackageTrustEntitlement)
         {
             ResetDraft();
         }

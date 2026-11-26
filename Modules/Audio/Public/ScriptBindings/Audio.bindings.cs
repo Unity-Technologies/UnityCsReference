@@ -1378,7 +1378,7 @@ namespace UnityEngine
     [NativeHeader("Modules/Audio/Public/ScriptBindings/Audio.bindings.h")]
     [global::UnityEngine.NativeClass("AudioClip", PersistentTypeId = 83)]
     [StaticAccessor("AudioClipBindings", StaticAccessorType.DoubleColon)]
-    public sealed partial class AudioClip : AudioResource, IAudioGenerator
+    public sealed class AudioClip : AudioResource, IAudioGenerator
     {
         internal AudioClip(global::UnityEngine.EntityId id) : base(id) {}
         private AudioClip() {}
@@ -2372,7 +2372,7 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     [global::UnityEngine.NativeClass("AudioListener", PersistentTypeId = 81)]
     [StaticAccessor("AudioListenerBindings", StaticAccessorType.DoubleColon)]
-    public sealed partial class AudioListener : AudioBehaviour
+    public sealed class AudioListener : AudioBehaviour
     {
         internal AudioListener(global::UnityEngine.EntityId id) : base(id) {}
         public AudioListener() {}
@@ -4010,7 +4010,7 @@ namespace UnityEngine
     [RequireComponent(typeof(Transform))]
     [global::UnityEngine.NativeClass("AudioReverbZone", PersistentTypeId = 167)]
     [NativeHeader("Modules/Audio/Public/AudioReverbZone.h")]
-    public sealed partial class AudioReverbZone : Behaviour
+    public sealed class AudioReverbZone : Behaviour
     {
         internal AudioReverbZone(global::UnityEngine.EntityId id) : base(id) {}
         public AudioReverbZone() {}
@@ -4316,7 +4316,7 @@ namespace UnityEngine
     ///<seealso href="xref:class-AudioChorusFilter">Audio Chorus Filter</seealso>
     [global::UnityEngine.NativeClass("AudioChorusFilter", PersistentTypeId = 166)]
     [RequireComponent(typeof(AudioBehaviour))]
-    public sealed partial class AudioChorusFilter : Behaviour
+    public sealed class AudioChorusFilter : Behaviour
     {
         internal AudioChorusFilter(global::UnityEngine.EntityId id) : base(id) {}
         public AudioChorusFilter() {}

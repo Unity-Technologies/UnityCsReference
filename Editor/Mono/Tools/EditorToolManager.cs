@@ -57,7 +57,13 @@ namespace UnityEditor.EditorTools
             ComponentToolCache m_PreviousComponentToolCache;
 
             bool m_ChangingActiveTool, m_ChangingActiveContext;
+            readonly List<Editor> m_TrackerEditors = new List<Editor>();
             int m_OwnedHotControl;
+
+            // The tracker released the editors the component tools and contexts were built from; reading the tracker rebuilds both.
+            // Serialized with the tools and contexts, which a domain reload keeps, because the tracker does not announce again.
+            [SerializeField]
+            bool m_TrackerInvalidated;
 
             [SerializeField]
             string m_ContextTypeNameReplacedByStage;
@@ -189,10 +195,24 @@ namespace UnityEditor.EditorTools
             { get => m_VariantPrefs; set => m_VariantPrefs = value; }
 
             public List<ComponentEditor> componentTools
-            { get => m_ComponentTools; set => m_ComponentTools = value; }
+            {
+                get
+                {
+                    RebuildIfTrackerInvalidated();
+                    return m_ComponentTools;
+                }
+                set => m_ComponentTools = value;
+            }
 
             public List<ComponentEditor> componentContexts
-            { get => m_ComponentContexts; set => m_ComponentContexts = value; }
+            {
+                get
+                {
+                    RebuildIfTrackerInvalidated();
+                    return m_ComponentContexts;
+                }
+                set => m_ComponentContexts = value;
+            }
 
             public ComponentToolCache previousComponentToolCache
             { get => m_PreviousComponentToolCache; set => m_PreviousComponentToolCache = value; }
@@ -240,7 +260,12 @@ namespace UnityEditor.EditorTools
 
             internal EditorTool activeTool
             {
-                get { return m_ActiveTool; }
+                get
+                {
+                    if (ActiveToolComesFromTracker())
+                        RebuildIfTrackerInvalidated();
+                    return m_ActiveTool;
+                }
 
                 set
                 {
@@ -331,6 +356,8 @@ namespace UnityEditor.EditorTools
             {
                 get
                 {
+                    if (ActiveContextComesFromTracker())
+                        RebuildIfTrackerInvalidated();
                     if (m_ActiveToolContext == null)
                     {
                         m_ActiveToolContext = GetSingleton(defaultToolContextType) as EditorToolContext;
@@ -436,6 +463,7 @@ namespace UnityEditor.EditorTools
 
                 Undo.undoRedoEvent += UndoRedoPerformed;
                 ActiveEditorTracker.editorTrackerRebuilt += TrackerRebuilt;
+                ActiveEditorTracker.editorTrackerInvalidated += TrackerInvalidated;
                 Selection.selectedObjectWasDestroyed += SelectedObjectWasDestroyed;
                 AssemblyReloadEvents.beforeAssemblyReload += BeforeAssemblyReload;
 
@@ -452,6 +480,7 @@ namespace UnityEditor.EditorTools
 
                 Undo.undoRedoEvent -= UndoRedoPerformed;
                 ActiveEditorTracker.editorTrackerRebuilt -= TrackerRebuilt;
+                ActiveEditorTracker.editorTrackerInvalidated -= TrackerInvalidated;
                 Selection.selectedObjectWasDestroyed -= SelectedObjectWasDestroyed;
                 AssemblyReloadEvents.beforeAssemblyReload -= BeforeAssemblyReload;
             }
@@ -584,6 +613,9 @@ namespace UnityEditor.EditorTools
 
             public void TrackerRebuilt()
             {
+                // Cleared first: rebuilding reads the component tools and contexts, which must not rebuild them again.
+                m_TrackerInvalidated = false;
+
                 // when entering play mode there is an intermediate tracker rebuild where nothing is selected. ignore it.
                 if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
                     return;
@@ -591,6 +623,53 @@ namespace UnityEditor.EditorTools
                 RebuildAvailableContexts();
                 RebuildAvailableTools();
                 EnsureCurrentToolIsNotNull();
+            }
+
+            // Reading the tracker here would rebuild it and load every selected asset, though no tool may be asked for.
+            void TrackerInvalidated()
+            {
+                m_TrackerInvalidated = true;
+
+                if (stateToolOwnerType == typeof(SceneView))
+                    availableToolsChanged?.Invoke();
+                availableToolsChangedForOwner?.Invoke(stateToolOwnerType);
+            }
+
+            void RebuildIfTrackerInvalidated()
+            {
+                // Rebuilding sets the active tool and context, which their own change callbacks must not do.
+                if (!m_TrackerInvalidated || m_ChangingActiveTool || m_ChangingActiveContext)
+                    return;
+
+                // Reading the tracker rebuilds it, and its rebuild notification rebuilds the tools. A selection that
+                // gives the tracker no editors rebuilds nothing, so the tools are rebuilt here instead.
+                if (stateToolOwnerType == typeof(SceneView))
+                {
+                    // A tracker that cannot rebuild yet does not show the selection; the tools keep what they offer and
+                    // the next read retries.
+                    if (!EditorToolCache.trackerForSelection.TryGetActiveEditors(m_TrackerEditors))
+                        return;
+                }
+                if (m_TrackerInvalidated)
+                    TrackerRebuilt();
+            }
+
+            // A rebuild replaces only the component tools and contexts the tracker gave, so a global active tool or context
+            // stays valid; reading it must not load the selection (UUM-148632).
+            bool ActiveToolComesFromTracker() => m_TrackerInvalidated && (HoldsEditor(m_ComponentTools, m_ActiveTool) || ActiveContextComesFromTracker());
+
+            bool ActiveContextComesFromTracker() => m_TrackerInvalidated && HoldsEditor(m_ComponentContexts, m_ActiveToolContext);
+
+            static bool HoldsEditor(List<ComponentEditor> editors, ScriptableObject editor)
+            {
+                if (editor is null)
+                    return false;
+                foreach (var componentEditor in editors)
+                {
+                    if (ReferenceEquals(componentEditor.editor, editor))
+                        return true;
+                }
+                return false;
             }
 
             void RebuildAvailableContexts()
@@ -785,6 +864,11 @@ namespace UnityEditor.EditorTools
 
             void SelectedObjectWasDestroyed(EntityId id)
             {
+                // Reading the tools here would rebuild the tracker inside the destroy, and the editors it creates can destroy objects
+                // of their own. The next read rebuilds the tools for what is still selected and replaces a tool that is no longer offered.
+                if (m_TrackerInvalidated)
+                    return;
+
 #pragma warning disable UAC2006 // Avoid Linq
                 bool componentToolActive = componentTools.Any(
 #pragma warning restore UAC2006

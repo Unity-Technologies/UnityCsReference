@@ -311,6 +311,9 @@ namespace UnityEditor
         [AutoStaticsCleanupOnCodeReload]
         static List<Editor> s_ActiveEditors = new List<Editor>();
 
+        [AutoStaticsCleanupOnCodeReload]
+        static List<Editor> s_TrackerEditors = new List<Editor>();
+
         [NoAutoStaticsCleanup] // transient dirty flag, value at reload is irrelevant
         static bool s_ActiveEditorsDirty;
         [NoAutoStaticsCleanup] // transient dirty flag, value at reload is irrelevant
@@ -357,8 +360,10 @@ namespace UnityEditor
                 if (s_SharedTracker == null)
                     s_SharedTracker = ActiveEditorTracker.sharedTracker;
 
-                foreach (var editor in s_SharedTracker.activeEditors)
-                    s_ActiveEditors.Add(editor);
+                // A tracker that cannot rebuild yet does not show the selection, so the next read retries.
+                if (!s_SharedTracker.TryGetActiveEditors(s_TrackerEditors))
+                    s_ActiveEditorsDirty = true;
+                s_ActiveEditors.AddRange(s_TrackerEditors);
             }
 
         }
@@ -1696,6 +1701,7 @@ namespace UnityEditor
             SceneVisibilityManager.visibilityChanged += VisibilityChanged;
             SceneVisibilityManager.currentStageIsIsolated += CurrentStageIsolated;
             ActiveEditorTracker.editorTrackerRebuilt += OnEditorTrackerRebuilt;
+            ActiveEditorTracker.editorTrackerInvalidated += OnEditorTrackerRebuilt;
             Selection.selectedObjectWasDestroyed += OnSelectedObjectWasDestroyed;
             Selection.nonSelectedObjectWasDestroyed += OnNonSelectedObjectWasDestroyed;
             Lightmapping.lightingDataUpdated += RepaintAll;
@@ -1963,6 +1969,7 @@ namespace UnityEditor
             SceneVisibilityManager.currentStageIsIsolated -= CurrentStageIsolated;
             Lightmapping.lightingDataUpdated -= RepaintAll;
             ActiveEditorTracker.editorTrackerRebuilt -= OnEditorTrackerRebuilt;
+            ActiveEditorTracker.editorTrackerInvalidated -= OnEditorTrackerRebuilt;
             Selection.selectedObjectWasDestroyed -= OnSelectedObjectWasDestroyed;
             Selection.nonSelectedObjectWasDestroyed -= OnNonSelectedObjectWasDestroyed;
             sceneViewGrids.gridVisibilityChanged -= GridOnGridVisibilityChanged;
@@ -2412,6 +2419,7 @@ namespace UnityEditor
         private void SetupFogAndShadowDistance(out bool oldFog, out float oldShadowDistance)
         {
             oldFog = RenderSettings.fog;
+#pragma warning disable CS0618 // Type or member is obsolete
             oldShadowDistance = QualitySettings.shadowDistance;
             if (Event.current.type == EventType.Repaint)
             {
@@ -2420,6 +2428,7 @@ namespace UnityEditor
                 if (m_Camera.orthographic)
                     Unsupported.SetQualitySettingsShadowDistanceTemporarily(QualitySettings.shadowDistance + 0.5f * cameraDistance);
             }
+#pragma warning restore CS0618
         }
 
         private void RestoreFogAndShadowDistance(bool oldFog, float oldShadowDistance)

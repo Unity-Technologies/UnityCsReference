@@ -49,6 +49,9 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.CommaSeparator:
                     value = ",";
                     break;
+                case StyleValueType.SlashSeparator:
+                    value = "/";
+                    break;
                 case StyleValueType.ScalableImage:
                     value = sheet.ReadScalableImage(handle).ToString();
                     break;

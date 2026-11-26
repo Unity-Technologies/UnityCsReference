@@ -764,8 +764,8 @@ namespace UnityEngine.UIElements.StyleSheets
                 return s.Equals(keyword, StringComparison.OrdinalIgnoreCase);
             }
 
-            if (value.handle.valueType == StyleValueType.String && keyword == "/")
-                return value.sheet.ReadString(value.handle) == "/";
+            if (value.handle.valueType == StyleValueType.SlashSeparator)
+                return keyword == "/";
 
             return false;
         }

@@ -653,6 +653,9 @@ namespace UnityEditor.UIElements
                 case StyleValueType.CommaSeparator:
                     WritePunctuation(ref ctx, ",");
                     break;
+                case StyleValueType.SlashSeparator:
+                    WritePunctuation(ref ctx, "/");
+                    break;
                 case StyleValueType.ScalableImage:
                     WriteScalableImage(ref ctx, ctx.styleSheet.ReadScalableImage(handle));
                     break;

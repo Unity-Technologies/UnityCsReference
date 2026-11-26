@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Profiling;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -18,6 +20,10 @@ namespace UnityEditor.ShortcutManagement
         IDiscoveryInvalidShortcutReporter m_InvalidShortcutReporter;
 
         internal const string k_MainMenuShortcutPrefix = "Main Menu/";
+        internal const string k_DiscoveryMarkerName = "ShortcutManagement.Discovery";
+
+        [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
+        static readonly ProfilerMarker k_DiscoveryMarker = new(ProfilerCategory.Loading, k_DiscoveryMarkerName);
 
         public Discovery(IEnumerable<IDiscoveryShortcutProvider> shortcutProviders, IBindingValidator bindingValidator, IDiscoveryInvalidShortcutReporter invalidShortcutReporter = null)
         {
@@ -28,6 +34,7 @@ namespace UnityEditor.ShortcutManagement
 
         public IEnumerable<ShortcutEntry> GetAllShortcuts()
         {
+            using var marker = k_DiscoveryMarker.Auto();
             var availableShortcuts = new List<ShortcutEntry>();
             var identifier2ShortcutEntry = new HashSet<Identifier>();
             var displayName2ShortcutEntry = new HashSet<string>();
@@ -39,13 +46,13 @@ namespace UnityEditor.ShortcutManagement
                 {
                     var shortcutEntry = discoveredEntry.GetShortcutEntry();
 
-                    if (shortcutEntry.identifier.path != null && shortcutEntry.type != ShortcutType.Menu && shortcutEntry.identifier.path.StartsWith(k_MainMenuShortcutPrefix))
+                    if (shortcutEntry.identifier.path != null && shortcutEntry.type != ShortcutType.Menu && shortcutEntry.identifier.path.StartsWith(k_MainMenuShortcutPrefix, StringComparison.Ordinal))
                     {
                         m_InvalidShortcutReporter?.ReportReservedIdentifierPrefixConflict(discoveredEntry, k_MainMenuShortcutPrefix);
                         continue;
                     }
 
-                    if (shortcutEntry.displayName != null && shortcutEntry.type != ShortcutType.Menu && shortcutEntry.displayName.StartsWith(k_MainMenuShortcutPrefix))
+                    if (shortcutEntry.displayName != null && shortcutEntry.type != ShortcutType.Menu && shortcutEntry.displayName.StartsWith(k_MainMenuShortcutPrefix, StringComparison.Ordinal))
                     {
                         m_InvalidShortcutReporter?.ReportReservedDisplayNamePrefixConflict(discoveredEntry, k_MainMenuShortcutPrefix);
                         continue;

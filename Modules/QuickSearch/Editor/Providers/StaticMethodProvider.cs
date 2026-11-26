@@ -131,10 +131,21 @@ namespace UnityEditor.Search.Providers
                     {
                         var m = item.data as MethodInfo;
                         if (m == null)
-                            return;
-                        var result = m.Invoke(null, null);
+                            continue;
+
+                        object result;
+                        try
+                        {
+                            result = m.Invoke(null, null);
+                        }
+                        catch (TargetInvocationException ex)
+                        {
+                            Debug.LogException(ex.InnerException ?? ex);
+                            continue;
+                        }
+
                         if (result == null)
-                            return;
+                            continue;
                         if (result is string || !(result is IEnumerable list))
                         {
                             LogResult(result);

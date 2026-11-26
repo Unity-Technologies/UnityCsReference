@@ -66,10 +66,7 @@ namespace UnityEngine.UIElements
             AddToClassList(ussClassNameUnique);
 
             m_Flags |= VisualElementFlags.UseDefaultTextGenerateContent;
-            edition.GetDefaultValueType = GetDefaultValueType;
         }
-
-        string GetDefaultValueType() { return string.Empty; }
 
         /// <summary>
         /// Callback fired after UI Toolkit has generated the vertex data for a
@@ -117,6 +114,7 @@ namespace UnityEngine.UIElements
             typeof(ValidateCommandEvent), typeof(ExecuteCommandEvent),
             typeof(FocusEvent), typeof(BlurEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
             typeof(PointerDownEvent), typeof(PointerUpEvent), typeof(PointerMoveEvent),
+            typeof(PointerCancelEvent), typeof(PointerCaptureOutEvent),
             typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent), typeof(IMEEvent),
             typeof(GeometryChangedEvent), typeof(AttachToPanelEvent), typeof(DetachFromPanelEvent)
         )]

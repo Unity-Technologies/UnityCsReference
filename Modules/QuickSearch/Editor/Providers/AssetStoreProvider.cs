@@ -91,14 +91,7 @@ namespace UnityEditor.Search.Providers
                     GUILayout.Label($"by {desc.publisher}", Styles.label);
                     var isOwned = IsItemOwned(item);
                     var price = GetPrice(desc);
-                    string priceStr;
-                    if (isOwned)
-                        priceStr = "Owned";
-                    else if (price == 0)
-                        priceStr = "Free";
-                    else
-                        priceStr = $"{currencySymbol}{price} ({currency})";
-                    GUILayout.Label(priceStr, Styles.label);
+                    GUILayout.Label(GetPriceLabel(item, desc), Styles.label);
                     var lastRect = GUILayoutUtility.GetLastRect();
                     if (desc.productDetail != null && !string.IsNullOrEmpty(desc.productDetail.elevatorPitch))
                         GUILayout.Label(desc.productDetail.elevatorPitch, Styles.label);
@@ -345,7 +338,9 @@ namespace UnityEditor.Search.Providers
             public int startIndex;
             public int endIndex;
             public int size => endIndex - startIndex;
-            public UnityWebRequest request;
+            public StoreRequest request;
+            // A page whose request failed is not requested again before this time.
+            public double retryTime;
             public bool isLoaded;
 
             public int CompareTo(AssetsLoadingPage other)
@@ -385,6 +380,153 @@ namespace UnityEditor.Search.Providers
         }
 #pragma warning restore CS0649
 
+        internal class StoreRequest : IDisposable
+        {
+            readonly UnityWebRequest m_WebRequest;
+            readonly UnityWebRequestAsyncOperation m_AsyncOperation;
+            bool m_IsCompleted;
+            string m_CompletedResponseText;
+            Action<StoreRequest> m_Completed;
+
+            public StoreRequest(UnityWebRequest webRequest)
+            {
+                m_WebRequest = webRequest;
+                m_AsyncOperation = webRequest.SendWebRequest();
+            }
+
+            // A completed request. The response text is null for a failed request.
+            public StoreRequest(string completedResponseText)
+            {
+                m_IsCompleted = true;
+                m_CompletedResponseText = completedResponseText;
+            }
+
+            // A pending request that the caller completes with Complete.
+            public StoreRequest()
+            {
+            }
+
+            public bool isDone => m_AsyncOperation?.isDone ?? m_IsCompleted;
+
+            // Null when the request failed.
+            public string responseText
+            {
+                get
+                {
+                    if (m_WebRequest == null)
+                        return m_CompletedResponseText;
+                    return m_WebRequest.result == UnityWebRequest.Result.Success ? m_WebRequest.downloadHandler.text : null;
+                }
+            }
+
+            // Null when the request succeeded.
+            public string error
+            {
+                get
+                {
+                    if (m_WebRequest == null)
+                        return m_CompletedResponseText == null ? "The request failed." : null;
+                    return m_WebRequest.result == UnityWebRequest.Result.Success ? null : m_WebRequest.error;
+                }
+            }
+
+            public void OnCompleted(Action<StoreRequest> completed)
+            {
+                if (m_AsyncOperation != null)
+                    m_AsyncOperation.completed += _ => completed(this);
+                else if (m_IsCompleted)
+                    completed(this);
+                else
+                    m_Completed += completed;
+            }
+
+            public void Complete(string responseText)
+            {
+                if (m_WebRequest != null || m_IsCompleted)
+                    throw new InvalidOperationException("Only a pending request can be completed.");
+
+                m_IsCompleted = true;
+                m_CompletedResponseText = responseText;
+                var completed = m_Completed;
+                m_Completed = null;
+                completed?.Invoke(this);
+            }
+
+            public void Dispose()
+            {
+                m_WebRequest?.Dispose();
+            }
+        }
+
+        // The Asset Store and editor services that the provider calls. Tests replace them to run offline.
+        internal interface IStoreServices
+        {
+            StoreRequest SendPostRequest(string url, string jsonData);
+            StoreRequest SendPurchasesRequest(string accessToken, int offset, int limit);
+            void OpenUrl(string url);
+            void OpenPackageManager(string packageId);
+            string GetAccessToken();
+        }
+
+        class DefaultStoreServices : IStoreServices
+        {
+            public StoreRequest SendPostRequest(string url, string jsonData) => new StoreRequest(Post(url, jsonData));
+
+            public StoreRequest SendPurchasesRequest(string accessToken, int offset, int limit)
+            {
+                var host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
+                var request = UnityWebRequest.Get($"{host}/-/api/purchases?offset={offset}&limit={limit}&query=");
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Authorization", $"Bearer {accessToken}");
+                return new StoreRequest(request);
+            }
+
+            public void OpenUrl(string url) => Utils.OpenInBrowser(url);
+            public void OpenPackageManager(string packageId) => Utils.OpenPackageManager(packageId);
+            public string GetAccessToken() => Utils.GetConnectAccessToken();
+        }
+
+        internal static class TestHelper
+        {
+            public const int assetsPerPage = kAssetsPerPage;
+            public static string searchEndPoint => kSearchEndPoint;
+
+            // Pass null to restore the Asset Store and editor services.
+            public static void SetServices(IStoreServices services) => s_Services = services ?? new DefaultStoreServices();
+
+            public static void SetPurchasedPackageIds(IEnumerable<string> packageIds)
+            {
+                purchasePackageIds = packageIds == null ? null : new HashSet<string>(packageIds);
+            }
+
+            public static bool IsAssetDocument(SearchItem item) => item.data is AssetDocument;
+            public static string GetPriceLabel(SearchItem item) => AssetStoreProvider.GetPriceLabel(item, (AssetDocument)item.data);
+
+            // Forgets the purchases of the current user, as if the provider was just enabled.
+            public static void ResetUserInfo()
+            {
+                ClearUserInfo();
+                purchasePackageIds = null;
+            }
+
+            public static void NotifyUserStateChanged() => OnUserStateChanged(default);
+            public static string GetDocumentUrl(SearchItem item) => (item.data as AssetDocument)?.url;
+
+            public static double pageRetryDelaySeconds
+            {
+                get { return s_PageRetryDelaySeconds; }
+                set { s_PageRetryDelaySeconds = value; }
+            }
+
+            public static void ExpirePageRetryDelays()
+            {
+                if (s_AssetsPage == null)
+                    return;
+                foreach (var page in s_AssetsPage)
+                    page.retryTime = 0;
+            }
+        }
+
         private const string kSearchEndPoint = "https://assetstore.unity.com/api/search";
         private const string kProductDetailsEndPoint = "https://api.unity.com/v1/products/list";
         [AutoStaticsCleanupOnCodeReload]
@@ -399,6 +541,9 @@ namespace UnityEditor.Search.Providers
         private static readonly List<PurchaseInfo> s_Purchases = new List<PurchaseInfo>();
         [AutoStaticsCleanupOnCodeReload]
         private static HashSet<string> purchasePackageIds;
+
+        [AutoStaticsCleanupOnCodeReload]
+        static IStoreServices s_Services = new DefaultStoreServices();
         const string k_MultiValueQueryParameter = "multivalue";
         [AutoStaticsCleanupOnCodeReload]
         private static QueryEngine<QueryDescriptor> s_QueryEngine;
@@ -409,6 +554,9 @@ namespace UnityEditor.Search.Providers
         [AutoStaticsCleanupOnCodeReload]
         private static ISearchView s_CurrentSearchView;
         const int kAssetsPerPage = 100;
+        const double kPageRetryDelaySeconds = 5;
+        [AutoStaticsCleanupOnCodeReload]
+        static double s_PageRetryDelaySeconds = kPageRetryDelaySeconds;
 
         [NoAutoStaticsCleanup]
         private static readonly HashSet<string> k_EuroCountries = new HashSet<string>(new[] { "AT", "BE", "ES", "FI", "FR", "DE", "GR", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PT", "SK", "SI", "ES", "BG", "HR", "CZ", "HU", "PL", "RO", "SE" });
@@ -710,63 +858,86 @@ namespace UnityEditor.Search.Providers
             s_CurrentSearchView = context.searchView;
 
             var requestStr = FormatQuery(query, context, 0);
-            using (var webRequest = Post(kSearchEndPoint, requestStr))
+            using (var request = s_Services.SendPostRequest(kSearchEndPoint, requestStr))
             {
-                var rao = webRequest.SendWebRequest();
-                while (!rao.isDone)
+                while (!request.isDone)
                     yield return null;
 
-                if (webRequest.result != UnityWebRequest.Result.Success)
+                foreach (var item in CreateItems(context, provider, request.responseText))
+                    yield return item;
+            }
+        }
+
+        static bool TryParseResponse(string responseText, out StoreSearchResponse response)
+        {
+            response = null;
+            if (string.IsNullOrEmpty(responseText))
+                return false;
+
+            try
+            {
+                var saneJsonStr = responseText.Replace("name_en-US\"", "name_en_US\"");
+                response = JsonUtility.FromJson<StoreSearchResponse>(saneJsonStr);
+            }
+            catch (ArgumentException ex)
+            {
+                Debug.LogWarning($"Failed to parse Asset Store search response: {ex.Message}");
+                return false;
+            }
+
+            if (response == null)
+                return false;
+
+            if (response.responseHeader != null && response.responseHeader.status != 0)
+            {
+                if (!string.IsNullOrEmpty(response.error?.msg))
+                    Debug.LogError($"Error: {response.error.msg}");
+                return false;
+            }
+
+            return response.response?.docs != null;
+        }
+
+        static bool IsValidDocument(AssetDocument doc)
+        {
+            return !string.IsNullOrEmpty(doc?.id);
+        }
+
+        static IEnumerable<SearchItem> CreateItems(SearchContext context, SearchProvider provider, string responseText)
+        {
+            if (!TryParseResponse(responseText, out var response))
+                yield break;
+
+            // Use score Index as an unofficial ids for items:
+            var scoreIndex = 0;
+            foreach (var doc in response.response.docs)
+            {
+                var score = scoreIndex++;
+                if (!IsValidDocument(doc))
+                    continue;
+                yield return CreateItem(context, provider, doc, score);
+            }
+
+            // Create pages:
+            var totalNbItems = response.response.numFound;
+            var nbPages = (int)(totalNbItems / kAssetsPerPage) + 1;
+            if (s_AssetsPage.Capacity < nbPages)
+                s_AssetsPage.Capacity = nbPages;
+
+            var startIndex = scoreIndex;
+            for(var pageIndex = 0; pageIndex < nbPages; ++pageIndex)
+            {
+                var endIndex = startIndex + kAssetsPerPage;
+                var page = new AssetsLoadingPage(startIndex, endIndex);
+                s_AssetsPage.Add(page);
+                for(var itemIndex = startIndex; itemIndex < endIndex && itemIndex < totalNbItems; ++itemIndex)
                 {
-                    // Debug.LogError($"Asset store request error: {webRequest.error}");
+                    var id = $"store_item_{itemIndex}";
+                    var item = provider.CreateItem(context, id, itemIndex, label: null, description: null, Icons.store, null);
+                    page.items.Add(item);
+                    yield return item;
                 }
-                else
-                {
-                    StoreSearchResponse response;
-                    // using (new DebugTimer("Parse response"))
-                    {
-                        var saneJsonStr = webRequest.downloadHandler.text.Replace("name_en-US\"", "name_en_US\"");
-                        response = JsonUtility.FromJson<StoreSearchResponse>(saneJsonStr);
-                    }
-
-                    if (response.responseHeader.status != 0)
-                    {
-                        if (response.error != null)
-                            Debug.LogError($"Error: {response.error.msg}");
-                    }
-                    else
-                    {
-
-                        // Use score Index as an unofficial ids for items:
-                        var scoreIndex = 0;
-                        foreach (var doc in response.response.docs)
-                        {
-                            yield return CreateItem(context, provider, doc, scoreIndex++);
-                        }
-
-                        // Create pages:
-                        var totalNbItems = response.response.numFound;
-                        var nbPages = (int)(totalNbItems / kAssetsPerPage) + 1;
-                        if (s_AssetsPage.Capacity < nbPages)
-                            s_AssetsPage.Capacity = nbPages;
-
-                        var startIndex = scoreIndex;
-                        for(var pageIndex = 0; pageIndex < nbPages; ++pageIndex)
-                        {
-                            var endIndex = startIndex + kAssetsPerPage;
-                            var page = new AssetsLoadingPage(startIndex, endIndex);
-                            s_AssetsPage.Add(page);
-                            for(var itemIndex = startIndex; itemIndex < endIndex && itemIndex < totalNbItems; ++itemIndex)
-                            {
-                                var id = $"store_item_{itemIndex}";
-                                var item = provider.CreateItem(context, id, itemIndex, label: null, description: null, Icons.store, null);
-                                page.items.Add(item);
-                                yield return item;
-                            }
-                            startIndex = endIndex;
-                        }
-                    }
-                }
+                startIndex = endIndex;
             }
         }
 
@@ -940,7 +1111,7 @@ namespace UnityEditor.Search.Providers
 
         static bool HasAccessToken()
         {
-            return !string.IsNullOrEmpty(Utils.GetConnectAccessToken());
+            return !string.IsNullOrEmpty(s_Services.GetAccessToken());
         }
 
         static void CheckPurchases(Action done)
@@ -1094,6 +1265,14 @@ namespace UnityEditor.Search.Providers
             return doc != null && GetPrice(doc) == 0;
         }
 
+        static string GetPriceLabel(SearchItem item, AssetDocument doc)
+        {
+            if (IsItemOwned(item))
+                return "Owned";
+            var price = GetPrice(doc);
+            return price == 0 ? "Free" : $"{currencySymbol}{price} ({currency})";
+        }
+
         static void OnTrackSelection(SearchItem item, SearchContext context)
         {
             var win = context.searchView as SearchWindow;
@@ -1195,12 +1374,9 @@ namespace UnityEditor.Search.Providers
 
         static void LoadPage(AssetsLoadingPage page, SearchItem item)
         {
+            // Items of a loaded page that are still placeholders had no valid document in the response.
             if (page.isLoaded)
-            {
-                // Can this happen?
-                Debug.LogError($"Page already loaded: {page.startIndex}");
                 return;
-            }
 
             if (page.request != null)
             {
@@ -1208,47 +1384,60 @@ namespace UnityEditor.Search.Providers
                 return;
             }
 
+            if (EditorApplication.timeSinceStartup < page.retryTime)
+                return;
+
             // Load the page:
             SetQueryStartIndex(s_QueryParams, page.startIndex);
             var requestStr = Json.Serialize(s_QueryParams, true);
             // Debug.Log($"LoadPage: {page.startIndex} from {item.score} {item.id} {requestStr}");
 
-            var request = Post(kSearchEndPoint, requestStr);
+            var request = s_Services.SendPostRequest(kSearchEndPoint, requestStr);
             page.request = request;
-            var asyncOp = page.request.SendWebRequest();
-            asyncOp.completed += op =>
+            request.OnCompleted(completedRequest =>
             {
-                if (!s_AssetsPage.Contains(page))
+                using (completedRequest)
                 {
-                    // Debug.LogError($"Page does not exists: {page.startIndex}");
-                    request.Dispose();
-                    return;
-                }
+                    if (!s_AssetsPage.Contains(page))
+                        return;
 
-                if (request.result != UnityWebRequest.Result.Success)
-                {
-                    // What to do?
-                    // Debug.LogError($"Error while loading page {page.startIndex}. {request.error}");
-                }
-                else
-                {
-                    var saneJsonStr = request.downloadHandler.text.Replace("name_en-US\"", "name_en_US\"");
-                    var response = JsonUtility.FromJson<StoreSearchResponse>(saneJsonStr);
-                    var nbUpdate = Mathf.Min(response.response.docs.Length, page.items.Count);
+                    if (!TryParseResponse(completedRequest.responseText, out var response))
+                    {
+                        // Let a later fetch request the page again, without flooding the store while it keeps failing.
+                        page.request = null;
+                        page.retryTime = EditorApplication.timeSinceStartup + s_PageRetryDelaySeconds;
+
+                        // Views only fetch labels when binding items, so rebind them once the page can be requested again.
+                        Utils.CallDelayed(() =>
+                        {
+                            if (s_AssetsPage == null || !s_AssetsPage.Contains(page) || page.isLoaded || page.request != null)
+                                return;
+
+                            // The delayed call and timeSinceStartup use different clocks.
+                            page.retryTime = 0;
+                            s_CurrentSearchView?.Refresh(RefreshFlags.DisplayModeChanged);
+                        }, s_PageRetryDelaySeconds);
+                        return;
+                    }
+
+                    var docs = response.response.docs;
+                    var nbUpdate = Mathf.Min(docs.Length, page.items.Count);
                     // Go over all items in this page and update them according to the fetched data:
                     for (var i = 0; i < nbUpdate; ++i)
                     {
-                        var assetDoc = response.response.docs[i];
-                        var item = page.items[i];
-                        UpdateItem(item, assetDoc);
+                        if (!IsValidDocument(docs[i]))
+                            continue;
+                        UpdateItem(page.items[i], docs[i]);
                     }
+
+                    // Keep the page so that the label fetch of an item left as a placeholder finds it loaded.
+                    page.isLoaded = true;
+                    page.request = null;
 
                     // TODO FetchItemProperties(DOTSE - 1994): keep this unless the view can tick all activeitems for all async properties (label, desc, thumbnail)
                     s_CurrentSearchView?.Refresh(RefreshFlags.DisplayModeChanged);
-                    s_AssetsPage.Remove(page);
                 }
-                request.Dispose();
-            };
+            });
         }
 
         static Texture2D FetchIcons(SearchItem item, bool animateCarrousel, Dictionary<string, PreviewData> imageDb)
@@ -1310,7 +1499,7 @@ namespace UnityEditor.Search.Providers
 
         static bool IsItemOwned(SearchItem item)
         {
-            var doc = (AssetDocument)item.data;
+            var doc = item.data as AssetDocument;
             return doc != null && purchasePackageIds != null && purchasePackageIds.Contains(doc.id);
         }
 
@@ -1350,19 +1539,19 @@ namespace UnityEditor.Search.Providers
 
         static void OpenPackageManager(SearchItem item)
         {
-            var doc = (AssetDocument)item.data;
-            Utils.OpenPackageManager(doc.id);
+            if (item.data is not AssetDocument doc)
+                return;
+            s_Services.OpenPackageManager(doc.id);
         }
 
         static void BrowseAssetStoreItem(SearchItem item)
         {
-            var doc = (AssetDocument)item.data;
-            if (doc != null)
-            {
-                var url = MakeAssetStoreURL(doc.url, k_OpenBrowserFromSearch);
-                Utils.OpenInBrowser(url);
-                CheckPurchases(null);
-            }
+            if (item.data is not AssetDocument doc || string.IsNullOrEmpty(doc.url))
+                return;
+
+            var url = MakeAssetStoreURL(doc.url, k_OpenBrowserFromSearch);
+            s_Services.OpenUrl(url);
+            CheckPurchases(null);
         }
 
         static string MakeAssetStoreURL(string url, string source)
@@ -1374,7 +1563,7 @@ namespace UnityEditor.Search.Providers
 
         static void GetAllPurchases(Action<List<PurchaseInfo>, string> done, Action cancel)
         {
-            var accessToken = Utils.GetConnectAccessToken();
+            var accessToken = s_Services.GetAccessToken();
             if (string.IsNullOrEmpty(accessToken))
             {
                 cancel();
@@ -1390,7 +1579,7 @@ namespace UnityEditor.Search.Providers
                     return;
                 }
 
-                if (accessToken != Utils.GetConnectAccessToken())
+                if (accessToken != s_Services.GetAccessToken())
                 {
                     cancel();
                     return;
@@ -1416,7 +1605,7 @@ namespace UnityEditor.Search.Providers
                 {
                     RequestPurchases(accessToken, (purchasesBatch, errPurchasesBatch) =>
                     {
-                        if (accessToken != Utils.GetConnectAccessToken())
+                        if (accessToken != s_Services.GetAccessToken())
                         {
                             cancel();
                             return;
@@ -1460,25 +1649,34 @@ namespace UnityEditor.Search.Providers
 
         static void RequestPurchases(string accessToken, Action<PurchaseResponse, string> done, int offset = 0, int limit = 50)
         {
-            var host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
-            var url = $"{host}/-/api/purchases?offset={offset}&limit={limit}&query=";
-            var request = UnityWebRequest.Get(url);
-            request.SetRequestHeader("Content-Type", "application/json");
-            request.SetRequestHeader("Authorization", $"Bearer {accessToken}");
-            var asyncOp = request.SendWebRequest();
-            asyncOp.completed += op =>
+            var request = s_Services.SendPurchasesRequest(accessToken, offset, limit);
+            request.OnCompleted(completedRequest =>
             {
-                if (request.result != UnityWebRequest.Result.Success)
+                PurchaseResponse response;
+                using (completedRequest)
                 {
-                    done(null, request.error);
+                    if (completedRequest.error != null)
+                    {
+                        done(null, completedRequest.error);
+                        return;
+                    }
+
+                    try
+                    {
+                        response = JsonUtility.FromJson<PurchaseResponse>(completedRequest.responseText);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        done(null, ex.Message);
+                        return;
+                    }
                 }
+
+                if (response?.results == null)
+                    done(null, "The purchases response is invalid.");
                 else
-                {
-                    var text = request.downloadHandler.text;
-                    var pr = JsonUtility.FromJson<PurchaseResponse>(text);
-                    done(pr, null);
-                }
-            };
+                    done(response, null);
+            });
         }
 
 #endregion

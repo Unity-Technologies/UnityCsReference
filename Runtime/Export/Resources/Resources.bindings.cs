@@ -214,8 +214,15 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::UnloadUnusedAssets")]
         extern public static AsyncOperation UnloadUnusedAssets();
 
+        public static Object EntityIdToObject(EntityId entityId)
+        {
+            if (DataComponentWrapperStore.IsDataComponentId(entityId))
+                return Object.DoesDataComponentExist(entityId) ? DataComponentWrapperStore.GetOrCreate(entityId) : null;
+            return EntityIdToObjectInternal(entityId);
+        }
+
         [FreeFunction("Resources_Bindings::EntityIdToObject")]
-        public extern static Object EntityIdToObject(EntityId entityId);
+        extern static Object EntityIdToObjectInternal(EntityId entityId);
 
         [Obsolete("InstanceIDToObject is obsolete. Use EntityIdToObject instead.", true)]
         public static Object InstanceIDToObject(int instanceID)

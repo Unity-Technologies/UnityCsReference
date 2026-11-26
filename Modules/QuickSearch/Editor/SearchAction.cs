@@ -96,7 +96,7 @@ namespace UnityEditor.Search
         }
 
         internal SearchAction(string name, string label, Action<SearchItem[]> execute)
-            : this(name, label, null, null, execute)
+            : this(string.Empty, name, new GUIContent(label), execute)
         {
         }
 

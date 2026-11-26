@@ -16,7 +16,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         Stop,
     }
 
-    // Done this way since SessionStateRepository only works on serializable objects
+    // Done this way since SessionStateJsonRepository only works on serializable objects
     [Serializable]
     class QueueInfo
     {
@@ -26,7 +26,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
     class PlaymodeMessageQueue
     {
         readonly SessionStateJsonRepository<PlayModeMessageTypes, QueueInfo> m_Messages = SessionStateJsonRepository<PlayModeMessageTypes, QueueInfo>.GetMain(
-            SessionStateRepository.Get,
             nameof(m_Messages), out _);
         int m_Adder;
 

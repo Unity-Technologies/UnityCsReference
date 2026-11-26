@@ -217,6 +217,9 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.CommaSeparator:
                     str = ",";
                     break;
+                case StyleValueType.SlashSeparator:
+                    str = "/";
+                    break;
                 default:
                     throw new ArgumentException("Unhandled type " + handle.valueType);
             }

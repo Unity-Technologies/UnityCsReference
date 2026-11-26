@@ -63,6 +63,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_SettingsProxy.onTrustPolicyLevelChanged += OnTrustPolicyLevelChanged;
             m_SettingsProxy.onClosedNetworkEnabledChanged += OnClosedNetworkEnabledChanged;
+            m_SettingsProxy.onHasBypassPackageTrustEntitlementChanged += OnHasBypassPackageTrustEntitlementChanged;
             Refresh();
         }
 
@@ -70,6 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_SettingsProxy.onTrustPolicyLevelChanged -= OnTrustPolicyLevelChanged;
             m_SettingsProxy.onClosedNetworkEnabledChanged -= OnClosedNetworkEnabledChanged;
+            m_SettingsProxy.onHasBypassPackageTrustEntitlementChanged -= OnHasBypassPackageTrustEntitlementChanged;
         }
 
         private void OnTrustPolicyLevelChanged(TrustPolicyLevel trustPolicyLevel)
@@ -78,6 +80,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private void OnClosedNetworkEnabledChanged(bool closedNetworkEnabled)
+        {
+            Refresh();
+        }
+
+        private void OnHasBypassPackageTrustEntitlementChanged(bool hasBypassPackageTrustEntitlement)
         {
             Refresh();
         }

@@ -265,11 +265,12 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = L10n.TextContent(".NET Standard 2.0", null, null, null);
             public static readonly GUIContent apiCompatibilityLevel_NET_FW_Unity = L10n.TextContent(".NET Framework", null, null, null);
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard = L10n.TextContent(".NET Standard 2.1", null, null, null);
-            public static readonly GUIContent apiCompatibilityLevel_NET_10 = L10n.TextContent(".NET Standard 2.1 - .NET Preview (Experimental)", null, null, null);
+            public static readonly GUIContent apiCompatibilityLevel_NET = L10n.TextContent(".NET", null, null, null);
             public static readonly GUIContent editorAssembliesCompatibilityLevel = L10n.TextContent("Editor Assemblies Compatibility Level*", null, null, null);
             public static readonly GUIContent editorAssembliesCompatibilityLevel_Default = L10n.TextContent("Default (.NET Framework)", null, null, null);
             public static readonly GUIContent editorAssembliesCompatibilityLevel_NET_Framework = L10n.TextContent(".NET Framework", null, null, null);
             public static readonly GUIContent editorAssembliesCompatibilityLevel_NET_Standard = L10n.TextContent(".NET Standard", null, null, null);
+            public static readonly GUIContent editorAssembliesCompatibilityLevel_NET = L10n.TextContent(".NET", null, null, null);
             public static readonly GUIContent scriptCompilationTitle = L10n.TextContent("Script Compilation", null, null, null);
             public static readonly GUIContent useDeterministicCompilation = L10n.TextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag", null, null);
             public static readonly GUIContent activeInputHandling = L10n.TextContent("Active Input Handling*", null, null, null);
@@ -3909,7 +3910,10 @@ namespace UnityEditor
 
         private ApiCompatibilityLevel GetApiCompatibilityLevelForTarget(NamedBuildTarget namedBuildTarget)
         {
-            if (m_APICompatibilityLevel.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
+            // .NET is applied automatically, so it wins over the stored level, which may differ
+            if (PlayerSettings.IsApiCompatibilityLevelForcedToNET(namedBuildTarget))
+                return ApiCompatibilityLevel.NET;
+            else if (m_APICompatibilityLevel.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
                 return (ApiCompatibilityLevel)entry.FindPropertyRelative("second").intValue;
             else
                 // See comment in EditorOnlyPlayerSettings regarding defaultApiCompatibilityLevel
@@ -3929,8 +3933,17 @@ namespace UnityEditor
                 m_DefaultAPICompatibilityLevel.intValue = (int)apiCompatibilityLevel;
         }
 
-        private EditorAssembliesCompatibilityLevel GetEditorAssembliesCompatibilityLevel()
+        // Editor assemblies use .NET when the build target they compile for does: a build profile's own platform, or the active build target
+        bool AreEditorAssembliesForcedToNET(BuildPlatform platform)
         {
+            var editorBuildTarget = IsBuildProfileEditor() ? platform.namedBuildTarget : NamedBuildTarget.FromActiveSettings(EditorUserBuildSettings.activeBuildTarget);
+            return GetApiCompatibilityLevelForTarget(editorBuildTarget) == ApiCompatibilityLevel.NET;
+        }
+
+        private EditorAssembliesCompatibilityLevel GetEditorAssembliesCompatibilityLevel(BuildPlatform platform)
+        {
+            if (AreEditorAssembliesForcedToNET(platform))
+                return EditorAssembliesCompatibilityLevel.NET;
             return (EditorAssembliesCompatibilityLevel)m_EditorAssembliesCompatibilityLevel.intValue;
         }
 
@@ -4002,32 +4015,22 @@ namespace UnityEditor
                 }
 
                 // Api Compatibility Level
-                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
+                ApiCompatibilityLevel[] availableCompatibilityLevels;
+                if (PlayerSettings.IsApiCompatibilityLevelForcedToNET(platform.namedBuildTarget))
+                    availableCompatibilityLevels = [ApiCompatibilityLevel.NET];
+                else if (Unsupported.IsSourceBuild())
+                    availableCompatibilityLevels = [ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard, ApiCompatibilityLevel.NET];
+                else
+                    availableCompatibilityLevels = [ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard];
+
+                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects || availableCompatibilityLevels.Length == 1))
                 {
                     using (var horizontal = new EditorGUILayout.HorizontalScope())
                     {
                         using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_APICompatibilityLevel))
                         {
-                            var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
-                            ApiCompatibilityLevel[] availableCompatibilityLevels;
-                            if (currentBackend == ScriptingImplementation.CoreCLR)
-                            {
-                                // CORECLR_FIXME - Add NET_10 when we are ready to let code compiled against net10
-                                availableCompatibilityLevels = [ApiCompatibilityLevel.NET_Standard /*, ApiCompatibilityLevel.NET_10 */];
-                            }
-                            else if (currentBackend == ScriptingImplementation.IL2CPP)
-                            {
-                                if (platform.namedBuildTarget == NamedBuildTarget.iOS || Unsupported.IsSourceBuild())
-#pragma warning disable CS0618
-                                    availableCompatibilityLevels = [ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard, ApiCompatibilityLevel.NET];
-#pragma warning restore CS0618
-                                else
-                                    availableCompatibilityLevels = [ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard];
-                            }
-                            else
-                                availableCompatibilityLevels = [ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard];
-
-                            var newAPICompatibilityLevel = BuildEnumPopup(
+                            ApiCompatibilityLevel currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
+                            ApiCompatibilityLevel newAPICompatibilityLevel = BuildEnumPopup(
                                 SettingsContent.apiCompatibilityLevel,
                                 currentAPICompatibilityLevel,
                                 availableCompatibilityLevels,
@@ -4048,22 +4051,30 @@ namespace UnityEditor
                 }
 
                 // Editor Assemblies Compatibility level
-                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects || HasAnyNetFXCompatibilityLevel()))
+                bool isEditorNetForced = AreEditorAssembliesForcedToNET(platform);
+                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects || isEditorNetForced || HasAnyNetFXCompatibilityLevel()))
                 {
                     using (var horizontal = new EditorGUILayout.HorizontalScope())
                     {
                         using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_EditorAssembliesCompatibilityLevel))
                         {
-                            var currentEditorAssembliesCompatibilityLevel = GetEditorAssembliesCompatibilityLevel();
+                            EditorAssembliesCompatibilityLevel currentEditorAssembliesCompatibilityLevel = GetEditorAssembliesCompatibilityLevel(platform);
 
                             List<EditorAssembliesCompatibilityLevel> availableEditorAssemblyCompatibilityLevels = new List<EditorAssembliesCompatibilityLevel>(3);
-                            if (currentEditorAssembliesCompatibilityLevel == EditorAssembliesCompatibilityLevel.Default)
+                            if (isEditorNetForced)
                             {
-                                availableEditorAssemblyCompatibilityLevels.Add(EditorAssembliesCompatibilityLevel.Default);
+                                availableEditorAssemblyCompatibilityLevels.Add(EditorAssembliesCompatibilityLevel.NET);
                             }
+                            else
+                            {
+                                if (currentEditorAssembliesCompatibilityLevel == EditorAssembliesCompatibilityLevel.Default)
+                                {
+                                    availableEditorAssemblyCompatibilityLevels.Add(EditorAssembliesCompatibilityLevel.Default);
+                                }
 
-                            availableEditorAssemblyCompatibilityLevels.Add(EditorAssembliesCompatibilityLevel.NET_Unity_4_8);
-                            availableEditorAssemblyCompatibilityLevels.Add(EditorAssembliesCompatibilityLevel.NET_Standard);
+                                availableEditorAssemblyCompatibilityLevels.Add(EditorAssembliesCompatibilityLevel.NET_Unity_4_8);
+                                availableEditorAssemblyCompatibilityLevels.Add(EditorAssembliesCompatibilityLevel.NET_Standard);
+                            }
 
                             var newEditorAssembliesCompatibilityLevel = BuildEnumPopup(
                                SettingsContent.editorAssembliesCompatibilityLevel,
@@ -4921,10 +4932,7 @@ namespace UnityEditor
                 {
                     { ApiCompatibilityLevel.NET_Unity_4_8, SettingsContent.apiCompatibilityLevel_NET_FW_Unity },
                     { ApiCompatibilityLevel.NET_Standard, SettingsContent.apiCompatibilityLevel_NET_Standard },
-                    // ApiCompatibilityLevel.NET is intentionally Obsolete/hidden for now, but still needs a display name here.
-#pragma warning disable 618
-                    { ApiCompatibilityLevel.NET, SettingsContent.apiCompatibilityLevel_NET_10 },
-#pragma warning restore 618
+                    { ApiCompatibilityLevel.NET, SettingsContent.apiCompatibilityLevel_NET },
                 };
             }
 
@@ -4940,6 +4948,7 @@ namespace UnityEditor
                     { EditorAssembliesCompatibilityLevel.Default, SettingsContent.editorAssembliesCompatibilityLevel_Default },
                     { EditorAssembliesCompatibilityLevel.NET_Unity_4_8, SettingsContent.editorAssembliesCompatibilityLevel_NET_Framework },
                     { EditorAssembliesCompatibilityLevel.NET_Standard, SettingsContent.editorAssembliesCompatibilityLevel_NET_Standard },
+                    { EditorAssembliesCompatibilityLevel.NET, SettingsContent.editorAssembliesCompatibilityLevel_NET },
                 };
             }
 

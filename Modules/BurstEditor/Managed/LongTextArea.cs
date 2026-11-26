@@ -157,6 +157,7 @@ namespace Unity.Burst.Editor
         private int _nrSearchHits = 0;
 
         public int NrSearchHits => _nrSearchHits;
+        public bool SearchTimedOut { get; private set; }
         public int ActiveSearchNr => _activeSearchHitIdx;
 
         private readonly Color[] _colourWheel = new Color[]
@@ -1104,10 +1105,21 @@ namespace Unity.Burst.Editor
             return result;
         }
 
-        internal bool SearchText(SearchCriteria searchCriteria, Regex regx, ref Rect workingArea, bool stopFirstMatch = false, bool focusTop = false) =>
-            _disassembler == null
-                ? SearchTextPlain(searchCriteria, regx, ref workingArea, stopFirstMatch, focusTop)
-                : SearchTextEnhanced(searchCriteria, regx, ref workingArea, stopFirstMatch, focusTop);
+        internal bool SearchText(SearchCriteria searchCriteria, Regex regx, ref Rect workingArea, bool stopFirstMatch = false, bool focusTop = false)
+        {
+            SearchTimedOut = false;
+            try
+            {
+                return _disassembler == null
+                    ? SearchTextPlain(searchCriteria, regx, ref workingArea, stopFirstMatch, focusTop)
+                    : SearchTextEnhanced(searchCriteria, regx, ref workingArea, stopFirstMatch, focusTop);
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                SearchTimedOut = true;
+                return false;
+            }
+        }
 
         /// <summary>
         /// Searches <see cref="m_Text"/> for every match, and saves each match in <see cref="searchHits"/>.

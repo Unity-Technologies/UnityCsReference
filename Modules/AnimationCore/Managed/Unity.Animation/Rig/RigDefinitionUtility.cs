@@ -26,7 +26,7 @@ namespace Unity.Animations
         /// <see cref="RigBuilder.Create(Transform, AnimationClip[], Unity.Collections.Allocator)"/>, which follows the
         /// same rule, pass the same transform, which matches the root bone.
         ///
-        /// The following examples use the `Unity.Animation`, `Unity.Collections`, `Unity.Entities`,
+        /// The following examples use the `Unity.Animations`, `Unity.Collections`, `Unity.Entities`,
         /// `Unity.IntegerTime`, `Unity.Mathematics`, and `UnityEngine` namespaces. Each example is a `MonoBehaviour`
         /// that plays a clip on the hierarchy under its GameObject. It gets a rig definition and finds the transform of
         /// each bone once. Each frame, it samples the clip into an animation stream and writes the pose to the

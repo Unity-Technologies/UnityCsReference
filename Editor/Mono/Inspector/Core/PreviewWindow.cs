@@ -98,12 +98,23 @@ namespace UnityEditor
             }
         }
 
-        protected override bool CountsViewOfTracker => m_ParentInspectorWindow == null;
+        // A docked preview is not closed with its parent, so it counts its own view of the shared tracker, which outlives
+        // the parent. A tracker the parent owns is destroyed with the parent, so the parent's view alone counts it.
+        protected override bool CountsViewOfTracker =>
+            m_ParentInspectorWindow == null || (m_Tracker != null && m_Tracker.Equals(ActiveEditorTracker.sharedTracker));
 
         protected override void CreateTracker()
         {
             if (m_ParentInspectorWindow != null)
-                m_Tracker = m_ParentInspectorWindow.tracker;
+            {
+                var parentTracker = m_ParentInspectorWindow.tracker;
+                if (m_Tracker == null || !m_Tracker.Equals(parentTracker))
+                {
+                    ReleaseTrackerDisplay();
+                    m_Tracker = parentTracker;
+                }
+                DisplayTrackerIfRegistered();
+            }
             else if (m_Tracker == null)
                 base.CreateTracker();
         }

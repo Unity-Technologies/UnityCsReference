@@ -16,7 +16,6 @@ using UnityEditor.Search.Providers;
 using UnityEditor.Utils;
 using UnityEngine.Search;
 using Unity.Collections;
-using Unity.Loading;
 using Unity.Scripting.LifecycleManagement;
 
 using UnityEditor.SceneManagement;
@@ -348,18 +347,32 @@ namespace UnityEditor.Search
         /// <param name="pingSelection">If true, will ping the selected objects.</param>
         public static void SelectMultipleItems(IEnumerable<SearchItem> items, bool focusProjectBrowser = false, bool pingSelection = true)
         {
-            #pragma warning disable UAC2001 // Avoid Linq
-            Selection.objects = items.Select(i => i.ToObject()).Where(o => o).ToArray();
-#pragma warning restore UAC2001
-            if (Selection.objects.Length == 0)
+            if (!SelectMultipleItemsNoDefault(items, focusProjectBrowser, pingSelection))
             {
                 #pragma warning disable UAC2011 // Avoid Linq
                 var firstItem = items.FirstOrDefault();
 #pragma warning restore UAC2011
                 if (firstItem != null)
                     EditorUtility.OpenWithDefaultApp(firstItem.id);
-                return;
             }
+        }
+
+        internal static bool SelectMultipleItemsNoDefault(IEnumerable<SearchItem> items, bool focusProjectBrowser = false, bool pingSelection = true)
+        {
+            using var _ = ListPool<EntityId>.Get(out var validEntities);
+            foreach (var searchItem in items)
+            {
+                var obj = searchItem?.ToObject();
+                if (!obj)
+                    continue;
+                validEntities.Add(obj.GetEntityId());
+            }
+
+            // Always set the selection, even when it is empty
+            Selection.entityIds = validEntities.ToArray();
+            if (Selection.entityIds.Length == 0)
+                return false;
+
             EditorApplication.delayCall += () =>
             {
                 if (focusProjectBrowser)
@@ -367,6 +380,7 @@ namespace UnityEditor.Search
                 if (pingSelection)
                     EditorApplication.delayCall += () => EditorGUIUtility.PingObject(Selection.objects.LastOrDefault());
             };
+            return true;
         }
 
         /// <summary>

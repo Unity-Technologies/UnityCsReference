@@ -14,6 +14,7 @@ using UnityEngineInternal;
 using uei = UnityEngine.Internal;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using System.Threading;
 using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
 using MaybeNullWhenAttribute = System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute;
@@ -214,7 +215,7 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static unsafe void* GetNativeObjectForWrapper(EntityId storedId)
         {
-            void* nativeObject = EntityIdStore.WrapperLookup.GetRawNativeObject(storedId);
+            void* nativeObject = EntityIdStore.WrapperLookup.GetRawNativeObjectExcludingDataComponents(storedId);
             if (nativeObject == null && IsReleasedWrapperId(storedId))
                 nativeObject = GetNativeObjectForReleasedWrapper(storedId);
             return nativeObject;
@@ -310,6 +311,9 @@ namespace UnityEngine
             if (nativeObject != null)
                 return MarshalledUnityObject.IsInstanceOf(nativeObject, o);
 
+            if (DataComponentWrapperStore.IsDataComponentId(o.m_EntityId))
+                return DoesDataComponentExist(o.m_EntityId);
+
             // A MonoBehaviour/ScriptableObject reloaded from the PersistentManager gets a new C# instance, so this
             // one would not be it.
             if (o is MonoBehaviour || o is ScriptableObject)
@@ -322,6 +326,108 @@ namespace UnityEngine
             //loaded but still available in the persistent manager as alive (accessing it loads it). Only the
             //editor does this last step: it is an icall, and only the editor moves assets around.
             return DoesObjectWithEntityIdExist(o.GetEntityId());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsDataComponentWrapper() => DataComponentWrapperStore.IsDataComponentId(m_EntityId);
+
+        // Out of line, so the inlined liveness check stays small.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsDataComponentAlive(EntityId id)
+        {
+            return DataComponentWrapperStore.IsDataComponentId(id) && DoesDataComponentExist(id);
+        }
+
+        [FreeFunction("DoesDataComponentExist", IsThreadSafe = true)]
+        internal extern static bool DoesDataComponentExist(EntityId componentEntityId);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal void ThrowIfDataComponentMissing()
+        {
+            if (!DoesDataComponentExist(m_EntityId))
+                MarshalledUnityObject.ThrowNullReferenceException(this);
+        }
+
+        Type GetDataComponentType() => TypeManager.GetType((int)m_EntityId.TypeId);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        string GetDataComponentName()
+        {
+            ThrowIfDataComponentMissing();
+            return GetDataComponentType().Name;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        HideFlags GetDataComponentHideFlags()
+        {
+            ThrowIfDataComponentMissing();
+            return (HideFlags)GlobalEntityManager.GetComponentObjectState(DataComponentWrapperStore.GetOwnerId(m_EntityId), ComponentType.ReadWrite(GetDataComponentType())).HideFlags;
+        }
+
+        // Code holding an exclusive entity transaction expects nothing else to change its World.
+        internal static void ThrowIfDataComponentWorldIsHeld(EntityId id)
+        {
+            if (GlobalEntityManager.IsInExclusiveEntityTransaction(DataComponentWrapperStore.GetOwnerId(id)))
+                throw new InvalidOperationException($"The data component with EntityId {id} cannot be changed because its World is in an exclusive entity transaction.");
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        void SetDataComponentHideFlags(HideFlags flags)
+        {
+            ThrowIfDataComponentWorldIsHeld(m_EntityId);
+            ThrowIfDataComponentMissing();
+            Entity owner = DataComponentWrapperStore.GetOwnerId(m_EntityId);
+            var type = ComponentType.ReadWrite(GetDataComponentType());
+            var state = GlobalEntityManager.GetComponentObjectState(owner, type);
+            state.HideFlags = (int)flags;
+            GlobalEntityManager.SetComponentObjectState(owner, type, state);
+        }
+
+        // A data component has no Object to queue for delayed destruction, so Destroy removes it at once.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        void DestroyDataComponent(bool immediate, bool allowDestroyingAssets)
+        {
+            ThrowIfDataComponentWorldIsHeld(m_EntityId);
+            if (!DoesDataComponentExist(m_EntityId))
+                return;
+
+            var owner = Resources.EntityIdToObject(DataComponentWrapperStore.GetOwnerId(m_EntityId)) as GameObject;
+            if (!immediate && !Application.isPlaying)
+            {
+                Debug.LogError(name + ": Destroy may not be called from edit mode! Use DestroyImmediate instead.\nDestroying an object in edit mode destroys it permanently", owner);
+                return;
+            }
+
+            // An entity without a GameObject cannot be an asset.
+            if (!allowDestroyingAssets && (object)owner != null && IsPersistent(owner))
+            {
+                Debug.LogError("Destroying assets is not permitted to avoid data loss.\nIf you really want to remove an asset use DestroyImmediate (theObject, true);", owner);
+                return;
+            }
+
+            DestroyDataComponentHighLevel(m_EntityId);
+        }
+
+        [FreeFunction("DestroyDataComponentHighLevel")]
+        extern static void DestroyDataComponentHighLevel(EntityId dataComponent);
+
+        // A data component is cloned with its GameObject, so Instantiate clones the owner and returns the clone's data component.
+        static Object GetCloneSource(Object original) => original.IsDataComponentWrapper() ? ((Component)original).gameObject : original;
+
+        static Object GetClone(Object original, Object clone)
+        {
+            if ((object)clone == null || !original.IsDataComponentWrapper())
+                return clone;
+            return GetDataComponentOfClone(original, clone);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Object GetDataComponentOfClone(Object original, Object ownerClone)
+        {
+            var id = DataComponentWrapperStore.GetIdOnOwner(original.m_EntityId, ownerClone.GetEntityId());
+
+            // Native logs an error and leaves out a data component it fails to clone.
+            return DoesDataComponentExist(id) ? DataComponentWrapperStore.GetOrCreate(id) : null;
         }
 
         [RequiredByNativeCode]
@@ -394,8 +500,20 @@ namespace UnityEngine
         // The name of the object.
         public string name
         {
-            get { return GetName(); }
-            set { SetName(value); }
+            get
+            {
+                if (IsDataComponentWrapper())
+                    return GetDataComponentName();
+                return GetName();
+            }
+            set
+            {
+                // A data component's name is its type name, which cannot change.
+                if (IsDataComponentWrapper())
+                    ThrowIfDataComponentMissing();
+                else
+                    SetName(value);
+            }
         }
 
         // Clones the object /original/ and returns the clone.
@@ -525,7 +643,7 @@ namespace UnityEngine
             if (original is ScriptableObject)
                 throw new ArgumentException("Cannot instantiate a ScriptableObject with a position and rotation");
 
-            var obj = Internal_InstantiateSingle(original, position, rotation);
+            var obj = GetClone(original, Internal_InstantiateSingle(GetCloneSource(original), position, rotation));
 
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
@@ -545,7 +663,7 @@ namespace UnityEngine
             if (parent.gameObject.IsDestroying())
                 ThrowArgumentExceptionForParentBeingDestroyed(original.name, parent.name, nameof(parent));
 
-            var obj = Internal_InstantiateSingleWithParent(original, parent, position, rotation);
+            var obj = GetClone(original, Internal_InstantiateSingleWithParent(GetCloneSource(original), parent, position, rotation));
 
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
@@ -559,7 +677,7 @@ namespace UnityEngine
         {
             CheckNullArgument(original, objectIsNullMessage);
             CheckGameObjectCreationAllowed(original);
-            var obj = Internal_CloneSingle(original);
+            var obj = GetClone(original, Internal_CloneSingle(GetCloneSource(original)));
 
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
@@ -573,7 +691,7 @@ namespace UnityEngine
         {
             CheckNullArgument(original, objectIsNullMessage);
             CheckGameObjectCreationAllowed(original);
-            var obj = Internal_CloneSingleWithScene(original, scene);
+            var obj = GetClone(original, Internal_CloneSingleWithScene(GetCloneSource(original), scene));
 
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
@@ -589,7 +707,7 @@ namespace UnityEngine
             if (parameters.parent != null && parameters.parent.gameObject.IsDestroying())
                 ThrowArgumentExceptionForParentBeingDestroyed(original.name, parameters.parent.name, nameof(parameters.parent));
 
-            var obj = (T)Internal_CloneSingleWithParams(original, parameters);
+            var obj = (T)GetClone(original, Internal_CloneSingleWithParams(GetCloneSource(original), parameters));
 
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
@@ -605,7 +723,7 @@ namespace UnityEngine
             if (parameters.parent != null && parameters.parent.gameObject.IsDestroying())
                 ThrowArgumentExceptionForParentBeingDestroyed(original.name, parameters.parent.name, nameof(parameters.parent));
 
-            var obj = (T)Internal_InstantiateSingleWithParams(original, position, rotation, parameters);
+            var obj = (T)GetClone(original, Internal_InstantiateSingleWithParams(GetCloneSource(original), position, rotation, parameters));
 
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
@@ -631,7 +749,7 @@ namespace UnityEngine
             if (parent.gameObject.IsDestroying())
                 ThrowArgumentExceptionForParentBeingDestroyed(original.name, parent.name, nameof(parent));
 
-            var obj = Internal_CloneSingleWithParent(original, parent, instantiateInWorldSpace);
+            var obj = GetClone(original, Internal_CloneSingleWithParent(GetCloneSource(original), parent, instantiateInWorldSpace));
 
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
@@ -643,7 +761,7 @@ namespace UnityEngine
         {
             CheckNullArgument(original, objectIsNullMessage);
             CheckGameObjectCreationAllowed(original);
-            var obj = (T)Internal_CloneSingle(original);
+            var obj = (T)GetClone(original, Internal_CloneSingle(GetCloneSource(original)));
 
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
@@ -672,8 +790,16 @@ namespace UnityEngine
         }
 
         // Removes a gameobject, component or asset.
+        public static void Destroy(Object obj, [uei.DefaultValue("0.0F")] float t)
+        {
+            if ((object)obj != null && obj.IsDataComponentWrapper())
+                obj.DestroyDataComponent(immediate: false, allowDestroyingAssets: false);
+            else
+                DestroyInternal(obj, t);
+        }
+
         [NativeMethod(Name = "Scripting::DestroyObjectFromScripting", IsFreeFunction = true, ThrowsException = true)]
-        public extern static void Destroy(Object obj, [uei.DefaultValue("0.0F")] float t);
+        extern static void DestroyInternal(Object obj, float t);
 
         [uei.ExcludeFromDocs]
         public static void Destroy(Object obj)
@@ -683,8 +809,16 @@ namespace UnityEngine
         }
 
         // Destroys the object /obj/ immediately. It is strongly recommended to use Destroy instead.
+        public static void DestroyImmediate(Object obj, [uei.DefaultValue("false")]  bool allowDestroyingAssets)
+        {
+            if ((object)obj != null && obj.IsDataComponentWrapper())
+                obj.DestroyDataComponent(immediate: true, allowDestroyingAssets);
+            else
+                DestroyImmediateInternal(obj, allowDestroyingAssets);
+        }
+
         [NativeMethod(Name = "Scripting::DestroyObjectFromScriptingImmediate", IsFreeFunction = true, ThrowsException = true)]
-        public extern static void DestroyImmediate(Object obj, [uei.DefaultValue("false")]  bool allowDestroyingAssets);
+        extern static void DestroyImmediateInternal(Object obj, bool allowDestroyingAssets);
 
         [uei.ExcludeFromDocs]
         public static void DestroyImmediate(Object obj)
@@ -785,6 +919,10 @@ namespace UnityEngine
         // native resolution which materializes the wrapper.
         internal static unsafe T GetManagedObject<T>(EntityId entity) where T : Object
         {
+            // A data component id shares its owner's slot, so the lookup below would return the owner.
+            if (DataComponentWrapperStore.IsDataComponentId(entity))
+                return null;
+
             void* objectPtr = EntityIdStore.GetNativeObject(entity);
             if (objectPtr == null)
                 return null;
@@ -801,11 +939,39 @@ namespace UnityEngine
         }
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
+        public static void DontDestroyOnLoad(Object target)
+        {
+            // As for a native component, DontDestroyOnLoad applies to the GameObject.
+            if ((object)target != null && target.IsDataComponentWrapper())
+                DontDestroyOnLoadInternal(((Component)target).gameObject);
+            else
+                DontDestroyOnLoadInternal(target);
+        }
+
         [FreeFunction("GetSceneManager().DontDestroyOnLoad", ThrowsException = true)]
-        public extern static void DontDestroyOnLoad([NotNull] Object target);
+        extern static void DontDestroyOnLoadInternal([NotNull] Object target);
 
         // // Should the object be hidden, saved with the scene or modifiable by the user?
-        public extern HideFlags hideFlags { get; set; }
+        public HideFlags hideFlags
+        {
+            get
+            {
+                if (IsDataComponentWrapper())
+                    return GetDataComponentHideFlags();
+                return GetHideFlags();
+            }
+            set
+            {
+                if (IsDataComponentWrapper())
+                    SetDataComponentHideFlags(value);
+                else
+                    SetHideFlags(value);
+            }
+        }
+
+        extern HideFlags GetHideFlags();
+
+        extern void SetHideFlags(HideFlags flags);
 
         //*undocumented* deprecated
         // We cannot properly deprecate this in C# right now, since the optional parameter creates
@@ -984,6 +1150,8 @@ namespace UnityEngine
         // Returns the name of the game object.
         public override string ToString()
         {
+            if (IsDataComponentWrapper() && DoesDataComponentExist(m_EntityId))
+                return GetDataComponentType().FullName;
             return ToString(this);
         }
 
@@ -1292,6 +1460,7 @@ namespace UnityEngine
             [System.Diagnostics.CodeAnalysis.DoesNotReturn]
             static unsafe void ThrowUnresolved(Object obj, string parameterName)
             {
+                ThrowIfDataComponent(obj, parameterName);
                 var resolves = GetNativeObjectForWrapper(obj.m_EntityId) != null && CanResolveDirectly(obj);
                 if (!resolves)
                 {
@@ -1307,6 +1476,7 @@ namespace UnityEngine
             [System.Diagnostics.CodeAnalysis.DoesNotReturn]
             public static void ThrowNotNullObjectUnresolved(Object obj, string parameterName)
             {
+                ThrowIfDataComponent(obj, parameterName);
                 var message = $"Native code could not use the {obj.GetType().FullName} passed as {parameterName ?? "this"}: " +
                     "its native object does not exist or is not of the type the method expects.";
                 if (parameterName == null)
@@ -1342,6 +1512,20 @@ namespace UnityEngine
             {
                 var type = obj.GetType();
                 return (obj is MonoBehaviour && type != typeof(MonoBehaviour)) || (obj is ScriptableObject && type != typeof(ScriptableObject));
+            }
+
+            // A data component that no longer exists gets the usual destroyed-object exceptions.
+            public static void ThrowIfDataComponent(Object unityObj, string parameterName = null)
+            {
+                if (DataComponentWrapperStore.IsDataComponentId(unityObj.m_EntityId) && DoesDataComponentExist(unityObj.m_EntityId))
+                    ThrowDataComponentNotSupported(unityObj.m_EntityId, parameterName);
+            }
+
+            [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+            static void ThrowDataComponentNotSupported(EntityId id, string parameterName)
+            {
+                var what = parameterName == null ? "This member" : $"Parameter '{parameterName}'";
+                throw new NotSupportedException($"{what} does not support data components (EntityId {id}).");
             }
 
             // A fake-null wrapper (m_UnityRuntimeErrorString set, see TransferPPtrToMonoObject.cpp) can carry the id of a
@@ -1408,7 +1592,7 @@ namespace UnityEngine
                 if (id == EntityId.None)
                     return UnmarshalNullOrFakeNull<T>();
 
-                void* objPtr = EntityIdStore.WrapperLookup.GetRawNativeObject(id);
+                void* objPtr = EntityIdStore.WrapperLookup.GetRawNativeObjectExcludingDataComponents(id);
                 if (objPtr == null)
                     return UnmarshalNullOrFakeNull<T>();
 
@@ -1476,7 +1660,10 @@ namespace UnityEngine
             public static void ThrowArgumentNullException(object obj, string parameterName)
             {
                 if (obj is UnityEngine.Object unityObj)
+                {
+                    ThrowIfDataComponent(unityObj, parameterName);
                     TryThrowEditorNullExceptionObject(unityObj, parameterName);
+                }
                 throw new ArgumentNullException(parameterName);
             }
 
@@ -1484,7 +1671,10 @@ namespace UnityEngine
             public static void ThrowNullReferenceException(object obj)
             {
                 if (obj is UnityEngine.Object unityObj)
+                {
+                    ThrowIfDataComponent(unityObj);
                     TryThrowEditorNullExceptionObject(unityObj, null);
+                }
                 throw new NullReferenceException();
             }
         }

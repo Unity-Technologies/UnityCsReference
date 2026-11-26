@@ -334,9 +334,9 @@ namespace UnityEditor.Search.Providers
             if (ProfilerDriver.deepProfiling != deepProfile)
             {
                 if (deepProfile)
-                    Debug.LogWarning("Enabling deep profiling. Domain reload will occur. Please restart Profiling.");
+                    Debug.LogWarning("Enabling deep profiling. Code reload will occur. Please restart Profiling.");
                 else
-                    Debug.LogWarning("Disabling deep profiling. Domain reload will occur. Please restart Profiling.");
+                    Debug.LogWarning("Disabling deep profiling. Code reload will occur. Please restart Profiling.");
 
                 SetProfilerDeepProfile(deepProfile);
                 return false;
@@ -543,6 +543,12 @@ namespace UnityEditor.Search.Providers
                     throw new ArgumentOutOfRangeException(nameof(power), power, null);
             }
         }
+
+        internal static class TestHelper
+        {
+            public static double ConvertToPower(double baseValue, UnitPowerType power) => BasePerformanceProvider.ConvertToPower(baseValue, power);
+            public static string GetTimeLabel(double time, double warningLimit, double errorLimit) => BasePerformanceProvider.GetTimeLabel(time, warningLimit, errorLimit);
+        }
     }
 
     abstract class BasePerformanceProvider<TPerformanceData> : BasePerformanceProvider
@@ -596,7 +602,7 @@ namespace UnityEditor.Search.Providers
             qe.SetFilter(sampleCountSelector, GetPerformanceSampleCountValue, supportedOperators)
                 .AddOrUpdatePropositionData(category: "Performance", label: "Sample Count", replacement: "count>1000", help: "Search by sample count", color: QueryColors.filter);
             qe.SetFilter(sampleLastTimeSelector, GetPerformanceLastTimeValue, supportedOperators)
-                .AddOrUpdatePropositionData(category: "Performance", label: "Last Time", replacement: "count>1000", help: "Search by last time", color: QueryColors.filter);
+                .AddOrUpdatePropositionData(category: "Performance", label: "Last Time", replacement: "lastTime>1000", help: "Search by last time", color: QueryColors.filter);
 
             SetupFilter(qe, sampleAvgSelector, CompareValuesWithUnit);
             SetupFilter(qe, sampleTotalSelector, CompareValuesWithUnit);

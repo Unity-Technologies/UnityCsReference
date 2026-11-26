@@ -170,9 +170,13 @@ namespace UnityEditor.Search
         /// <summary>
         /// Construct a search item. Minimally a search item need to have a unique id for a given search query.
         /// </summary>
-        /// <param name="_id"></param>
+        /// <param name="_id">The unique ID of the search item within its provider. Can't be null.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="_id"/> is null.</exception>
         public SearchItem(string _id)
         {
+            if (_id == null)
+                throw new ArgumentNullException(nameof(_id), "Search item id cannot be null.");
+
             id = _id;
             // The fallback provider is a stateless stub: it carries no search results and derives
             // label and thumbnail from the item it is asked about, so an item still holding the

@@ -10,18 +10,24 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    internal static class ClassLibraryInitializer
+    internal static partial class ClassLibraryInitializer
     {
+        // CoreCLR runs this once per load of the engine assemblies, IL2CPP calls it natively.
         [RequiredByNativeCode]
+        [OnAssemblyLoaded]
         static void Init()
         {
             UnityLogWriter.Init();
         }
+
+        [OnCodeUnloading]
+        static void OnCodeUnloading() => UnityLogWriter.ResetConsoleStreams();
     }
 
     [StructLayout(LayoutKind.Sequential)]

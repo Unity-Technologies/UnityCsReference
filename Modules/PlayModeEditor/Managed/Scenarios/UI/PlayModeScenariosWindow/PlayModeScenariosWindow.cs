@@ -20,11 +20,26 @@ namespace Unity.PlayMode.Editor
         internal const string k_NewConfigurationButtonName = "NewConfigurationButton";
         internal const string k_NewConfigurationButtonTooltip = "Create a new Play Mode Scenario";
         internal const string k_WindowTitle = "Play Mode Scenarios";
+        internal static readonly string k_EditingNotAllowedMessage = L10n.Tr("Editing is not allowed in Play mode.", null);
 
         DetailView m_DetailView;
         HelpBox m_DisableEditingHelpbox;
         PlayModeListView m_PlayModeListView;
         [SerializeField] PlayModeScenario m_LastSelectedScenario;
+
+        // TextElement replaces an assigned tooltip with its own text when elided, so explain from the event instead.
+        internal static void ExplainEditingNotAllowedWhenDisabled(VisualElement element)
+        {
+            element.RegisterCallback<TooltipEvent>(evt =>
+            {
+                if (element.enabledSelf)
+                    return;
+
+                evt.tooltip = k_EditingNotAllowedMessage;
+                evt.rect = element.worldBound;
+                evt.StopImmediatePropagation();
+            });
+        }
 
         public static void ShowWindow()
         {
@@ -36,7 +51,7 @@ namespace Unity.PlayMode.Editor
         {
             minSize = new Vector2(k_MinWidth, k_MinHeight);
 
-            m_DisableEditingHelpbox = new HelpBox("Editing is not allowed in Playmode.", HelpBoxMessageType.Info);
+            m_DisableEditingHelpbox = new HelpBox(k_EditingNotAllowedMessage, HelpBoxMessageType.Info);
             rootVisualElement.Add(m_DisableEditingHelpbox);
 
             rootVisualElement.Add(CreateToolbar());

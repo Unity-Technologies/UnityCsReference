@@ -146,8 +146,7 @@ namespace UnityEngine.UIElements.StyleSheets
             int slash = -1;
             for (int i = 0; i < valueCount; i++)
             {
-                if (reader.GetValueType(i) == StyleValueType.String &&
-                    string.Equals(reader.ReadAsString(i), "/", StringComparison.Ordinal))
+                if (reader.GetValueType(i) == StyleValueType.SlashSeparator)
                 {
                     slash = i;
                     break;

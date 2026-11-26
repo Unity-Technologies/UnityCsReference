@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Utils
 {
@@ -18,10 +19,23 @@ namespace UnityEditor.Utils
         // BuildTargetPlatformSpecific.cpp (kNET) and the BCLExtensions net10.0 targeting pack.
         const int k_ReferencePackMajorVersion = 10;
 
+        [NoAutoStaticsCleanup] // The bundled SDK doesn't change while the editor runs, so the path is safe to persist across code reload.
+        static string s_PackDirectory;
+
         // Returns the ref directory of the bundled net10.0 reference pack, e.g.
         // <scripting>/DotNetSdk/packs/Microsoft.NETCore.App.Ref/<version>/ref/net10.0
         public static string GetReferenceDirectory()
         {
+            return Path.Combine(GetPackDirectory(), "ref", $"net{k_ReferencePackMajorVersion}.0");
+        }
+
+        // Returns the root of the bundled net10.0 reference pack, which also holds its source generators, e.g.
+        // <scripting>/DotNetSdk/packs/Microsoft.NETCore.App.Ref/<version>
+        public static string GetPackDirectory()
+        {
+            if (s_PackDirectory != null)
+                return s_PackDirectory;
+
             var packsDirectory = Path.Combine(Scripting.NetCoreProgram.GetDotNetRuntimePath(), "packs", k_ReferencePackName);
             if (!Directory.Exists(packsDirectory))
                 throw new DirectoryNotFoundException($"Could not find the .NET reference pack directory '{packsDirectory}'. It is required to compile for the latest .NET.");
@@ -45,7 +59,8 @@ namespace UnityEditor.Utils
             if (versionDirectory == null)
                 throw new DirectoryNotFoundException($"The .NET reference pack directory '{packsDirectory}' contains no net{k_ReferencePackMajorVersion}.0 reference pack.");
 
-            return Path.Combine(versionDirectory, "ref", $"net{k_ReferencePackMajorVersion}.0");
+            s_PackDirectory = versionDirectory;
+            return versionDirectory;
         }
     }
 }

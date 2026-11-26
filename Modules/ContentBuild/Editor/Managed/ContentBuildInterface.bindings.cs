@@ -29,6 +29,14 @@ namespace UnityEditor.Build.Content
         DefaultDependencies = RecursiveOperation | ValidReferences
     }
 
+    [Flags]
+    internal enum ArchiveArtifactOptions
+    {
+        None = 0,
+        // The artifact is a SerializedFile: chunked compression cuts its chunks on object boundaries.
+        SerializedFile = 1 << 0,
+    }
+
     ///<summary>Low level interface for building content for Unity.</summary>
     ///<remarks>Note: this class and its members exist to provide low-level support for the **Scriptable Build Pipeline** package. This is intended for internal use only; use the &lt;a href="https://docs.unity3d.com/Packages/com.unity.scriptablebuildpipeline@latest/index.html"&gt;Scriptable Build Pipeline package&lt;/a&gt; to implement a fully featured build pipeline. You can install this via the [Package Manager window](/upm-ui.md).</remarks>
     [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildTypes.h")]
@@ -378,6 +386,14 @@ namespace UnityEditor.Build.Content
         [NativeMethod(IsThreadSafe = true)]
         [ContentBuildInterface.ThreadSafe] // Unused see above
         public static extern uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath, UnityEngine.BuildCompression compression, bool stripUnityVersion);
+
+        // Writes one artifact as an archived artifact: an archive with a single node, named by the artifact hash (the
+        // hash the content build gives it), so a content-addressed storage that reports the stream as archived (see
+        // ArtifactStream) lets the engine check it holds the artifact it asked for. sourcePath is the artifact on disk and
+        // must hash to artifactHash; null reads the artifact from the Unity Data Store. The Unity version is never
+        // recorded. LZMA is rejected because an archived artifact is read block by block.
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool ArchiveArtifact(Hash128 artifactHash, string sourcePath, string outputPath, UnityEngine.BuildCompression compression, ArchiveArtifactOptions options);
 
         ///<summary>Starts a profile capture to record content build profile events.</summary>
         ///<remarks>Throws an InvalidOperationException if the previous profile capture hasn't stopped.</remarks>

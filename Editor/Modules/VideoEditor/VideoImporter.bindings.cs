@@ -15,7 +15,7 @@ namespace UnityEditor
 {
 
     // AssetImporter for importing VideoClip
-    [NativeHeader("Modules/VideoEditor/VideoClipTranscode.h")]
+    [NativeHeader("Editor/Modules/VideoEditor/VideoClipTranscode.h")]
     public enum VideoCodec
     {
         Auto = 0,
@@ -41,7 +41,7 @@ namespace UnityEditor
         H264High = 2
     }
 
-    [NativeHeader("Modules/VideoEditor/VideoClipTranscode.h")]
+    [NativeHeader("Editor/Modules/VideoEditor/VideoClipTranscode.h")]
     public enum VideoDeinterlaceMode
     {
         Off = 0,
@@ -49,14 +49,14 @@ namespace UnityEditor
         Odd = 2
     }
 
-    [NativeHeader("Modules/VideoEditor/VideoClipTranscode.h")]
+    [NativeHeader("Editor/Modules/VideoEditor/VideoClipTranscode.h")]
     internal enum VideoColorSpace
     {
         sRGB = 0,
         Linear = 3,
     }
 
-    [NativeHeader("Modules/VideoEditor/VideoClipImporter.h")]
+    [NativeHeader("Editor/Modules/VideoEditor/VideoClipImporter.h")]
     public enum VideoResizeMode
     {
         OriginalSize = 0,
@@ -69,7 +69,7 @@ namespace UnityEditor
         CustomSize = 7
     }
 
-    [NativeHeader("Modules/VideoEditor/VideoClipTranscode.h")]
+    [NativeHeader("Editor/Modules/VideoEditor/VideoClipTranscode.h")]
     public enum VideoSpatialQuality
     {
         LowSpatialQuality = 0,
@@ -77,7 +77,7 @@ namespace UnityEditor
         HighSpatialQuality = 2
     }
 
-    [NativeHeader("Modules/VideoEditor/VideoClipImporter.h")]
+    [NativeHeader("Editor/Modules/VideoEditor/VideoClipImporter.h")]
     public enum VideoEncodeAspectRatio
     {
         NoScaling = 0,
@@ -87,7 +87,7 @@ namespace UnityEditor
     [RequiredByNativeCode]
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Modules/VideoEditor/VideoClipImporter.h")]
+    [NativeHeader("Editor/Modules/VideoEditor/VideoClipImporter.h")]
     [Serializable]
     public partial class VideoImporterTargetSettings
     {
@@ -112,9 +112,9 @@ namespace UnityEditor
     }
 
     [NativeConditional("ENABLE_VIDEO")]
-    [NativeHeader("Modules/VideoEditor/VideoClipImporter.h")]
+    [NativeHeader("Editor/Modules/VideoEditor/VideoClipImporter.h")]
     [global::UnityEngine.NativeClass("VideoClipImporter", PersistentTypeId = 1127)]
-    [NativeHeader("Modules/VideoEditor/VideoClipImporter.bindings.h")]
+    [NativeHeader("Editor/Modules/VideoEditor/VideoClipImporter.bindings.h")]
     public partial class VideoClipImporter : AssetImporter
     {
         internal VideoClipImporter(global::UnityEngine.EntityId id) : base(id) {}

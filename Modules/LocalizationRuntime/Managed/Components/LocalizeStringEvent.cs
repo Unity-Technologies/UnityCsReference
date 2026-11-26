@@ -25,6 +25,7 @@ namespace Unity.Localization.Components;
 /// <seealso cref="LocalizationSettings"/>
 /// <seealso cref="ResourceDatabase"/>
 [AddComponentMenu("Localization/Localize String Event")]
+[HelpURL("localization/localize-strings")]
 public class LocalizeStringEvent : MonoBehaviour
 {
     [SerializeField] LocalizedString m_String = new();

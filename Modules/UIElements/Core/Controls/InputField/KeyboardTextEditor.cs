@@ -240,15 +240,15 @@ namespace UnityEngine.UIElements
                     : (c == '\n' || c == '\r' || c == k_LineFeed) && !evt.altKey)
                 {
                     ApplyTextIfNeeded();
-                    textElement.edition.MoveFocusToCompositeRoot?.Invoke();
+                    textElement.edition.MoveFocusToCompositeRoot();
                     return;
                 }
 
                 if (evt.keyCode == KeyCode.Escape)
                 {
                     textElement.edition.RestoreValueAndText();
-                    textElement.edition.UpdateValueFromText?.Invoke();
-                    textElement.edition.MoveFocusToCompositeRoot?.Invoke();
+                    textElement.edition.UpdateValueFromText();
+                    textElement.edition.MoveFocusToCompositeRoot();
                 }
 
                 if (evt.keyCode == KeyCode.Tab)
@@ -278,14 +278,14 @@ namespace UnityEngine.UIElements
                 UpdateLabel(generatePreview);
 
             // The selection indices might have changed.
-            textElement.edition.UpdateScrollOffset?.Invoke(evt.keyCode == KeyCode.Backspace);
+            textElement.edition.UpdateScrollOffset(evt.keyCode == KeyCode.Backspace);
         }
 
         void ApplyTextIfNeeded()
         {
             if (m_ShouldInvokeUpdateValue)
             {
-                textElement.edition.UpdateValueFromText?.Invoke();
+                textElement.edition.UpdateValueFromText();
                 m_ShouldInvokeUpdateValue = false;
             }
         }
@@ -306,7 +306,7 @@ namespace UnityEngine.UIElements
 
             if (!textElement.edition.isDelayed || m_ShouldInvokeUpdateValue)
             {
-                textElement.edition.UpdateValueFromText?.Invoke();
+                textElement.edition.UpdateValueFromText();
                 m_ShouldInvokeUpdateValue = false;
             }
             if (imeEnabled)
@@ -396,7 +396,7 @@ namespace UnityEngine.UIElements
                 UpdateLabel(true);
 
             // The selection indices might have changed.
-            textElement.edition.UpdateScrollOffset?.Invoke(false);
+            textElement.edition.UpdateScrollOffset(false);
         }
 
         void OnNavigationEvent<TEvent>(NavigationEventBase<TEvent> evt) where TEvent : NavigationEventBase<TEvent>, new()

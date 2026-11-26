@@ -8,6 +8,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Unity.Profiling;
 using Unity.Scripting.LifecycleManagement;
 using Attribute = System.Attribute;
 using Event = UnityEngine.Event;
@@ -30,6 +31,13 @@ namespace UnityEditor.ShortcutManagement
     {
         const string k_DeleteID = "Main Menu/Edit/Delete";
         const string k_IgnoreWhenPlayModeFocused = "GameView.IgnoreWhenPlayModeFocused";
+        internal const string k_InitializeControllerMarkerName = "ShortcutIntegration.InitializeController";
+        internal const string k_EnsureShortcutsAreInitializedMarkerName = "ShortcutIntegration.EnsureShortcutsAreInitialized";
+
+        [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
+        static readonly ProfilerMarker k_InitializeControllerMarker = new(ProfilerCategory.Loading, k_InitializeControllerMarkerName);
+        [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
+        static readonly ProfilerMarker k_EnsureShortcutsAreInitializedMarker = new(ProfilerCategory.Loading, k_EnsureShortcutsAreInitializedMarkerName);
 
         class LastUsedProfileIdProvider : ILastUsedProfileIdProvider
         {
@@ -138,6 +146,7 @@ namespace UnityEditor.ShortcutManagement
 
         static void EnsureShortcutsAreInitialized()
         {
+            using var marker = k_EnsureShortcutsAreInitializedMarker.Auto();
             EnsureShortcutControllerCreated();
             // If the ShortcutController instance was created before the menus are created,
             // for example if accessed in an InitializeOnLoad method,
@@ -186,6 +195,7 @@ namespace UnityEditor.ShortcutManagement
 
         static void InitializeController()
         {
+            using var marker = k_InitializeControllerMarker.Auto();
             var shortcutProviders = new IDiscoveryShortcutProvider[]
             {
                 new ShortcutAttributeDiscoveryProvider(),
@@ -212,6 +222,9 @@ namespace UnityEditor.ShortcutManagement
         const string k_MigratedProfileId = "UserProfile";
         const string k_ProfileMigratedEditorPrefKey = "ShortcutManager_ProfileMigrated";
         internal const string k_MigrationFileErrorWarning = "Failed to migrate shortcut pref keys because of a shortcut file error: ";
+
+        [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
+        static readonly ProfilerMarker k_RebuildShortcutsMarker = new(ProfilerCategory.Loading, "ShortcutController.RebuildShortcuts");
 
         Directory m_Directory;
         IDiscovery m_Discovery;
@@ -262,6 +275,7 @@ namespace UnityEditor.ShortcutManagement
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal void RebuildShortcuts()
         {
+            using var marker = k_RebuildShortcutsMarker.Auto();
             profileManager.UpdateBaseProfile(m_Discovery.GetAllShortcuts());
             Initialize();
         }

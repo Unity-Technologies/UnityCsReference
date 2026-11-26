@@ -149,7 +149,7 @@ namespace Unity.Burst.Editor
             // Notify the compiler about a domain reload
             if (IsDebugging)
             {
-                UnityEngine.Debug.Log("Burst - Domain Reload");
+                UnityEngine.Debug.Log("Burst - Code Reload");
             }
 
             BurstCompiler.OnProgress += OnProgress;

@@ -123,7 +123,7 @@ namespace Unity.Animations
         /// it will also apply the same weight mask value to all children of this transform.
         /// </summary>
         /// <remarks>
-        /// The following example uses the `Unity.Animation`, `Unity.Collections`, `Unity.Entities`,
+        /// The following example uses the `Unity.Animations`, `Unity.Collections`, `Unity.Entities`,
         /// `Unity.IntegerTime`, `Unity.Mathematics`, and `UnityEngine` namespaces. It is a `MonoBehaviour` that
         /// propagates the weight of the spine to the bones below it to mask the upper body or the lower body of a
         /// character. It keeps the weight mask and its instance for the rig of the character, and plays one clip on

@@ -153,13 +153,14 @@ namespace Unity.PlayMode.Editor
 
                     var configIsValid = config.IsValid(out var tooltipText);
                     labelAndIcon.ShowWarningIcon(!configIsValid, tooltipText);
+                    labelAndIcon.tooltip = config.DescriptionTooltip;
                 });
                 var configIsValid = config.IsValid(out var tooltipText);
                 labelAndIcon.ShowWarningIcon(!configIsValid, tooltipText);
                 labelAndIcon.SetIcon(config.Icon);
                 labelAndIcon.Text = config.name;
                 labelAndIcon.userData = config;
-                labelAndIcon.tooltip = config.Description;
+                labelAndIcon.tooltip = config.DescriptionTooltip;
             };
 
             // Restore selection; fall back to nothing if the scenario was deleted

@@ -20,8 +20,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             MainEditorSystems = new MainEditorSystems();
             {
                 MessagingService = MessagingService.GetMain(MessagingService.k_DefaultChannelName);
-                StateRepository = SessionStateJsonRepository<VirtualProjectIdentifier, VirtualProjectStatePerProcessLifetime>.GetMain(SessionStateRepository.Get, nameof(StateRepository), out _);
-                ProcessRepository = SessionStateJsonRepository<VirtualProjectIdentifier, ProcessId>.GetMain(SessionStateRepository.Get, nameof(ProcessRepository), out _);
+                StateRepository = SessionStateJsonRepository<VirtualProjectIdentifier, VirtualProjectStatePerProcessLifetime>.GetMain(nameof(StateRepository), out _);
+                ProcessRepository = SessionStateJsonRepository<VirtualProjectIdentifier, ProcessId>.GetMain(nameof(ProcessRepository), out _);
                 ProcessSystemDelegates = ProcessSystem.Delegates;
                 FileSystemDelegates = FileSystem.Delegates;
                 ParsingSystemDelegates = ParsingSystem.Delegates;

@@ -116,7 +116,7 @@ namespace UnityEditor.Search.Providers
             }
 
             #pragma warning disable UAC2001 // Avoid Linq
-            yield return query.Apply(SettingsProviderCache.value).Select(spi => provider.CreateItem(context, spi.path, spi.label, spi.path, null, null));
+            yield return query.Apply(SettingsProviderCache.value).Where(spi => spi.path != null).Select(spi => provider.CreateItem(context, spi.path, spi.label, spi.path, null, null));
 #pragma warning restore UAC2001
         }
 

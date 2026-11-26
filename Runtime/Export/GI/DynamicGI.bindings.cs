@@ -11,22 +11,22 @@ namespace UnityEngine
     public sealed partial class DynamicGI
     {
         [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
-        public static extern float indirectScale { get; set; }
+        public static float indirectScale { get { return 0.0f; } set {} }
         [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
-        public static extern float updateThreshold { get; set; }
+        public static float updateThreshold { get { return 0.0f; } set {} }
         [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
-        public static extern int   materialUpdateTimeSlice { get; set; }
+        public static int   materialUpdateTimeSlice { get { return 0; } set {} }
         [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
-        public static extern void  SetEmissive(Renderer renderer, Color color);
+        public static void  SetEmissive(Renderer renderer, Color color) {}
         [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
-        [NativeMethod(ThrowsException = true)] public static extern void  SetEnvironmentData([NotNull] float[] input);
+        public static void  SetEnvironmentData(float[] input) {}
         [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
-        public static extern bool  synchronousMode { get; set; }
+        public static bool  synchronousMode { get { return false; } set {} }
         [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
-        public static extern bool  isConverged { get; }
+        public static bool  isConverged { get { return false; } }
 
-        internal static extern int scheduledMaterialUpdatesCount { get; }
-        internal static extern bool asyncMaterialUpdates { get; set; }
+        internal static int scheduledMaterialUpdatesCount { get { return 0; } }
+        internal static bool asyncMaterialUpdates { get { return false; } set {} }
         public static extern void UpdateEnvironment();
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

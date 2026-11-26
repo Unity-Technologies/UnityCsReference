@@ -11,36 +11,14 @@ using UnityEngine.Animations;
 
 namespace Unity.Animations
 {
-    /// <summary>
-    /// An animated value of a rig, such as the translation of a bone or a float property, identified by a hash.
-    /// </summary>
-    /// <remarks>
-    /// The built-in channel types, such as <see cref="LocalTranslationChannel"/> and <see cref="FloatChannel"/>,
-    /// implement this interface. Add them to a <see cref="RigBuilder"/> to define the bindings of a
-    /// <see cref="RigDefinition"/>. Clips find the channels of a rig that match their curves through the
-    /// <see cref="IAnimationChannel.Id"/>. The built-in channel types compute the identifier from a transform path and,
-    /// for properties, an attribute name.
-    /// </remarks>
-    /// <seealso cref="RigBuilder"/>
-    /// <seealso cref="FloatChannel"/>
-    public interface IAnimationChannel
+    interface IAnimationChannel
     {
-        /// <summary>
-        /// The unique identifier of the channel.
-        /// </summary>
         StringHash Id { get; set; }
     }
 
-    /// <summary>
-    /// Base interface for the animation channels.
-    /// </summary>
-    /// <typeparam name="T">Value type</typeparam>
-    public interface IAnimationChannel<T> : IAnimationChannel
+    interface IAnimationChannel<T> : IAnimationChannel
         where T : struct
     {
-        /// <summary>
-        /// Default value of the channel.
-        /// </summary>
         T DefaultValue { get; set; }
     }
 
@@ -50,10 +28,14 @@ namespace Unity.Animations
     [GenerateTestsForBurstCompatibility]
     public struct LocalTranslationChannel : IAnimationChannel<float3>, IEquatable<LocalTranslationChannel>
     {
-        /// <inheritdoc/>
+        /// <summary>
+        /// The hash that identifies the channel. Clips match their curves to the channels of a rig by this hash.
+        /// </summary>
         public StringHash Id { get; set; }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// The value of the channel in the default pose of the rig.
+        /// </summary>
         public float3 DefaultValue { get; set; }
 
         /// <inheritdoc/>
@@ -83,10 +65,14 @@ namespace Unity.Animations
     [GenerateTestsForBurstCompatibility]
     public struct LocalRotationChannel : IAnimationChannel<quaternion>, IEquatable<LocalRotationChannel>
     {
-        /// <inheritdoc/>
+        /// <summary>
+        /// The hash that identifies the channel. Clips match their curves to the channels of a rig by this hash.
+        /// </summary>
         public StringHash Id { get; set; }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// The value of the channel in the default pose of the rig.
+        /// </summary>
         public quaternion DefaultValue { get; set; }
 
         /// <inheritdoc/>
@@ -116,10 +102,14 @@ namespace Unity.Animations
     [GenerateTestsForBurstCompatibility]
     public struct LocalScaleChannel : IAnimationChannel<float3>, IEquatable<LocalScaleChannel>
     {
-        /// <inheritdoc/>
+        /// <summary>
+        /// The hash that identifies the channel. Clips match their curves to the channels of a rig by this hash.
+        /// </summary>
         public StringHash Id { get; set; }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// The value of the channel in the default pose of the rig.
+        /// </summary>
         public float3 DefaultValue { get; set; }
 
         /// <inheritdoc/>
@@ -149,10 +139,14 @@ namespace Unity.Animations
     [GenerateTestsForBurstCompatibility]
     public struct FloatChannel : IAnimationChannel<float>, IEquatable<FloatChannel>
     {
-        /// <inheritdoc/>
+        /// <summary>
+        /// The hash that identifies the channel. Clips match their curves to the channels of a rig by this hash.
+        /// </summary>
         public StringHash Id { get; set; }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// The value of the channel in the default pose of the rig.
+        /// </summary>
         public float DefaultValue { get; set; }
 
         /// <inheritdoc/>
@@ -184,10 +178,14 @@ namespace Unity.Animations
     [GenerateTestsForBurstCompatibility]
     public struct IntChannel : IAnimationChannel<int>, IEquatable<IntChannel>
     {
-        /// <inheritdoc/>
+        /// <summary>
+        /// The hash that identifies the channel. Clips match their curves to the channels of a rig by this hash.
+        /// </summary>
         public StringHash Id { get; set; }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// The value of the channel in the default pose of the rig.
+        /// </summary>
         public int DefaultValue { get; set; }
 
         /// <inheritdoc/>
@@ -219,16 +217,17 @@ namespace Unity.Animations
     /// <remarks>
     /// Use this channel to animate a property that references an object, such as a sprite or a material. Add it to a
     /// <see cref="RigBuilder"/> to define an entity ID binding in a <see cref="RigDefinition"/>. A clip drives the
-    /// channel when it has a curve for an object reference with the same <see cref="IAnimationChannel.Id"/>.
+    /// channel when it has a curve for an object reference with the same <see cref="Id"/>.
     ///
     /// Two channels are equal when their `Id` is equal, whatever their `DefaultValue`.
     /// </remarks>
     /// <seealso cref="RigBuilder"/>
-    /// <seealso cref="IAnimationChannel{T}"/>
     [GenerateTestsForBurstCompatibility]
     public struct EntityIdChannel : IAnimationChannel<EntityId>, IEquatable<EntityIdChannel>
     {
-        /// <inheritdoc/>
+        /// <summary>
+        /// The hash that identifies the channel. Clips match their curves to the channels of a rig by this hash.
+        /// </summary>
         public StringHash Id { get; set; }
 
         /// <summary>
@@ -304,7 +303,7 @@ namespace Unity.Animations
     /// sockets with <see cref="RigBuilder.Add(in SocketNode)"/>. The animation stream has no channel for a socket, so
     /// the socket moves only with its parent bone.
     ///
-    /// The following example uses the `Unity.Animation`, `Unity.Collections`, `Unity.Entities`, and
+    /// The following example uses the `Unity.Animations`, `Unity.Collections`, `Unity.Entities`, and
     /// `Unity.Mathematics` namespaces. It adds a socket to the hand of an arm rig, then reads the transform of the
     /// socket in character space from an animation stream.
     /// </remarks>
@@ -392,12 +391,14 @@ namespace Unity.Animations
     /// a buffer of default values for each animation channel.
     /// </summary>
     /// <remarks>
+    /// This is `Unity.Animations.RigDefinition`. It is unrelated to the rigs of the Animation Rigging package.
+    ///
     /// Build a rig definition with <see cref="RigBuilder.ToRigDefinition"/>. To get a builder with the bones and
     /// channels that clips animate, use <see cref="RigBuilder.Create(Transform, AnimationClip[], Allocator)"/>. An
     /// Avatar also stores a rig definition with a bone for each of its transforms. Read it with
     /// <see cref="AvatarExtensions.ToRigReference(Avatar)"/>.
     ///
-    /// The following example uses the `Unity.Animation`, `Unity.Collections`, `Unity.Entities`, `Unity.IntegerTime`,
+    /// The following example uses the `Unity.Animations`, `Unity.Collections`, `Unity.Entities`, `Unity.IntegerTime`,
     /// `Unity.Mathematics`, and `UnityEngine` namespaces. It is a `MonoBehaviour` that plays a clip on the hierarchy
     /// under its GameObject with the rig definition that an Avatar stores.
     /// </remarks>

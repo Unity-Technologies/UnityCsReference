@@ -698,7 +698,11 @@ namespace UnityEngine.UIElements
     /// method sees a fully wired component and may configure the owner element (for example set
     /// <c>owner.focusable</c>). On the UXML path it runs when the component is created, before the
     /// authored attribute values are applied, so authored values always win over values this method
-    /// writes to the component.
+    /// writes to the component. When the component is auto-added for a
+    /// <see cref="RequiresComponentOfTypeAttribute">[RequiresComponentOfType]</see> requirement, the method
+    /// must not add the component that requires it, because that component is already being added: in the
+    /// Editor, the <c>AddComponent</c> or <c>GetOrAddComponent</c> call that started the add throws
+    /// <see cref="InvalidOperationException"/>.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public class OnComponentAddedAttribute : Attribute
@@ -730,7 +734,10 @@ namespace UnityEngine.UIElements
     /// </para>
     /// <para>
     /// Because the method receives the owning element, it may read its own state, touch that element, and
-    /// add or remove components.
+    /// add or remove components. The component is still attached while the method runs, so removing it
+    /// again, directly or from another component's <c>[OnComponentRemoved]</c> method, calls the method
+    /// again. A method that always removes its own component recurses without end, and so do two
+    /// components that remove each other from these methods.
     /// </para>
     /// <para>
     /// To free something the component allocated, use

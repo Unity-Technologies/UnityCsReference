@@ -1119,7 +1119,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 predefinedAssembliesCompilerOptions.UseDeterministicCompilation = true;
             }
 
-            predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevelWithoutIL2CPPForcing(namedBuildTarget);
+            predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
             predefinedAssembliesCompilerOptions.LanguageVersion = MonoLibraryHelpers.GetDefaultLanguageVersion(predefinedAssembliesCompilerOptions.ApiCompatibilityLevel);
 
             var tempCompilationExtension = SDKPlatformCompilationUtil.CreateActiveCompilationExtension(
@@ -2022,7 +2022,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ScriptAssemblyReferences = Array.Empty<ScriptAssembly>(),
                 RootNamespace = string.Empty
             };
-            scriptAssembly.CompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevelWithoutIL2CPPForcing(NamedBuildTarget.FromActiveSettings(assemblyBuilder.buildTarget));
+            scriptAssembly.CompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromActiveSettings(assemblyBuilder.buildTarget));
             scriptAssembly.CompilerOptions.LanguageVersion = MonoLibraryHelpers.GetDefaultLanguageVersion(scriptAssembly.CompilerOptions.ApiCompatibilityLevel);
 
             return scriptAssembly;

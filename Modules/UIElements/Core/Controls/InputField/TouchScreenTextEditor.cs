@@ -9,7 +9,6 @@ namespace UnityEngine.UIElements
     internal partial class TouchScreenTextEditorEventHandler : TextEditorEventHandler
     {
         private IVisualElementScheduledItem m_TouchKeyboardPoller = null;
-        private bool m_IsClicking = false;
 
 
         // For UI Test Framework.
@@ -67,7 +66,7 @@ namespace UnityEngine.UIElements
                     CloseTouchScreenKeyboard();
 
                     if (!edition.isDelayed)
-                        edition.UpdateValueFromText?.Invoke();
+                        edition.UpdateValueFromText();
 
                     // If we update the text while the placeholder is active, it may get overridden by the field's default (e.g., 0).
                     showPlaceholderText = string.IsNullOrEmpty(touchKeyboard.text) && !string.IsNullOrEmpty(edition.placeholder);
@@ -110,7 +109,7 @@ namespace UnityEngine.UIElements
                         // UpdateScrollOffset needs the new geometry of the text to compute the new scrollOffset.
                         textElement.uitkTextHandle.ComputeSettingsAndUpdate();
                     }
-                    else if (!m_IsClicking && touchKeyboard != null && touchKeyboard.canGetSelection)
+                    else if (!textElement.selectingManipulator.isClicking && touchKeyboard != null && touchKeyboard.canGetSelection)
                     {
                         UpdateStringPositionFromKeyboard();
                     }
@@ -131,7 +130,7 @@ namespace UnityEngine.UIElements
                 }
 
                 if (!edition.isDelayed)
-                    edition.UpdateValueFromText?.Invoke();
+                    edition.UpdateValueFromText();
 
                 // If we update the text while the placeholder is active, it may get overridden by the field's default (e.g., 0).
                 showPlaceholderText = string.IsNullOrEmpty(touchKeyboard.text) && !string.IsNullOrEmpty(edition.placeholder);
@@ -139,7 +138,7 @@ namespace UnityEngine.UIElements
                 {
                     UpdateTextFromValueKeepingKeyboardText();
                 }
-                textElement.edition.UpdateScrollOffset?.Invoke(false);
+                textElement.edition.UpdateScrollOffset(false);
             }
             else
             {
@@ -154,7 +153,7 @@ namespace UnityEngine.UIElements
             textElement.m_SkipTouchScreenKeyboardSync = true;
             try
             {
-                textElement.edition.UpdateTextFromValue?.Invoke();
+                textElement.edition.UpdateTextFromValue();
             }
             finally
             {
@@ -229,14 +228,11 @@ namespace UnityEngine.UIElements
 
             switch (evt)
             {
-                case PointerDownEvent:
-                    OnPointerDownEvent();
+                case PointerDownEvent pde:
+                    OnPointerDownEvent(pde);
                     break;
                 case PointerUpEvent pue:
                     OnPointerUpEvent(pue);
-                    break;
-                case PointerCancelEvent:
-                    m_IsClicking = false;
                     break;
                 case FocusInEvent:
                     OnFocusInEvent();
@@ -247,9 +243,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void OnPointerDownEvent()
+        private void OnPointerDownEvent(PointerDownEvent evt)
         {
-            m_IsClicking = true;
+            var selectingManipulator = textElement.selectingManipulator;
+            if (selectingManipulator.isClicking && !selectingManipulator.IsClickingPointer(evt.pointerId))
+                return;
 
             // Update the soft keyboard's input field's cursor with the selection's cursor;
             if (textElement.m_TouchScreenKeyboard != null && textElement.edition.hideMobileInput)
@@ -269,7 +267,6 @@ namespace UnityEngine.UIElements
 
         private void OnPointerUpEvent(PointerUpEvent evt)
         {
-            m_IsClicking = false;
             evt.StopPropagation();
         }
 
@@ -284,7 +281,7 @@ namespace UnityEngine.UIElements
                 PollTouchScreenKeyboard();
 
             textElement.edition.SaveValueAndText();
-            textElement.edition.UpdateScrollOffset?.Invoke(false);
+            textElement.edition.UpdateScrollOffset(false);
         }
 
         private void OnFocusOutEvent(FocusOutEvent evt)

@@ -193,7 +193,7 @@ static partial class PlayModeButtons
         }
 
         var icon = activeScenario.Icon;
-        var tooltip = string.IsNullOrEmpty(activeScenario.Description) ? "" : activeScenario.Description;
+        var tooltip = string.IsNullOrWhiteSpace(activeScenario.Description) ? "" : activeScenario.Description;
 
         if (!activeScenario.IsValid(out var error))
         {
@@ -206,8 +206,10 @@ static partial class PlayModeButtons
 
     static void ShowPlaymodeConfigPopup(Rect buttonRect)
     {
-        UnityEditor.PopupWindow.Show(
-            new Rect(buttonRect.x + buttonRect.width - PlaymodePopupContent.windowSize.x, buttonRect.y, buttonRect.width, buttonRect.height),
-            new PlaymodePopupContent());
+        var content = new PlaymodePopupContent();
+        UnityEditor.PopupWindow.Show(GetPopupAnchor(buttonRect, content.GetWindowSize().x), content);
     }
+
+    internal static Rect GetPopupAnchor(Rect buttonRect, float popupWidth)
+        => new Rect(buttonRect.xMax - popupWidth, buttonRect.y, buttonRect.width, buttonRect.height);
 }

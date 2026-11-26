@@ -34,6 +34,10 @@ namespace UnityEditor
         [AutoStaticsCleanupOnCodeReload]
         internal static event Action editorTrackerRebuilt;
 
+        // Raised when a tracker that no view displays releases editors that no longer match the selection; the next read rebuilds it.
+        [AutoStaticsCleanupOnCodeReload]
+        internal static event Action editorTrackerInvalidated;
+
         internal static class NativeHandleMarshaller
         {
             public static IntPtr ConvertToUnmanaged(ActiveEditorTracker tracker)
@@ -256,6 +260,20 @@ namespace UnityEditor
         }
 
         [FreeFunction]
+        static extern bool Internal_TryGetActiveEditors(
+            [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(NativeHandleMarshaller))]
+            ActiveEditorTracker self,
+            [NotNull, Out] List<Editor> editors);
+
+        // False while the tracker is stale and cannot rebuild yet (a domain reload or a rect selection runs): the list then
+        // does not show the selection, so a view that keeps what it reads must read again rather than keep it.
+        internal bool TryGetActiveEditors(List<Editor> editors)
+        {
+            EnsureNativeAllocated();
+            return Internal_TryGetActiveEditors(this, editors);
+        }
+
+        [FreeFunction]
         static extern bool Internal_GetDelayFlushDirtyRebuild();
 
         [FreeFunction]
@@ -405,6 +423,12 @@ namespace UnityEditor
         {
             if (editorTrackerRebuilt != null)
                 editorTrackerRebuilt();
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_OnTrackerInvalidated()
+        {
+            editorTrackerInvalidated?.Invoke();
         }
     }
 }

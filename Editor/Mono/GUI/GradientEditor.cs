@@ -75,6 +75,7 @@ namespace UnityEditor
 
         private bool m_DoubleClickDetected;
         private bool m_PendingEndGesture;
+        private bool m_PendingRefresh;
 
         // Fixed steps are only used if numSteps > 1
         public void Init(Gradient gradient, int numSteps, bool hdr, ColorSpace colorSpace)
@@ -84,6 +85,7 @@ namespace UnityEditor
             m_HDR = hdr;
             m_ColorSpace = colorSpace;
             m_DoubleClickDetected = false;
+            m_PendingRefresh = false;
 
             BuildArrays();
 
@@ -96,6 +98,15 @@ namespace UnityEditor
         /// </summary>
         public void RefreshGradientData()
         {
+            // Rebuilding the swatches while one is being dragged can corrupt the drag, so wait for the release. (UUM-100664)
+            if (GUIUtility.hotControl != 0)
+            {
+                m_PendingRefresh = true;
+                return;
+            }
+
+            m_PendingRefresh = false;
+
             // If we are already editing a Gradient we need to preserve the selected swatch or dragging may be corrupted.
             int selectedSwatch = 0;
             bool selectedIsAlpha = false;
@@ -119,6 +130,8 @@ namespace UnityEditor
             if (ColorPicker.visible && m_SelectedSwatch != null && !m_SelectedSwatch.m_IsAlpha)
                 ColorPicker.SetColorWithoutNotify(m_SelectedSwatch.m_Value);
         }
+
+        internal Swatch selectedSwatch => m_SelectedSwatch;
 
         public Gradient target
         {
@@ -196,6 +209,9 @@ namespace UnityEditor
                 s_Styles = new Styles();
 
             UpdateDeferredUndoGroups();
+
+            if (m_PendingRefresh && GUIUtility.hotControl == 0)
+                RefreshGradientData();
 
             float modeHeight = 24f;
             float swatchHeight = 16f;

@@ -11,11 +11,23 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine
 {
+    // What a handler returns from Open: the handle its file handler serves the bytes through, and whether those
+    // bytes are an archived artifact (what ContentBuildInterface.ArchiveArtifact writes, a one-node archive the
+    // CAH file system decodes on read) or the artifact's own bytes. The artifact's identity, the hash of its own
+    // bytes, is the same either way.
+    [VisibleToOtherModules("UnityEngine.ContentLoadModule", "ContentBuildLoadPreview")]
+    internal struct ArtifactStream
+    {
+        public IManagedVFSFileHandler handler;
+        public int handle;
+        public bool isArchivedArtifact;
+    }
+
     [VisibleToOtherModules("UnityEngine.ContentLoadModule", "ContentBuildLoadPreview")]
     internal interface ICAHArtifactHandler
     {
         bool Exists(Hash128 hash);
-        bool Open(Hash128 hash, out IManagedVFSFileHandler handler, out int handle);
+        bool Open(Hash128 hash, out ArtifactStream stream);
     }
 
     [RequiredByNativeCode]
@@ -93,7 +105,7 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        internal static bool OpenFile(Hash128 hash, int flags, IntPtr outHandle)
+        internal static bool OpenFile(Hash128 hash, int flags, IntPtr outHandle, IntPtr outIsArchivedArtifact)
         {
             using (new ReadLockScope(s_Lock))
             {
@@ -101,12 +113,13 @@ namespace UnityEngine
                 {
                     try
                     {
-                        if (s_Handlers[i].Open(hash, out IManagedVFSFileHandler handler, out int handle))
+                        if (s_Handlers[i].Open(hash, out ArtifactStream stream))
                         {
-                            InternalManagedFileHandle internalHandle = ManagedVFSRouter.AllocateHandle(handler, handle);
+                            InternalManagedFileHandle internalHandle = ManagedVFSRouter.AllocateHandle(stream.handler, stream.handle);
                             unsafe
                             {
                                 *(InternalManagedFileHandle*)outHandle = internalHandle;
+                                *(int*)outIsArchivedArtifact = stream.isArchivedArtifact ? 1 : 0;
                             }
                             return true;
                         }

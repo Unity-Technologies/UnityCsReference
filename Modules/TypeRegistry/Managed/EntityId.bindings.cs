@@ -74,6 +74,19 @@ namespace UnityEngine
             get => (uint)((m_rawData >> 40) & 0xFFFFFFUL);
         }
 
+        [VisibleToOtherModules]
+        internal const int k_TypeIdBits = 12;
+        [VisibleToOtherModules]
+        internal const int k_TypeIdShift = 28;
+        [VisibleToOtherModules]
+        internal const ulong k_TypeIdMask = ((1UL << k_TypeIdBits) - 1) << k_TypeIdShift;
+
+        // Non-zero for a data component; the rest of the id is its owner's.
+        internal uint TypeId
+        {
+            [VisibleToOtherModules]
+            get => (uint)((m_rawData & k_TypeIdMask) >> k_TypeIdShift);
+        }
 
         [Obsolete("EntityId will not be representable by an int in the future. This equals will be removed in a future version.", true)]
         public bool Equals(int other) => throw new NotImplementedException();

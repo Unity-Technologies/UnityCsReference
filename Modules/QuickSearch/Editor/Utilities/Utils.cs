@@ -372,6 +372,9 @@ namespace UnityEditor.Search
 
         public static void FrameAssetFromPath(string path)
         {
+            if (string.IsNullOrEmpty(path))
+                return;
+
             var asset = SelectAssetFromPath(path);
             if (asset != null)
             {

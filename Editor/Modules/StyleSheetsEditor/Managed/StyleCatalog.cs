@@ -2050,6 +2050,7 @@ namespace UnityEditor.StyleSheets
                 }
                 case StyleValueType.ResourcePath:
                 case StyleValueType.String:
+                case StyleValueType.SlashSeparator:
                     return StyleValue.Type.Text;
 
                 case StyleValueType.Function:
@@ -2088,6 +2089,7 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.ScalableImage:
                     return SetIndex(strings, AssetDatabase.GetAssetPath(value.AsScalableImage().normalImage));
                 case StyleValueType.String:
+                case StyleValueType.SlashSeparator:
                     return SetIndex(strings, value.AsString());
                 default:
                     throw new Exception("Unknown value type: " + value.ValueType);

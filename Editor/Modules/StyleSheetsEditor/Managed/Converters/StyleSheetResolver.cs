@@ -935,6 +935,9 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.ScalableImage:
                     value = srcSheet.ReadScalableImage(valueHandle);
                     break;
+                case StyleValueType.SlashSeparator:
+                    value = "/";
+                    break;
                 default:
                     throw new Exception("Unhandled value type: " + valueHandle.valueType);
             }
@@ -961,6 +964,9 @@ namespace UnityEditor.StyleSheets
                         break;
                     case StyleValueType.ResourcePath:
                         helper.builder.AddResourcePath((ResolvedResourcePath)value.Obj);
+                        break;
+                    case StyleValueType.SlashSeparator:
+                        helper.builder.AddSlashSeparator();
                         break;
                     case StyleValueType.Enum:
                     case StyleValueType.Variable:

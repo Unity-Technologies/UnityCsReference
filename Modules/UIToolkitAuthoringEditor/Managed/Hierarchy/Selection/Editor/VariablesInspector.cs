@@ -203,7 +203,7 @@ namespace Unity.UIToolkit.Editor
             item.showOverrideBar = true;
 
             item.itemValueField.enabledSelf = true;
-            item.itemValueField.textEdition.AcceptCharacter = (c) => c != '"';
+            item.itemValueField.rejectedCharacter = '"';
 
             item.userData = m_VariablesItemsSource[i];
             item.Q<TextField>(VariablesListItem.k_NameFieldName)

@@ -148,7 +148,7 @@ namespace UnityEditorInternal.Profiling
             {
                 // Legacy modules can define ProfilerArea-based stats instead of counters. In that case, convert the area to a category name.
                 var legacyStats = ProfilerDriver.GetGraphStatisticsPropertiesForArea(area);
-                var categoryName = LegacyProfilerAreaUtility.ProfilerAreaToCategoryName(area);
+                var categoryName = LegacyProfilerAreaUtility.CounterCategoryNameForLegacyProfilerArea(area);
                 foreach (var legacyStatName in legacyStats)
                 {
                     var counter = new ProfilerCounterData()
@@ -277,6 +277,13 @@ namespace UnityEditorInternal.Profiling
             {
                 var categoryName = detailCounter.m_Category;
                 categories.Add(categoryName);
+            }
+
+            // Legacy area stats depend on every category of the area, not only the category of their counters.
+            if (!usesCounters)
+            {
+                foreach (var categoryName in LegacyProfilerAreaUtility.CategoryNamesForLegacyProfilerArea(area))
+                    categories.Add(categoryName);
             }
 
             var autoEnabledCategoryNames = new string[categories.Count];

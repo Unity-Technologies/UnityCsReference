@@ -48,7 +48,7 @@ namespace UnityEditor.Search
                     new SearchAction(type, "exec", null, "Compute") {
                         handler = (item) =>
                         {
-                            if (Evaluate(item.context.searchQuery, out var result))
+                            if (item.context != null && Evaluate(item.context.searchQuery, out var result))
                             {
                                 UnityEngine.Debug.Log(result);
                                 EditorGUIUtility.systemCopyBuffer = result.ToString(CultureInfo.InvariantCulture);

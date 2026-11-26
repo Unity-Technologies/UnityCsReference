@@ -1478,6 +1478,11 @@ namespace Unity.Hierarchy
             UnbindViewItem?.Invoke(this, item);
         }
 
+        internal void ClearRenameCandidate()
+        {
+            m_RenameCandidateIndex = -1;
+        }
+
         void CancelScheduledRename()
         {
             if (m_ScheduledItem?.isActive == true)

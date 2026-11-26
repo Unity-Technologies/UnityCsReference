@@ -6,45 +6,44 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using Unity.Scripting.LifecycleManagement;
+using UnityEditor;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     class SessionStateJsonRepository<TKey, TState> where TState : class, new()
     {
-        readonly StateRepositoryDelegates m_StateRepository;
         readonly string m_Key;
         Dictionary<TKey, TState> m_States;
 
         // Because this class serializes, it can destroy object references. So extra care must be done when using
         // this class with serializable object references
-        SessionStateJsonRepository(StateRepositoryDelegates stateRepository, string key)
+        SessionStateJsonRepository(string key)
         {
-            m_StateRepository = stateRepository;
             m_Key = key;
         }
 
         bool CanDeserialize()
         {
-            var serializedData = m_StateRepository.GetStringOrDefaultFunc(m_Key);
+            var serializedData = SessionState.GetString(m_Key, string.Empty);
             if (!TryDeserialize(serializedData, out m_States))
             {
-                m_StateRepository.ClearFunc(m_Key);
+                SessionState.EraseString(m_Key);
                 return false;
             }
 
             return true;
         }
 
-        public static SessionStateJsonRepository<TKey, TState> GetMain(StateRepositoryDelegates stateRepository, string key, out bool hasClearedState)
+        public static SessionStateJsonRepository<TKey, TState> GetMain(string key, out bool hasClearedState)
         {
             DuplicateKeyChecker.CheckDuplicateKey(key);
-            var r = new SessionStateJsonRepository<TKey, TState>(stateRepository, key);
+            var r = new SessionStateJsonRepository<TKey, TState>(key);
             hasClearedState = !r.CanDeserialize();  // Not really an error but we want to test for this situation
             return r;
         }
-        public static SessionStateJsonRepository<TKey, TState> GetTest(StateRepositoryDelegates stateRepository, string key)
+        public static SessionStateJsonRepository<TKey, TState> GetTest(string key)
         {
-            var r = new SessionStateJsonRepository<TKey, TState>(stateRepository, key);
+            var r = new SessionStateJsonRepository<TKey, TState>(key);
             r.CanDeserialize();
             return r;
         }
@@ -67,7 +66,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return false;
             }
             m_States[identifier] = state;
-            m_StateRepository.SaveFunc(m_Key, Serialize(m_States));
+            SessionState.SetString(m_Key, Serialize(m_States));
             return true;
         }
 
@@ -76,7 +75,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (m_States.TryGetValue(identifier, out state))
             {
                 update.Invoke(state);
-                m_StateRepository.SaveFunc(m_Key, Serialize(m_States));
+                SessionState.SetString(m_Key, Serialize(m_States));
                 return true;
             }
 
@@ -89,7 +88,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 if (m_States.Remove(identifier))
                 {
-                    m_StateRepository.SaveFunc(m_Key, Serialize(m_States));
+                    SessionState.SetString(m_Key, Serialize(m_States));
                     return true;
                 }
                 return false;
@@ -140,7 +139,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public static void DeleteAll(SessionStateJsonRepository<TKey, TState> sessionStateJsonRepository)
         {
             sessionStateJsonRepository.m_States = new Dictionary<TKey, TState>();
-            sessionStateJsonRepository.m_StateRepository.ClearFunc(sessionStateJsonRepository.m_Key);
+            SessionState.EraseString(sessionStateJsonRepository.m_Key);
         }
     }
 

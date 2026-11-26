@@ -14,7 +14,10 @@ namespace UnityEngine.Bindings
         public static void ThrowArgumentNullException(object obj, string parameterName)
         {
             if (obj is UnityEngine.Object unityObj)
+            {
+                UnityEngine.Object.MarshalledUnityObject.ThrowIfDataComponent(unityObj, parameterName);
                 UnityEngine.Object.MarshalledUnityObject.TryThrowEditorNullExceptionObject(unityObj, parameterName);
+            }
             throw new ArgumentNullException(parameterName);
         }
 
@@ -22,7 +25,10 @@ namespace UnityEngine.Bindings
         public static void ThrowNullReferenceException(object obj)
         {
             if (obj is UnityEngine.Object unityObj)
+            {
+                UnityEngine.Object.MarshalledUnityObject.ThrowIfDataComponent(unityObj);
                 UnityEngine.Object.MarshalledUnityObject.TryThrowEditorNullExceptionObject(unityObj, null);
+            }
             throw new NullReferenceException();
         }
     }

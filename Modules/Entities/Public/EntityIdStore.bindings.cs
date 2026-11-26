@@ -441,6 +441,39 @@ namespace UnityEngine
 
                 return (void*)ptr;
             }
+
+            // A data component id shares its owner's slot, so GetRawNativeObject would return the owner.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void* GetRawNativeObjectExcludingDataComponents(EntityId entity)
+            {
+                uint index = entity.Index;
+                void* store = s_NativeStore;
+                uint* committedIndexBound = s_CommittedIndexBound;
+                EntitySlot* slots;
+                if (committedIndexBound != null)
+                {
+                    if (index >= Volatile.Read(ref *committedIndexBound))
+                        return null;
+                    slots = (EntitySlot*)store;
+                }
+                else
+                {
+                    slots = (EntitySlot*)Volatile.Read(ref ((IntPtr*)store)[index / k_NativeBlockSlots]);
+                    if (slots == null)
+                        return null;
+                    index %= k_NativeBlockSlots;
+                }
+
+                ref EntitySlot slot = ref slots[index];
+                IntPtr ptr = Volatile.Read(ref slot.nativeObjectPtr);
+                ulong vac = Volatile.Read(ref slot.versionAndChunk);
+
+                // The shifted slot has zero low bits, so an id with non-zero type bits never matches.
+                if (((vac & (k_SlotVersionMask | k_SlotNotAnObjectMask)) << EntityId.k_TypeIdBits) != (EntityId.ToULong(entity) >> EntityId.k_TypeIdShift))
+                    return null;
+
+                return (void*)ptr;
+            }
         }
 
         // Resolves an Object that is published or still loading, never one being destroyed. For lookups by a bare id

@@ -364,7 +364,7 @@ namespace UnityEditor
             ActiveEditorTracker.AssertNoSharedTrackerDisplays();
         }
 
-        void ReleaseTrackerDisplay()
+        protected void ReleaseTrackerDisplay()
         {
             m_TrackerDisplay?.Dispose();
             m_TrackerDisplay = null;
@@ -373,7 +373,7 @@ namespace UnityEditor
         // False for a window that only borrows the tracker of another Inspector, whose own view already counts it.
         protected virtual bool CountsViewOfTracker => true;
 
-        void DisplayTrackerIfRegistered()
+        protected void DisplayTrackerIfRegistered()
         {
             if (m_TrackerDisplay == null && CountsViewOfTracker && m_AllInspectors.Contains(this) && m_Tracker != null)
                 m_TrackerDisplay = new ActiveEditorTracker.DisplayScope(m_Tracker);

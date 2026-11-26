@@ -7,7 +7,9 @@ using UnityEngineInternal;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Unity.Collections.LowLevel.Unsafe;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Entities;
 
 using System;
 using System.Collections.Generic;
@@ -21,22 +23,114 @@ namespace UnityEngine
     {
         public Component() {}
         protected internal Component(global::UnityEngine.EntityId id) : base(id) {}
-        public extern Transform transform
+        public Transform transform
         {
-            [FreeFunction("GetTransform", HasExplicitThis = true, ThrowsException = true)]
-            get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (IsDataComponentWrapper())
+                    return GetDataComponentOwner().transform;
+                return GetTransform();
+            }
         }
 
-        public extern TransformHandle transformHandle
+        [FreeFunction("GetTransform", HasExplicitThis = true, ThrowsException = true)]
+        extern Transform GetTransform();
+
+        public TransformHandle transformHandle
         {
-            [FreeFunction("GetTransformHandle", HasExplicitThis = true, ThrowsException = true)]
-            get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (IsDataComponentWrapper())
+                    return GetDataComponentOwner().transformHandle;
+                return GetTransformHandle();
+            }
         }
 
-        public extern GameObject gameObject
+        [FreeFunction("GetTransformHandle", HasExplicitThis = true, ThrowsException = true)]
+        extern TransformHandle GetTransformHandle();
+
+        public GameObject gameObject
         {
-            [FreeFunction("GetGameObject", HasExplicitThis = true)]
-            get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (IsDataComponentWrapper())
+                    return GetDataComponentOwner();
+                return GetGameObject();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        GameObject GetDataComponentOwner()
+        {
+            ThrowIfDataComponentMissing();
+            return Resources.EntityIdToObject(DataComponentWrapperStore.GetOwnerId(GetEntityId())) as GameObject;
+        }
+
+        [FreeFunction("GetGameObject", HasExplicitThis = true)]
+        extern GameObject GetGameObject();
+
+        /// <summary>
+        /// Whether this Component refers to a data component instead of a native component.
+        /// </summary>
+        /// <remarks>
+        /// Passing a data component to a method that does not support it, such as <c>EditorUtility.SetDirty</c>, throws <see cref="System.NotSupportedException"/>.
+        /// A data component can only be used from the main thread. On other threads it behaves as if it no longer exists.
+        /// </remarks>
+        public bool isDataComponent => IsDataComponentWrapper();
+
+        /// <summary>
+        /// Reads the value of the IComponentData that this Component refers to.
+        /// </summary>
+        /// <typeparam name="T">The type of the data component.</typeparam>
+        /// <returns>A copy of the data component's value, or the default value for a component with no data.</returns>
+        /// <exception cref="System.InvalidOperationException">This Component is not a data component.</exception>
+        /// <exception cref="System.ArgumentException"><typeparamref name="T"/> is not the type of this data component.</exception>
+        /// <exception cref="MissingReferenceException">The data component no longer exists.</exception>
+        public T GetComponentData<T>() where T : unmanaged, IComponentData
+        {
+            Entity owner = GetExistingDataComponentOwner<T>(GetDataComponentIdOfType<T>());
+            if (TypeManager.IsZeroSized(TypeManager.GetTypeIndex<T>()))
+                return default;
+            return GlobalEntityManager.GetComponentData<T>(owner);
+        }
+
+        /// <summary>
+        /// Writes the value of the IComponentData that this Component refers to.
+        /// </summary>
+        /// <typeparam name="T">The type of the data component.</typeparam>
+        /// <param name="value">The value to write. A component with no data ignores it.</param>
+        /// <exception cref="System.InvalidOperationException">This Component is not a data component, or the World of the data component is in an exclusive entity transaction.</exception>
+        /// <exception cref="System.ArgumentException"><typeparamref name="T"/> is not the type of this data component.</exception>
+        /// <exception cref="MissingReferenceException">The data component no longer exists.</exception>
+        public void SetComponentData<T>(T value) where T : unmanaged, IComponentData
+        {
+            var id = GetDataComponentIdOfType<T>();
+            ThrowIfDataComponentWorldIsHeld(id);
+            Entity owner = GetExistingDataComponentOwner<T>(id);
+            if (!TypeManager.IsZeroSized(TypeManager.GetTypeIndex<T>()))
+                GlobalEntityManager.SetComponentData(owner, value);
+        }
+
+        EntityId GetDataComponentIdOfType<T>() where T : unmanaged, IComponentData
+        {
+            var id = GetEntityId();
+            if (!DataComponentWrapperStore.IsDataComponentId(id))
+                throw new InvalidOperationException($"{GetType().FullName} is not a data component.");
+
+            int typeId = TypeManagerV2.GetComponentTypeId(typeof(T).TypeHandle, false);
+            if ((uint)typeId != id.TypeId)
+                throw new ArgumentException($"The data component with EntityId {id} is not of type {typeof(T).FullName}.");
+            return id;
+        }
+
+        static Entity GetExistingDataComponentOwner<T>(EntityId id) where T : unmanaged, IComponentData
+        {
+            if (!DoesDataComponentExist(id))
+                throw new MissingReferenceException($"The data component {typeof(T).FullName} with EntityId {id} does not exist.");
+            return DataComponentWrapperStore.GetOwnerId(id);
         }
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
@@ -51,6 +145,8 @@ namespace UnityEngine
         [System.Security.SecuritySafeCritical]
         public unsafe T GetComponent<T>()
         {
+            if (IsDataComponentWrapper())
+                return gameObject.GetComponent<T>();
             var component = GetComponentFastPath(typeof(T));
             // Because there is no constraint on T, a user could pass a value type that is larger than a reference
             // If so we need to ensure that the ref we pass to UnsafeUtility.As is larger enough so we don't read
@@ -71,8 +167,15 @@ namespace UnityEngine
             return gameObject.TryGetComponent(out component);
         }
 
-        [FreeFunction(HasExplicitThis = true)]
-        public extern Component GetComponent(string type);
+        public Component GetComponent(string type)
+        {
+            if (IsDataComponentWrapper())
+                return gameObject.GetComponent(type);
+            return GetComponentByName(type);
+        }
+
+        [FreeFunction("GetComponent", HasExplicitThis = true)]
+        extern Component GetComponentByName(string type);
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
         public Component GetComponentInChildren(Type t, bool includeInactive)
@@ -188,12 +291,18 @@ namespace UnityEngine
 
         public void GetComponents(Type type, List<Component> results)
         {
-            GetComponentsForListInternal<Component>(type, results);
+            if (IsDataComponentWrapper())
+                gameObject.GetComponents(type, results);
+            else
+                GetComponentsForListInternal<Component>(type, results);
         }
 
         public void GetComponents<T>(List<T> results)
         {
-            GetComponentsForListInternal(typeof(T), results);
+            if (IsDataComponentWrapper())
+                gameObject.GetComponents(results);
+            else
+                GetComponentsForListInternal(typeof(T), results);
         }
 
         public string tag
@@ -225,8 +334,16 @@ namespace UnityEngine
         [FreeFunction(HasExplicitThis = true)]
         internal extern bool IsCoupledComponent();
 
-        [FreeFunction(HasExplicitThis = true)]
-        public extern void SendMessageUpwards(string methodName, [DefaultValue("null")] object value, [DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options);
+        public void SendMessageUpwards(string methodName, [DefaultValue("null")] object value, [DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options)
+        {
+            if (IsDataComponentWrapper())
+                gameObject.SendMessageUpwards(methodName, value, options);
+            else
+                SendMessageUpwardsInternal(methodName, value, options);
+        }
+
+        [FreeFunction("SendMessageUpwards", HasExplicitThis = true)]
+        extern void SendMessageUpwardsInternal(string methodName, object value, SendMessageOptions options);
 
         [ExcludeFromDocs]
         public void SendMessageUpwards(string methodName, object value)
@@ -255,16 +372,32 @@ namespace UnityEngine
             SendMessage(methodName, null, SendMessageOptions.RequireReceiver);
         }
 
+        public void SendMessage(string methodName, object value, SendMessageOptions options)
+        {
+            if (IsDataComponentWrapper())
+                gameObject.SendMessage(methodName, value, options);
+            else
+                SendMessageInternal(methodName, value, options);
+        }
+
         [FreeFunction("SendMessage", HasExplicitThis = true)]
-        public extern void SendMessage(string methodName, object value, SendMessageOptions options);
+        extern void SendMessageInternal(string methodName, object value, SendMessageOptions options);
 
         public void SendMessage(string methodName, SendMessageOptions options)
         {
             SendMessage(methodName, null, options);
         }
 
+        public void BroadcastMessage(string methodName, [DefaultValue("null")] object parameter, [DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options)
+        {
+            if (IsDataComponentWrapper())
+                gameObject.BroadcastMessage(methodName, parameter, options);
+            else
+                BroadcastMessageInternal(methodName, parameter, options);
+        }
+
         [FreeFunction("BroadcastMessage", HasExplicitThis = true)]
-        public extern void BroadcastMessage(string methodName, [DefaultValue("null")] object parameter, [DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options);
+        extern void BroadcastMessageInternal(string methodName, object parameter, SendMessageOptions options);
 
         [ExcludeFromDocs]
         public void BroadcastMessage(string methodName, object parameter)

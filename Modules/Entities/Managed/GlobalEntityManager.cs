@@ -11,6 +11,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 namespace Unity.Entities
 {
@@ -152,6 +153,7 @@ namespace Unity.Entities
         public static WorldUnmanaged GetWorldUnmanaged(Entity entity) => GetCheckedEntityDataAccess(entity)->m_WorldUnmanaged;
 
         // Unchecked on every thread and in every build, so a caller can avoid touching such an entity
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static bool IsInExclusiveEntityTransaction(Entity entity)
         {
             var archetype = EntityComponentStore.GetArchetypeOrNull(entity);
@@ -646,6 +648,7 @@ namespace Unity.Entities
 
         // Gets the Object state of a component of an entity; the defaults until it is set.
         // Throws ArgumentException if the entity doesn't exist or doesn't have the component.
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static ComponentObjectState GetComponentObjectState(Entity entity, ComponentType type) =>
             GetCheckedStore(GetCheckedEntityDataAccess(entity), entity, type.TypeIndex)->GetComponentObjectState(entity, type.TypeIndex);
 
@@ -655,6 +658,7 @@ namespace Unity.Entities
 
         // Sets the whole Object state of a component. To change one field, get the state, change the field and set it.
         // Throws ArgumentException if the entity doesn't exist or doesn't have the component.
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static void SetComponentObjectState(Entity entity, ComponentType type, in ComponentObjectState state) =>
             GetCheckedStore(GetCheckedEntityDataAccess(entity), entity, type.TypeIndex)->SetComponentObjectState(entity, type.TypeIndex, state);
 

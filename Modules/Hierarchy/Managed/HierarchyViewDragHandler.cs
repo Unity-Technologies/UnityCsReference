@@ -217,6 +217,9 @@ sealed class HierarchyViewDragHandler
 
     StartDragArgs SetupDragAndDrop(SetupDragAndDropArgs args)
     {
+        // The pointer release that ends the drag must not count as a click on the drop target.
+        m_HierarchyView.ClearRenameCandidate();
+
         var allEntityIds = new List<EntityId>();
         using var _ = ListPool<string>.Get(out var paths);
         using var _2 = DictionaryPool<string, object>.Get(out var genericData);

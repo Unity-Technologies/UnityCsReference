@@ -12,7 +12,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CORECLR;ENABLE_CORECLR_FIXME;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LOCALIZATION_RUNTIME;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_METALFX;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_MULTI_WINDOWING;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NINTENDO_CORE_SCRIPT_BINDINGS;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_SAFE;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_SMARTSTRINGS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_UTF8_VALIDATION_ON_STRING_DESERIALIZATION;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WINDOW_ABSTRACTION;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_DOTS_DEBUG;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API</DefineConstants>
+    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CORECLR;ENABLE_CORECLR_FIXME;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LOCALIZATION_RUNTIME;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_METALFX;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_MULTI_WINDOWING;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NINTENDO_CORE_SCRIPT_BINDINGS;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_SCRIPTING_GC_SAFE;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_SMARTSTRINGS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_UTF8_VALIDATION_ON_STRING_DESERIALIZATION;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WINDOW_ABSTRACTION;ENABLE_WWW;ENABLE_XESS;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_DOTS_DEBUG;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API</DefineConstants>
     <LangVersion>14.0</LangVersion>
     <NoWarn>1701;169;649;626;UA1002</NoWarn>
     <Nullable>disable</Nullable>
@@ -297,6 +297,39 @@
     </Compile>
     <Compile Include="..\..\Editor\Modules\AssetPackageEditor\Managed\TarballCore.cs">
       <Link>Editor\Modules\AssetPackageEditor\Managed\TarballCore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\Adapters\AssetDatabaseAdapter.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\Adapters\AssetDatabaseAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\Adapters\EditorUtilityAdapter.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\Adapters\EditorUtilityAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\Adapters\EditorWindowAdapter.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\Adapters\EditorWindowAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\Adapters\PackageManagerAdapter.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\Adapters\PackageManagerAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\Adapters\UnityConnectAdapter.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\Adapters\UnityConnectAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\Adapters\UtilityAdapter.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\Adapters\UtilityAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\AssemblyInfo.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\PackageExport.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\PackageExport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\PackageExportTreeView.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\PackageExportTreeView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\PackageImport.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\PackageImport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\AssetPackageUIEditor\Managed\PackageImportTreeView.cs">
+      <Link>Editor\Modules\AssetPackageUIEditor\Managed\PackageImportTreeView.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Modules\AssetPipelineEditor\AssetPostprocessors\FBXMaterialDescriptionPreprocessor.cs">
       <Link>Editor\Modules\AssetPipelineEditor\AssetPostprocessors\FBXMaterialDescriptionPreprocessor.cs</Link>
@@ -730,6 +763,24 @@
     <Compile Include="..\..\Editor\Modules\ClothEditor\ClothInspector.cs">
       <Link>Editor\Modules\ClothEditor\ClothInspector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Modules\CloudServicesSettingsEditor\Managed\Ads\ScriptBindings\AdvertisementSettings.bindings.cs">
+      <Link>Editor\Modules\CloudServicesSettingsEditor\Managed\Ads\ScriptBindings\AdvertisementSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\CloudServicesSettingsEditor\Managed\Analytics\ScriptBindings\AnalyticsSettings.bindings.cs">
+      <Link>Editor\Modules\CloudServicesSettingsEditor\Managed\Analytics\ScriptBindings\AnalyticsSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\CloudServicesSettingsEditor\Managed\CrashReporting\Managed\CrashReporting.cs">
+      <Link>Editor\Modules\CloudServicesSettingsEditor\Managed\CrashReporting\Managed\CrashReporting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\CloudServicesSettingsEditor\Managed\CrashReporting\ScriptBindings\CrashReportingSettings.bindings.cs">
+      <Link>Editor\Modules\CloudServicesSettingsEditor\Managed\CrashReporting\ScriptBindings\CrashReportingSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\CloudServicesSettingsEditor\Managed\PerformanceReporting\ScriptBindings\PerformanceReportingSettings.bindings.cs">
+      <Link>Editor\Modules\CloudServicesSettingsEditor\Managed\PerformanceReporting\ScriptBindings\PerformanceReportingSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\CloudServicesSettingsEditor\Managed\Purchasing\ScriptBindings\PurchasingSettings.bindings.cs">
+      <Link>Editor\Modules\CloudServicesSettingsEditor\Managed\Purchasing\ScriptBindings\PurchasingSettings.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Modules\DiagnosticsEditor\Managed\DiagnosticsConsoleMessage.cs">
       <Link>Editor\Modules\DiagnosticsEditor\Managed\DiagnosticsConsoleMessage.cs</Link>
     </Compile>
@@ -976,6 +1027,60 @@
     <Compile Include="..\..\Editor\Modules\HierarchyEditor\ScriptBindings\TestNativeHierarchyNodeTypeHandler.bindings.cs">
       <Link>Editor\Modules\HierarchyEditor\ScriptBindings\TestNativeHierarchyNodeTypeHandler.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\ActiveBuildProfileChangeNotifier.cs">
+      <Link>Editor\Modules\InsightsEditor\ActiveBuildProfileChangeNotifier.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\AssemblyInfo.cs">
+      <Link>Editor\Modules\InsightsEditor\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\BuildProfileInsightsSettingsContainer.cs">
+      <Link>Editor\Modules\InsightsEditor\BuildProfileInsightsSettingsContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\BuildProfileInsightsSettingsVisualElement.cs">
+      <Link>Editor\Modules\InsightsEditor\BuildProfileInsightsSettingsVisualElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\EditorAnalytics\InsightsEditorAnalytics.cs">
+      <Link>Editor\Modules\InsightsEditor\EditorAnalytics\InsightsEditorAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\EngineDiagnosticsSettings.bindings.cs">
+      <Link>Editor\Modules\InsightsEditor\EngineDiagnosticsSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\InsightsEditorUtils.cs">
+      <Link>Editor\Modules\InsightsEditor\InsightsEditorUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\InsightsModuleStripping.cs">
+      <Link>Editor\Modules\InsightsEditor\InsightsModuleStripping.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\InsightsRequirementsResolver.cs">
+      <Link>Editor\Modules\InsightsEditor\InsightsRequirementsResolver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\ManagedCaptureDefaultConfig.cs">
+      <Link>Editor\Modules\InsightsEditor\ManagedCaptureDefaultConfig.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\ManagedCaptureOtaCipher.cs">
+      <Link>Editor\Modules\InsightsEditor\ManagedCaptureOtaCipher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\ManagedCaptureOtaConfig.cs">
+      <Link>Editor\Modules\InsightsEditor\ManagedCaptureOtaConfig.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\ManagedCaptureStripping.cs">
+      <Link>Editor\Modules\InsightsEditor\ManagedCaptureStripping.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\RemoteBuildDependencies.bindings.cs">
+      <Link>Editor\Modules\InsightsEditor\RemoteBuildDependencies.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\RemoteBuildDependencyProviders.cs">
+      <Link>Editor\Modules\InsightsEditor\RemoteBuildDependencyProviders.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\RequiresInsightsAttribute.cs">
+      <Link>Editor\Modules\InsightsEditor\RequiresInsightsAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\ServicesDiagnosticsSection.cs">
+      <Link>Editor\Modules\InsightsEditor\ServicesDiagnosticsSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\InsightsEditor\TrText.cs">
+      <Link>Editor\Modules\InsightsEditor\TrText.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Modules\JSONSerializeEditor\Managed\EditorJsonUtility.bindings.cs">
       <Link>Editor\Modules\JSONSerializeEditor\Managed\EditorJsonUtility.bindings.cs</Link>
     </Compile>
@@ -1212,6 +1317,234 @@
     </Compile>
     <Compile Include="..\..\Editor\Modules\LocalizationEditor\Managed\LocalizedEditorFontManager.cs">
       <Link>Editor\Modules\LocalizationEditor\Managed\LocalizedEditorFontManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\AddressablesReferenceMode.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\AddressablesReferenceMode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\AnchoredPopupWindow.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\AnchoredPopupWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\AssemblyInfo.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditorAttribute.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditorAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditorBase.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditorBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditors.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\AssetProviderDrawer.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\AssetProviderDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditorAttribute.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditorAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditors.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\EntryDrawers.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\EntryDrawers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ExtensionUI.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ExtensionUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\FileTableProviderDrawer.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\FileTableProviderDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableBuildProcessor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableBuildProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableGenerator.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTablePlaymodeGenerator.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTablePlaymodeGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableProviderEditor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableProviderEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\ITableFileWriter.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\ITableFileWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\JsonResourceProviderEditor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\JsonResourceProviderEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\JsonTableWriter.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\JsonTableWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\TableDataBuilder.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\FileTables\TableDataBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\IAssetEntryEditor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\IAssetEntryEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\CharacterSetCollectionFormat.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\CharacterSetCollectionFormat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\CollectionMutation.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\CollectionMutation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\CollectionTableSelector.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\CollectionTableSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\ExportCharacterSetWindow.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\ExportCharacterSetWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\FileCollectionExtensionDrawer.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\FileCollectionExtensionDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\FileCollectionExtensions.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\FileCollectionExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\JsonCollectionFormat.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\JsonCollectionFormat.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\TableImportExport.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\TableImportExport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\TableSelectionWindow.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ImportExport\TableSelectionWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LanguageToolbar.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LanguageToolbar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LoadingSpinner.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LoadingSpinner.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocClasses.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocClasses.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocIcons.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocIcons.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocLabels.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocLabels.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocStyles.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocStyles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocaleGeneratorWindow.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocaleGeneratorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizationBuildPlayer.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizationBuildPlayer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizationEditorSettings.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizationEditorSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizationSettingsProvider.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizationSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizationTableAuthoring.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizationTableAuthoring.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizeComponentMenus.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizeComponentMenus.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizeStringListEventEditor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizeStringListEventEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizedAssetDrawer.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizedAssetDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizedBindingDrawers.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizedBindingDrawers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizedReferenceElement.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizedReferenceElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizedReferencePopups.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizedReferencePopups.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizedStringDrawer.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\LocalizedStringDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\MetadataEditor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\MetadataEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\MetadataPopup.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\MetadataPopup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\Platform\AppInfoResolver.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\Platform\AppInfoResolver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\Platform\Apple\AppInfoBuild.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\Platform\Apple\AppInfoBuild.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\Platform\LauncherResourceBuilder.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\Platform\LauncherResourceBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\Platform\LauncherResources.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\Platform\LauncherResources.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ReferencedAssetProviderEditor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ReferencedAssetProviderEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceCollectionExtension.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceCollectionExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceEntryDrawer.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceEntryDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceFolderProviderEditor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceFolderProviderEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollection.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionCreateMenu.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionCreateMenu.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionEditor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionModificationProcessor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionModificationProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionPostprocessor.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionPostprocessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.Authoring.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.Authoring.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.Cells.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.Cells.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\Search\AssetEntryTypeResolver.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\Search\AssetEntryTypeResolver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\Search\LocalizedReferencePicker.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\Search\LocalizedReferencePicker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\Search\LocalizedReferenceSearchProvider.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\Search\LocalizedReferenceSearchProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\StartupLocaleSelectorDrawer.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\StartupLocaleSelectorDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\StartupSelectorList.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\StartupSelectorList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\StartupSelectorsDrawer.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\StartupSelectorsDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\TableAssetEditors.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\TableAssetEditors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\TableReferenceConverters.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\TableReferenceConverters.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\LocalizationRuntimeEditor\Managed\TableSearch.cs">
+      <Link>Editor\Modules\LocalizationRuntimeEditor\Managed\TableSearch.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Modules\MathematicsEditor\Managed\Unity.Mathematics.Editor\MatrixDrawer.cs">
       <Link>Editor\Modules\MathematicsEditor\Managed\Unity.Mathematics.Editor\MatrixDrawer.cs</Link>
@@ -3886,6 +4219,27 @@
     <Compile Include="..\..\Editor\Modules\SketchUpEditor\Mono\SketchUpImporterModelEditor.cs">
       <Link>Editor\Modules\SketchUpEditor\Mono\SketchUpImporterModelEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Modules\SmartStringsEditor\Managed\AssemblyInfo.cs">
+      <Link>Editor\Modules\SmartStringsEditor\Managed\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\SmartStringsEditor\Managed\ManagedReferenceUI.cs">
+      <Link>Editor\Modules\SmartStringsEditor\Managed\ManagedReferenceUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\SmartStringsEditor\Managed\SmartFormatterPropertyDrawer.cs">
+      <Link>Editor\Modules\SmartStringsEditor\Managed\SmartFormatterPropertyDrawer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\SmartStringsEditor\Managed\SmartStringsBuildPlayer.cs">
+      <Link>Editor\Modules\SmartStringsEditor\Managed\SmartStringsBuildPlayer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\SmartStringsEditor\Managed\SmartStringsEditorSettings.cs">
+      <Link>Editor\Modules\SmartStringsEditor\Managed\SmartStringsEditorSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\SmartStringsEditor\Managed\SmartStringsSettingsProvider.cs">
+      <Link>Editor\Modules\SmartStringsEditor\Managed\SmartStringsSettingsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\SmartStringsEditor\Managed\VariablesGroupAssetEditor.cs">
+      <Link>Editor\Modules\SmartStringsEditor\Managed\VariablesGroupAssetEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Modules\SpriteShapeEditor\Managed\SpriteShapeRendererEditor.cs">
       <Link>Editor\Modules\SpriteShapeEditor\Managed\SpriteShapeRendererEditor.cs</Link>
     </Compile>
@@ -3927,6 +4281,105 @@
     </Compile>
     <Compile Include="..\..\Editor\Modules\StyleSheetsEditor\Managed\StylePainter.cs">
       <Link>Editor\Modules\StyleSheetsEditor\Managed\StylePainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\AssemblyInfo.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Brush\Brush.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Brush\Brush.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Brush\BrushEditor.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Brush\BrushEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Brush\BrushList.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Brush\BrushList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\HeightmapFilters.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\HeightmapFilters.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Overlays\BrushAttributes.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Overlays\BrushAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Overlays\BrushesOverlay.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Overlays\BrushesOverlay.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Overlays\CondensedSlider.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Overlays\CondensedSlider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Overlays\TerrainTransientToolbarOverlay.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Overlays\TerrainTransientToolbarOverlay.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Overlays\ToolEditors.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Overlays\ToolEditors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\CreateTerrainTool.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\CreateTerrainTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\PaintDetailsTool.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\PaintDetailsTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\PaintDetailsToolUtility.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\PaintDetailsToolUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\PaintHeightTool.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\PaintHeightTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\PaintHolesTool.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\PaintHolesTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\PaintTextureTool.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\PaintTextureTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\PaintTreesTool.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\PaintTreesTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\SetHeightTool.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\SetHeightTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\SmoothHeightTool.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\SmoothHeightTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\StampTool.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\StampTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\TerrainPaintTool.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\TerrainPaintTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\PaintTools\TerrainPaintToolUtility.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\PaintTools\TerrainPaintToolUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\TerrainInspector.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\TerrainInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\TerrainWizards.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\TerrainWizards.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\TreeAOImporter.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\TreeAOImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Utilities\TerrainEditTypes.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Utilities\TerrainEditTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Utilities\TerrainEditUtility.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Utilities\TerrainEditUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Utilities\TerrainEditorUtility.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Utilities\TerrainEditorUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Utilities\TerrainLayerInspector.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Utilities\TerrainLayerInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Utilities\TerrainLayerUtility.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Utilities\TerrainLayerUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Utilities\TerrainMenus.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Utilities\TerrainMenus.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Utilities\TerrainPaintUtilityEditor.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Utilities\TerrainPaintUtilityEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\TerrainEditor\Managed\Utilities\TerrainRegion.cs">
+      <Link>Editor\Modules\TerrainEditor\Managed\Utilities\TerrainRegion.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Modules\TextCoreFontEngineEditor\Managed\AssemblyInfo.cs">
       <Link>Editor\Modules\TextCoreFontEngineEditor\Managed\AssemblyInfo.cs</Link>
@@ -4737,6 +5190,27 @@
     </Compile>
     <Compile Include="..\..\Editor\Modules\VectorGraphicsEditor\Managed\Editor\VectorImageUtils.cs">
       <Link>Editor\Modules\VectorGraphicsEditor\Managed\Editor\VectorImageUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\VideoEditor\AssemblyInfo.cs">
+      <Link>Editor\Modules\VideoEditor\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\VideoEditor\Editor\VideoClipInspector.cs">
+      <Link>Editor\Modules\VideoEditor\Editor\VideoClipInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\VideoEditor\Editor\VideoPlayerEditor.cs">
+      <Link>Editor\Modules\VideoEditor\Editor\VideoPlayerEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\VideoEditor\Editor\VideoTestBuildPostprocessor.cs">
+      <Link>Editor\Modules\VideoEditor\Editor\VideoTestBuildPostprocessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\VideoEditor\Editor\VideoUtil.bindings.cs">
+      <Link>Editor\Modules\VideoEditor\Editor\VideoUtil.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\VideoEditor\VideoClipImporterInspector.cs">
+      <Link>Editor\Modules\VideoEditor\VideoClipImporterInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Modules\VideoEditor\VideoImporter.bindings.cs">
+      <Link>Editor\Modules\VideoEditor\VideoImporter.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Modules\VirtualTexturingEditor\ScriptBindings\VirtualTexturingEditor.bindings.cs">
       <Link>Editor\Modules\VirtualTexturingEditor\ScriptBindings\VirtualTexturingEditor.bindings.cs</Link>
@@ -7342,6 +7816,12 @@
     <Compile Include="..\..\Editor\Mono\Inspector\TransformUtils.cs">
       <Link>Editor\Mono\Inspector\TransformUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\TransformWorldSpaceGUI.cs">
+      <Link>Editor\Mono\Inspector\TransformWorldSpaceGUI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\TransformWorldSpaceGUIData.cs">
+      <Link>Editor\Mono\Inspector\TransformWorldSpaceGUIData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\UNetBehaviourInspector.cs">
       <Link>Editor\Mono\Inspector\UNetBehaviourInspector.cs</Link>
     </Compile>
@@ -8647,6 +9127,9 @@
     <Compile Include="..\..\Editor\Mono\Serialization\EntityComponentReloadBackup.bindings.cs">
       <Link>Editor\Mono\Serialization\EntityComponentReloadBackup.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Serialization\YAMLReadABHarness.bindings.cs">
+      <Link>Editor\Mono\Serialization\YAMLReadABHarness.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SerializedObject.bindings.cs">
       <Link>Editor\Mono\SerializedObject.bindings.cs</Link>
     </Compile>
@@ -9256,6 +9739,9 @@
     <Compile Include="..\..\Editor\Mono\Utils\ProgressBarUtils.cs">
       <Link>Editor\Mono\Utils\ProgressBarUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Utils\QuaternionDouble.cs">
+      <Link>Editor\Mono\Utils\QuaternionDouble.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Utils\SearchUtils.cs">
       <Link>Editor\Mono\Utils\SearchUtils.cs</Link>
     </Compile>
@@ -9279,6 +9765,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Utils\UnityEventTools.cs">
       <Link>Editor\Mono\Utils\UnityEventTools.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Utils\Vector3Double.cs">
+      <Link>Editor\Mono\Utils\Vector3Double.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Utils\WebURLs.bindings.cs">
       <Link>Editor\Mono\Utils\WebURLs.bindings.cs</Link>
@@ -9604,39 +10093,6 @@
     <Compile Include="..\..\Modules\AssetDatabase\Handlers\ConsoleDiffHyperlinkListener.cs">
       <Link>Modules\AssetDatabase\Handlers\ConsoleDiffHyperlinkListener.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\Adapters\AssetDatabaseAdapter.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\Adapters\AssetDatabaseAdapter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\Adapters\EditorUtilityAdapter.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\Adapters\EditorUtilityAdapter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\Adapters\EditorWindowAdapter.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\Adapters\EditorWindowAdapter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\Adapters\PackageManagerAdapter.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\Adapters\PackageManagerAdapter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\Adapters\UnityConnectAdapter.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\Adapters\UnityConnectAdapter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\Adapters\UtilityAdapter.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\Adapters\UtilityAdapter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\AssemblyInfo.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\PackageExport.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\PackageExport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\PackageExportTreeView.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\PackageExportTreeView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\PackageImport.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\PackageImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AssetPackageUIEditor\Managed\PackageImportTreeView.cs">
-      <Link>Modules\AssetPackageUIEditor\Managed\PackageImportTreeView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Managed\ActiveBuildProfilerListener.cs">
       <Link>Modules\BuildProfileEditor\Managed\ActiveBuildProfilerListener.cs</Link>
     </Compile>
@@ -9951,24 +10407,6 @@
     </Compile>
     <Compile Include="..\..\Modules\BurstEditor\Managed\Runtime\BurstReflection.cs">
       <Link>Modules\BurstEditor\Managed\Runtime\BurstReflection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Managed\Ads\ScriptBindings\AdvertisementSettings.bindings.cs">
-      <Link>Modules\CloudServicesSettingsEditor\Managed\Ads\ScriptBindings\AdvertisementSettings.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Managed\Analytics\ScriptBindings\AnalyticsSettings.bindings.cs">
-      <Link>Modules\CloudServicesSettingsEditor\Managed\Analytics\ScriptBindings\AnalyticsSettings.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Managed\CrashReporting\Managed\CrashReporting.cs">
-      <Link>Modules\CloudServicesSettingsEditor\Managed\CrashReporting\Managed\CrashReporting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Managed\CrashReporting\ScriptBindings\CrashReportingSettings.bindings.cs">
-      <Link>Modules\CloudServicesSettingsEditor\Managed\CrashReporting\ScriptBindings\CrashReportingSettings.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Managed\PerformanceReporting\ScriptBindings\PerformanceReportingSettings.bindings.cs">
-      <Link>Modules\CloudServicesSettingsEditor\Managed\PerformanceReporting\ScriptBindings\PerformanceReportingSettings.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Managed\Purchasing\ScriptBindings\PurchasingSettings.bindings.cs">
-      <Link>Modules\CloudServicesSettingsEditor\Managed\Purchasing\ScriptBindings\PurchasingSettings.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\CommandStateObserverEditor\Managed\AssemblyInfo.cs">
       <Link>Modules\CommandStateObserverEditor\Managed\AssemblyInfo.cs</Link>
@@ -12835,60 +13273,6 @@
     <Compile Include="..\..\Modules\GraphViewEditor\Managed\Windows\TemplateSearchViewModel.cs">
       <Link>Modules\GraphViewEditor\Managed\Windows\TemplateSearchViewModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\ActiveBuildProfileChangeNotifier.cs">
-      <Link>Modules\InsightsEditor\ActiveBuildProfileChangeNotifier.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\AssemblyInfo.cs">
-      <Link>Modules\InsightsEditor\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\BuildProfileInsightsSettingsContainer.cs">
-      <Link>Modules\InsightsEditor\BuildProfileInsightsSettingsContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\BuildProfileInsightsSettingsVisualElement.cs">
-      <Link>Modules\InsightsEditor\BuildProfileInsightsSettingsVisualElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\EditorAnalytics\InsightsEditorAnalytics.cs">
-      <Link>Modules\InsightsEditor\EditorAnalytics\InsightsEditorAnalytics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\EngineDiagnosticsSettings.bindings.cs">
-      <Link>Modules\InsightsEditor\EngineDiagnosticsSettings.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\InsightsEditorUtils.cs">
-      <Link>Modules\InsightsEditor\InsightsEditorUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\InsightsModuleStripping.cs">
-      <Link>Modules\InsightsEditor\InsightsModuleStripping.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\InsightsRequirementsResolver.cs">
-      <Link>Modules\InsightsEditor\InsightsRequirementsResolver.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\ManagedCaptureDefaultConfig.cs">
-      <Link>Modules\InsightsEditor\ManagedCaptureDefaultConfig.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\ManagedCaptureOtaCipher.cs">
-      <Link>Modules\InsightsEditor\ManagedCaptureOtaCipher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\ManagedCaptureOtaConfig.cs">
-      <Link>Modules\InsightsEditor\ManagedCaptureOtaConfig.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\ManagedCaptureStripping.cs">
-      <Link>Modules\InsightsEditor\ManagedCaptureStripping.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\RemoteBuildDependencies.bindings.cs">
-      <Link>Modules\InsightsEditor\RemoteBuildDependencies.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\RemoteBuildDependencyProviders.cs">
-      <Link>Modules\InsightsEditor\RemoteBuildDependencyProviders.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\RequiresInsightsAttribute.cs">
-      <Link>Modules\InsightsEditor\RequiresInsightsAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\ServicesDiagnosticsSection.cs">
-      <Link>Modules\InsightsEditor\ServicesDiagnosticsSection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\InsightsEditor\TrText.cs">
-      <Link>Modules\InsightsEditor\TrText.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Lighting\Managed\AssemblyInfo.cs">
       <Link>Modules\Lighting\Managed\AssemblyInfo.cs</Link>
     </Compile>
@@ -12942,234 +13326,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Lighting\Managed\Utilities\TextureExposure.cs">
       <Link>Modules\Lighting\Managed\Utilities\TextureExposure.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\AddressablesReferenceMode.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\AddressablesReferenceMode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\AnchoredPopupWindow.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\AnchoredPopupWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\AssemblyInfo.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditorAttribute.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditorAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditorBase.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditorBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditors.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\AssetEntryEditors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\AssetProviderDrawer.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\AssetProviderDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditorAttribute.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditorAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditors.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\AssetProviderEditors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\EntryDrawers.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\EntryDrawers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ExtensionUI.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ExtensionUI.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\FileTableProviderDrawer.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\FileTableProviderDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableBuildProcessor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableBuildProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableGenerator.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTablePlaymodeGenerator.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTablePlaymodeGenerator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableProviderEditor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\FileTables\FileTableProviderEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\FileTables\ITableFileWriter.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\FileTables\ITableFileWriter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\FileTables\JsonResourceProviderEditor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\FileTables\JsonResourceProviderEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\FileTables\JsonTableWriter.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\FileTables\JsonTableWriter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\FileTables\TableDataBuilder.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\FileTables\TableDataBuilder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\IAssetEntryEditor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\IAssetEntryEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ImportExport\CharacterSetCollectionFormat.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ImportExport\CharacterSetCollectionFormat.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ImportExport\CollectionMutation.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ImportExport\CollectionMutation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ImportExport\CollectionTableSelector.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ImportExport\CollectionTableSelector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ImportExport\ExportCharacterSetWindow.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ImportExport\ExportCharacterSetWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ImportExport\FileCollectionExtensionDrawer.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ImportExport\FileCollectionExtensionDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ImportExport\FileCollectionExtensions.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ImportExport\FileCollectionExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ImportExport\JsonCollectionFormat.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ImportExport\JsonCollectionFormat.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ImportExport\TableImportExport.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ImportExport\TableImportExport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ImportExport\TableSelectionWindow.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ImportExport\TableSelectionWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LanguageToolbar.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LanguageToolbar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LoadingSpinner.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LoadingSpinner.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocClasses.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocClasses.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocIcons.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocIcons.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocLabels.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocLabels.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocStyles.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocStyles.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocaleGeneratorWindow.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocaleGeneratorWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizationBuildPlayer.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizationBuildPlayer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizationEditorSettings.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizationEditorSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizationSettingsProvider.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizationSettingsProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizationTableAuthoring.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizationTableAuthoring.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizeComponentMenus.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizeComponentMenus.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizeStringListEventEditor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizeStringListEventEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizedAssetDrawer.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizedAssetDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizedBindingDrawers.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizedBindingDrawers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizedReferenceElement.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizedReferenceElement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizedReferencePopups.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizedReferencePopups.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\LocalizedStringDrawer.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\LocalizedStringDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\MetadataEditor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\MetadataEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\MetadataPopup.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\MetadataPopup.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\Platform\AppInfoResolver.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\Platform\AppInfoResolver.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\Platform\Apple\AppInfoBuild.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\Platform\Apple\AppInfoBuild.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\Platform\LauncherResourceBuilder.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\Platform\LauncherResourceBuilder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\Platform\LauncherResources.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\Platform\LauncherResources.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ReferencedAssetProviderEditor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ReferencedAssetProviderEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceCollectionExtension.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceCollectionExtension.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceEntryDrawer.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceEntryDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceFolderProviderEditor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceFolderProviderEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollection.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionCreateMenu.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionCreateMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionEditor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionModificationProcessor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionModificationProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionPostprocessor.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceTableCollectionPostprocessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.Authoring.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.Authoring.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.Cells.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.Cells.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\ResourceTablesWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\Search\AssetEntryTypeResolver.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\Search\AssetEntryTypeResolver.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\Search\LocalizedReferencePicker.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\Search\LocalizedReferencePicker.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\Search\LocalizedReferenceSearchProvider.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\Search\LocalizedReferenceSearchProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\StartupLocaleSelectorDrawer.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\StartupLocaleSelectorDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\StartupSelectorList.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\StartupSelectorList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\StartupSelectorsDrawer.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\StartupSelectorsDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\TableAssetEditors.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\TableAssetEditors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\TableReferenceConverters.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\TableReferenceConverters.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\LocalizationRuntimeEditor\Managed\TableSearch.cs">
-      <Link>Modules\LocalizationRuntimeEditor\Managed\TableSearch.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\AssemblyInfo.cs">
       <Link>Modules\MultiplayerEditor\Managed\AssemblyInfo.cs</Link>
@@ -13377,9 +13533,6 @@
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Infrastructure\SessionStateJsonRepository.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Infrastructure\SessionStateJsonRepository.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Infrastructure\SessionStateRepository.cs">
-      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Infrastructure\SessionStateRepository.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Log\MppmLog.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Log\MppmLog.cs</Link>
@@ -15721,128 +15874,8 @@
     <Compile Include="..\..\Modules\ShaderVariantAnalyserEditor\Managed\VariantsDatabaseWriterScope.cs">
       <Link>Modules\ShaderVariantAnalyserEditor\Managed\VariantsDatabaseWriterScope.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SmartStringsEditor\Managed\AssemblyInfo.cs">
-      <Link>Modules\SmartStringsEditor\Managed\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SmartStringsEditor\Managed\ManagedReferenceUI.cs">
-      <Link>Modules\SmartStringsEditor\Managed\ManagedReferenceUI.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SmartStringsEditor\Managed\SmartFormatterPropertyDrawer.cs">
-      <Link>Modules\SmartStringsEditor\Managed\SmartFormatterPropertyDrawer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SmartStringsEditor\Managed\SmartStringsBuildPlayer.cs">
-      <Link>Modules\SmartStringsEditor\Managed\SmartStringsBuildPlayer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SmartStringsEditor\Managed\SmartStringsEditorSettings.cs">
-      <Link>Modules\SmartStringsEditor\Managed\SmartStringsEditorSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SmartStringsEditor\Managed\SmartStringsSettingsProvider.cs">
-      <Link>Modules\SmartStringsEditor\Managed\SmartStringsSettingsProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\SmartStringsEditor\Managed\VariablesGroupAssetEditor.cs">
-      <Link>Modules\SmartStringsEditor\Managed\VariablesGroupAssetEditor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\SpriteMaskEditor\Managed\Editor\Managed\SpriteMaskEditor.cs">
       <Link>Modules\SpriteMaskEditor\Managed\Editor\Managed\SpriteMaskEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\AssemblyInfo.cs">
-      <Link>Modules\TerrainEditor\Managed\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Brush\Brush.cs">
-      <Link>Modules\TerrainEditor\Managed\Brush\Brush.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Brush\BrushEditor.cs">
-      <Link>Modules\TerrainEditor\Managed\Brush\BrushEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Brush\BrushList.cs">
-      <Link>Modules\TerrainEditor\Managed\Brush\BrushList.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\HeightmapFilters.cs">
-      <Link>Modules\TerrainEditor\Managed\HeightmapFilters.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Overlays\BrushAttributes.cs">
-      <Link>Modules\TerrainEditor\Managed\Overlays\BrushAttributes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Overlays\BrushesOverlay.cs">
-      <Link>Modules\TerrainEditor\Managed\Overlays\BrushesOverlay.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Overlays\CondensedSlider.cs">
-      <Link>Modules\TerrainEditor\Managed\Overlays\CondensedSlider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Overlays\TerrainTransientToolbarOverlay.cs">
-      <Link>Modules\TerrainEditor\Managed\Overlays\TerrainTransientToolbarOverlay.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Overlays\ToolEditors.cs">
-      <Link>Modules\TerrainEditor\Managed\Overlays\ToolEditors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\CreateTerrainTool.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\CreateTerrainTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\PaintDetailsTool.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\PaintDetailsTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\PaintDetailsToolUtility.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\PaintDetailsToolUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\PaintHeightTool.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\PaintHeightTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\PaintHolesTool.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\PaintHolesTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\PaintTextureTool.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\PaintTextureTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\PaintTreesTool.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\PaintTreesTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\SetHeightTool.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\SetHeightTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\SmoothHeightTool.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\SmoothHeightTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\StampTool.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\StampTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\TerrainPaintTool.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\TerrainPaintTool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\PaintTools\TerrainPaintToolUtility.cs">
-      <Link>Modules\TerrainEditor\Managed\PaintTools\TerrainPaintToolUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\TerrainInspector.cs">
-      <Link>Modules\TerrainEditor\Managed\TerrainInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\TerrainWizards.cs">
-      <Link>Modules\TerrainEditor\Managed\TerrainWizards.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\TreeAOImporter.cs">
-      <Link>Modules\TerrainEditor\Managed\TreeAOImporter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Utilities\TerrainEditTypes.cs">
-      <Link>Modules\TerrainEditor\Managed\Utilities\TerrainEditTypes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Utilities\TerrainEditUtility.cs">
-      <Link>Modules\TerrainEditor\Managed\Utilities\TerrainEditUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Utilities\TerrainEditorUtility.cs">
-      <Link>Modules\TerrainEditor\Managed\Utilities\TerrainEditorUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Utilities\TerrainLayerInspector.cs">
-      <Link>Modules\TerrainEditor\Managed\Utilities\TerrainLayerInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Utilities\TerrainLayerUtility.cs">
-      <Link>Modules\TerrainEditor\Managed\Utilities\TerrainLayerUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Utilities\TerrainMenus.cs">
-      <Link>Modules\TerrainEditor\Managed\Utilities\TerrainMenus.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Utilities\TerrainPaintUtilityEditor.cs">
-      <Link>Modules\TerrainEditor\Managed\Utilities\TerrainPaintUtilityEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\TerrainEditor\Managed\Utilities\TerrainRegion.cs">
-      <Link>Modules\TerrainEditor\Managed\Utilities\TerrainRegion.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\U2DEditor\Managed\2DProfiler\2DProfilerMakers.cs">
       <Link>Modules\U2DEditor\Managed\2DProfiler\2DProfilerMakers.cs</Link>
@@ -17908,27 +17941,6 @@
     <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs">
       <Link>Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\VideoEditor\AssemblyInfo.cs">
-      <Link>Modules\VideoEditor\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VideoEditor\Editor\VideoClipInspector.cs">
-      <Link>Modules\VideoEditor\Editor\VideoClipInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VideoEditor\Editor\VideoPlayerEditor.cs">
-      <Link>Modules\VideoEditor\Editor\VideoPlayerEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VideoEditor\Editor\VideoTestBuildPostprocessor.cs">
-      <Link>Modules\VideoEditor\Editor\VideoTestBuildPostprocessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VideoEditor\Editor\VideoUtil.bindings.cs">
-      <Link>Modules\VideoEditor\Editor\VideoUtil.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VideoEditor\VideoClipImporterInspector.cs">
-      <Link>Modules\VideoEditor\VideoClipImporterInspector.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\VideoEditor\VideoImporter.bindings.cs">
-      <Link>Modules\VideoEditor\VideoImporter.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\AssemblyInfo.cs">
       <Link>Runtime\Export\AssemblyInfo.cs</Link>
     </Compile>
@@ -17974,7 +17986,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen__cke1_rb/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_j3rq5tp2/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

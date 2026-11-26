@@ -17,6 +17,7 @@ namespace UnityEngine
     /// </summary>
     [NativeHeader("Modules/Animation/BlobObject/BlobObject.h")]
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
     internal unsafe struct BlobObjectReference : IDisposable
     {
         ulong sharedBlobData;
@@ -57,6 +58,11 @@ namespace UnityEngine
 
         [NativeMethod(IsThreadSafe = true)]
         internal extern void Release();
+
+        // Copies the blob whose root is at ptr into new data that no object owns
+        [FreeFunction("BlobObjectReference::CreateOrphan", IsThreadSafe = true)]
+        [VisibleToOtherModules("UnityEngine.AnimationCoreModule")]
+        internal static extern BlobObjectReference CreateOrphan(ulong typeHash, void* ptr, uint size, int version);
     }
 
     /// <summary>
@@ -73,8 +79,8 @@ namespace UnityEngine
     ///
     /// To store data, call <see cref="SetBlobAsset{T}(BlobAssetReference{T}, int)"/> with a
     /// <see cref="BlobAssetReference{T}"/>. To read the data, call <see cref="AcquireReference{T}"/> to get a
-    /// reference, and dispose the reference when you finish with it. To read the data as a `BlobAssetReference`, call
-    /// <see cref="BlobObjectReference{T}.AsBlobAssetReference"/> on the reference.
+    /// reference, read the data through <see cref="BlobObjectReference{T}.Value"/>, and dispose the reference when you
+    /// finish with it.
     ///
     /// The following example uses the `Unity.Animations`, `Unity.Collections`, `Unity.Entities`, and `UnityEngine`
     /// namespaces. It stores a custom blob in a `BlobObject`, reads the data back through a `BlobObjectReference`, and
@@ -174,8 +180,8 @@ namespace UnityEngine
         /// </summary>
         /// <remarks>
         /// Use the reference to read the blob from jobs and from code that the Burst compiler compiles. This code can't
-        /// access this object. Convert it with <see cref="BlobObjectReference{T}.AsBlobAssetReference"/> to read the
-        /// data. The data stays valid until you dispose the reference.
+        /// access this object. Read the data through <see cref="BlobObjectReference{T}.Value"/>. The data stays valid
+        /// until you dispose the reference.
         ///
         /// Call this method from the main thread. The method doesn't throw when the object is empty or stores another
         /// version of the blob. Check <see cref="BlobObjectReference{T}.IsValid"/> before you use the reference.

@@ -17,7 +17,7 @@ class BuildProfileField : VisualElement
     const string k_ProfileLabel = "Build Profile";
     const string k_RoleTooltip = "The multiplayer role can be modified in the build profile window or from the build profile asset.";
     const string k_MultipleServersErrorTooltip = "The scenario can only contain one server instance.";
-    const string k_OpenBuildProfilesButtonText = "Open Build Profiles";
+    static readonly string k_OpenBuildProfilesButtonText = L10n.Tr("Open Build Profiles", null);
     const string k_RoleWarningIconClass = "unity-instance-role-icon__warning";
     const string k_ProfileWarningIconClass = "unity-instance-profile-icon__warning";
 

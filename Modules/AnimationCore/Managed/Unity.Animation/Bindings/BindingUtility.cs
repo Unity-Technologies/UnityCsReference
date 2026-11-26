@@ -54,7 +54,7 @@ namespace Unity.Animations
         /// <remarks>
         /// This method does a linear search in a BlobArray of <see cref="SocketNode"/> values.
         ///
-        /// The following example uses the `Unity.Animation`, `Unity.Collections`, `Unity.Entities`, and
+        /// The following example uses the `Unity.Animations`, `Unity.Collections`, `Unity.Entities`, and
         /// `Unity.Mathematics` namespaces. It adds a socket to a rig, then finds the socket by its identifier to read
         /// its transform in character space.
         /// </remarks>

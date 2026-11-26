@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
     /// Abstract base class used for all text-based fields.
     /// </summary>
     [UxmlElement]
-    public abstract partial class TextInputBaseField<TValueType> : BaseField<TValueType>, IDelayedField
+    public abstract partial class TextInputBaseField<TValueType> : BaseField<TValueType>, IDelayedField, ITextInputField
     {
         internal static readonly BindingId autoCorrectionProperty = nameof(autoCorrection);
         internal static readonly BindingId hideMobileInputProperty = nameof(hideMobileInput);
@@ -419,11 +419,11 @@ namespace UnityEngine.UIElements
             visualInput.AddToClassList(singleLineInputUssClassNameUnique);
 
             m_TextInputBase = textInputBase;
+            m_TextInputBase.textEdition.textInputField = this;
             m_TextInputBase.textEdition.maxLength = maxLength;
             m_TextInputBase.textEdition.maskChar = maskChar;
 
             Callbacks.OnFieldCustomStyleResolved.Register(this);
-            textInputBase.textElement.OnPlaceholderChanged += OnPlaceholderChanged;
 
             m_UpdateTextFromValue = true;
         }
@@ -457,11 +457,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Calls the methods in its invocation list when <see cref="isReadOnly"/> changes.
         /// </summary>
-        protected Action<bool> onIsReadOnlyChanged
-        {
-            get => m_TextInputBase.textElement.onIsReadOnlyChanged;
-            set => m_TextInputBase.textElement.onIsReadOnlyChanged = value;
-        }
+        protected Action<bool> onIsReadOnlyChanged { get; set; }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal char rejectedCharacter { get; set; }
 
         /// <summary>
         /// The active touch keyboard being displayed.
@@ -690,6 +689,8 @@ namespace UnityEngine.UIElements
             UpdatePlaceholderClassList();
         }
 
+        internal virtual void OnIsReadOnlyChanged(bool isReadOnly) {}
+
         internal void UpdatePlaceholderClassList(ChangeEvent<TValueType> evt = null)
         {
             if (textInputBase.textElement.showPlaceholderText)
@@ -709,6 +710,34 @@ namespace UnityEngine.UIElements
         internal virtual void UpdateTextFromValue()
         {
             // Do nothing. Value-based fields will override this if appropriate.
+        }
+
+        bool ITextInputField.AcceptCharacter(char c)
+        {
+            return (rejectedCharacter == 0 || c != rejectedCharacter) && m_TextInputBase.AcceptCharacter(c);
+        }
+
+        void ITextInputField.UpdateScrollOffset(bool isBackspace) => m_TextInputBase.UpdateScrollOffset(isBackspace);
+        void ITextInputField.UpdateValueFromText() => UpdateValueFromText();
+        void ITextInputField.UpdateTextFromValue() => UpdateTextFromValue();
+        void ITextInputField.OnPlaceholderChanged() => OnPlaceholderChanged();
+
+        void ITextInputField.OnIsReadOnlyChanged(bool isReadOnly)
+        {
+            OnIsReadOnlyChanged(isReadOnly);
+            onIsReadOnlyChanged?.Invoke(isReadOnly);
+        }
+
+        void ITextInputField.MoveFocusToCompositeRoot()
+        {
+            focusController.SwitchFocus(this);
+            textEdition.keyboardType = TouchScreenKeyboardType.Default;
+            textEdition.autoCorrection = false;
+        }
+
+        string ITextInputField.GetDefaultValueType()
+        {
+            return default(TValueType) == null ? "" : default(TValueType).ToString();
         }
 
         void OnFieldCustomStyleResolved(CustomStyleResolvedEvent e)
@@ -806,7 +835,6 @@ namespace UnityEngine.UIElements
                 delegatesFocus = true;
 
                 textElement = new TextElement();
-                textElement.isInputField = true;
                 textElement.selection.isSelectable = true;
                 textEdition.isReadOnly = false;
                 textSelection.isSelectable = true;
@@ -814,13 +842,6 @@ namespace UnityEngine.UIElements
                 textSelection.selectAllOnMouseUp = true;
                 textElement.enableRichText = false;
                 textElement.tabIndex = 0;
-
-                textEdition.AcceptCharacter += AcceptCharacter;
-                textEdition.UpdateScrollOffset += UpdateScrollOffset;
-                textEdition.UpdateValueFromText += UpdateValueFromText;
-                textEdition.UpdateTextFromValue += UpdateTextFromValue;
-                textEdition.MoveFocusToCompositeRoot += MoveFocusToCompositeRoot;
-                textEdition.GetDefaultValueType = GetDefaultValueType;
 
                 AddToClassList(inputUssClassNameUnique);
                 SetName(TextField.k_TextInputUssName);
@@ -884,14 +905,6 @@ namespace UnityEngine.UIElements
             {
                 TextInputBaseField<TValueType> parentTextField = (TextInputBaseField<TValueType>)parent;
                 parentTextField.UpdateTextFromValue();
-            }
-
-            internal void MoveFocusToCompositeRoot()
-            {
-                TextInputBaseField<TValueType> parentTextField = (TextInputBaseField<TValueType>)parent;
-                focusController.SwitchFocus(parentTextField);
-                textEdition.keyboardType = TouchScreenKeyboardType.Default;
-                textEdition.autoCorrection = false;
             }
 
             void MakeSureScrollViewDoesNotLeakEvents(ChangeEvent<float> evt)
@@ -1006,11 +1019,6 @@ namespace UnityEngine.UIElements
 
                 SetScrollViewMode();
                 SetMultilineContainerStyle();
-            }
-
-            private string GetDefaultValueType()
-            {
-                return default(TValueType) == null ? "" : default(TValueType).ToString();
             }
 
             internal virtual bool AcceptCharacter(char c)

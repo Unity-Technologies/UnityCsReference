@@ -444,6 +444,7 @@ namespace UnityEditor.Search
         /// <param name="thumbnail">The search item thumbnail is displayed left to the item label and description as a preview.</param>
         /// <param name="data">User data used to recover more information about a search item. Generally used in fetchLabel, fetchDescription, etc.</param>
         /// <returns>The newly created search item attached to the current search provider.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="id"/> is null.</exception>
         public SearchItem CreateItem(SearchContext context, string id, int score, string label, string description, Texture2D thumbnail, object data)
         {
             if (context?.options.HasAny(SearchFlags.Debug) ?? false)

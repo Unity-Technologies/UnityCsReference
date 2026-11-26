@@ -14,21 +14,13 @@ namespace UnityEngine.UIElements
         TextElement m_TextElement;
         Vector2 m_ClickStartPosition;
         bool m_Dragged;
-        bool m_IsClicking;
+        int m_ClickingPointerId = PointerId.invalidPointerId;
 
         const int k_DragThresholdSqr = 16;
 
         private int m_ConsecutiveMouseDownCount;
         private long m_LastMouseDownTimeStamp = 0;
-        internal bool isClicking
-        {
-            get => m_IsClicking;
-            private set
-            {
-                if (m_IsClicking == value) return;
-                m_IsClicking = value;
-            }
-        }
+        internal bool isClicking => m_ClickingPointerId != PointerId.invalidPointerId && m_TextElement.HasPointerCapture(m_ClickingPointerId);
 
         public TextSelectingManipulator(TextElement textElement)
         {
@@ -65,7 +57,7 @@ namespace UnityEngine.UIElements
                 m_TextElement.focusController.selectedTextElement = m_TextElement;
 
             if(m_SelectingUtilities.revealCursor)
-                m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
+                m_TextElement.edition.UpdateScrollOffset(false);
         }
 
         void OnCursorIndexChange()
@@ -76,7 +68,7 @@ namespace UnityEngine.UIElements
                 m_TextElement.focusController.selectedTextElement = m_TextElement;
 
             if(m_SelectingUtilities.revealCursor)
-                m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
+                m_TextElement.edition.UpdateScrollOffset(false);
         }
 
         internal bool RevealCursor()
@@ -137,6 +129,9 @@ namespace UnityEngine.UIElements
                 case PointerCancelEvent pce:
                     OnPointerCancelEvent(pce);
                     break;
+                case PointerCaptureOutEvent pcoe:
+                    OnPointerCaptureOutEvent(pcoe);
+                    break;
             }
         }
 
@@ -172,6 +167,12 @@ namespace UnityEngine.UIElements
             var pointerPosition = evt.localPosition - (Vector3)m_TextElement.contentRect.min;
             if (evt.button == (int)MouseButton.LeftMouse)
             {
+                if (isClicking && evt.pointerId != m_ClickingPointerId)
+                {
+                    evt.StopPropagation();
+                    return;
+                }
+
                 //only move cursor to position if it wasn't a double or triple click.
                 if (evt.timestamp - m_LastMouseDownTimeStamp < Event.GetDoubleClickTime())
                     m_ConsecutiveMouseDownCount = ( m_ConsecutiveMouseDownCount  % 3) +1 ; // goest to 3 then come back to 1
@@ -199,13 +200,13 @@ namespace UnityEngine.UIElements
                 else
                 {
                     m_SelectingUtilities.MoveCursorToPosition_Internal(pointerPosition, evt.shiftKey);
-                    m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
+                    m_TextElement.edition.UpdateScrollOffset(false);
                     m_SelectingUtilities.MouseDragSelectsWholeWords(false);
                     m_SelectingUtilities.DblClickSnap(TextSelectingUtilities.DblClickSnapping.WORDS);
                 }
 
                 m_LastMouseDownTimeStamp = evt.timestamp;
-                isClicking = true;
+                m_ClickingPointerId = evt.pointerId;
                 m_TextElement.CapturePointer(evt.pointerId);
                 m_ClickStartPosition = pointerPosition;
                 evt.StopPropagation();
@@ -220,7 +221,7 @@ namespace UnityEngine.UIElements
 
         void OnPointerMoveEvent(PointerMoveEvent evt)
         {
-            if (!isClicking)
+            if (!IsClickingPointer(evt.pointerId))
                 return;
 
             var pointerPosition = evt.localPosition - (Vector3)m_TextElement.contentRect.min;
@@ -228,7 +229,7 @@ namespace UnityEngine.UIElements
             if (m_Dragged)
             {
                 m_SelectingUtilities.SelectToPosition(pointerPosition);
-                m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
+                m_TextElement.edition.UpdateScrollOffset(false);
 
                 selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp && !m_SelectingUtilities.hasSelection;
             }
@@ -238,7 +239,7 @@ namespace UnityEngine.UIElements
 
         void OnPointerUpEvent(PointerUpEvent evt)
         {
-            if (evt.button != (int)MouseButton.LeftMouse || !isClicking)
+            if (evt.button != (int)MouseButton.LeftMouse || !IsClickingPointer(evt.pointerId))
                 return;
 
             if (selectAllOnMouseUp)
@@ -247,23 +248,34 @@ namespace UnityEngine.UIElements
                 ResetClickCount();
             }
 
-            selectAllOnMouseUp = false;
-            m_Dragged = false;
-            isClicking = false;
+            EndClick();
             m_TextElement.ReleasePointer(evt.pointerId);
             evt.StopPropagation();
         }
 
         void OnPointerCancelEvent(PointerCancelEvent evt)
         {
-            if (evt.button != (int)MouseButton.LeftMouse || !isClicking || !m_TextElement.HasPointerCapture(evt.pointerId))
+            if (evt.button != (int)MouseButton.LeftMouse || !IsClickingPointer(evt.pointerId))
                 return;
 
-            selectAllOnMouseUp = false;
-            m_Dragged = false;
-            isClicking = false;
+            EndClick();
             m_TextElement.ReleasePointer(evt.pointerId);
             evt.StopPropagation();
+        }
+
+        void OnPointerCaptureOutEvent(PointerCaptureOutEvent evt)
+        {
+            if (evt.pointerId == m_ClickingPointerId)
+                EndClick();
+        }
+
+        internal bool IsClickingPointer(int pointerId) => pointerId == m_ClickingPointerId && isClicking;
+
+        void EndClick()
+        {
+            selectAllOnMouseUp = false;
+            m_Dragged = false;
+            m_ClickingPointerId = PointerId.invalidPointerId;
         }
 
         void OnValidateCommandEvent(ValidateCommandEvent evt)

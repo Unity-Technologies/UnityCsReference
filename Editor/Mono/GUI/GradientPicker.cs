@@ -289,6 +289,8 @@ namespace UnityEditor
             GUI.changed = true;
         }
 
+        internal GradientEditor gradientEditor => m_GradientEditor;
+
         public static void RefreshGradientData()
         {
             s_GradientPicker?.m_GradientEditor?.RefreshGradientData();

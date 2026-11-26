@@ -219,6 +219,49 @@ namespace Unity.Animations
             GatherAnimationEvents(ref clip, in timer, events);
         }
 
+        /// <summary>
+        /// Appends the animation events that a timer crossed during its last update to a list.
+        /// </summary>
+        /// <remarks>
+        /// This method behaves like
+        /// <see cref="GatherAnimationEvents(ref Clip, in TimerState, NativeList{GatheredAnimationEvent})"/>. Use it
+        /// with the reference that <see cref="AnimationClipExtensions.ToClipReference"/> returns, or with
+        /// <see cref="ClipSampler.Clip"/>, so that you don't convert the reference first.
+        /// </remarks>
+        /// <param name="clip">The reference to the clip that holds the animation events to gather. It must be valid.</param>
+        /// <param name="timer">The clip timer, updated for the frame. Its range must be inside the clip.</param>
+        /// <param name="events">The list to append the gathered events to.</param>
+        /// <exception cref="ArgumentException">Thrown if safety checks are enabled and the range of
+        /// <paramref name="timer"/> isn't inside the clip.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if safety checks are enabled and the clip stores events of
+        /// a version that this method can't read. Reimport the animation clip.</exception>
+        public static void GatherAnimationEvents(BlobObjectReference<Clip> clip, in TimerState timer, NativeList<GatheredAnimationEvent> events)
+        {
+            var clipAsset = clip.AsBlobAssetReference();
+            GatherAnimationEvents(ref clipAsset.Value, in timer, events);
+        }
+
+        /// <summary>
+        /// Appends the animation events that a clip crosses between two playback times to a list.
+        /// </summary>
+        /// <remarks>
+        /// This method behaves like
+        /// <see cref="GatherAnimationEvents(ref Clip, DiscreteTime, DiscreteTime, NativeList{GatheredAnimationEvent})"/>.
+        /// Use it with the reference that <see cref="AnimationClipExtensions.ToClipReference"/> returns, or with
+        /// <see cref="ClipSampler.Clip"/>, so that you don't convert the reference first.
+        /// </remarks>
+        /// <param name="clip">The reference to the clip that holds the animation events to gather. It must be valid.</param>
+        /// <param name="from">The start of the range, in seconds from the start of the clip.</param>
+        /// <param name="to">The end of the range, in seconds from the start of the clip.</param>
+        /// <param name="events">The list to append the gathered events to.</param>
+        /// <exception cref="InvalidOperationException">Thrown if safety checks are enabled and the clip stores events of
+        /// a version that this method can't read. Reimport the animation clip.</exception>
+        public static void GatherAnimationEvents(BlobObjectReference<Clip> clip, DiscreteTime from, DiscreteTime to, NativeList<GatheredAnimationEvent> events)
+        {
+            var clipAsset = clip.AsBlobAssetReference();
+            GatherAnimationEvents(ref clipAsset.Value, from, to, events);
+        }
+
         static void GatherLoop(in EventMarkups markups, in TimerState timer, long start, long end, bool includeStart, bool forward, NativeList<GatheredAnimationEvent> events)
         {
             var previousTime = timer.PreviousTime.Value;

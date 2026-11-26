@@ -882,9 +882,9 @@ namespace UnityEditor.UIElements.StyleSheets
 
                         case TokenType.Delim:
                             // Preserve the '/' separator (grid-column: 1 / 3, aspect-ratio: 16 / 9,
-                            // grid-area, …) as a String value; the property readers consume it.
+                            // grid-area, …); the property readers consume it.
                             if (token.Data == "/")
-                                m_Builder.AddValue("/", StyleValueType.String);
+                                m_Builder.AddSlashSeparator();
                             else
                                 m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedTerm, string.Format(glossary.unsupportedTerm, token.Data, token.Type), token.Position.Line, token.Position.Column);
                             break;

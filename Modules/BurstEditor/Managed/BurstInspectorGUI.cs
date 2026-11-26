@@ -1334,7 +1334,7 @@ namespace Unity.Burst.Editor
                                 var filter = _searchFilterAssembly;
                                 if (_doWholeWordMatch) filter = @"\b" + filter + @"\b";
 
-                                regx = new Regex(filter, opt);
+                                regx = new Regex(filter, opt, RegexSearchTimeout);
                             }
                             catch (Exception)
                             {
@@ -1391,7 +1391,7 @@ namespace Unity.Burst.Editor
 
                     var searchFieldOptions = new[] { GUILayout.ExpandWidth(true), GUILayout.MaxWidth(float.MaxValue) };
                     string newFilterAssembly;
-                    if (wrongRegx)
+                    if (wrongRegx || (doSearch && _textArea.SearchTimedOut))
                     {
                         var colb = GUI.contentColor;
                         GUI.contentColor = Color.red;
@@ -1535,6 +1535,8 @@ namespace Unity.Burst.Editor
         private bool _doIgnoreCase = false;
         private bool _doWholeWordMatch = false;
         private bool _doRegex = false;
+
+        internal static readonly TimeSpan RegexSearchTimeout = TimeSpan.FromMilliseconds(200);
 
         internal static string GetDisassembly(string methodName, string options)
         {

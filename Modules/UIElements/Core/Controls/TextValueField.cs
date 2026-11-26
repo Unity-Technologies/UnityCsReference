@@ -148,7 +148,6 @@ namespace UnityEngine.UIElements
             : base(label, maxLength, Char.MinValue, textValueInput)
         {
             textEdition.UpdateText(ValueToString(rawValue));
-            onIsReadOnlyChanged += OnIsReadOnlyChanged;
         }
 
         /// <summary>
@@ -212,9 +211,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void OnIsReadOnlyChanged(bool newValue)
+        internal override void OnIsReadOnlyChanged(bool isReadOnly)
         {
-            EnableLabelDragger(!newValue);
+            EnableLabelDragger(!isReadOnly);
         }
 
         internal virtual bool CanTryParse(string textString) => false;
@@ -359,11 +358,6 @@ namespace UnityEngine.UIElements
         protected abstract class TextValueInput : TextInputBase
         {
             TextValueField<TValueType> textValueFieldParent => (TextValueField<TValueType>)parent;
-
-            protected TextValueInput()
-            {
-                textEdition.AcceptCharacter = AcceptCharacter;
-            }
 
             internal override bool AcceptCharacter(char c)
             {

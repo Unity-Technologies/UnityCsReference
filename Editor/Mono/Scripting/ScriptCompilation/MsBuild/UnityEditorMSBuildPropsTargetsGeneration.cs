@@ -586,7 +586,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
 
     // Mirrors EditorCompilation.CreateScriptAssemblySettings: assemblies that are not editor-only use the player's level.
     private static ApiCompatibilityLevel GetPlayerApiCompatibility(BuildTarget buildTarget, int subtarget)
-        => PlayerSettings.GetApiCompatibilityLevelWithoutIL2CPPForcing(NamedBuildTarget.FromTargetAndSubtarget(buildTarget, subtarget));
+        => PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromTargetAndSubtarget(buildTarget, subtarget));
 
     // Mirrors EditorBuildRules.GetScriptAssemblies, which appends the C# language-version
     // defines to every assembly. The legacy pipeline adds these per-assembly; MSBU emits them

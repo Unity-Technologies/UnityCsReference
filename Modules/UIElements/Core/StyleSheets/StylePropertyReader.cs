@@ -1431,9 +1431,16 @@ namespace UnityEngine.UIElements.StyleSheets
             do
             {
                 // A finite count is a Float handle; the `infinite` keyword is an Enum handle (see the importer).
-                list.Add(GetValueType(index) == StyleValueType.Float
-                    ? new AnimationIterationCount(ReadFloat(index))
-                    : AnimationIterationCount.Infinite());
+                var type = GetValueType(index);
+                if (type == StyleValueType.Float)
+                    list.Add(new AnimationIterationCount(ReadFloat(index)));
+                else if (type == StyleValueType.Enum && string.Equals(ReadAsString(index), AnimationIterationCount.k_InfiniteKeyword, StringComparison.OrdinalIgnoreCase))
+                    list.Add(AnimationIterationCount.Infinite());
+                else
+                {
+                    result.CopyFrom(InitialStyle.animationIterationCount);
+                    return;
+                }
                 ++index;
 
                 if (index < valueCount)
@@ -1533,15 +1540,8 @@ namespace UnityEngine.UIElements.StyleSheets
             if(valueCount == 1 && GetValueType(0) == StyleValueType.Float )
                 return new StyleRatio(ReadFloat(index));
 
-            if (valueCount == 3)
-            {
-                var val2 = m_Values[m_CurrentValueIndex + index + 1];
-                var str = val2.sheet.ReadAsString(val2.handle);
-
-                if(str == "/" )
-                    return ReadFloat(index) / ReadFloat(index + 2);
-
-            }
+            if (valueCount == 3 && GetValueType(index + 1) == StyleValueType.SlashSeparator)
+                return ReadFloat(index) / ReadFloat(index + 2);
 
             if(!IsKeyword(0, StyleValueKeyword.Auto))
                 Debug.LogError($"Unexpected value {m_Values[0].ToString() } in ratio parsing");

@@ -21,6 +21,7 @@ using Unity.ProjectAuditor.Editor.CodeAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.ScriptCompilation.MsBuild;
 using UnityEngine;
@@ -428,7 +429,8 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var foundIssues = new List<ReportItem>();
             var onIssueFoundInternal = new Action<ReportItem>(foundIssues.Add);
 
-            var assemblyDirectories = new List<string>();
+            // .NET reference assemblies go first so they win over the same-named .NET Framework facades
+            var assemblyDirectories = new List<string>(compilationPipeline.NetReferenceDirectories);
             assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UserAssembly | PrecompiledAssemblyTypes.UnityEngine | PrecompiledAssemblyTypes.SystemAssembly));
             if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0)
                 assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UnityEditor));
@@ -477,6 +479,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             progress?.Clear(assemblyProgressState);
             analysisParams.OnModuleCompleted?.Invoke(Name, analysisSucceeded ? AnalysisResult.Success : AnalysisResult.Failure, threadExecutionTimeMs);
+        }
+
+        // Matches AssemblyCompilation.AddNetReferenceDirectories for the builds the MSBuild pipeline runs
+        static bool UsesNetReferences(AnalysisParams analysisParams)
+        {
+            if ((analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Editor) != 0 &&
+                PlayerSettings.GetEditorAssembliesCompatibilityLevel() == EditorAssembliesCompatibilityLevel.NET)
+                return true;
+
+            return (analysisParams.CodeAnalysisFlags & CodeAnalysisFlags.Player) != 0 &&
+                PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(analysisParams.Platform))) == ApiCompatibilityLevel.NET;
         }
 
         // Runs the analysis compilation(s) through the MSBuild pipeline and reports the resulting diagnostics.
@@ -620,7 +633,11 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 yield break;
             }
 
-            var assemblyDirectories = new List<string>(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UserAssembly | PrecompiledAssemblyTypes.UnityEngine | PrecompiledAssemblyTypes.SystemAssembly | PrecompiledAssemblyTypes.UnityEditor));
+            // .NET reference assemblies go first so they win over the same-named .NET Framework facades
+            var assemblyDirectories = new List<string>();
+            if (UsesNetReferences(analysisParams))
+                assemblyDirectories.AddRange(UnityEditor.Compilation.CompilationPipeline.GetSystemAssemblyDirectories(ApiCompatibilityLevel.NET));
+            assemblyDirectories.AddRange(AssemblyInfoProvider.GetPrecompiledAssemblyDirectories(PrecompiledAssemblyTypes.UserAssembly | PrecompiledAssemblyTypes.UnityEngine | PrecompiledAssemblyTypes.SystemAssembly | PrecompiledAssemblyTypes.UnityEditor));
 
             // An assembly shared by the Editor and Player builds is compiled once per build, with different defines
             var recordedCallsByAssembly = new Dictionary<string, HashSet<string>>();

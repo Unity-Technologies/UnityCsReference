@@ -69,6 +69,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         readonly HashSet<string> m_ResponseFileReferenceDirectories = new HashSet<string>();
         public IReadOnlyCollection<string> ResponseFileReferenceDirectories => m_ResponseFileReferenceDirectories;
 
+        readonly HashSet<string> m_NetReferenceDirectories = new HashSet<string>();
+        public IReadOnlyCollection<string> NetReferenceDirectories => m_NetReferenceDirectories;
+
         public void Dispose()
         {
             if (!string.IsNullOrEmpty(m_OutputFolder) && Directory.Exists(m_OutputFolder))
@@ -115,6 +118,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             // rebuilt through PrepareAssemblyBuilders, so their csc.rsp references need parsing here instead
             foreach (var assembly in editorAssemblies)
                 AddResponseFileReferenceDirectories(ParseResponseFiles(assembly));
+
+            AddNetReferenceDirectories(editorAssemblies);
+            AddNetReferenceDirectories(playerAssemblies);
 
             IEnumerable<string> compiledPlayerPaths = null;
             yield return CompilePlayerAssemblies(playerAssemblies, (paths) => compiledPlayerPaths = paths, progress);
@@ -451,6 +457,22 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         {
             foreach (var reference in responseFileData.FullPathReferences)
                 m_ResponseFileReferenceDirectories.Add(Path.GetDirectoryName(reference));
+        }
+
+        void AddNetReferenceDirectories(IReadOnlyCollection<Assembly> assemblies)
+        {
+            // Editor-only assemblies reference the editor assemblies level, while compilerOptions only holds the player level
+            bool editorAssembliesUseNet = PlayerSettings.GetEditorAssembliesCompatibilityLevel() == EditorAssembliesCompatibilityLevel.NET;
+
+            foreach (Assembly assembly in assemblies)
+            {
+                bool isEditorOnly = (assembly.flags & AssemblyFlags.EditorAssembly) != 0;
+                if (assembly.compilerOptions.ApiCompatibilityLevel == ApiCompatibilityLevel.NET || (isEditorOnly && editorAssembliesUseNet))
+                {
+                    m_NetReferenceDirectories.UnionWith(UnityEditor.Compilation.CompilationPipeline.GetSystemAssemblyDirectories(ApiCompatibilityLevel.NET));
+                    return;
+                }
+            }
         }
 
         IEnumerator UpdateAssemblyBuilders(IProgress progress)

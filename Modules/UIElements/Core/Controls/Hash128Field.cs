@@ -142,11 +142,6 @@ namespace UnityEngine.UIElements
         {
             Hash128Field hash128Field => (Hash128Field)parent;
 
-            internal Hash128Input()
-            {
-                textEdition.AcceptCharacter = AcceptCharacter;
-            }
-
             protected string allowedCharacters => "0123456789abcdefABCDEF";
 
             internal override bool AcceptCharacter(char c)

@@ -213,7 +213,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             using var turn = await AssignTurnAndLockIfNeeded(cancellationToken);
 
             if (m_HasNotBeenInterrupted)
-                throw new InvalidOperationException("Cannot resume a node that has not been interrupted by a domain reload.");
+                throw new InvalidOperationException("Cannot resume a node that has not been interrupted by a code reload.");
 
             if (State != ExecutionState.Running)
                 throw new InvalidOperationException("Cannot resume a node that is not running.");
@@ -270,7 +270,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (domainReloadAllowed)
                 return;
 
-            var exception = new NotSupportedException($"A domain reload was requested while the node '{Name}' was running. This is not supported.\n(node execution {(executionCompleted ? "completed" : "incomplete")})");
+            var exception = new NotSupportedException($"A code reload was requested while the node '{Name}' was running. This is not supported.\n(node execution {(executionCompleted ? "completed" : "incomplete")})");
 
             if (executionCompleted)
                 throw exception;

@@ -640,5 +640,17 @@ namespace Unity.Animations
             float3x3 scaleMat = math.mul(math.float3x3(math.conjugate(r)), rs);
             return math.float3(scaleMat.c0.x, scaleMat.c1.y, scaleMat.c2.z);
         }
+
+        /// <summary>Returns the rotation axis scaled by the rotation angle in radians, using the shortest arc.</summary>
+        /// <remarks>Matches math::quatToAngularDisplacement in Mecanim, except that it always takes the shortest arc.</remarks>
+        internal static float3 toAngularDisplacement(quaternion rotation)
+        {
+            var q = math.normalize(rotation).value;
+            q = math.select(q, -q, q.w < 0f);
+            var length = math.length(q.xyz);
+            if (length == 0f)
+                return float3.zero;
+            return q.xyz * (2f * math.asin(math.min(length, 1f)) / length);
+        }
     }
 }

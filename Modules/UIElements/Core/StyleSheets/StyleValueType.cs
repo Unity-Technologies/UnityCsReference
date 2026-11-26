@@ -23,5 +23,6 @@ namespace UnityEngine.UIElements
         CommaSeparator,
         ScalableImage,
         MissingAssetReference,
+        SlashSeparator,
     }
 }

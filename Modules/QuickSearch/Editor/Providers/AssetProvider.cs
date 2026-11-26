@@ -12,6 +12,7 @@ using Unity.Collections;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnityEngine.Pool;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Search.Providers
@@ -857,20 +858,36 @@ namespace UnityEditor.Search.Providers
                 (ImportAssetOptions)(1 << 7); // AssetDatabase::kMayCancelImport
 
             foreach (var searchItem in items)
-                AssetDatabase.ImportAsset(GetAssetPath(searchItem), reimportAssetOptions);
+            {
+                if (!TryGetExistingAssetPath(searchItem, out var assetPath))
+                    continue;
+                AssetDatabase.ImportAsset(assetPath, reimportAssetOptions);
+            }
         }
 
-        #region DocumentationDeleteAssets
+        // Deletes the assets of the items that can be deleted, and skips the others.
         private static void DeleteAssets(IEnumerable<SearchItem> items)
         {
-            var oldSelection = Selection.objects;
-            SearchUtils.SelectMultipleItems(items, pingSelection: false);
-            // We call ProjectBrowser.DeleteSelectedAssets for the confirmation popup.
-            ProjectBrowser.DeleteSelectedAssets(true);
-            Selection.objects = oldSelection;
-        }
+            using var entityIdsHandle = ListPool<EntityId>.Get(out var entityIds);
+            // Deleting the same asset twice fails the second time and reports an error, even though the asset was deleted.
+            using var addedEntityIdsHandle = HashSetPool<EntityId>.Get(out var addedEntityIds);
+            foreach (var item in items)
+            {
+                if (item == null || !CanDeleteAsset(item))
+                    continue;
+                var obj = item.ToObject();
+                if (!obj)
+                    continue;
+                var entityId = obj.GetEntityId();
+                if (addedEntityIds.Add(entityId))
+                    entityIds.Add(entityId);
+            }
+            if (entityIds.Count == 0)
+                return;
 
-        #endregion
+            // Only main assets are deleted, so items of sub-assets never delete their container.
+            ProjectWindowUtil.DeleteAssets(entityIds, askIfSure: true);
+        }
 
         // We have our own OpenPropertyEditorsOnSelection so we don't have to worry about global selection
         private static void OpenPropertyEditorsOnSelection(IEnumerable<SearchItem> items)
@@ -906,7 +923,7 @@ namespace UnityEditor.Search.Providers
                 new SearchAction(type, "select", null, "Select")
                 {
                     handler = (item) => SelectItem(item),
-                    execute = (items) => SearchUtils.SelectMultipleItems(items, focusProjectBrowser: true)
+                    execute = SelectItems
                 },
                 new SearchAction(type, "open", null, "Open", OpenItem) { enabled = items => items.Count == 1 },
                 new SearchAction(type, "reimport", null, "Reimport", ReimportAssets) { enabled = items => items.Count == 1 },
@@ -914,12 +931,11 @@ namespace UnityEditor.Search.Providers
                 {
                     // Only works in single selection and adds a scene to the current hierarchy.
                     enabled = (items) => CanAddScene(items),
-                    handler = (item) => SceneManagement.EditorSceneManager.OpenScene(GetAssetPath(item), SceneManagement.OpenSceneMode.Additive)
+                    handler = AddScene
                 },
                 new SearchAction(type, "reveal", null, Utils.GetRevealInFinderLabel(), item =>
                 {
-                    var assetPath = GetAssetPath(item);
-                    if (string.IsNullOrEmpty(assetPath))
+                    if (!TryGetExistingAssetPath(item, out var assetPath))
                         return;
 
                     // Reveal opens an explorer/finder window. However, on macOS especially, if KeepOpen is set to false and the SearchWindow
@@ -929,25 +945,24 @@ namespace UnityEditor.Search.Providers
                     // know if it's going to be closed or not, so a delay is the only viable solution for now.
                     Dispatcher.Enqueue(() => EditorUtility.RevealInFinder(assetPath), 0.1);
                 }),
-                new SearchAction(type, "delete", null, "Delete", DeleteAssets),
+                new SearchAction(type, "delete", null, "Delete", DeleteAssets) { enabled = CanDeleteAssets },
                 new SearchAction(type, "copy_path", null, "Copy Path")
                 {
                     enabled = items => items.Count >= 1,
                     execute = items =>
                     {
-                        #pragma warning disable UAC2001 // Avoid Linq
-                        var paths = items.Select(GetAssetPath).Where(path => !string.IsNullOrEmpty(path)).ToArray();
-#pragma warning restore UAC2001
-                        if (paths.Length == 1)
+                        using var _ = ListPool<string>.Get(out var paths);
+                        GetExistingAssetPaths(items, paths, out var firstExistingItem);
+                        if (paths.Count == 1)
                         {
                             EditorGUIUtility.systemCopyBuffer = paths[0];
-                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, items[0].ToObject(), paths[0]);
+                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, firstExistingItem.ToObject(), "{0}", paths[0]);
                         }
-                        else if (paths.Length > 1)
+                        else if (paths.Count > 1)
                         {
                             var pathsStr = string.Join("\n", paths);
                             EditorGUIUtility.systemCopyBuffer = pathsStr;
-                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, pathsStr);
+                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "{0}", pathsStr);
                         }
                     }
                 },
@@ -956,19 +971,20 @@ namespace UnityEditor.Search.Providers
                     enabled = items => items.Count >= 1,
                     execute = items =>
                     {
-                        #pragma warning disable UAC2001 // Avoid Linq
-                        var guids = items.Select(item => AssetDatabase.AssetPathToGUID(GetAssetPath(item))).Where(path => !string.IsNullOrEmpty(path)).ToArray();
-#pragma warning restore UAC2001
-                        if (guids.Length == 1)
+                        using var _ = ListPool<string>.Get(out var guids);
+                        GetExistingAssetPaths(items, guids, out var firstExistingItem);
+                        for (var i = 0; i < guids.Count; ++i)
+                            guids[i] = AssetDatabase.AssetPathToGUID(guids[i]);
+                        if (guids.Count == 1)
                         {
                             EditorGUIUtility.systemCopyBuffer = guids[0];
-                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, items[0].ToObject(), guids[0]);
+                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, firstExistingItem.ToObject(), "{0}", guids[0]);
                         }
-                        else if (guids.Length > 1)
+                        else if (guids.Count > 1)
                         {
                             var guidsStr = string.Join(",", guids);
                             EditorGUIUtility.systemCopyBuffer = guidsStr;
-                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, guidsStr);
+                            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "{0}", guidsStr);
                         }
                     }
                 },
@@ -1003,22 +1019,48 @@ namespace UnityEditor.Search.Providers
             item.preview = null;
         }
 
+        private static void SelectItems(SearchItem[] items)
+        {
+            if (SearchUtils.SelectMultipleItemsNoDefault(items, focusProjectBrowser: true))
+                return;
+
+            // The default fallback opens the item id with the default app, but our ids are GlobalObjectIds.
+            foreach (var item in items)
+            {
+                if (TryGetExistingAssetPath(item, out var assetPath))
+                {
+                    Utils.FrameAssetFromPath(assetPath);
+                    return;
+                }
+            }
+        }
+
         private static void OpenItem(SearchItem item)
         {
             var info = GetInfo(item);
             if (info.gid.identifierType == (int)IdentifierType.kSceneObject)
             {
                 var containerAsset = AssetDatabase.LoadAssetAtPath<Object>(info.source);
-                if (containerAsset != null)
+                if (containerAsset != null && AssetDatabase.OpenAsset(containerAsset))
                 {
-                    AssetDatabase.OpenAsset(containerAsset);
                     EditorApplication.delayCall += () => SelectObjectbyId(info.gid);
+                    return;
                 }
             }
 
             var asset = GetObject(item);
-            if (asset == null || !AssetDatabase.OpenAsset(asset))
-                EditorUtility.OpenWithDefaultApp(GetAssetPath(item));
+            if (asset != null && AssetDatabase.OpenAsset(asset))
+                return;
+
+            if (TryGetExistingAssetPath(item, out var assetPath))
+                EditorUtility.OpenWithDefaultApp(assetPath);
+        }
+
+        private static void AddScene(SearchItem item)
+        {
+            if (!CanAddScene(item))
+                return;
+            SceneManagement.EditorSceneManager.OpenScene(GetAssetPath(item), SceneManagement.OpenSceneMode.Additive);
         }
 
         private static bool SelectObjectbyId(GlobalObjectId gid)
@@ -1039,13 +1081,71 @@ namespace UnityEditor.Search.Providers
             #pragma warning disable UAC2009 // Avoid Linq
             var singleItem = items.Last();
 #pragma warning restore UAC2009
-            var info = GetInfo(singleItem);
+            return CanAddScene(singleItem);
+        }
+
+        private static bool CanAddScene(SearchItem item)
+        {
+            var info = GetInfo(item);
             if (info.gid.identifierType != (int)IdentifierType.kImportedAsset)
                 return false;
             if (!info.path.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
                 return false;
             // Scenes in read-only packages cannot be opened.
-            return !Utils.IsAssetReadOnly(info.path);
+            if (Utils.IsAssetReadOnly(info.path))
+                return false;
+            // The scene was deleted since the item was created.
+            return TryGetExistingAssetPath(item, out _);
+        }
+
+        private static bool TryGetExistingAssetPath(SearchItem item, out string assetPath)
+        {
+            if (item == null)
+            {
+                assetPath = null;
+                return false;
+            }
+
+            // The asset database keeps resolving the GUID of a deleted asset to its last path.
+            assetPath = GetAssetPath(item);
+            return !string.IsNullOrEmpty(assetPath) && AssetDatabase.AssetPathExists(assetPath);
+        }
+
+        private static void GetExistingAssetPaths(IReadOnlyCollection<SearchItem> items, List<string> existingPaths, out SearchItem firstExistingItem)
+        {
+            firstExistingItem = null;
+            foreach (var item in items)
+            {
+                if (!TryGetExistingAssetPath(item, out var assetPath))
+                    continue;
+                firstExistingItem ??= item;
+                existingPaths.Add(assetPath);
+            }
+        }
+
+        private static bool CanDeleteAsset(SearchItem item)
+        {
+            var info = GetInfo(item);
+            if (info.gid.identifierType != (int)IdentifierType.kImportedAsset && info.gid.identifierType != (int)IdentifierType.kSourceAsset)
+                return false;
+            // Only main assets can be deleted, as in the Project window.
+            if (info.flags.HasAll(SearchDocumentFlags.Nested | SearchDocumentFlags.Asset))
+                return false;
+            if (!TryGetExistingAssetPath(item, out var assetPath))
+                return false;
+            return !Utils.IsAssetReadOnly(assetPath);
+        }
+
+        private static bool CanDeleteAssets(IReadOnlyCollection<SearchItem> items)
+        {
+            if (items.Count == 0)
+                return false;
+            foreach (var item in items)
+            {
+                if (!CanDeleteAsset(item))
+                    return false;
+            }
+            return true;
         }
 
         [Shortcut("Help/Search/Assets")]

@@ -6,12 +6,14 @@ using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace Unity.Entities
 {
     // The Object state of a component that the engine shows as a data component: everything an Object holds outside its
     // serialized data. Native mirrors it field for field as GlobalEntityManager::ComponentObjectState, so the fields go
     // largest first and the layout is the same in both languages.
+    [VisibleToOtherModules("UnityEngine.CoreModule")]
     internal struct ComponentObjectState
     {
         public long FileIDHint;

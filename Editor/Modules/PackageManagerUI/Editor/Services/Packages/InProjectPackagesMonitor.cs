@@ -82,6 +82,9 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
     {
         if (m_Application.isBatchMode || !m_Application.isUpmRunning)
             return;
+
+        // A license update forces a resolve, so this is where a gained or lost bypass entitlement becomes visible
+        m_SettingsProxy.CheckBypassPackageTrustEntitlementChanged();
         m_UpmRegistryClient.CheckRegistriesChanged();
         m_PageRefreshHandler.Refresh(RefreshOptions.UpmListOffline);
     }

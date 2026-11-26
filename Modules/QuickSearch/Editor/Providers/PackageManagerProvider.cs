@@ -54,7 +54,7 @@ namespace UnityEditor.Search.Providers
             if (string.IsNullOrEmpty(context.searchQuery))
                 yield break;
 
-            s_ListRequest = s_ListRequest ?? PackageManager.Client.List(true);
+            s_ListRequest = s_ListRequest ?? PackageManager.Client.List(offlineMode: true, includeIndirectDependencies: true);
             s_SearchRequest = s_SearchRequest ?? PackageManager.Client.SearchAll(Utils.runningTests);
 
             if (s_SearchRequest == null || s_ListRequest == null)
@@ -103,21 +103,21 @@ namespace UnityEditor.Search.Providers
             return $"{FormatName(pi)}{status}";
         }
 
-        private static bool IsPackageInstalled(PackageManager.PackageInfo pi, out string version)
+        private static bool TryGetInstalledPackage(PackageManager.PackageInfo pi, out PackageManager.PackageInfo installedPackage)
         {
-            version = null;
-            #pragma warning disable UAC2001 // Avoid Linq
-            var installedPackage = s_ListRequest.Result.FirstOrDefault(l => l.name == pi.name);
-#pragma warning restore UAC2001
-            if (installedPackage == null)
+            installedPackage = null;
+            var installedPackages = s_ListRequest?.Result;
+            if (installedPackages == null)
                 return false;
-            version = installedPackage.version;
-            return true;
-        }
-
-        private static bool IsPackageInstalled(PackageManager.PackageInfo pi)
-        {
-            return IsPackageInstalled(pi, out _);
+            foreach (var p in installedPackages)
+            {
+                if (p.name == pi.name)
+                {
+                    installedPackage = p;
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static string FormatDescription(PackageManager.PackageInfo pi)
@@ -148,7 +148,7 @@ namespace UnityEditor.Search.Providers
         {
             return new[]
             {
-                new SearchAction(type, "open", null, "Open in Package Manager", OpenPackageInPackageManager),
+                new SearchAction(type, "open", null, "Open in Package Manager", OpenPackageInPackageManager, HasPackageInfo),
                 new SearchAction(type, "install", null, "Install", InstallPackage, IsCanBeInstalled),
                 new SearchAction(type, "update", null, "Update", InstallPackage, IsCanBeUpdated),
                 new SearchAction(type, "remove", null, "Remove", RemovePackage, IsRemoveActionEnabled)
@@ -159,8 +159,9 @@ namespace UnityEditor.Search.Providers
         {
             foreach (var item in items)
             {
-                var packageInfo = (PackageManager.PackageInfo)item.data;
-                if (!IsPackageInstalled(packageInfo, out var installedVersion) || installedVersion == packageInfo.version)
+                if (item.data is not PackageManager.PackageInfo packageInfo)
+                    return false;
+                if (!TryGetInstalledPackage(packageInfo, out var installedPackage) || installedPackage.version == packageInfo.version)
                     return false;
             }
 
@@ -169,25 +170,42 @@ namespace UnityEditor.Search.Providers
 
         private static bool IsCanBeInstalled(IReadOnlyCollection<SearchItem> items)
         {
+            // Without the installed package list, we cannot tell if the package is already installed.
+            if (s_ListRequest?.Result == null)
+                return false;
+
             foreach (var item in items)
             {
-                var packageInfo = (PackageManager.PackageInfo)item.data;
-                if (IsPackageInstalled(packageInfo))
+                if (item.data is not PackageManager.PackageInfo packageInfo)
+                    return false;
+                if (TryGetInstalledPackage(packageInfo, out _))
                     return false;
             }
 
             return true;
         }
 
+        private static bool HasPackageInfo(IReadOnlyCollection<SearchItem> items)
+        {
+            foreach (var item in items)
+            {
+                if (item.data is not PackageManager.PackageInfo)
+                    return false;
+            }
+            return items.Count > 0;
+        }
+
         private static void OpenPackageInPackageManager(SearchItem item)
         {
-            var packageInfo = (PackageManager.PackageInfo)item.data;
+            if (item.data is not PackageManager.PackageInfo packageInfo)
+                return;
             PackageManager.UI.Window.Open(packageInfo.name);
         }
 
         private static void InstallPackage(SearchItem item)
         {
-            var packageInfo = (PackageManager.PackageInfo)item.data;
+            if (item.data is not PackageManager.PackageInfo packageInfo)
+                return;
 
             if (EditorDialog.DisplayDecisionDialog(
                 titleText: "About to install package " + item.id,
@@ -202,19 +220,45 @@ namespace UnityEditor.Search.Providers
 
         private static void RemovePackage(SearchItem item)
         {
-            var packageInfo = (PackageManager.PackageInfo)item.data;
-            WaitForRequestBase(PackageManager.Client.Remove(packageInfo.name), $"Removing {packageInfo.packageId}...", 1);
+            if (item.data is not PackageManager.PackageInfo packageInfo || !CanBeRemoved(packageInfo))
+                return;
+
+            if (EditorDialog.DisplayDecisionDialog(
+                titleText: "About to remove package " + packageInfo.packageId,
+                messageText: "Are you sure you want to remove the following package?\r\n\r\n" +
+                             FormatName(packageInfo),
+                yesButtonText: "Remove",
+                noButtonText: "Cancel"))
+            {
+                WaitForRequestBase(PackageManager.Client.Remove(packageInfo.name), $"Removing {packageInfo.packageId}...", 1);
+            }
+        }
+
+        private static bool CanBeRemoved(PackageManager.PackageInfo packageInfo)
+        {
+            // Packages only pulled in as dependencies cannot be removed from the manifest.
+            return TryGetInstalledPackage(packageInfo, out var installedPackage) && installedPackage.isDirectDependency;
         }
 
         private static bool IsRemoveActionEnabled(IReadOnlyCollection<SearchItem> items)
         {
             foreach (var item in items)
             {
-                var packageInfo = (PackageManager.PackageInfo)item.data;
-                if (!IsPackageInstalled(packageInfo))
+                if (item.data is not PackageManager.PackageInfo packageInfo || !CanBeRemoved(packageInfo))
                     return false;
             }
             return true;
+        }
+
+        internal static class TestHelper
+        {
+            public static PackageManager.Requests.ListRequest listRequest
+            {
+                get => s_ListRequest;
+                set => s_ListRequest = value;
+            }
+
+            public static bool CanBeRemoved(PackageManager.PackageInfo packageInfo) => PackageManagerProvider.CanBeRemoved(packageInfo);
         }
     }
 }

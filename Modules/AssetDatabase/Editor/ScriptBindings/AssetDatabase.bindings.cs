@@ -128,7 +128,7 @@ namespace UnityEditor
     public partial class AssetDatabase
     {
         private const string kPreventExecutionDuringImportHowToFixMsg = "Please make sure this function is not called from ScriptedImporters or PostProcessors, as it is a source of non-determinism.";
-        private const string kPreventExecutionInImportWorkerHowToFixMsg = "Please make sure this function is not called from an asset import worker process, including from ScriptedImporters, PostProcessors, or code that runs during domain reload (e.g. [InitializeOnLoad]), as it is a source of non-determinism.";
+        private const string kPreventExecutionInImportWorkerHowToFixMsg = "Please make sure this function is not called from an asset import worker process, including from ScriptedImporters, PostProcessors, or code that runs during code reload (e.g. [InitializeOnLoad]), as it is a source of non-determinism.";
         internal const string kPreventExecutionDuringCodeReloadHowToFixMsg = "Please make sure this function is not called from code that runs during code reload (e.g. [OnCodeLoaded])";
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, kPreventExecutionDuringCodeReloadHowToFixMsg)]

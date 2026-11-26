@@ -17,7 +17,7 @@ class ActiveScenarioWindow : EditorWindow, IHasCustomMenu
 
     const string k_Stylesheet = "PlayMode/UI/Framework.uss";
     const string k_WindowTitle = "Active Scenario";
-    internal const string k_EditButtonText = "Edit Scenario";
+    internal static readonly string k_EditButtonText = L10n.Tr("Edit Scenario", null);
     const string k_HeaderClassName = "unity-active-scenario__header";
     const string k_TitleBarClassName = "unity-active-scenario__title-bar";
     const string k_TitleLabelClassName = "unity-active-scenario__title-label";
@@ -26,6 +26,8 @@ class ActiveScenarioWindow : EditorWindow, IHasCustomMenu
     const string k_ContentClassName = "unity-active-scenario__content";
     private const float k_WindowMinWidth = 275f;
     private const float k_WindowMinHeight = 400f;
+
+    Button m_EditButton;
 
     internal static void OpenWindow()
     {
@@ -38,13 +40,22 @@ class ActiveScenarioWindow : EditorWindow, IHasCustomMenu
         minSize = new Vector2(k_WindowMinWidth, k_WindowMinHeight);
         ScenarioManagerProvider.instance.ConfigAssetChanged -= Refresh;
         ScenarioManagerProvider.instance.ConfigAssetChanged += Refresh;
+        ScenarioManagerProvider.instance.StateChanged -= UpdateEditButtonEnabled;
+        ScenarioManagerProvider.instance.StateChanged += UpdateEditButtonEnabled;
     }
 
 
     void OnDisable()
     {
         ScenarioManagerProvider.instance.ConfigAssetChanged -= Refresh;
+        ScenarioManagerProvider.instance.StateChanged -= UpdateEditButtonEnabled;
         EditorApplication.delayCall -= Refresh;
+    }
+
+    void UpdateEditButtonEnabled(PlayModeScenarioState state)
+    {
+        // The Play Mode Scenarios window disables its content unless the scenario is idle.
+        m_EditButton?.SetEnabled(state == PlayModeScenarioState.Idle);
     }
 
     void CreateGUI()
@@ -100,6 +111,9 @@ class ActiveScenarioWindow : EditorWindow, IHasCustomMenu
 
         var editButton = new Button(PlayModeScenariosWindow.ShowWindow) { text = k_EditButtonText };
         editButton.AddToClassList(k_EditButtonClassName);
+        PlayModeScenariosWindow.ExplainEditingNotAllowedWhenDisabled(editButton);
+        m_EditButton = editButton;
+        UpdateEditButtonEnabled(PlayModeScenarioManager.State);
 
         var description = new Label(scenario.Description);
         description.AddToClassList(k_DescriptionLabelClassName);

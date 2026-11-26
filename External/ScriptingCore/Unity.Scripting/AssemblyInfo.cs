@@ -84,6 +84,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.AccessibilityModule")]
 [assembly: InternalsVisibleTo("UnityEngine.AdaptivePerformanceModule")]
 [assembly: InternalsVisibleTo("UnityEditor.AdaptivePerformanceModule")]
+[assembly: InternalsVisibleTo("UnityEngine.LocalizationRuntimeModule")]
 [assembly: InternalsVisibleTo("UnityEditor.LocalizationRuntimeModule")]
 [assembly: InternalsVisibleTo("UnityEditor.AcceleratorClientModule")]
 [assembly: InternalsVisibleTo("UnityEditor.ShortcutManagerModule")]

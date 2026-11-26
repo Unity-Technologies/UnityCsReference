@@ -65,6 +65,10 @@ namespace Unity.Animations
     /// integers, and entity IDs.
     /// </summary>
     /// <remarks>
+    /// This is `Unity.Animations.AnimationStream`. It is not <see cref="UnityEngine.Animations.AnimationStream"/>,
+    /// which an `IAnimationJob` receives from an Animator in a PlayableGraph. That type doesn't work with the functions
+    /// of this namespace.
+    ///
     /// A stream gives you access to the animated values of one rig. It holds a value for each translation, rotation,
     /// and scale binding of the rig. It also holds the float, integer, and entity ID channels that the rig defines.
     ///
@@ -1623,7 +1627,7 @@ namespace Unity.Animations
         /// space is an approximation. The translation is exact. The combined transform shears, and a rotation can't
         /// represent a shear. To get the exact transform, use <see cref="GetSocketLocalToCharacterMatrix"/>.
         ///
-        /// The following example uses the `Unity.Animation`, `Unity.Collections`, `Unity.Entities`, and
+        /// The following example uses the `Unity.Animations`, `Unity.Collections`, `Unity.Entities`, and
         /// `Unity.Mathematics` namespaces. It adds a socket to a rig, then reads the transform of the socket in
         /// character space from an animation stream.
         /// </remarks>

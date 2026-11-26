@@ -18,7 +18,7 @@ namespace Unity.Localization.Editor;
 /// </remarks>
 /// <example>
 /// Write a text format that the matching reader parses back.
-/// <code source="../../../../Modules/LocalizationRuntimeEditor/Tests/UTFTests/Editor/Localization.Samples/CustomFileTableProviderEditorExample.cs"/>
+/// <code source="../../Tests/UTFTests/Editor/Localization.Samples/CustomFileTableProviderEditorExample.cs"/>
 /// </example>
 /// <seealso cref="FileTableProviderEditor"/>
 /// <seealso cref="ITableFileReader"/>

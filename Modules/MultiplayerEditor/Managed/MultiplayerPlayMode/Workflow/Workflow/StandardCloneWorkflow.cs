@@ -34,7 +34,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public void Initialize(WorkflowCloneContext mppmContext, CloneContext vpContext)
         {
             Application.logMessageReceivedThreaded += (condition, stackTrace, type) => OnLogMessageReceived(condition, stackTrace, type, vpContext);
-            m_ClonedPlayerState = JsonUtility.FromJson<CloneState>(EditorPrefs.GetString(k_ClonedPlayerStateKey, "{}"));
+            m_ClonedPlayerState = JsonUtility.FromJson<CloneState>(SessionState.GetString(k_ClonedPlayerStateKey, "{}"));
             mppmContext.ClonedPlayerSystems.ClonedPlayerApplicationEvents.SyncStateRequested += SyncState;
             SyncState(m_ClonedPlayerState);
 
@@ -146,7 +146,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private void SyncState(CloneState state)
         {
             m_ClonedPlayerState = state;
-            EditorPrefs.SetString(k_ClonedPlayerStateKey, JsonUtility.ToJson(m_ClonedPlayerState));
+            // SessionState, not EditorPrefs: EditorPrefs are shared by every clone on the machine, so a clone
+            // reading its state back after a domain reload could pick up another clone's settings.
+            SessionState.SetString(k_ClonedPlayerStateKey, JsonUtility.ToJson(m_ClonedPlayerState));
         }
 
         private void OnLogMessageReceived(string condition, string stackTrace, LogType type, CloneContext vpContext)

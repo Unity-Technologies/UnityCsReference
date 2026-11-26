@@ -1020,7 +1020,7 @@ namespace UnityEngine
             GetIndices(indices, submesh, 0, applyBaseVertex);
         }
 
-        public void GetIndices(List<int> indices, int submesh, int meshLod, bool applyBaseVertex = false)
+        public void GetIndices(List<int> indices, int submesh, int meshLod, bool applyBaseVertex = true)
         {
             if (indices == null)
                 throw new ArgumentNullException(nameof(indices), "The result indices list cannot be null.");

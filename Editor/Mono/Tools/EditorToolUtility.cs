@@ -31,6 +31,7 @@ namespace UnityEditor.EditorTools
         [IgnoreForUAL0015("Per-owner tool cache, re-created on the next lookup")]
         static Dictionary<Type, EditorToolCache> s_ToolCache = new();
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Per-owner context cache, re-created on the next lookup")]
         static Dictionary<Type, EditorToolCache> s_ContextCache = new();
         [AutoStaticsCleanupOnCodeReload]
         // Cleared on reload; GetEditorToolAssociations null-checks and lazily rebuilds it via

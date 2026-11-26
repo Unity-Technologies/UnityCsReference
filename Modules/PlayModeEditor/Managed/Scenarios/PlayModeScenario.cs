@@ -30,6 +30,13 @@ namespace Unity.PlayMode.Editor
         }
 
         /// <summary>
+        /// The description to show as a tooltip, or a no-description message when it is empty or whitespace.
+        /// </summary>
+        internal string DescriptionTooltip => string.IsNullOrWhiteSpace(m_Description)
+            ? L10n.Tr("No description available.", null)
+            : m_Description;
+
+        /// <summary>
         /// Returns true if the play mode config supports pause and step.
         /// </summary>
         internal abstract bool SupportsPauseAndStep { get; }

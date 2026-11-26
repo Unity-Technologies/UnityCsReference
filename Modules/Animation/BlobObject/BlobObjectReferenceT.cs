@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using Unity.Animations;
 using Unity.Burst;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using UnityEngine.Bindings;
 
@@ -89,6 +91,42 @@ namespace UnityEngine
         }
 
         /// <summary>
+        /// A reference to the root of the blob data.
+        /// </summary>
+        /// <remarks>
+        /// The returned reference points into the blob data, it isn't a copy. It stays valid only until you dispose
+        /// this reference, so don't keep it after you call <see cref="Dispose"/>. To read the data from a job, store
+        /// the `BlobObjectReference` in the job, not the value.
+        ///
+        /// The data is shared with the object it comes from and with the other references to it, so don't modify it.
+        ///
+        /// Keep the value in a `ref` local, and pass it by reference to the methods that take the blob. Don't copy the
+        /// value into a local variable, and don't pass it as an `in` argument or store it in a `ref readonly` variable.
+        /// The arrays of a blob are stored at offsets that are relative to the blob memory, so they are invalid in a
+        /// copy.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if safety checks are enabled and
+        /// <see cref="IsValid"/> is `false`.</exception>
+        public readonly ref T Value
+        {
+            get
+            {
+                ValidateIsValid();
+                unsafe
+                {
+                    return ref UnsafeUtility.AsRef<T>(GetUnsafeRootPtr());
+                }
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        readonly void ValidateIsValid()
+        {
+            if (!IsValid)
+                throw new InvalidOperationException("The BlobObjectReference is invalid. It is a default value, it was disposed, or the object it was acquired from was empty.");
+        }
+
+        /// <summary>
         /// Returns a blob asset reference to the data that this reference points to.
         /// </summary>
         /// <remarks>
@@ -136,9 +174,9 @@ namespace UnityEngine
         /// Releases this reference to the blob data.
         /// </summary>
         /// <remarks>
-        /// After you call this method, <see cref="IsValid"/> is `false` for this copy and you must not use pointers or
-        /// blob asset references that you obtained from it. Disposing a default or already disposed reference has no
-        /// effect.
+        /// After you call this method, <see cref="IsValid"/> is `false` for this copy and you must not use pointers,
+        /// blob asset references, or references to the <see cref="Value"/> that you obtained from it. Disposing a
+        /// default or already disposed reference has no effect.
         ///
         /// Copies of the struct share the same underlying reference, and disposing one copy doesn't invalidate the
         /// others. Dispose only one copy of each reference, and use <see cref="Clone"/> to get an independent one. This

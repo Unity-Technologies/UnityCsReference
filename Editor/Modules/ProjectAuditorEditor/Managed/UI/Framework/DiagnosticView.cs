@@ -53,10 +53,12 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
 
             if (EditorGUI.EndChangeCheck())
-            {
-                MarkDirty();
-                ClearSelection();
-            }
+                OnFiltersChanged();
+        }
+
+        internal void OnFiltersChanged()
+        {
+            MarkDirty();
         }
 
         // Draws the Unity target-version selector shared by the Upgrade pages, narrowing displayed

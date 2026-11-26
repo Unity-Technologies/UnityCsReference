@@ -160,6 +160,11 @@ namespace UnityEngine.UIElements.StyleSheets
             m_CurrentValues.Add(new StyleValueHandle(0, StyleValueType.CommaSeparator));
         }
 
+        public void AddSlashSeparator()
+        {
+            m_CurrentValues.Add(new StyleValueHandle(0, StyleValueType.SlashSeparator));
+        }
+
         public void RemoveValuesFrom(int index)
         {
             m_CurrentValues.RemoveRange(index, m_CurrentValues.Count - index);

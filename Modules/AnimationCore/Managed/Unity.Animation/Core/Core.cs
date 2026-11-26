@@ -14,6 +14,18 @@ namespace Unity.Animations
     /// <summary>
     /// Core runtime functions.
     /// </summary>
+    /// <remarks>
+    /// The functions of this class operate on an <see cref="AnimationStream"/>:
+    ///
+    ///- Constraints and IK: <see cref="SolvePositionConstraint"/>, <see cref="SolveRotationConstraint"/>,
+    /// <see cref="SolveParentConstraint"/>, <see cref="SolveAimConstraint"/>, <see cref="SolveTwoBoneIK"/>, and
+    /// <see cref="SolveTwistCorrection"/>.
+    ///- Inertial blending: <see cref="ComputeInertialBlendingCoefficients"/> and <see cref="InertialBlend"/>.
+    ///- Remapping a pose between rigs: <see cref="Remap"/>.
+    ///- Spaces and velocities: <see cref="ComputeLocalToCharacter"/> and the `Compute*Velocities` methods.
+    ///
+    /// To blend streams, use the extension methods of <see cref="AnimationStreamBlendingExtensions"/>.
+    /// </remarks>
     [GenerateTestsForBurstCompatibility]
     public static partial class Core
     {
@@ -396,8 +408,10 @@ namespace Unity.Animations
         /// </summary>
         /// <remarks>
         /// For each bone, the function computes the rotation that goes from the previous `LocalToParent` rotation to the
-        /// current one, converts it to Euler angles with `math.Euler`, and divides the angles by the elapsed time. The
-        /// result has one component per Euler axis. A bone whose rotation didn't change has a velocity of zero.
+        /// current one, and divides its angle by the elapsed time. The result points along the rotation axis, and its
+        /// length is the speed in radians per second. The function uses the shortest rotation, so a bone that turns
+        /// more than half a turn in one update gets a velocity in the opposite direction. A bone whose rotation didn't
+        /// change has a velocity of zero.
         /// </remarks>
         /// <param name="input">The stream for the current update.</param>
         /// <param name="previousInput">The stream for the previous update. It must use the same rig as <paramref name="input"/>.</param>
@@ -427,7 +441,7 @@ namespace Unity.Animations
                 quaternion to = input.GetLocalToParentRotation(j);
 
                 if (!to.Equals(from))
-                    outAngularVelocities[j] = math.Euler(math.mul(math.inverse(from), to)) * inverseDeltaTime;
+                    outAngularVelocities[j] = MathUtility.toAngularDisplacement(math.mul(math.inverse(from), to)) * inverseDeltaTime;
                 else
                     outAngularVelocities[j] = float3.zero;
             }
@@ -481,8 +495,10 @@ namespace Unity.Animations
         /// <remarks>
         /// The world rotation of a bone is its `LocalToCharacter` rotation combined with the rotation of the
         /// `LocalToWorld` matrix. For each bone, the function computes the rotation that goes from the previous world
-        /// rotation to the current one, converts it to Euler angles with `math.Euler`, and divides the angles by the
-        /// elapsed time. The function ignores the translation of the matrices.
+        /// rotation to the current one, and divides its angle by the elapsed time. The result points along the rotation
+        /// axis, and its length is the speed in radians per second. The function uses the shortest rotation, so a bone
+        /// that turns more than half a turn in one update gets a velocity in the opposite direction. The function
+        /// ignores the translation and scale of the matrices.
         /// </remarks>
         /// <param name="localToWorld">The `LocalToWorld` matrix of the character at the time of <paramref name="input"/>.</param>
         /// <param name="previousLocalToWorld">The `LocalToWorld` matrix of the character at the time of <paramref name="previousInput"/>.</param>
@@ -509,15 +525,15 @@ namespace Unity.Animations
             float inverseDeltaTime = math.rcp(deltaTime);
             ValidateIsFinite(inverseDeltaTime);
 
-            var previousLocalToWorldRot = new quaternion(previousLocalToWorld);
-            var localToWorldRot = new quaternion(localToWorld);
+            var previousLocalToWorldRot = new quaternion(math.orthonormalize(new float3x3(previousLocalToWorld)));
+            var localToWorldRot = new quaternion(math.orthonormalize(new float3x3(localToWorld)));
 
             for (int j = 0; j < rotationCount; ++j)
             {
                 quaternion from = math.mul(previousLocalToWorldRot, previousInput.GetLocalToCharacterRotation(j));
                 quaternion to = math.mul(localToWorldRot, input.GetLocalToCharacterRotation(j));
 
-                outAngularVelocities[j] = math.Euler(math.mul(math.inverse(from), to)) * inverseDeltaTime;
+                outAngularVelocities[j] = MathUtility.toAngularDisplacement(math.mul(math.inverse(from), to)) * inverseDeltaTime;
             }
         }
     }

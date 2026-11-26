@@ -133,6 +133,11 @@ namespace UnityEditor.ShortcutManagement
                         }
                     }
                 }
+                else
+                {
+                    // The mode folder is inside the legacy folder, so it cannot exist either
+                    return System.Array.Empty<string>();
+                }
             }
 
             if (!System.IO.Directory.Exists(shortcutsFolderPath))

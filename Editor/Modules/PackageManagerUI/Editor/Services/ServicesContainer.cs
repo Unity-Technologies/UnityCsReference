@@ -106,6 +106,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageProgressTracker m_SerializedPackageProgressTracker;
         [SerializeField]
         private InProjectPackagesMonitor m_SerializedInProjectPackagesMonitor;
+        [SerializeField]
+        private PackageManagerProjectSettingsProxy m_SerializedProjectSettingsProxy;
 
         private readonly Dictionary<Type, IService> m_RegisteredServices = new();
 
@@ -207,6 +209,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedDelayedSelectionHandler = delayedSelectionHandler;
             m_SerializedPackageProgressTracker = packageProgressTracker;
             m_SerializedInProjectPackagesMonitor = inProjectPackagesMonitor;
+            m_SerializedProjectSettingsProxy = settingsProxy;
         }
 
         public void OnDisable()

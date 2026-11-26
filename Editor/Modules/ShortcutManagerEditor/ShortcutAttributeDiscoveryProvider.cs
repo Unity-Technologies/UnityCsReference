@@ -4,10 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Unity.Profiling;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 
@@ -15,22 +16,30 @@ namespace UnityEditor.ShortcutManagement
 {
     class ShortcutAttributeDiscoveryProvider : IDiscoveryShortcutProvider
     {
+        internal const string k_FindShortcutAttributesMarkerName = "ShortcutManagement.FindShortcutAttributes";
+
+        [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
+        static readonly ProfilerMarker k_FindShortcutAttributesMarker = new(ProfilerCategory.Loading, k_FindShortcutAttributesMarkerName);
+
+        // Assemblies only change on a code reload, which replaces this provider; UpdateBaseProfile resets reused entries
+        List<IShortcutEntryDiscoveryInfo> m_DefinedShortcuts;
+
         public IEnumerable<IShortcutEntryDiscoveryInfo> GetDefinedShortcuts()
         {
+            return m_DefinedShortcuts ??= FindDefinedShortcuts();
+        }
+
+        static List<IShortcutEntryDiscoveryInfo> FindDefinedShortcuts()
+        {
+            using var marker = k_FindShortcutAttributesMarker.Auto();
             const BindingFlags staticMethodsBindings = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
             var methods = EditorAssemblies.GetAllMethodsWithAttribute<ShortcutBaseAttribute>(staticMethodsBindings);
 
-            #pragma warning disable UAC2005 // Avoid Linq
-            var results = new List<IShortcutEntryDiscoveryInfo>(methods.Count());
-#pragma warning restore UAC2005
-            foreach (var methodInfo in methods)
+            var results = new List<IShortcutEntryDiscoveryInfo>();
+            foreach (var method in methods)
             {
-                var attributes = (ShortcutBaseAttribute[])methodInfo.GetCustomAttributes(typeof(ShortcutBaseAttribute), true);
-                foreach (var attribute in attributes)
-                {
-                    var discoveredAttributeEntry = new ShortcutAttributeEntryInfo(methodInfo, attribute);
-                    results.Add(discoveredAttributeEntry);
-                }
+                foreach (ShortcutBaseAttribute attribute in method.GetCustomAttributes(typeof(ShortcutBaseAttribute), true))
+                    results.Add(new ShortcutAttributeEntryInfo(method, attribute));
             }
 
             return results;
@@ -39,6 +48,9 @@ namespace UnityEditor.ShortcutManagement
 
     class ShortcutMenuItemDiscoveryProvider : IDiscoveryShortcutProvider
     {
+        [NoAutoStaticsCleanup] // a binding string always parses to the same result, safe to persist
+        static readonly Dictionary<string, KeyCombination?> s_ParsedBindingStrings = new();
+
         public IEnumerable<IShortcutEntryDiscoveryInfo> GetDefinedShortcuts()
         {
             var entries = new List<IShortcutEntryDiscoveryInfo>();
@@ -50,13 +62,29 @@ namespace UnityEditor.ShortcutManagement
             for (var index = 0; index < names.Count; ++index)
             {
                 var keys = new List<KeyCombination>();
-                KeyCombination keyCombination;
-                if (KeyCombination.TryParseMenuItemBindingString(defaultShortcuts[index], out keyCombination))
+                if (TryParseBindingString(defaultShortcuts[index], out var keyCombination))
                     keys.Add(keyCombination);
                 entries.Add(new MenuItemEntryDiscoveryInfo(names[index], keys));
             }
 
             return entries;
+        }
+
+        internal static bool TryParseBindingString(string bindingString, out KeyCombination keyCombination)
+        {
+            keyCombination = default;
+            if (string.IsNullOrEmpty(bindingString))
+                return false;
+
+            if (!s_ParsedBindingStrings.TryGetValue(bindingString, out var parsed))
+            {
+                if (KeyCombination.TryParseMenuItemBindingString(bindingString, out var parsedKeyCombination))
+                    parsed = parsedKeyCombination;
+                s_ParsedBindingStrings.Add(bindingString, parsed);
+            }
+
+            keyCombination = parsed.GetValueOrDefault();
+            return parsed.HasValue;
         }
     }
 

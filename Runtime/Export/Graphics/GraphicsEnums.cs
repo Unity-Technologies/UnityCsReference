@@ -163,12 +163,14 @@ namespace UnityEngine
         Fantastic = 5
     }
 
+    [Obsolete("ShadowProjection is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) has no equivalent, because it always uses stable fit shadow cascades. Remove references to ShadowProjection from your scripts. #from(7000.0)", false)]
     public enum ShadowProjection
     {
         CloseFit = 0,
         StableFit = 1
     }
 
+    [Obsolete("ShadowQuality is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To control shadows in the Universal Render Pipeline (URP), use the Cast Shadows and Soft Shadows properties in the URP asset instead. #from(7000.0)", false)]
     public enum ShadowQuality
     {
         Disable = 0,
@@ -176,6 +178,7 @@ namespace UnityEngine
         All = 2
     }
 
+    [Obsolete("ShadowResolution is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the main light shadow map resolution in the Universal Render Pipeline (URP), use Lighting > Main Light > Shadow Resolution in the URP asset instead. #from(7000.0)", false)]
     public enum ShadowResolution
     {
         Low = UnityEngine.Rendering.LightShadowResolution.Low,

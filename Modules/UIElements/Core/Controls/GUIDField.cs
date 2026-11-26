@@ -148,11 +148,6 @@ namespace UnityEngine.UIElements
         {
             GUIDField GUIDField => (GUIDField)parent;
 
-            internal GUIDInput()
-            {
-                textEdition.AcceptCharacter = AcceptCharacter;
-            }
-
             protected string allowedCharacters => "0123456789abcdefABCDEF";
 
             internal override bool AcceptCharacter(char c)

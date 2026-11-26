@@ -17,7 +17,7 @@ namespace UnityEditor.InsightsEditor
         Revision = 6
     }
 
-    [NativeHeader("Modules/InsightsEditor/EditorConfiguration/ConfigData.h")]
+    [NativeHeader("Editor/Modules/InsightsEditor/EditorConfiguration/ConfigData.h")]
     internal struct SwiftRequirement
     {
         public SwiftRequirementKind kind;
@@ -27,14 +27,14 @@ namespace UnityEditor.InsightsEditor
         public string maximumVersion;
     }
 
-    [NativeHeader("Modules/InsightsEditor/EditorConfiguration/ConfigData.h")]
+    [NativeHeader("Editor/Modules/InsightsEditor/EditorConfiguration/ConfigData.h")]
     internal struct SwiftProduct
     {
         public string name;
         public bool weakLink;
     }
 
-    [NativeHeader("Modules/InsightsEditor/EditorConfiguration/ConfigData.h")]
+    [NativeHeader("Editor/Modules/InsightsEditor/EditorConfiguration/ConfigData.h")]
     internal struct SwiftPackage
     {
         public string url;
@@ -42,7 +42,7 @@ namespace UnityEditor.InsightsEditor
         public SwiftProduct[] products;
     }
 
-    [NativeHeader("Modules/InsightsEditor/EditorConfiguration/ConfigData.h")]
+    [NativeHeader("Editor/Modules/InsightsEditor/EditorConfiguration/ConfigData.h")]
     internal struct MavenPackage
     {
         // group:artifact:version, as Gradle takes it.
@@ -51,7 +51,7 @@ namespace UnityEditor.InsightsEditor
     }
 
     // Native packages the remote-settings service asked the Android and iOS builds to declare.
-    [NativeHeader("Modules/InsightsEditor/EditorConfiguration/EditorConfigurationService.h")]
+    [NativeHeader("Editor/Modules/InsightsEditor/EditorConfiguration/EditorConfigurationService.h")]
     [StaticAccessor("UnityEngine::Insights::EditorConfigurationService", StaticAccessorType.DoubleColon)]
     internal static class RemoteBuildDependencies
     {

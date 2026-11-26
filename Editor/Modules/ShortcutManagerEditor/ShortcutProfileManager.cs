@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Unity.Profiling;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
@@ -67,6 +69,11 @@ namespace UnityEditor.ShortcutManagement
 
     class ShortcutProfileManager : IShortcutProfileManager
     {
+        internal const string k_ReloadProfilesMarkerName = "ShortcutManagement.ReloadProfiles";
+
+        [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
+        static readonly ProfilerMarker k_ReloadProfilesMarker = new(ProfilerCategory.Loading, k_ReloadProfilesMarkerName);
+
         List<ShortcutEntry> m_Entries;
         IShortcutProfileStore m_ProfileStore;
         IBindingValidator m_BindingValidator;
@@ -125,6 +132,7 @@ namespace UnityEditor.ShortcutManagement
 
         public void ReloadProfiles()
         {
+            using var marker = k_ReloadProfilesMarker.Auto();
             try
             {
                 InitializeLoadedProfilesDictionary();

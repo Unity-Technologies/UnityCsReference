@@ -55,11 +55,6 @@ namespace UnityEditor.Build.Profile
         static readonly string k_RestartNeeded = L10n.Tr("Please restart the Unity Editor to load the module.", null);
         static readonly string k_RestartEditor = L10n.Tr("Restart Unity Editor", null);
         static readonly GUIContent k_ActivateDerivedPlatform = L10n.TextContent("Enable Platform", null, null, null);
-        [NoAutoStaticsCleanup] // static config set, allocated once, contains only string literals
-        static readonly HashSet<string> s_BuildProfileIconModules = new()
-        {
-            "Switch",
-        };
 
         [NoAutoStaticsCleanup] // tracks platforms awaiting a full editor restart; not reset by code reload
         static readonly HashSet<GUID> s_PlatformsPendingRestart = new HashSet<GUID>();
@@ -166,10 +161,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static Texture2D GetPlatformIcon(GUID platformId)
         {
-            if (LoadBuildProfileIcon(platformId, out Texture2D icon))
-                return icon;
-
-            if(LoadPlatformMipIcon(platformId, out icon))
+            if (LoadPlatformMipIcon(platformId, out Texture2D icon))
                 return icon;
 
             return EditorGUIUtility.LoadIcon(GetPlatformIconId(platformId));
@@ -188,9 +180,6 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static Texture2D GetPlatformIconSmall(GUID platformId)
         {
-            if (LoadBuildProfileIcon(platformId, out Texture2D icon))
-                return icon;
-
             return EditorGUIUtility.LoadIcon(GetPlatformIconId(platformId) + ".Small");
         }
 
@@ -1096,29 +1085,12 @@ namespace UnityEditor.Build.Profile
             return icon != null;
         }
 
-        static bool LoadBuildProfileIcon(GUID platformId, out Texture2D icon)
-        {
-            var moduleName = GetModuleName(platformId);
-            if (s_BuildProfileIconModules.Contains(moduleName))
-            {
-                icon = EditorGUIUtility.FindTexture(typeof(BuildProfile));
-                return true;
-            }
-
-            icon = null;
-            return false;
-        }
-
         /// <summary>
         /// Fetches the Hero image associated with the platform.
         /// If no specific hero image is found, it falls back to the platform icon.
         /// </summary>
         public static Texture2D GetPlatformHeroImage(GUID platformId)
         {
-            // Early out check for platforms that we don't have icon approval for (i.e. Switch)
-            if (LoadBuildProfileIcon(platformId, out Texture2D icon))
-                return icon;
-
             // Attempt to load the hero icon for the platform
             return EditorGUIUtility.LoadIcon($"{k_HeroImagesPath}/{GetPlatformIconId(platformId)}{k_HeroSuffix}") ?? GetPlatformIcon(platformId);
         }

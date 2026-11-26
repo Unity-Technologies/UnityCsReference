@@ -10,6 +10,7 @@ using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Scripting.ScriptCompilation.MsBuild;
+using UnityEditor.Utils;
 using UnityEditorInternal;
 using UnityEngine.Scripting;
 using sc = UnityEditor.Scripting.ScriptCompilation;
@@ -700,6 +701,17 @@ namespace UnityEditor.Compilation
             var targetingPackFiles = TargetingPackExtractor.GetAssembliesFromFrameworkList(targetingPackDirectory);
             var targetingPackReferences = Array.ConvertAll(targetingPackFiles.referenceAssemblies, p => p.MakeAbsolute().ToString());
             var targetingPackAnalyzers = Array.ConvertAll(targetingPackFiles.analyzers, p => p.MakeAbsolute().ToString());
+            if (useNet10)
+            {
+                // Microsoft.NETCore.App.Ref provides the in-box source generators, such as System.Text.Json's
+                string[] netCoreAppAnalyzers = Array.ConvertAll(
+                    TargetingPackExtractor.GetAssembliesFromFrameworkList(NetCoreReferenceFinder.GetPackDirectory()).analyzers,
+                    p => p.MakeAbsolute().ToString());
+                string[] combinedAnalyzers = new string[targetingPackAnalyzers.Length + netCoreAppAnalyzers.Length];
+                targetingPackAnalyzers.CopyTo(combinedAnalyzers, 0);
+                netCoreAppAnalyzers.CopyTo(combinedAnalyzers, targetingPackAnalyzers.Length);
+                targetingPackAnalyzers = combinedAnalyzers;
+            }
 
             var physicalPaths = new Dictionary<string, string>();
             string GetPhysicalPath(string path)

@@ -15,6 +15,7 @@ using Unity.Profiling;
 using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
+using UnityEditor.Utils;
 using UnityEngine;
 using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;
 using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
@@ -162,20 +163,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 AssembliesToScanForTypeDB = sortedAssembliesToScanForTypeDB,
                 SearchPaths = sortedSearchPaths,
                 EmitInfoForScriptUpdater = enableScriptUpdater,
-                TargetingPacks = new[]
-                {
-                    useNet10
-                        ? new TargetingPackData
+                // Microsoft.NETCore.App.Ref provides the in-box source generators, such as System.Text.Json's
+                TargetingPacks = useNet10
+                    ? new[]
+                    {
+                        new TargetingPackData
                         {
                             Name = "Unity.BCLExtensions.Net10",
                             Path = BCLExtensions.CoreCLRTargetingPackDirectory()
+                        },
+                        new TargetingPackData
+                        {
+                            Name = "Microsoft.NETCore.App.Ref",
+                            Path = NetCoreReferenceFinder.GetPackDirectory()
                         }
-                        : new TargetingPackData
+                    }
+                    : new[]
+                    {
+                        new TargetingPackData
                         {
                             Name = "Unity.BCLExtensions.Netstandard21",
                             Path = BCLExtensions.NetstandardTargetingPackDirectory()
                         }
-                }
+                    }
             };
         }
 

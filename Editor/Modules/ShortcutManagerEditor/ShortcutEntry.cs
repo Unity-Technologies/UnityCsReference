@@ -36,7 +36,7 @@ namespace UnityEditor.ShortcutManagement
 
     [Serializable]
     [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
-    struct Identifier
+    struct Identifier : IEquatable<Identifier>
     {
         public string path;
         public const string kPathSeparator = "/";
@@ -54,6 +54,21 @@ namespace UnityEditor.ShortcutManagement
         public override string ToString()
         {
             return path;
+        }
+
+        public bool Equals(Identifier other)
+        {
+            return path == other.path;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Identifier other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return path != null ? path.GetHashCode() : 0;
         }
     }
 
@@ -108,8 +123,9 @@ namespace UnityEditor.ShortcutManagement
                 foreach (var attribute in m_Context.GetCustomAttributes(typeof(ReserveModifiersAttribute), true))
                     m_ReservedModifier |= (attribute as ReserveModifiersAttribute).Modifiers;
 
-            if(m_Action != null)
-                foreach(var clutch in m_Action.Method.GetCustomAttributes<ClutchShortcutAttribute>())
+            // Only clutch shortcuts read the clutch context, and this attribute lookup is slow
+            if (m_Type == ShortcutType.Clutch && m_Action != null)
+                foreach (var clutch in m_Action.Method.GetCustomAttributes<ClutchShortcutAttribute>())
                     if (clutch.clutchActivatedContext != null)
                         m_ClutchActivatedContext = clutch.clutchActivatedContext;
         }

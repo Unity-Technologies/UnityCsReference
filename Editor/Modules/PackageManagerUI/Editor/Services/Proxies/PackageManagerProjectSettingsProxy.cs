@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -18,6 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action onInitializationFinished;
         event Action<TrustPolicyLevel> onTrustPolicyLevelChanged;
         event Action<bool> onClosedNetworkEnabledChanged;
+        event Action<bool> onHasBypassPackageTrustEntitlementChanged;
 
         TrustPolicyLevel trustPolicyLevel { get; set; }
         TrustPolicyLevel trustPolicyLevelDraft { get; set; }
@@ -41,6 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void ClearTrustPolicyLevelDraft();
         void ClearClosedNetworkEnabledDraft();
+        void CheckBypassPackageTrustEntitlementChanged();
         void SetRegistries(RegistryInfo[] registries);
         bool AddRegistry(RegistryInfo registry);
         bool UpdateRegistry(string oldName, RegistryInfo newRegistry);
@@ -50,6 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void Save();
     }
 
+    [Serializable]
     [ExcludeFromCodeCoverage]
     internal class PackageManagerProjectSettingsProxy : BaseService<IProjectSettingsProxy>, IProjectSettingsProxy
     {
@@ -61,6 +65,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action onInitializationFinished = delegate {};
         public event Action<TrustPolicyLevel> onTrustPolicyLevelChanged = delegate {};
         public event Action<bool> onClosedNetworkEnabledChanged = delegate {};
+        public event Action<bool> onHasBypassPackageTrustEntitlementChanged = delegate {};
 
         public TrustPolicyLevel trustPolicyLevel
         {
@@ -102,7 +107,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ClearClosedNetworkEnabledDraft() => PackageManagerProjectSettings.instance.ClearClosedNetworkEnabledDraft();
 
-        public bool hasBypassPackageTrustEntitlement => PackageTrustLevel.HasBypassPackageTrustEntitlement();
+        [SerializeField]
+        private bool m_HasBypassPackageTrustEntitlement;
+        public bool hasBypassPackageTrustEntitlement => m_HasBypassPackageTrustEntitlement;
+
+        public void CheckBypassPackageTrustEntitlementChanged() => CheckBypassPackageTrustEntitlementChanged(PackageTrustLevel.HasBypassPackageTrustEntitlement());
+        // The internal modifier is used (instead of private) to give our test project access to these properties/methods
+        internal void CheckBypassPackageTrustEntitlementChanged(bool newValue)
+        {
+            if (newValue == m_HasBypassPackageTrustEntitlement)
+                return;
+            m_HasBypassPackageTrustEntitlement = newValue;
+            onHasBypassPackageTrustEntitlementChanged?.Invoke(newValue);
+        }
 
         public bool isSignatureDisabled => closedNetworkEnabled && hasBypassPackageTrustEntitlement;
 
@@ -198,6 +215,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerProjectSettings.instance.onSeeAllVersionsChanged += OnSeeAllPackageVersionsChanged;
             PackageManagerProjectSettings.instance.onLoadAssetsChanged += OnLoadAssetsChanged;
             PackageManagerProjectSettings.instance.onInitializationFinished += OnInitializationFinished;
+
+            // Native can't be read from the constructor, so this establishes the value in a fresh session and catches a change across a domain reload
+            CheckBypassPackageTrustEntitlementChanged();
         }
 
         public override void OnDisable()

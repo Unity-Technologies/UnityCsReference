@@ -119,7 +119,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// </example>
     /// <seealso cref="SelectedLocale"/>
     /// <seealso cref="InitializationCompleted"/>
-    [NoAutoStaticsCleanup] // localized references and language controls subscribe once and outlive Play Mode
+    [AutoStaticsCleanupOnCodeReload] // handlers outlive Play Mode but not a code reload, which unloads the assemblies that added them
     public static event Action<Locale> SelectedLocaleChanged;
 
     /// <summary>
@@ -137,7 +137,7 @@ public partial class LocalizationSettings : ScriptableObject
     /// </example>
     /// <seealso cref="InitializeAsync"/>
     /// <seealso cref="SelectedLocaleChanged"/>
-    [NoAutoStaticsCleanup] // localized references and language controls subscribe once and outlive Play Mode
+    [AutoStaticsCleanupOnCodeReload] // handlers outlive Play Mode but not a code reload, which unloads the assemblies that added them
     public static event Action InitializationCompleted;
 
     // The selected locale goes back to the project locale on a Play Mode transition without raising a change.

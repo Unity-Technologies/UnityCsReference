@@ -10,6 +10,7 @@ namespace UnityEditor
 {
     public enum WebGLExceptionSupport
     {
+        [Obsolete("WebGLExceptionSupport.None is deprecated and will be removed in a future release. Use WebGLExceptionSupport.ExplicitlyThrownExceptionsOnly instead.", false)]
         None = 0,
         ExplicitlyThrownExceptionsOnly = 1,
         FullWithoutStacktrace = 2,

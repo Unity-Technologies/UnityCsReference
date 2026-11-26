@@ -196,8 +196,6 @@ namespace UnityEditor
         // .NET Framework 8 + .NET Standard 2.1 APIs
         NET_Unity_4_8 = NET_4_6,
 
-        [Obsolete("The .NET (net10) API compatibility level is still a work in progress and is disabled for now.")] // Hide from intellisense
-        [EditorBrowsable(EditorBrowsableState.Never)]
         NET = 7
     }
 
@@ -210,8 +208,6 @@ namespace UnityEditor
         NET_Unity_4_8 = 2,
         NET_Standard = 3,
 
-        [Obsolete("The .NET (net10) editor assemblies compatibility level is still a work in progress and is disabled for now.")] // Hide from intellisense
-        [EditorBrowsable(EditorBrowsableState.Never)]
         NET = 4,
     }
 
@@ -1281,9 +1277,9 @@ namespace UnityEditor
         public static ApiCompatibilityLevel GetApiCompatibilityLevel(NamedBuildTarget buildTarget) => GetApiCompatibilityLevelInternal(buildTarget.TargetName);
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        [NativeMethod("GetApiCompatibilityLevelWithoutIL2CPPForcing", ThrowsException = true)]
-        private static extern ApiCompatibilityLevel GetApiCompatibilityLevelWithoutIL2CPPForcingInternal(string buildTargetName);
-        internal static ApiCompatibilityLevel GetApiCompatibilityLevelWithoutIL2CPPForcing(NamedBuildTarget buildTarget) => GetApiCompatibilityLevelWithoutIL2CPPForcingInternal(buildTarget.TargetName);
+        [NativeMethod("IsApiCompatibilityLevelForcedToNET")]
+        private static extern bool IsApiCompatibilityLevelForcedToNETInternal(string buildTargetName);
+        internal static bool IsApiCompatibilityLevelForcedToNET(NamedBuildTarget buildTarget) => IsApiCompatibilityLevelForcedToNETInternal(buildTarget.TargetName);
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetApiCompatibilityLevel_Internal", ThrowsException = true)]

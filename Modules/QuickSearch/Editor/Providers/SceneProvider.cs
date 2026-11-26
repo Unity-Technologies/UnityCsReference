@@ -228,7 +228,7 @@ namespace UnityEditor.Search.Providers
 
                 new SearchAction(providerId, "show", null, "Show selected object(s)")
                 {
-                    enabled = (items) => IsHidden(items),
+                    enabled = (items) => HasObjectWithHiddenState(items, true),
                     #pragma warning disable UAC2001 // Avoid Linq
                     execute = (items) => SceneVisibilityManager.instance.Show(items.Select(i => i.ToObject<GameObject>()).Where(i => i).ToArray(), true)
 #pragma warning restore UAC2001
@@ -236,7 +236,7 @@ namespace UnityEditor.Search.Providers
 
                 new SearchAction(providerId, "hide", null, "Hide selected object(s)")
                 {
-                    enabled = (items) => !IsHidden(items),
+                    enabled = (items) => HasObjectWithHiddenState(items, false),
                     #pragma warning disable UAC2001 // Avoid Linq
                     execute = (items) => SceneVisibilityManager.instance.Hide(items.Select(i => i.ToObject<GameObject>()).Where(i => i).ToArray(), true)
 #pragma warning restore UAC2001
@@ -244,14 +244,15 @@ namespace UnityEditor.Search.Providers
             };
         }
 
-        private static bool IsHidden(IReadOnlyCollection<SearchItem> items)
+        private static bool HasObjectWithHiddenState(IReadOnlyCollection<SearchItem> items, bool hidden)
         {
-            #pragma warning disable UAC2010 // Avoid Linq
-            var go = items.First().ToObject<GameObject>();
-#pragma warning restore UAC2010
-            if (!go)
-                return false;
-            return SceneVisibilityManager.instance.IsHidden(go);
+            foreach (var item in items)
+            {
+                var go = item.ToObject<GameObject>();
+                if (go && SceneVisibilityManager.instance.IsHidden(go) == hidden)
+                    return true;
+            }
+            return false;
         }
 
         private IEnumerator SearchItems(SearchContext context, SearchProvider provider)
@@ -324,6 +325,8 @@ namespace UnityEditor.Search.Providers
 
         private static void FrameObjects(UnityEngine.Object[] objects)
         {
+            if (objects.Length == 0)
+                return;
             Selection.entityIds = Array.ConvertAll(objects, o => o.GetEntityId());
             if (SceneView.lastActiveSceneView != null)
                 SceneView.lastActiveSceneView.FrameSelected();
@@ -332,7 +335,7 @@ namespace UnityEditor.Search.Providers
         private EntityId GetItemInstanceId(SearchItem item)
         {
             var obj = ObjectFromItem(item);
-            return obj.GetEntityId();
+            return obj ? obj.GetEntityId() : EntityId.None;
         }
 
         private static GameObject ObjectFromItem(in SearchItem item)

@@ -18,7 +18,7 @@ namespace Unity.Localization.Editor;
 /// </remarks>
 /// <example>
 /// Register a writer for a custom file format.
-/// <code source="../../../../Modules/LocalizationRuntimeEditor/Tests/UTFTests/Editor/Localization.Samples/CustomFileTableProviderEditorExample.cs"/>
+/// <code source="../../Tests/UTFTests/Editor/Localization.Samples/CustomFileTableProviderEditorExample.cs"/>
 /// </example>
 /// <seealso cref="ITableFileWriter"/>
 /// <seealso cref="FileTableProvider"/>

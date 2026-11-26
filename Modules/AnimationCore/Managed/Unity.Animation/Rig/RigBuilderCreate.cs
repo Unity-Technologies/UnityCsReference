@@ -187,7 +187,7 @@ namespace Unity.Animations
         /// change the builder, for example to add sockets or bones that only your code animates. Dispose the builder
         /// when you no longer need it.
         ///
-        /// The following examples use the `System`, `Unity.Animation`, `Unity.Collections`, `Unity.Entities`,
+        /// The following examples use the `System`, `Unity.Animations`, `Unity.Collections`, `Unity.Entities`,
         /// `Unity.IntegerTime`, `Unity.Mathematics`, `UnityEngine`, and `UnityEngine.Animations` namespaces. Each
         /// example is a `MonoBehaviour` that plays a clip on the hierarchy under its GameObject. It builds a rig
         /// definition from the clip once. Each frame, it samples the clip. The first example writes the pose to the
@@ -383,7 +383,7 @@ namespace Unity.Animations
         /// If the Avatar is a Generic Avatar with a **Root node**, set in the **Rig** tab of the Model Import Settings,
         /// the method sets that bone as the root motion bone of the builder, in <see cref="RootMotionBoneId"/>.
         ///
-        /// The following example uses the `Unity.Animation`, `Unity.Collections`, `Unity.Entities`,
+        /// The following example uses the `Unity.Animations`, `Unity.Collections`, `Unity.Entities`,
         /// `Unity.IntegerTime`, `Unity.Mathematics`, and `UnityEngine` namespaces. It is a `MonoBehaviour` that plays a
         /// clip on the hierarchy under its GameObject with the rig definition that an Avatar stores.
         /// </remarks>

@@ -14,16 +14,35 @@ namespace Unity.PlayMode.Editor
     /// </summary>
     class PlaymodePopupContent : PopupWindowContent
     {
-        public static readonly Vector2 windowSize = new Vector2(220, 114);
+        const float k_DefaultWidth = 220f;
+        const float k_Height = 114f;
+        // Footer label padding (4px each side in Framework.uss) plus a margin for IMGUI vs UI Toolkit text measurement.
+        const float k_FooterLabelHorizontalPadding = 16f;
+        internal const float maxWidth = 400f;
         const string k_Stylesheet = "PlayMode/UI/Framework.uss";
+        static readonly string k_StatusButtonText = L10n.Tr("Active Play Mode Window", null);
+        static readonly string k_ManageButtonText = L10n.Tr("Configure Play Mode Scenarios", null);
 
         // Name is used in tests to identify the element.
         public const string listElementName = "playmode-config-list";
         ListView m_ListView;
+        Label m_ManageButton;
+
+        readonly float m_Width = CalculateWidth(new[] { k_StatusButtonText, k_ManageButtonText });
+
+        internal static float CalculateWidth(IEnumerable<string> footerLabels)
+        {
+            // EditorStyles is only initialized inside an IMGUI pass; the built-in skin is available anywhere.
+            var labelStyle = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).label;
+            var widest = 0f;
+            foreach (var label in footerLabels)
+                widest = Mathf.Max(widest, labelStyle.CalcSize(new GUIContent(label)).x + k_FooterLabelHorizontalPadding);
+            return Mathf.Clamp(widest, k_DefaultWidth, maxWidth);
+        }
 
         public override Vector2 GetWindowSize()
         {
-            return windowSize;
+            return new Vector2(m_Width, k_Height);
         }
 
         public override VisualElement CreateGUI()
@@ -44,14 +63,21 @@ namespace Unity.PlayMode.Editor
         void HandleStateChange(PlayModeScenarioState state)
         {
             m_ListView.enabledSelf = state == PlayModeScenarioState.Idle;
+            UpdateManageButton(state);
+        }
+
+        void UpdateManageButton(PlayModeScenarioState state)
+        {
+            // The Play Mode Scenarios window disables its content unless the scenario is idle.
+            m_ManageButton.enabledSelf = state == PlayModeScenarioState.Idle;
         }
 
         VisualElement SetupUI()
         {
             var root = new VisualElement();
-            root.style.maxHeight = windowSize.y;
-            root.style.minWidth = windowSize.x;
-            root.style.maxWidth = windowSize.x;
+            root.style.maxHeight = k_Height;
+            root.style.minWidth = m_Width;
+            root.style.maxWidth = m_Width;
             var enableListView = PlayModeScenarioManager.State == PlayModeScenarioState.Idle && Application.isPlaying == false;
             m_ListView = new ListView { fixedItemHeight = 20, selectionType = SelectionType.Single, enabledSelf = enableListView };
             m_ListView.selectionChanged += OnItemSelected;
@@ -59,11 +85,14 @@ namespace Unity.PlayMode.Editor
             m_ListView.AddToClassList("unity-scenarios-playmode-popup__config-list");
             root.Add(m_ListView);
 
-            var statusButton = new Label() { name = "open-playmode-status-button", text = "Active Play Mode Window" };
+            var statusButton = new Label() { name = "open-playmode-status-button", text = k_StatusButtonText };
             statusButton.AddToClassList("unity-scenarios-playmode-popup__status-button");
             statusButton.RegisterCallback<ClickEvent>(evt => ActiveScenarioWindow.OpenWindow());
 
-            var manageButton = new Label() { name = "manage-playmode-scenarios-configs-button", text = "Configure Play Mode Scenarios" };
+            var manageButton = new Label() { name = "manage-playmode-scenarios-configs-button", text = k_ManageButtonText };
+            m_ManageButton = manageButton;
+            PlayModeScenariosWindow.ExplainEditingNotAllowedWhenDisabled(manageButton);
+            UpdateManageButton(PlayModeScenarioManager.State);
             manageButton.AddToClassList("unity-scenarios-playmode-popup__manage-button");
             manageButton.RegisterCallback<ClickEvent>(evt => PlayModeScenariosWindow.ShowWindow());
 
@@ -138,9 +167,8 @@ namespace Unity.PlayMode.Editor
                 icon.image = config.Icon;
                 element.userData = config;
 
-                var tooltip = string.IsNullOrEmpty(config.Description) ? "No description available." : config.Description;
                 // add the name to the tooltip if the label cannot be rendered because the line is not long enough.
-                element.tooltip = label.text + "\n \n" + tooltip;
+                element.tooltip = label.text + "\n \n" + config.DescriptionTooltip;
             };
         }
     }

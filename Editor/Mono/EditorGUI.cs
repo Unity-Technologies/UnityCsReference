@@ -215,6 +215,8 @@ namespace UnityEditor
         private static readonly GUIContent[] s_XYZLabels = {EditorGUIUtility.TextContent("X"), EditorGUIUtility.TextContent("Y"), EditorGUIUtility.TextContent("Z")};
 
         private static readonly float[] s_Vector4Floats = {0, 0, 0, 0};
+        [NoAutoStaticsCleanup] // transient scratch buffer for MultiFloatFieldInternal; holds no user-code references
+        private static NumberFieldValue[] s_MultiFloatFieldValues = new NumberFieldValue[4];
         private static readonly GUIContent[] s_XYZWLabels = {EditorGUIUtility.TextContent("X"), EditorGUIUtility.TextContent("Y"), EditorGUIUtility.TextContent("Z"), EditorGUIUtility.TextContent("W")};
 
         private const float kQuaternionFloatPrecision = 1e-6f;
@@ -5200,6 +5202,22 @@ namespace UnityEditor
             return value;
         }
 
+        // Make an X, Y & Z field where each axis bit set in mixedAxes shows a mixed value.
+        // The expression entered by the user is kept in values, so that callers can apply it to each of their targets.
+        // Returns a mask of the axes edited by the user.
+        internal static int Vector3Field(Rect position, GUIContent label, NumberFieldValue[] values, int mixedAxes)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 3);
+            return Vector3Field(position, values, mixedAxes);
+        }
+
+        static int Vector3Field(Rect position, NumberFieldValue[] values, int mixedAxes)
+        {
+            position.height = kSingleLineHeight;
+            return MultiFloatFieldInternal(position, s_XYZLabels, values, mixedAxes);
+        }
+
         internal static Vector3 LinkedVector3Field(Rect position, GUIContent label, Vector3 value, ref bool proportionalScale)
         {
             int axisModified = 0;// use X as default modified axis
@@ -5801,25 +5819,63 @@ namespace UnityEditor
 
         internal static void MultiFloatFieldInternal(Rect position, GUIContent[] subLabels, float[] values, float prefixLabelWidth = -1)
         {
+            int count = values.Length;
+            if (s_MultiFloatFieldValues.Length < count)
+                s_MultiFloatFieldValues = new NumberFieldValue[count];
+
+            for (int i = 0; i < count; i++)
+                s_MultiFloatFieldValues[i] = new NumberFieldValue(values[i]);
+
+            MultiFloatFieldInternal(position, subLabels, s_MultiFloatFieldValues, count, 0, prefixLabelWidth);
+
+            // As in DoFloatField, a value that is not a number, or an expression that fails, keeps the previous value.
+            for (int i = 0; i < count; i++)
+            {
+                if (s_MultiFloatFieldValues[i].success)
+                    values[i] = MathUtils.ClampToFloat(s_MultiFloatFieldValues[i].doubleVal);
+            }
+        }
+
+        // Each bit set in mixedValues shows a mixed value on the matching field, otherwise showMixedValue applies to all fields.
+        // Returns a mask of the fields edited by the user.
+        internal static int MultiFloatFieldInternal(Rect position, GUIContent[] subLabels, NumberFieldValue[] values, int mixedValues, float prefixLabelWidth = -1)
+        {
+            return MultiFloatFieldInternal(position, subLabels, values, values.Length, mixedValues, prefixLabelWidth);
+        }
+
+        static int MultiFloatFieldInternal(Rect position, GUIContent[] subLabels, NumberFieldValue[] values, int count, int mixedValues, float prefixLabelWidth)
+        {
             var previousCompositeStyling = useCompositeStyling;
             useCompositeStyling = true;
 
-            int eCount = values.Length;
-            float w = (position.width - (eCount - 1) * kSpacingSubLabel) / eCount;
+            float w = (position.width - (count - 1) * kSpacingSubLabel) / count;
             Rect nr = new Rect(position) {width = w};
             float t = EditorGUIUtility.labelWidth;
             int l = indentLevel;
+            bool mixedValueState = showMixedValue;
             indentLevel = 0;
-            for (int i = 0; i < values.Length; i++)
+
+            int changedFields = 0;
+            for (int i = 0; i < count; i++)
             {
                 EditorGUIUtility.labelWidth = GetLabelWidth(subLabels[i], prefixLabelWidth);
-                values[i] = FloatField(nr, subLabels[i], values[i]);
+                if (mixedValues != 0)
+                    showMixedValue = (mixedValues & (1 << i)) != 0;
+
+                BeginChangeCheck();
+                FloatField(nr, subLabels[i], ref values[i]);
+                if (EndChangeCheck() && values[i].hasResult)
+                    changedFields |= 1 << i;
+
                 nr.x += w + kSpacingSubLabel;
             }
+
+            showMixedValue = mixedValueState;
             EditorGUIUtility.labelWidth = t;
             indentLevel = l;
 
             useCompositeStyling = previousCompositeStyling;
+            return changedFields;
         }
 
         static void LockingMultiFloatFieldInternal(Rect position, bool locked, GUIContent[] subLabels, float[] values, float prefixLabelWidth = -1)

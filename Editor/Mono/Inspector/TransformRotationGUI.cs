@@ -39,6 +39,34 @@ namespace UnityEditor
 
         public void RotationField(bool disabled)
         {
+            Rect r = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight * (EditorGUIUtility.wideMode ? 1 : 2));
+            RotationField(r, disabled);
+        }
+
+        // Text of the label displayed by RotationField, which shows the rotation order in animation mode.
+        public string GetLabelText()
+        {
+            Transform transform0 = targets[0] as Transform;
+            bool differentRotationOrder = false;
+            for (int i = 1; i < targets.Length && !differentRotationOrder; i++)
+            {
+                differentRotationOrder = (targets[i] as Transform).rotationOrder != transform0.rotationOrder;
+            }
+
+            return rotationContent.text + GetRotationOrderSuffix(transform0, differentRotationOrder);
+        }
+
+        static string GetRotationOrderSuffix(Transform transform0, bool differentRotationOrder)
+        {
+            if (!AnimationMode.InAnimationMode() || transform0.rotationOrder == RotationOrder.OrderZXY)
+                return null;
+
+            string rotationLabel = differentRotationOrder ? "Mixed" : transform0.rotationOrder.ToString().Substring(RotationOrder.OrderXYZ.ToString().Length - 3);
+            return " (" + rotationLabel + ")";
+        }
+
+        public void RotationField(Rect r, bool disabled)
+        {
             Transform transform0 = targets[0] as Transform;
             Vector3 eulerAngles0 = transform0.GetLocalEulerAngles(transform0.rotationOrder);
 
@@ -60,7 +88,6 @@ namespace UnityEditor
                 differentRotationOrder |= otherTransform.rotationOrder != transform0.rotationOrder;
             }
 
-            Rect r = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight * (EditorGUIUtility.wideMode ? 1 : 2));
             GUIContent label = EditorGUI.BeginProperty(r, rotationContent, m_Rotation);
 
             if (m_Rotation.isLiveModified)
@@ -78,11 +105,9 @@ namespace UnityEditor
             }
 
             int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, r);
-            if (AnimationMode.InAnimationMode() && transform0.rotationOrder != RotationOrder.OrderZXY)
-            {
-                string rotationLabel = differentRotationOrder ? "Mixed" : transform0.rotationOrder.ToString().Substring(RotationOrder.OrderXYZ.ToString().Length - 3);
-                label.text = label.text + " (" + rotationLabel + ")";
-            }
+            string rotationOrderSuffix = GetRotationOrderSuffix(transform0, differentRotationOrder);
+            if (rotationOrderSuffix != null)
+                label.text += rotationOrderSuffix;
 
             // Using manual 3 float fields here instead of MultiFloatField or Vector3Field
             // since we want to query expression validity of each individually, and

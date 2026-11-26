@@ -137,7 +137,7 @@ namespace UnityEngine.UIElements
                     StyleValueType.ResourcePath => toStyleSheet.AddValue(fromStyleSheet.ReadResourcePath(handle)),
                     StyleValueType.Variable => toStyleSheet.AddValue(fromStyleSheet.ReadVariable(handle)),
                     StyleValueType.Keyword => toStyleSheet.AddValue(fromStyleSheet.ReadKeyword(handle)),
-                    StyleValueType.CommaSeparator => handle.valueIndex,
+                    StyleValueType.CommaSeparator or StyleValueType.SlashSeparator => handle.valueIndex,
                     StyleValueType.Function => toStyleSheet.AddValue(fromStyleSheet.ReadFunction(handle)),
                     StyleValueType.ScalableImage => toStyleSheet.AddValue(fromStyleSheet.ReadScalableImage(handle)),
                     StyleValueType.MissingAssetReference => toStyleSheet.AddValue(fromStyleSheet.ReadMissingAssetReferenceUrl(handle)),
@@ -287,6 +287,7 @@ namespace UnityEngine.UIElements
                 case StyleValueType.String:
                 case StyleValueType.ScalableImage:
                 case StyleValueType.MissingAssetReference:
+                case StyleValueType.SlashSeparator:
                     return initialIndex + 1 + OffsetByComma(handles, initialIndex + 1);
 
                 case StyleValueType.Function:

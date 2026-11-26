@@ -31,6 +31,10 @@ namespace Unity.Animations
     /// Samples an animation clip into an <see cref="AnimationStream"/>, and returns the root motion of the clip.
     /// </summary>
     /// <remarks>
+    /// A clip sampler needs no Animator or PlayableGraph, and writes to an <see cref="AnimationStream"/>, not to
+    /// GameObjects. Don't confuse it with <see cref="UnityEngine.Animations.AnimationClipPlayable"/> or
+    /// `AnimationClip.SampleAnimation`, which animate GameObjects.
+    ///
     /// A clip sampler reads an animation clip at a given time. It computes the value of each curve of the clip at that
     /// time, and writes that value to the matching channel of an animation stream. It also reports how far the root of
     /// the clip moved.

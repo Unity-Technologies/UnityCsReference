@@ -170,16 +170,24 @@ namespace UnityEngine
 
         private QualitySettings() {}
 
+        [Obsolete("QualitySettings.pixelLightCount is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To limit the number of lights that affect each object in the Universal Render Pipeline (URP), set the Universal Renderer to the Forward rendering path, and set Lighting > Additional Lights > Per Object Limit in the URP asset instead. #from(7000.0)", false)]
         extern public static int pixelLightCount { get; set; }
 
+        [Obsolete("QualitySettings.shadows is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To control shadows in the Universal Render Pipeline (URP), use the Cast Shadows and Soft Shadows properties in the URP asset instead. #from(7000.0)", false)]
         [NativeProperty("ShadowQuality")] extern public static ShadowQuality shadows { get; set; }
+        [Obsolete("QualitySettings.shadowProjection is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) has no equivalent, because it always uses stable fit shadow cascades. Remove references to QualitySettings.shadowProjection from your scripts. #from(7000.0)", false)]
         extern public static ShadowProjection shadowProjection      { get; set; }
+        [Obsolete("QualitySettings.shadowCascades is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the number of shadow cascades in the Universal Render Pipeline (URP), add a Lighting > Shadows override to a Volume Profile and set Cascade Count instead. #from(7000.0)", false)]
         extern public static int              shadowCascades        { get; set; }
+        [Obsolete("QualitySettings.shadowDistance is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the maximum shadow distance in the Universal Render Pipeline (URP), add a Lighting > Shadows override to a Volume Profile and set Max Distance instead. #from(7000.0)", false)]
         extern public static float            shadowDistance        { get; set; }
+        [Obsolete("QualitySettings.shadowResolution is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the main light shadow map resolution in the Universal Render Pipeline (URP), use Lighting > Main Light > Shadow Resolution in the URP asset instead. #from(7000.0)", false)]
         [NativeProperty("ShadowResolution")] extern public static ShadowResolution shadowResolution      { get; set; }
         [NativeProperty("ShadowmaskMode")] extern public static ShadowmaskMode   shadowmaskMode        { get; set; }
         extern public static float            shadowNearPlaneOffset { get; set; }
+        [Obsolete("QualitySettings.shadowCascade2Split is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the cascade splits in the Universal Render Pipeline (URP), add a Lighting > Shadows override to a Volume Profile and set the Split properties instead. #from(7000.0)", false)]
         extern public static float            shadowCascade2Split   { get; set; }
+        [Obsolete("QualitySettings.shadowCascade4Split is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To set the cascade splits in the Universal Render Pipeline (URP), add a Lighting > Shadows override to a Volume Profile and set the Split properties instead. #from(7000.0)", false)]
         extern public static Vector3          shadowCascade4Split   { get; set; }
 
         [NativeProperty("LODBias")] extern public static float lodBias { get; set; }
@@ -192,7 +200,9 @@ namespace UnityEngine
         extern public static int   maximumLODLevel       { get; set; }
         extern public static bool  enableLODCrossFade    { get; set; }
         extern public static int   particleRaycastBudget { get; set; }
+        [Obsolete("QualitySettings.softParticles is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. To use soft particles in the Universal Render Pipeline (URP), enable Depth Texture in the URP asset, then enable Soft Particles in the Inspector window of each particle material. #from(7000.0)", false)]
         extern public static bool  softParticles         { get; set; }
+        [Obsolete("QualitySettings.softVegetation is deprecated and will be removed in a future release. It's used only by the Built-In Render Pipeline, which is no longer supported. The Universal Render Pipeline (URP) has no equivalent. Remove references to QualitySettings.softVegetation from your scripts. #from(7000.0)", false)]
         extern public static bool  softVegetation        { get; set; }
         extern public static int   vSyncCount            { get; set; }
         extern public static int   realtimeGICPUUsage    { get; set; }

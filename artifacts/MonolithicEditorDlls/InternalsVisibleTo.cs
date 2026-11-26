@@ -116,6 +116,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.LocalizationModule")]
 [assembly: InternalsVisibleTo("UnityEditor.PackageManagerModule")]
 [assembly: InternalsVisibleTo("UnityEditor.InsightsModule")]
+[assembly: InternalsVisibleTo("UnityEngine.IntelXeSSModule")]
 [assembly: InternalsVisibleTo("UnityEditor.JobsProfilerModule")]
 [assembly: InternalsVisibleTo("UnityEditor.JSONSerializeModule")]
 [assembly: InternalsVisibleTo("UnityEditor.LicensingModule")]

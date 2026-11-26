@@ -27,6 +27,7 @@ namespace Unity.Localization.Components;
 /// <seealso cref="LocalizeTextureEvent"/>
 /// <seealso cref="LocalizedAsset{TObject}"/>
 /// <seealso cref="LocalizationSettings"/>
+[HelpURL("localization/localize-assets")]
 public abstract class LocalizeAssetEvent<TObject> : MonoBehaviour where TObject : Object
 {
     [SerializeField] LocalizedAsset<TObject> m_Asset = new();

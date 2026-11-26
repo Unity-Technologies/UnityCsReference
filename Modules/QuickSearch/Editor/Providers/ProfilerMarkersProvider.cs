@@ -17,6 +17,7 @@ namespace UnityEditor.Search.Providers
             public long totalValue;
             public long totalCount;
             public long maxValue;
+            public long lastValue;
             public double average;
 
             [NoAutoStaticsCleanup]
@@ -47,6 +48,11 @@ namespace UnityEditor.Search.Providers
             public double GetAverageValue()
             {
                 return data.average;
+            }
+
+            public long GetLastValue()
+            {
+                return data.lastValue;
             }
 
             public void ResetData()
@@ -169,6 +175,7 @@ namespace UnityEditor.Search.Providers
                     data.totalValue = AddWithoutOverflow(data.totalValue, lastSample.Value);
                     data.maxValue = Math.Max(data.maxValue, lastSample.Value);
                     data.totalCount = AddWithoutOverflow(data.totalCount, lastSample.Count);
+                    data.lastValue = lastSample.Value;
                 }
 
                 // Compute average over samples
@@ -200,9 +207,10 @@ namespace UnityEditor.Search.Providers
             return a + b;
         }
 
+        // Null when the item does not hold a profiler recorder.
         static ProfilerRecorderInfo GetRecorderInfo(SearchItem item)
         {
-            return (ProfilerRecorderInfo)item.data;
+            return item?.data as ProfilerRecorderInfo;
         }
 
         protected override string FormatColumnValue(SearchColumnEventArgs args)
@@ -218,7 +226,7 @@ namespace UnityEditor.Search.Providers
                 return valueWithUnit.value.ToString("F0");
 
             var pri = GetRecorderInfo(args.item);
-            if (!pri.recorder.Valid)
+            if (pri == null || !pri.recorder.Valid)
                 return string.Empty;
 
             return FormatUnit(valueWithUnit.value, args.column.selector, pri.recorder.UnitType);
@@ -234,44 +242,48 @@ namespace UnityEditor.Search.Providers
         protected override void ResetItems(SearchItem[] items)
         {
             foreach (var item in items)
-                GetRecorderInfo(item).ResetData();
+            {
+                if (item.data is ProfilerRecorderInfo pri)
+                    pri.ResetData();
+            }
         }
 
-        static ValueWithUnit GetSampleCount(SearchItem item)
+        // The value getters return null when the item does not hold a profiler recorder.
+        static object GetSampleCount(SearchItem item)
         {
             var pri = GetRecorderInfo(item);
-            return ProfilerRecorderInfoToUnitWithValue(pri, pri.GetSampleCount());
+            return pri == null ? null : ProfilerRecorderInfoToUnitWithValue(pri, pri.GetSampleCount());
         }
 
-        static ValueWithUnit GetMaxValue(SearchItem item)
+        static object GetMaxValue(SearchItem item)
         {
             var pri = GetRecorderInfo(item);
-            return ProfilerRecorderInfoToUnitWithValue(pri, pri.GetMaxValue());
+            return pri == null ? null : ProfilerRecorderInfoToUnitWithValue(pri, pri.GetMaxValue());
         }
 
-        static ValueWithUnit GetTotalValue(SearchItem item)
+        static object GetTotalValue(SearchItem item)
         {
             var pri = GetRecorderInfo(item);
-            return ProfilerRecorderInfoToUnitWithValue(pri, ConvertLongWithMaxValue(pri.GetTotalValue()));
+            return pri == null ? null : ProfilerRecorderInfoToUnitWithValue(pri, ConvertLongWithMaxValue(pri.GetTotalValue()));
         }
 
-        static ValueWithUnit GetAverageValue(SearchItem item)
+        static object GetAverageValue(SearchItem item)
         {
             var pri = GetRecorderInfo(item);
-            return ProfilerRecorderInfoToUnitWithValue(pri, pri.GetAverageValue());
+            return pri == null ? null : ProfilerRecorderInfoToUnitWithValue(pri, pri.GetAverageValue());
         }
 
-        static ValueWithUnit GetLastTime(SearchItem item)
+        static object GetLastTime(SearchItem item)
         {
             var pri = GetRecorderInfo(item);
-            return ProfilerRecorderInfoToUnitWithValue(pri, 0);
+            return pri == null ? null : ProfilerRecorderInfoToUnitWithValue(pri, pri.GetLastValue());
         }
 
         [SearchSelector(sampleCountSelector, provider: providerId, cacheable = false)] static object SelectCount(SearchSelectorArgs args) => GetSampleCount(args.current);
         [SearchSelector(samplePeakSelector, provider: providerId, cacheable = false)] static object SelectPeak(SearchSelectorArgs args) => GetMaxValue(args.current);
         [SearchSelector(sampleAvgSelector, provider: providerId, cacheable = false)] static object SelectAvg(SearchSelectorArgs args) => GetAverageValue(args.current);
         [SearchSelector(sampleTotalSelector, provider: providerId, cacheable = false)] static object SelectTotal(SearchSelectorArgs args) => GetTotalValue(args.current);
-        [SearchSelector(sampleTotalSelector, provider: providerId, cacheable = false)] static object SelectLastTime(SearchSelectorArgs args) => GetTotalValue(args.current);
+        [SearchSelector(sampleLastTimeSelector, provider: providerId, cacheable = false)] static object SelectLastTime(SearchSelectorArgs args) => GetLastTime(args.current);
 
         protected override string FetchDescription(SearchItem item, SearchContext context)
         {
@@ -284,10 +296,9 @@ namespace UnityEditor.Search.Providers
 
         string GetTrackerDescription(SearchItem item, char splitter)
         {
-            if (!m_Enabled)
+            if (!m_Enabled || item.data is not ProfilerRecorderInfo pri)
                 return string.Empty;
 
-            var pri = GetRecorderInfo(item);
             var sampleCount = pri.GetSampleCount();
             var peak = pri.GetMaxValue();
             var avg = pri.GetAverageValue();
@@ -371,7 +382,7 @@ namespace UnityEditor.Search.Providers
         protected override ValueWithUnit GetPerformanceTotalValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, pri.GetTotalValue());
         protected override ValueWithUnit GetPerformancePeakValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, pri.GetMaxValue());
         protected override ValueWithUnit GetPerformanceSampleCountValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, pri.GetSampleCount());
-        protected override ValueWithUnit GetPerformanceLastTimeValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, 0);
+        protected override ValueWithUnit GetPerformanceLastTimeValue(ProfilerRecorderInfo pri) => ProfilerRecorderInfoToUnitWithValue(pri, pri.GetLastValue());
 
         static ValueWithUnit ProfilerRecorderInfoToUnitWithValue(ProfilerRecorderInfo pri, double value)
         {

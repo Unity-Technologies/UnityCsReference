@@ -217,12 +217,12 @@ internal class JobsMenuProvider: SettingsProvider
                 }
             case NativeLeakDetectionMode.Enabled:
                 {
-                    Debug.Log("Leak detection has been enabled. Leak warnings will be generated upon domain reload.");
+                    Debug.Log("Leak detection has been enabled. Leak warnings will be generated upon code reload.");
                     break;
                 }
             case NativeLeakDetectionMode.EnabledWithStackTrace:
                 {
-                    Debug.Log("Leak detection with stack traces has been enabled. Leak warnings will be generated upon domain reload.");
+                    Debug.Log("Leak detection with stack traces has been enabled. Leak warnings will be generated upon code reload.");
                     break;
                 }
             default:

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using Unity.Scripting.LifecycleManagement;
@@ -65,13 +64,15 @@ namespace UnityEditor.Search.Providers
 
                 fetchDescription = (item, context) =>
                 {
-                    var logEntry = (LogEntry)item.data;
+                    if (item.data is not LogEntry logEntry)
+                        return null;
                     return $"{logEntry.lineNumber}: {logEntry.msg}";
                 },
 
                 fetchThumbnail = (item, context) =>
                 {
-                    var logEntry = (LogEntry)item.data;
+                    if (item.data is not LogEntry logEntry)
+                        return null;
                     switch (logEntry.logType)
                     {
                         case LogType.Log:
@@ -146,7 +147,7 @@ namespace UnityEditor.Search.Providers
             {
                 new SearchAction(type, "copy", null, "Copy to the clipboard")
                 {
-                    handler = (item) => EditorGUIUtility.systemCopyBuffer = item.label.ToString(CultureInfo.InvariantCulture)
+                    handler = (item) => EditorGUIUtility.systemCopyBuffer = item.GetLabel(item.context) ?? string.Empty
                 },
                 new SearchAction(type, "open", null, "Open console log file")
                 {
